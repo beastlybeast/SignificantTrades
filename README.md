@@ -18,6 +18,8 @@ The end result is a Recent Trades pane you can watch without getting a seizure, 
 Just open the HTML file and type in the symbol name (e.g. XBTUSD) and minimum order threshold (e.g. 5000).
 
 ## Support Further Development
-I'm not a developer, I'm a trader, and I'm paying contractors to build and improve this tool. If you find it useful, please consider sending a donation to support further development. Please also send your ideas to make this even more useful.
+I'm not a developer, I'm a trader, and I'm paying contractors to build and improve this tool. To contribute ideas or request bug fixes, please use the github issues feature. If you are a developer and would like to contribute code, feel free to do so via Github (or fork this repo). Please make sure to credit me if you do.
+
+Lastly, if you find this tool useful, please consider sending a donation to support further development. 
 
 BTC (segwit) address: bc1q32ncgq5aaffz6l5vxrvfejfwdm9jhqdc3qvk5x
