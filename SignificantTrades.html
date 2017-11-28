@@ -1,0 +1,270 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bitmex - v1.1</title>
+    <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+	
+	<style>
+.streamingTable
+{
+    background-color: rgba(0, 0, 0, 0);
+    border-collapse: collapse;
+    border-spacing: 0;
+    font-family: 'Open Sans', sans-serif;
+    font-size: 14px;
+}
+.streamingTable .streamingListRow td
+{
+    padding: 5px;
+    white-space: nowrap;
+    border-left: 1px solid #ddd;
+    text-align: right;
+}
+.streamingListRow
+{
+      border-top: 1px solid #bbb;
+}
+
+.streamingTable .Buy 
+{
+    color: #4aa165;
+}
+.streamingTable tr.Dark.Buy
+{
+    color: white;
+    background-color: #4aa165;
+}
+.streamingTable .Sell
+{
+    color: #d16547;
+}
+.streamingTable tr.Dark.Sell
+{
+    color: white;
+    background-color: #d16547;
+}
+
+.streamingListRow:nth-child(odd) {
+    background: rgba(195,195,195,0.25);
+}
+.streamingListRow:nth-child(even) {
+    background: #fff;;
+}
+
+.symbolInput
+{
+  width: 120px;
+  margin-right: 5px;
+}
+.priceInput
+{
+  width: 170px;
+  margin-right: 5px;
+}
+</style>
+	
+  <script type="text/babel">
+        
+      function formatAMPM(date) {
+        var hours = date.getHours();
+        var minutes = date.getMinutes();
+        var seconds = date.getMinutes();
+        var ampm = hours >= 12 ? 'pm' : 'am';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        minutes = minutes < 10 ? '0'+minutes : minutes;
+        seconds = seconds < 10 ? '0'+seconds : seconds;
+        var strTime = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
+        return strTime;
+      }
+
+    function average(arr, priceFilter) {
+        var sumSizeArr = {}, sumPriceArr= {}, results = [], timestamp, side;
+        for (var i = 0; i < arr.length; i++) {
+     		var item = arr[i];
+       	var key = item.timestamp + item.side;
+        if (!(key in sumSizeArr)) {
+        		sumSizeArr[key] = {};
+            sumSizeArr[key].sizeSum = item.size;
+        }
+        sumSizeArr[key].sizeSum += arr[i].size;
+    }
+    
+     for (var i = 0; i < arr.length; i++) {
+     		var item = arr[i];
+       	var key = item.timestamp + item.side;
+        var sizeItem = sumSizeArr[key];
+        if (!(key in sumPriceArr)) {
+            sumPriceArr[key] = {};
+            sumPriceArr[key].symbol = item.symbol;
+            sumPriceArr[key].priceSum = item.price * item.size / sizeItem.sizeSum;
+            sumPriceArr[key].sizeSum = item.size;
+            sumPriceArr[key].timestamp = formatAMPM(new Date(item.timestamp));
+            sumPriceArr[key].side = item.side;
+        }
+        sumPriceArr[key].priceSum += item.price * item.size / sizeItem.sizeSum;
+        sumPriceArr[key].sizeSum += item.size;
+     }
+    
+    for(key in sumPriceArr) {
+    		var item = sumPriceArr[key];
+        if (item.sizeSum >= priceFilter)
+        {
+          results.push({ 
+          symbol: item.symbol,
+          price:item.priceSum.toFixed(2),
+          size: item.sizeSum,
+          timestamp: item.timestamp,
+          side: item.side
+          });
+        }
+    }
+    return results;
+}
+
+class TableRow extends React.Component {
+  render() {
+    const {data} = this.props;
+    const row = data.map((data, i) =>
+    <tr className={"streamingListRow " + (data.size > 100000 ? 'Dark ' : '') + (data.side == "Sell" ? 'Sell' : 'Buy')} key={i}>
+      <td width="90">{data.price}</td>
+      <td width="80">{data.size > 999 ? (data.size/1000).toFixed(0) + 'k' : data.size}</td>
+      <td width="100">{data.timestamp}</td>
+    </tr>
+    );
+    return (
+    <tbody>{row}</tbody>
+    );
+  }
+}
+
+class Table extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+  render() {
+    return (
+      <table className="streamingTable">
+        <TableRow data={this.props.data} />
+      </table>
+    );
+  }
+}
+
+class ShowData extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = {data: []};
+    this.instance = this;
+  }
+  
+  initWebSocketClient(symbol, price) {
+   if (symbol == null)
+    {
+    	 return null
+    }
+    var context = this.instance
+    var streamingData = null;
+    var priceFilter = isNaN(price) ? 0 : price;
+    if (context.socket != null)
+    {
+    	context.socket.close();
+      context.socket = null;
+    }
+    context.socket = new WebSocket("wss://www.bitmex.com/realtime?subscribe=trade:" + symbol.toUpperCase());
+    context.socket.onmessage = function(event) {
+      let obj = JSON.parse(event.data);
+      if (obj.data == null)
+      {
+        return;
+      }
+      let data = average(obj.data, priceFilter);
+			if (streamingData == null)
+      {
+      	streamingData =data;
+      }
+      else
+      {
+      	if (streamingData.length > 100)
+        {
+        		streamingData.splice(streamingData.length - 20);
+        }
+      	streamingData = data.concat(streamingData);
+      }
+     
+       context.setStreamData({data: streamingData});
+     };
+  }
+  
+  setStreamData(data){
+      this.setState(data);
+  }
+
+  render() {
+    return (
+      <div>
+         <Table data={this.state.data}/>
+      </div>);
+  	}
+}
+
+class SetSymbolView extends React.Component {
+ constructor() {
+      super();
+      this.onSymbol = this.onSymbol.bind(this);
+	  this.onKeyPress = this.onKeyPress.bind(this);
+    }
+    
+	onKeyPress(e) {
+		if (e.key === 'Enter') {
+		  this.onSymbol();
+		}
+	}
+	
+    onSymbol() {
+      this.dataComponent.initWebSocketClient(this.refs.symbol.value, parseInt(this.refs.minPrice.value));
+    }
+    
+    render() {
+    	return (
+      <div>
+        <input 
+          ref="symbol"
+          type="text" 
+          name="symbolBox"
+          className="symbolInput"
+          placeholder="Enter symbol here..."
+		  onKeyPress={this.onKeyPress}
+        />
+        <input 
+          ref="minPrice"
+          type="number" 
+          name="minPriceBox"
+          className="priceInput"
+          placeholder="Min order size threshold..."
+          min="0"
+		  onKeyPress={this.onKeyPress}
+        />
+        <button onClick={this.onSymbol}>Submit</button>
+        <p/>
+        <div>
+            <ShowData ref={instance => { this.dataComponent = instance; }}/>
+        </div>
+      </div>
+   	  );
+   }
+}
+
+ ReactDOM.render(<SetSymbolView />, document.getElementById('root'));
+
+
+
+    </script>
+  </body>
+</html>
