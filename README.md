@@ -15,7 +15,8 @@ This script uses Bitmex's public trades websocket and does a few things:
 The end result is a Recent Trades pane you can watch without getting a seizure, and which can be a useful tool to see when aggressive orders are coming in.
 
 ## How To Use
-Just open the HTML file and type in the symbol name (e.g. XBTUSD) and minimum order threshold (e.g. 5000).
+1. Open this link: https://beastlybeast.github.io/SignificantTrades/index.html
+2. Then type in the symbol name (e.g. XBTUSD), the minimum order threshold (e.g. 5000), and click submit.
 
 ## Support Further Development
 I'm not a developer, I'm a trader, and I'm paying contractors to build and improve this tool. To contribute ideas or request bug fixes, please use the github issues feature. If you are a developer and would like to contribute code, feel free to do so via Github (or fork this repo). Please make sure to credit me if you do.
