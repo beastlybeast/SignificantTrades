@@ -1,7 +1,7 @@
 # SignificantTrades
 A more useful version of the Recent Trades pane on Bitmex.
 
-![screenshot](https://i.imgur.com/F7LpL8J.png)
+![screenshot](https://i.imgur.com/S2xcNAt.png)
 
 ## About
 Bitmex's Recent Trades pane has a terrible signal-to-noise ratio because of bot activity and the fact that market orders are not batched by order but by matched price, usually resulting in many lines for a single 50k order.
