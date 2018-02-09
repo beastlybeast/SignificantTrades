@@ -92,8 +92,9 @@
         if (!(key in sumSizeArr)) {
         		sumSizeArr[key] = {};
             sumSizeArr[key].sizeSum = item.size;
+        } else {
+          sumSizeArr[key].sizeSum += arr[i].size;
         }
-        sumSizeArr[key].sizeSum += arr[i].size;
     }
     
      for (var i = 0; i < arr.length; i++) {
@@ -107,9 +108,10 @@
             sumPriceArr[key].sizeSum = item.size;
             sumPriceArr[key].timestamp = formatAMPM(new Date(item.timestamp));
             sumPriceArr[key].side = item.side;
+        } else {
+          sumPriceArr[key].priceSum += item.price * item.size / sizeItem.sizeSum;
+          sumPriceArr[key].sizeSum += item.size;
         }
-        sumPriceArr[key].priceSum += item.price * item.size / sizeItem.sizeSum;
-        sumPriceArr[key].sizeSum += item.size;
      }
     
     for(key in sumPriceArr) {
