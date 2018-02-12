@@ -134,7 +134,7 @@ class TableRow extends React.Component {
   render() {
     const {data} = this.props;
     const row = data.map((data, i) =>
-    <tr className={"streamingListRow " + (data.size > 100000 ? 'Dark ' : '') + (data.side == "Sell" ? 'Sell' : 'Buy')} key={i}>
+    <tr className={"streamingListRow " + (data.size > 99999 ? 'Dark ' : '') + (data.side == "Sell" ? 'Sell' : 'Buy')} key={i}>
       <td width="90">{data.price}</td>
       <td width="80">{data.size > 999 ? (data.size/1000).toFixed(0) + 'k' : data.size}</td>
       <td width="100">{data.timestamp}</td>
