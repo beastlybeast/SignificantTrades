@@ -2,280 +2,786 @@
 <html>
   <head>
     <meta charset="UTF-8" />
-    <title>SignificantTrades for Bitmex - v1.1</title>
+    <title>SignificantTrades for Bitmex/Gdax/Bitfinex - v1.1</title>
     <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-114936513-1"></script>
-    <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
+    <script src="https://unpkg.com/moment@2.21.0/min/moment.min.js"></script>
+    <script src="https://js.pusher.com/4.2/pusher.min.js"></script>
+    <script src="https://unpkg.com/highcharts@6.0.7/highcharts.js"></script>
+    <script src="https://unpkg.com/react-highcharts@16.0.2/dist/ReactHighcharts.js"></script>
 
-      gtag('config', 'UA-114936513-1');
-    </script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+      }
 
+      .app {
+        width: 320px;
+        overflow: hidden;
+      }
+
+      .control {
+        display: flex;
+        background-color: #222;
+      }
+
+      .chart {
+        border-bottom: 1px solid white;
+        position: relative;
+        width: calc(100% + 1px);
+      }
+
+      .control input {
+        flex: 1 1 auto;
+        border: none;
+        padding: 10px 12px;
+        background: none;
+        outline: none;
+        color: white;
+      }
+
+      .control button {
+        padding: 10px;
+        border: none;
+        background-color: rgba(255, 255, 255, .1);
+        color: white;
+        outline: none;
+        cursor: pointer;
+      }
+
+      .control button:hover {
+        background-color: #E91E63;
+      }
+
+      .table {
+        background-color: rgba(0, 0, 0, 0);
+        border-collapse: collapse;
+        border-spacing: 0;
+        font-family: 'Open Sans', sans-serif;
+        font-size: 14px;
+        width: 100%;
+      }
+
+      .table .nothing td {
+        text-align: center;
+        padding: 10px;
+      }
+
+      .table .trade td {
+        padding: 5px;
+        white-space: nowrap;
+        border-left: 0;
+        text-align: right;
+      }
+
+      .table .trade td.exchange {
+        text-align: left;
+        font-size: 10px;
+        padding-right: 0px;
+        padding-left: 8px;
+        color: black;
+        text-transform: uppercase;
+      }
+
+      .table .buy {
+        color: #8BC34A;
+      }
+
+      .table tr.massive.buy {
+        color: white;
+        background-color: #8BC34A;
+      }
+
+      .table .sell {
+        color: #F44336;
+      }
+
+      .table tr.massive.sell {
+        color: white;
+        background-color: #d16547;
+      }
+
+      .trade {
+        background-color: rgba(0, 0, 0, .025);
+      }
+
+      .trade.big {
+        background-color: rgba(0, 0, 0, .05);
+      }
+
+      table tr.trade.whale {
+        color: white;
+        transform: scale(1.02);
+        background-image: url(money.gif);
+        background-position: center center;
+        background-size: 100%;
+        background-blend-mode: overlay;
+        background-repeat: no-repeat;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.1), 0 2px 0 0px rgba(0, 0, 0, 0.1);
+      }
+
+      .highcharts-credits {
+        visibility: hidden;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
-	
-	<style>
-.streamingTable
-{
-    background-color: rgba(0, 0, 0, 0);
-    border-collapse: collapse;
-    border-spacing: 0;
-    font-family: 'Open Sans', sans-serif;
-    font-size: 14px;
-}
-.streamingTable .streamingListRow td
-{
-    padding: 5px;
-    white-space: nowrap;
-    border-left: 1px solid #ddd;
-    text-align: right;
-}
-.streamingListRow
-{
-      border-top: 1px solid #bbb;
-}
+      
+    <script type="text/babel"> 
+      class TableRow extends React.Component {
+        render() {
+          const {data} = this.props;
 
-.streamingTable .Buy 
-{
-    color: #4aa165;
-}
-.streamingTable tr.Dark.Buy
-{
-    color: white;
-    background-color: #4aa165;
-}
-.streamingTable .Sell
-{
-    color: #d16547;
-}
-.streamingTable tr.Dark.Sell
-{
-    color: white;
-    background-color: #d16547;
-}
-
-.streamingListRow:nth-child(odd) {
-    background: rgba(195,195,195,0.25);
-}
-.streamingListRow:nth-child(even) {
-    background: #fff;;
-}
-
-.symbolInput
-{
-  width: 120px;
-  margin-right: 5px;
-}
-.priceInput
-{
-  width: 170px;
-  margin-right: 5px;
-}
-</style>
-	
-  <script type="text/babel">
-        
-      function formatAMPM(date) {
-        var hours = date.getHours();
-        var minutes = date.getMinutes();
-        var seconds = date.getSeconds();
-        var ampm = hours >= 12 ? 'pm' : 'am';
-        hours = hours % 12;
-        hours = hours ? hours : 12; // the hour '0' should be '12'
-        minutes = minutes < 10 ? '0'+minutes : minutes;
-        seconds = seconds < 10 ? '0'+seconds : seconds;
-        var strTime = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
-        return strTime;
+          if (!data || !data.length) {
+            return (
+              <tbody>
+                <tr className="nothing">
+                  <td>Nothing to show</td>
+                </tr>
+              </tbody>
+            )
+          }
+          const row = data.map((data, i) =>
+          <tr className={'trade ' + data.classes + ' ' + data.side} key={i}>
+            <td className="exchange">{data.exchange}</td>
+            <td>{data.price.toFixed(2)}</td>
+            <td>{data.amount}</td>
+            <td>{data.date}</td>
+          </tr>
+          );
+          
+          return (
+            <tbody>{row}</tbody>
+          );
+        }
       }
 
-    function average(arr, priceFilter) {
-        var sumSizeArr = {}, sumPriceArr= {}, results = [], timestamp, side;
-        for (var i = 0; i < arr.length; i++) {
-     		var item = arr[i];
-       	var key = item.timestamp + item.side;
-        if (!(key in sumSizeArr)) {
-        		sumSizeArr[key] = {};
-            sumSizeArr[key].sizeSum = item.size;
-        } else {
-          sumSizeArr[key].sizeSum += arr[i].size;
+      class Table extends React.Component {
+        constructor(props) {
+          super(props);
         }
-    }
-    
-     for (var i = 0; i < arr.length; i++) {
-     		var item = arr[i];
-       	var key = item.timestamp + item.side;
-        var sizeItem = sumSizeArr[key];
-        if (!(key in sumPriceArr)) {
-            sumPriceArr[key] = {};
-            sumPriceArr[key].symbol = item.symbol;
-            sumPriceArr[key].priceSum = item.price * item.size / sizeItem.sizeSum;
-            sumPriceArr[key].sizeSum = item.size;
-            sumPriceArr[key].timestamp = formatAMPM(new Date(item.timestamp));
-            sumPriceArr[key].side = item.side;
-        } else {
-          sumPriceArr[key].priceSum += item.price * item.size / sizeItem.sizeSum;
-          sumPriceArr[key].sizeSum += item.size;
+        render() {
+          return (
+            <table className="table">
+              <TableRow data={this.props.data} />
+            </table>
+          );
         }
-     }
-    
-    for(key in sumPriceArr) {
-    		var item = sumPriceArr[key];
-        if (item.sizeSum >= priceFilter)
-        {
-          results.push({ 
-          symbol: item.symbol,
-          price:item.priceSum.toFixed(2),
-          size: item.sizeSum,
-          timestamp: item.timestamp,
-          side: item.side
+      }
+
+      class ShowData extends React.Component {
+        constructor(props) {
+          super(props);
+
+          this.state = {data: []};
+          this.exchanges = ['bitmex', 'bitfinex', 'gdax', 'bitstamp'];
+          this.prices = [];
+          this.minAmount = 0;
+          this.streamingData = null;
+          this.stacks = {};
+          this.sockets = [];
+          this.intervals = [];
+          this.pushers = [];
+
+          this.gdaxOB = {};
+        }
+
+        setVisibleAmount(amount) {
+          this.minAmount = amount || 0;
+
+          return this.minAmount;
+        }
+        
+        startListening(amount) {
+          this.setVisibleAmount(amount);
+          this.stopListening();
+
+          [{
+            name: 'bitstamp',
+            pusher: {
+              key: 'de504dc5763aeef9ff52',
+              channel: 'live_trades',
+              bind: 'trade'
+            },
+            onmessage: (channel, trade) => {
+              trade.side = trade.type === 0 ? 'buy' : 'sell';
+              trade.size = trade.amount * trade.price;
+              trade.exchange = 'Bitstamp';
+              trade.timestamp = new Date(trade.timestamp * 1000);
+              delete trade.amount;
+
+              this.setStreamData([trade]);
+            }            
+          },
+          {
+            name: 'bitmex',
+            url: 'wss://www.bitmex.com/realtime?subscribe=trade:XBTUSD',
+            onmessage: (ws, event) => {
+              let obj = JSON.parse(event.data);
+              if (obj.data == null) {
+                return;
+              }
+
+              var sumSizeArr = {}, sumPriceArr = {}, results = [], timestamp, side;
+
+              for (var i = 0; i < obj.data.length; i++) {
+                var item = obj.data[i];
+                var key = item.timestamp + item.side;
+                if (!(key in sumSizeArr)) {
+                    sumSizeArr[key] = {};
+                    sumSizeArr[key].sizeSum = item.size;
+                } else {
+                  sumSizeArr[key].sizeSum += obj.data[i].size;
+                }
+              }
+            
+              for (var i = 0; i < obj.data.length; i++) {
+                var item = obj.data[i];
+                var key = item.timestamp + item.side;
+                var sizeItem = sumSizeArr[key];
+                
+                if (!(key in sumPriceArr)) {
+                    sumPriceArr[key] = {};
+                    sumPriceArr[key].symbol = item.symbol;
+                    sumPriceArr[key].priceSum = item.price * item.size / sizeItem.sizeSum;
+                    sumPriceArr[key].sizeSum = item.size;
+                    sumPriceArr[key].timestamp = item.timestamp;
+                    sumPriceArr[key].side = item.side;
+                } else {
+                  sumPriceArr[key].priceSum += item.price * item.size / sizeItem.sizeSum;
+                  sumPriceArr[key].sizeSum += item.size;
+                }
+              }
+            
+              for (key in sumPriceArr) {
+                  var item = sumPriceArr[key];
+
+                  results.push({ 
+                    price: item.priceSum,
+                    size: item.sizeSum,
+                    timestamp: item.timestamp,
+                    side: item.side,
+                    exchange: 'Bitmex'
+                  });
+              }
+
+              this.setStreamData(results);
+            }
+          },
+          {
+            name: 'bitfinex',
+            url: 'wss://api.bitfinex.com/ws/2',
+            onopen: (ws, event) => {
+              ws.send(JSON.stringify({
+                event: 'subscribe',
+                channel: 'trades',
+                symbol: 'tBTCUSD',
+              }));
+            },
+            onmessage: (ws, event) => {
+              let obj = JSON.parse(event.data);
+
+              if (!obj || obj[1] !== 'te') {
+                return;
+              }
+
+              const amount = Math.abs(+obj[2][2] * obj[2][3]);
+
+              this.setStreamData([{
+                order_id: obj[2][0],
+                timestamp: obj[2][1],
+                side: obj[2][2] < 0 ? 'sell' : 'buy',
+                size: amount,
+                price: obj[2][3],
+                exchange: 'Bitfinex'
+              }]);
+            }
+          },
+          {
+            name: 'gdax',
+            url: 'wss://ws-feed.gdax.com',
+            onopen: (ws, event) => {
+              ws.send(JSON.stringify({
+                type: 'subscribe',
+                channels: [{"name": "full", "product_ids": ["BTC-USD"]}]
+              }));
+            },
+            onmessage: (ws, event) => {
+              let obj = JSON.parse(event.data);
+
+              if (obj == null) {
+                return;
+              }
+
+              let trade = this.gdaxOB[obj.order_id];
+
+              switch (obj.type) {
+                case 'received': 
+                  if (obj.order_type === 'market') {
+                    obj.size = 0;
+                  }
+
+                  this.gdaxOB[obj.order_id] = obj;
+                  break;
+
+                case 'change':                  
+                  if (!trade) {
+                    return;
+                  }
+
+                  if (obj.new_size) {
+                    trade.size = obj.new_size;
+                  }
+
+                  if (obj.new_funds) {
+                    trade.price = obj.new_funds;
+                  }
+
+                  this.gdaxOB[obj.order_id] = trade;
+                  break;
+
+                case 'match':          
+                  trade = this.gdaxOB[obj.taker_order_id];
+
+                  if (!trade) {
+                    return;
+                  }
+
+                  if (!trade.prices) {
+                    trade.prices = [];
+                  }
+
+                  trade.prices.push(+obj.price);
+                  
+                  if (trade.order_type === 'market') {
+                    if (!trade.size) {
+                      trade.size = 0;
+                    }
+
+                    trade.size += (+obj.size);
+                  }
+
+                  trade.price = trade.prices.reduce(function(a, b) { return a + b; }) / trade.prices.length;
+
+                  this.gdaxOB[obj.order_id] = trade;
+                break;
+                  
+                case 'done':
+                  if (!trade) {
+                    return;
+                  }
+
+                  if (!+obj.remaining_size) {
+                    delete this.gdaxOB[obj.order_id];
+                  } else {
+                    this.gdaxOB[obj.order_id].size = obj.remaining_size;
+                  }
+                  
+                  if (obj.reason === 'filled') {
+                    trade.timestamp = obj.time;
+                    trade.exchange = 'GDAX';
+                    trade.size = trade.size * trade.price;
+
+                    this.setStreamData([trade]);
+                  }
+              }
+            }
+          }].forEach((feed) => {
+            if (this.exchanges.indexOf(feed.name) === -1) {
+              return;
+            }
+
+            if (feed.pusher) {
+              var pusher = new Pusher(feed.pusher.key); // Pusher key for Bitstamp
+              var channel = pusher.subscribe(feed.pusher.channel); // subscribe live trade data
+
+              if (feed.onmessage) {
+                channel.bind(feed.pusher.bind, trade => feed.onmessage.apply(this, [channel, trade]));
+              }
+
+              this.pushers.push(pusher);
+
+              return;
+            }
+
+            const url = typeof feed.url === 'function' ? feed.url.apply(null, ['symbolhere']) : feed.url;
+
+            if (url.indexOf('http') === 0) {
+              const interval = setTimeout(() => {
+                var xhr = new XMLHttpRequest();
+
+                console.log('[interval]', feed.name, url);
+
+                xhr.onreadystatechange = (response) => {
+                  console.log(response);
+                }
+
+                xhr.open('GET', url);
+
+                xhr.send();
+              }, 5000);
+
+              this.intervals.push(interval);
+            } else {
+              const ws = new WebSocket(url);
+
+              console.log('[listen]', feed.name, url);
+
+              if (feed.onopen) {
+                ws.onopen = (event) => feed.onopen.apply(this, [ws, event]);
+              }
+
+              if (feed.onmessage) {
+                ws.onmessage = (event) => feed.onmessage.apply(this, [ws, event]);
+              }
+
+              this.sockets.push(ws);
+            }
           });
         }
-    }
-    return results;
-}
 
-class TableRow extends React.Component {
-  render() {
-    const {data} = this.props;
-    const row = data.map((data, i) =>
-    <tr className={"streamingListRow " + (data.size > 99999 ? 'Dark ' : '') + (data.side == "Sell" ? 'Sell' : 'Buy')} key={i}>
-      <td width="90">{data.price}</td>
-      <td width="80">{data.size > 999 ? (data.size/1000).toFixed(0) + 'k' : data.size}</td>
-      <td width="100">{data.timestamp}</td>
-    </tr>
-    );
-    return (
-    <tbody>{row}</tbody>
-    );
-  }
-}
+        stopListening() {
+          if (this.sockets && this.sockets.length) {
+            this.sockets.forEach((socket, index) => {
+              console.log('[close] websocket', '#' + index);
 
-class Table extends React.Component {
-  constructor(props) {
-    super(props);
-  }
-  render() {
-    return (
-      <table className="streamingTable">
-        <TableRow data={this.props.data} />
-      </table>
-    );
-  }
-}
+              socket.close();
+            })
+          }
 
-class ShowData extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {data: []};
-    this.instance = this;
-  }
-  
-  initWebSocketClient(symbol, price) {
-   if (symbol == null)
-    {
-    	 return null
-    }
-    var context = this.instance
-    var streamingData = null;
-    var priceFilter = isNaN(price) ? 0 : price;
-    if (context.socket != null)
-    {
-    	context.socket.close();
-      context.socket = null;
-    }
-    context.socket = new WebSocket("wss://www.bitmex.com/realtime?subscribe=trade:" + symbol.toUpperCase());
-    context.socket.onmessage = function(event) {
-      let obj = JSON.parse(event.data);
-      if (obj.data == null)
-      {
-        return;
-      }
-      let data = average(obj.data, priceFilter);
-			if (streamingData == null)
-      {
-      	streamingData =data;
-      }
-      else
-      {
-      	if (streamingData.length > 100)
-        {
-        		streamingData.splice(streamingData.length - 20);
+          this.sockets = [];
+
+          if (this.intervals && this.intervals.length) {
+            this.intervals.forEach((interval, index) => {
+              console.log('[close] interval', '#' + index);
+
+              clearInterval(interval);
+            })
+          }
+
+          this.intervals = [];
+
+          if (this.pushers && this.pushers.length) {
+            this.pushers.forEach((pusher, index) => {
+              console.log('[close] channel', '#' + index);
+
+              pusher.disconnect();
+            })
+          }
+
+          this.pushers = [];
         }
-      	streamingData = data.concat(streamingData);
+        
+        setStreamData(data) {
+          const trades = [];
+          const now = +new Date();
+          const depth = {
+            buy: [],
+            sell: []
+          };
+
+          data.forEach((trade) => {
+            this.prices.push({timestamp: now, price: +trade.price});
+            
+            depth[trade.side.toLowerCase()].push(trade.size);
+
+            if (trade.size < this.minAmount) {
+              let stack = this.stacks[trade.exchange + trade.side];
+
+              const elapsed = !stack ? 0 : +new Date(trade.timestamp) - +new Date(stack.timestamp)
+
+              if (!stack || elapsed > 10000) {
+                stack = Object.assign({}, trade);
+              } else {
+                stack.size += trade.size;
+              }
+
+              this.stacks[trade.exchange + trade.side] = stack;
+
+              if (stack.size > this.minAmount) {
+                  trades.push(this.formatTrade(stack));
+                  delete this.stacks[trade.exchange + trade.side];
+              } else {
+                
+              }
+            } else {
+              trades.push(this.formatTrade(trade));
+            }
+          });
+
+          if (this.streamingData == null) {
+            this.streamingData = trades;
+          } else {
+            this.streamingData = trades.concat(this.streamingData);
+
+            if (this.streamingData.length > 100) {
+              this.streamingData.splice(100, this.streamingData.length);
+            }
+          }
+
+          this.prices = this.prices.filter(price => now - price.timestamp < 10000);
+
+          const average = this.prices.length > 1 ? (this.prices.reduce((a, b) => {
+            return (typeof a === 'number' ? a : a.price || 0) + b.price;
+          }) / this.prices.length) : this.prices[0].price;
+
+          document.title = '$' + average.toFixed(1);
+
+          depth.sell = depth.sell.length ? +(depth.sell.reduce((a, b) => a + b).toFixed(2)) : 0;
+          depth.buy = depth.buy.length ? +(depth.buy.reduce((a, b) => a + b).toFixed(2)) : 0;
+          this.chartComponent.update(depth, average);
+
+          this.setState({data: this.streamingData});
+        }
+
+        formatTrade(trade) {
+          trade.date = moment(trade.timestamp).format('LTS');
+          trade.classes = '';
+          trade.side = trade.side.toLowerCase();
+          trade.price = +trade.price;
+
+          if (trade.size >= 1000000) {
+            trade.classes = "big massive whale";
+            trade.amount = (trade.size / 1000000).toFixed(1) + 'M';
+          } else if (trade.size >= 1000) {
+            trade.classes = 'big' + (trade.size >= 100000 ? ' massive' : '');
+            trade.amount = (trade.size / 1000).toFixed(1) + 'K';
+          } else {
+            trade.amount = trade.size.toFixed(2);
+          }
+
+          return trade;
+        }
+
+        render() {
+          return (
+            <div>
+              <div className="chart">
+                <DepthChart ref={instance => { this.chartComponent = instance; }}/>
+              </div>
+              <div>
+                <Table data={this.state.data}/>
+              </div>
+            </div>
+          );
+        }
       }
-     
-       context.setStreamData({data: streamingData});
-     };
-  }
-  
-  setStreamData(data){
-      this.setState(data);
-  }
 
-  render() {
-    return (
-      <div>
-         <Table data={this.state.data}/>
-      </div>);
-  	}
-}
+      class DepthChart extends React.Component {
+        constructor(props) {
+          super(props);
 
-class SetSymbolView extends React.Component {
- constructor() {
-      super();
-      this.onSymbol = this.onSymbol.bind(this);
-	  this.onKeyPress = this.onKeyPress.bind(this);
-    }
-    
-	onKeyPress(e) {
-		if (e.key === 'Enter') {
-		  this.onSymbol();
-		}
-	}
-	
-    onSymbol() {
-      this.dataComponent.initWebSocketClient(this.refs.symbol.value, parseInt(this.refs.minPrice.value));
-    }
-    
-    render() {
-    	return (
-      <div>
-        <input 
-          ref="symbol"
-          type="text" 
-          name="symbolBox"
-          className="symbolInput"
-          placeholder="Enter symbol here..."
-		  onKeyPress={this.onKeyPress}
-        />
-        <input 
-          ref="minPrice"
-          type="number" 
-          name="minPriceBox"
-          className="priceInput"
-          placeholder="Min order size threshold..."
-          min="0"
-		  onKeyPress={this.onKeyPress}
-        />
-        <button onClick={this.onSymbol}>Submit</button>
-        <p/>
-        <div>
-            <ShowData ref={instance => { this.dataComponent = instance; }}/>
-        </div>
-      </div>
-   	  );
-   }
-}
+          this.interval = 5000; // 5s
 
- ReactDOM.render(<SetSymbolView />, document.getElementById('root'));
+          this.config = {
+            chart: {
+              height: '100px',
+              margin: [15, 0, 15, 0],
+              spacingTop: 0,
+              backgroundColor: 'transparent',
+            },
+            title: {
+              text: '',  
+              floating: true,
+              margin: 0
+            },
+            subtitle: {
+              text: '',
+              style: {
+                display: 'none'
+              }   
+            },
+            legend: { 
+              enabled: false
+            },
+            xAxis: {
+                categories: [],
+                gridLineColor: 'transparent',
+                title: {
+                  enabled: false,
+                  reserveSpace: false
+                },
+                labels: {
+                  enabled: false,
+                },
+                lineWidth: 0,
+                tickWidth: 0,
+                minPadding: 0,
+                maxPadding: 0,
+            },
+            yAxis: [{
+                gridLineColor: 'rgba(0, 0, 0, .05)',
+                title: {
+                  enabled: false,
+                  reserveSpace: false
+                },
+                lineWidth: 0,
+                tickWidth: 0,
+                endOnTick: false,
+                minPadding: 0,
+                maxPadding: 0,
+                tickAmount: 8,
+            },{
+                gridLineColor: 'rgba(0, 0, 0, 0)',
+                startOnTick: true,
+            }],
+            exporting: {
+              enabled: false  
+            },
+            tooltip: {
+              animation: false,
+              backgroundColor: 'rgba(0, 0, 0, .7)',
+              borderWidth: 0,
+              shadow: false,
+              hideDelay: 0,
+              formatter: function() {
+                return '$' + this.y.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
+              },
+              style: {
+                color: 'white'
+              }
+            },
+            spacing:[0, 0, 0, 0],
+            plotOptions: {
+                series: {           
+                  pointPadding: 0,
+                  groupPadding: 0,
+                  animation: false,
+                }
+            },
+            series: [{
+              yAxis: 1,
+              name: 'PRICE',
+              showInLegend: false,
+              data: [0],
+              color: '#2196F3',
+              pointPlacement: 'on',
+              
+              stacking: 'stream',
+              lineWidth: 2,
+              marker: {
+                enabled: false
+              }
+            },{
+              name: 'SELL',
+              showInLegend: false,
+              data: [0],
+              color: '#d16547',
+              marker: {
+                symbol: 'circle',
+                radius: 3,
+              }
+            },{
+              name: 'BUY',
+              showInLegend: false,
+              data: [0],
+              color: '#8BC34A',
+              marker: {
+                symbol: 'circle',
+                radius: 3,
+              }
+            }]
+          }
+        }
 
+        shouldComponentUpdate() {
+          return false;
+        }
 
+        update(depth, price) {
+          const chart = this.refs.chart.getChart();
+          const now = +new Date();
+
+          if (!this.timestamp) {
+            this.timestamp = now;
+          }
+
+          if (now - this.timestamp > this.interval) {
+            
+            for (let i=1; i<(now - this.timestamp) / this.interval; i++) {
+              chart.redraw();
+
+              if (chart.series[0].data.length >= 100) {
+                chart.series[0].data[0].remove(false, false);
+                chart.series[1].data[0].remove(false, false);
+                chart.series[2].data[0].remove(false, false);
+              }
+
+              chart.series[0].addPoint(chart.series[0].data[chart.series[0].data.length - 1].y);
+              chart.series[1].addPoint(0);
+              chart.series[2].addPoint(0);
+            }
+
+            this.timestamp = now;
+          }
+          
+          const sellPoint = chart.series[1].data[chart.series[1].data.length - 1];
+          const buyPoint = chart.series[2].data[chart.series[2].data.length - 1];
+
+          chart.series[0].data[chart.series[0].data.length - 1].update(price, false, false);
+          chart.series[1].data[chart.series[1].data.length - 1].update(sellPoint.y + depth.sell, false, false); 
+          chart.series[2].data[chart.series[2].data.length - 1].update(buyPoint.y + depth.buy, false, false); 
+        }
+
+        render() {
+          return (
+            <ReactHighcharts config={this.config} ref="chart"/>
+          );
+        }
+      }
+
+      class SetSymbolView extends React.Component {
+        constructor() {
+          super();
+
+          this.state = {
+            minAmount: 0,
+            running: false
+          };
+        }
+          
+        onPriceChange(event) {
+          this.setState({ minAmount: parseInt(event.target.value) || 0 });
+          this.dataComponent.setVisibleAmount(parseInt(event.target.value) || 0);
+        }
+        
+        toggle() {
+          const state = !this.state.running;
+          this.setState({ running: state });
+
+          if (state) {
+            this.dataComponent.startListening(parseInt(this.state.minAmount));
+          } else {
+            this.dataComponent.stopListening();
+          }
+        }
+          
+        render() {
+          return (
+            <div className="app">
+              <div className="control">
+                <input 
+                  value={this.state.minAmount}
+                  type="number"
+                  min="0"
+                  max="1000000" 
+                  step="5000"
+                  className="priceInput"
+                  placeholder="Threshold"
+                  onChange={this.onPriceChange.bind(this)}
+                />
+                <button type="button" onClick={this.toggle.bind(this)}>{this.state.running ? 'Stop' : 'Start'}</button>
+              </div>
+              <ShowData ref={instance => { this.dataComponent = instance; }}/>
+            </div>
+          );
+        }
+      }
+
+      ReactDOM.render(<SetSymbolView />, document.getElementById('root'));
 
     </script>
   </body>

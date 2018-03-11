@@ -1,5 +1,5 @@
 # SignificantTrades
-A more useful version of the Recent Trades pane on Bitmex.
+Live trades visualizer from Bitmex / GDAX / Bitfinex / Bitstamp.
 
 ![screenshot](https://i.imgur.com/cb3TVvR.png)
 
