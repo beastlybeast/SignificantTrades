@@ -28,7 +28,6 @@
       }
 
       .chart {
-        border-bottom: 1px solid white;
         position: relative;
         width: calc(100% + 1px);
       }
@@ -580,8 +579,9 @@
 
           this.config = {
             chart: {
+              animation: false,
               height: '100px',
-              margin: [15, 0, 15, 0],
+              margin: [0, 0, 0, 0],
               spacingTop: 0,
               backgroundColor: 'transparent',
             },
@@ -677,46 +677,57 @@
                 dataLabels: {
                   enabled: false,
                 }
+              },
+              line: {
+                animation: false,
+                pointPlacement: 'on',
+                showInLegend: false,
+                marker: {
+                  enabled: false
+                }
+              },
+              area: {
+                animation: false,
+                pointPlacement: 'on',
+                showInLegend: false,
+                marker: {
+                  enabled: false
+                }
               }
             },
             series: [{
               yAxis: 1,
               zIndex: 1,
               name: 'PRICE',
-              showInLegend: false,
               data: [0],
               color: '#222',
-              pointPlacement: 'on',
+              dashStyle: 'dash',
               stacking: 'stream',
+              animation: false,
               lineWidth: 2,
-              marker: {
-                enabled: false
-              }
             },{
               name: 'SELL',
               stacking: 'area',
               type: 'area',
-              showInLegend: false,
               data: [0],
               color: '#E57373',
               fillColor: '#F44336',
+              animation: false,
               marker: {
                 symbol: 'circle',
                 radius: 3,
-                enabled: false
               }
             },{
               name: 'BUY',
               stacking: 'area',
               type: 'area',
-              showInLegend: false,
               data: [0],
               color: '#9CCC65',
               fillColor: '#7CB342',
+              animation: false,
               marker: {
                 symbol: 'circle',
                 radius: 3,
-                enabled: false
               }
             }]
           }
@@ -737,17 +748,16 @@
           if (now - this.timestamp > this.interval) {
             
             for (let i=1; i<(now - this.timestamp) / this.interval; i++) {
-              chart.redraw();
-
               if (chart.series[0].data.length >= 100) {
-                chart.series[0].data[0].remove(false, false);
-                chart.series[1].data[0].remove(false, false);
-                chart.series[2].data[0].remove(false, false);
+                chart.series[0].data[0].remove();
+                chart.series[1].data[0].remove();
+                chart.series[2].data[0].remove();
               }
 
-              chart.series[0].addPoint(chart.series[0].data[chart.series[0].data.length - 1].y);
-              chart.series[1].addPoint(0);
-              chart.series[2].addPoint(0);
+              chart.series[0].addPoint(chart.series[0].data[chart.series[0].data.length - 1].y, false);
+              chart.series[1].addPoint(0, false);
+              chart.series[2].addPoint(0, false);
+
             }
 
             this.timestamp = now;
@@ -756,9 +766,11 @@
           const sellPoint = chart.series[1].data[chart.series[1].data.length - 1];
           const buyPoint = chart.series[2].data[chart.series[2].data.length - 1];
 
-          chart.series[0].data[chart.series[0].data.length - 1].update(price, false, false);
-          chart.series[1].data[chart.series[1].data.length - 1].update(sellPoint.y + depth.sell, false, false); 
-          chart.series[2].data[chart.series[2].data.length - 1].update(buyPoint.y + depth.buy, false, false); 
+          chart.series[0].data[chart.series[0].data.length - 1].update(price, false);
+          chart.series[1].data[chart.series[1].data.length - 1].update(sellPoint.y + depth.sell, false); 
+          chart.series[2].data[chart.series[2].data.length - 1].update(buyPoint.y + depth.buy, false); 
+          
+          chart.redraw();
         }
 
         render() {
