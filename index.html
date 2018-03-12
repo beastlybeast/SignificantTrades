@@ -3,6 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <title>SignificantTrades for Bitmex/Gdax/Bitfinex - v1.1</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <script src="https://unpkg.com/react@16/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6.15.0/babel.min.js"></script>
@@ -128,8 +131,8 @@
   </head>
   <body>
     <div id="root"></div>
-      
-    <script type="text/babel"> 
+
+    <script type="text/babel">
       class TableRow extends React.Component {
         render() {
           const {data} = this.props;
@@ -151,7 +154,7 @@
             <td>{data.date}</td>
           </tr>
           );
-          
+
           return (
             <tbody>{row}</tbody>
           );
@@ -193,7 +196,7 @@
 
           return this.minAmount;
         }
-        
+
         startListening(amount) {
           this.setVisibleAmount(amount);
           this.stopListening();
@@ -213,7 +216,7 @@
               delete trade.amount;
 
               this.setStreamData([trade]);
-            }            
+            }
           },
           {
             name: 'bitmex',
@@ -236,12 +239,12 @@
                   sumSizeArr[key].sizeSum += obj.data[i].size;
                 }
               }
-            
+
               for (var i = 0; i < obj.data.length; i++) {
                 var item = obj.data[i];
                 var key = item.timestamp + item.side;
                 var sizeItem = sumSizeArr[key];
-                
+
                 if (!(key in sumPriceArr)) {
                     sumPriceArr[key] = {};
                     sumPriceArr[key].symbol = item.symbol;
@@ -254,11 +257,11 @@
                   sumPriceArr[key].sizeSum += item.size;
                 }
               }
-            
+
               for (key in sumPriceArr) {
                   var item = sumPriceArr[key];
 
-                  results.push({ 
+                  results.push({
                     price: item.priceSum,
                     size: item.sizeSum,
                     timestamp: item.timestamp,
@@ -318,7 +321,7 @@
               let trade = this.gdaxOB[obj.order_id];
 
               switch (obj.type) {
-                case 'received': 
+                case 'received':
                   if (obj.order_type === 'market') {
                     obj.size = 0;
                   }
@@ -326,7 +329,7 @@
                   this.gdaxOB[obj.order_id] = obj;
                   break;
 
-                case 'change':                  
+                case 'change':
                   if (!trade) {
                     return;
                   }
@@ -342,7 +345,7 @@
                   this.gdaxOB[obj.order_id] = trade;
                   break;
 
-                case 'match':          
+                case 'match':
                   trade = this.gdaxOB[obj.taker_order_id];
 
                   if (!trade) {
@@ -354,7 +357,7 @@
                   }
 
                   trade.prices.push(+obj.price);
-                  
+
                   if (trade.order_type === 'market') {
                     if (!trade.size) {
                       trade.size = 0;
@@ -367,7 +370,7 @@
 
                   this.gdaxOB[obj.order_id] = trade;
                 break;
-                  
+
                 case 'done':
                   if (!trade) {
                     return;
@@ -378,7 +381,7 @@
                   } else {
                     this.gdaxOB[obj.order_id].size = obj.remaining_size;
                   }
-                  
+
                   if (obj.reason === 'filled') {
                     trade.timestamp = obj.time;
                     trade.exchange = 'GDAX';
@@ -473,7 +476,7 @@
 
           this.pushers = [];
         }
-        
+
         setStreamData(data) {
           const trades = [];
           const now = +new Date();
@@ -484,7 +487,7 @@
 
           data.forEach((trade) => {
             this.prices.push({timestamp: now, price: +trade.price});
-            
+
             depth[trade.side.toLowerCase()].push(trade.size);
 
             if (trade.size < this.minAmount) {
@@ -504,7 +507,7 @@
                   trades.push(this.formatTrade(stack));
                   delete this.stacks[trade.exchange + trade.side];
               } else {
-                
+
               }
             } else {
               trades.push(this.formatTrade(trade));
@@ -574,6 +577,10 @@
           super(props);
 
           this.interval = 5000; // 5s
+          this.scroll = {
+            enabled: false,
+            reference: null
+          };
 
           var context = this;
 
@@ -586,7 +593,7 @@
               backgroundColor: 'transparent',
             },
             title: {
-              text: '',  
+              text: '',
               floating: true,
               margin: 0
             },
@@ -594,9 +601,12 @@
               text: '',
               style: {
                 display: 'none'
-              }   
+              }
             },
-            legend: { 
+            rangeSelector: {
+              enabled: false
+            },
+            legend: {
               enabled: false
             },
             xAxis: {
@@ -613,6 +623,8 @@
                 tickWidth: 0,
                 minPadding: 0,
                 maxPadding: 0,
+                min: 0,
+                max: 20
             },
             yAxis: [{
                 gridLineColor: 'rgba(0, 0, 0, .05)',
@@ -631,19 +643,20 @@
                 startOnTick: true,
             }],
             exporting: {
-              enabled: false  
+              enabled: false
             },
             tooltip: {
+              snap: 5,
               animation: false,
               backgroundColor: 'rgba(0, 0, 0, .7)',
               borderWidth: 0,
               shadow: false,
               hideDelay: 0,
               formatter: function(e) {
-                const date = moment(new Date(+new Date() + (this.key - this.series.data.length + 1) * context.interval));
-                
+                const date = moment(new Date(+new Date() - (this.series.data.length - this.point.index - 1) * context.interval));
+
                 let label = '';
-                
+
                 switch (this.series.index) {
                   case 0:
                     label = 'BTCUSD';
@@ -664,10 +677,11 @@
             },
             spacing:[0, 0, 0, 0],
             plotOptions: {
-              series: {           
+              series: {
                 pointPadding: 0,
                 groupPadding: 0,
                 animation: false,
+                stickyTracking: false
               },
               area: {
                 stacking: 'normal',
@@ -733,6 +747,43 @@
           }
         }
 
+        componentDidMount() {
+          window.addEventListener('mousemove', this.doScroll.bind(this));
+          window.addEventListener('mouseup', this.stopScroll.bind(this));
+        }
+
+        componentWillUnmount() {
+          window.removeEventListener('mousemove', this.doScroll.bind(this));
+          window.removeEventListener('mouseup', this.stopScroll.bind(this));
+        }
+
+        startScroll(event) {
+          this.scroll.enabled = true;
+          this.scroll.reference = event.pageX;
+          console.log('scroll started!', this.scroll.reference);
+        }
+
+        stopScroll(event) {
+          this.scroll.enabled = false;
+          console.log('scroll stopped!');
+        }
+
+        doScroll(event) {
+          if (!this.scroll.enabled) {
+            return;
+          }
+
+          const point = event.pageX;
+
+          const chart = this.refs.chart.getChart();
+          const scale = (Math.abs(chart.xAxis[0].max - chart.xAxis[0].min) / chart.chartWidth) * (this.scroll.reference - point);
+
+          chart.xAxis[0].setExtremes(chart.xAxis[0].min + scale, chart.xAxis[0].max + scale);
+          chart.redraw();
+
+          this.scroll.reference = event.pageX;
+        }
+
         shouldComponentUpdate() {
           return false;
         }
@@ -746,36 +797,34 @@
           }
 
           if (now - this.timestamp > this.interval) {
-            
-            for (let i=1; i<(now - this.timestamp) / this.interval; i++) {
-              if (chart.series[0].data.length >= 100) {
-                chart.series[0].data[0].remove();
-                chart.series[1].data[0].remove();
-                chart.series[2].data[0].remove();
-              }
 
+            for (let i=1; i<(now - this.timestamp) / this.interval; i++) {
               chart.series[0].addPoint(chart.series[0].data[chart.series[0].data.length - 1].y, false);
               chart.series[1].addPoint(0, false);
               chart.series[2].addPoint(0, false);
 
+              const max = chart.series[0].data.length;
+              //chart.xAxis[0].setExtremes(Math.max(0, max - 100), max);
             }
 
             this.timestamp = now;
           }
-          
+
           const sellPoint = chart.series[1].data[chart.series[1].data.length - 1];
           const buyPoint = chart.series[2].data[chart.series[2].data.length - 1];
 
           chart.series[0].data[chart.series[0].data.length - 1].update(price, false);
-          chart.series[1].data[chart.series[1].data.length - 1].update(sellPoint.y + depth.sell, false); 
-          chart.series[2].data[chart.series[2].data.length - 1].update(buyPoint.y + depth.buy, false); 
-          
+          chart.series[1].data[chart.series[1].data.length - 1].update(sellPoint.y + depth.sell, false);
+          chart.series[2].data[chart.series[2].data.length - 1].update(buyPoint.y + depth.buy, false);
+
           chart.redraw();
         }
 
         render() {
           return (
-            <ReactHighcharts config={this.config} ref="chart"/>
+            <div onMouseDown={this.startScroll.bind(this)}>
+              <ReactHighcharts config={this.config} ref="chart"/>
+            </div>
           );
         }
       }
@@ -789,12 +838,12 @@
             running: false
           };
         }
-          
+
         onPriceChange(event) {
           this.setState({ minAmount: parseInt(event.target.value) || 0 });
           this.dataComponent.setVisibleAmount(parseInt(event.target.value) || 0);
         }
-        
+
         toggle() {
           const state = !this.state.running;
           this.setState({ running: state });
@@ -805,16 +854,16 @@
             this.dataComponent.stopListening();
           }
         }
-          
+
         render() {
           return (
             <div className="app">
               <div className="control">
-                <input 
+                <input
                   value={this.state.minAmount}
                   type="number"
                   min="0"
-                  max="1000000" 
+                  max="1000000"
                   step="5000"
                   className="priceInput"
                   placeholder="Threshold"
