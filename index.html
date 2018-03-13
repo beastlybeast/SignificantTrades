@@ -675,6 +675,7 @@
               animation: false,
               backgroundColor: 'rgba(0, 0, 0, .7)',
               borderWidth: 0,
+              padding: 4,
               shadow: false,
               hideDelay: 0,
               formatter: function(e) {
@@ -697,7 +698,9 @@
                 return '<small>' + date.format('LTS') + '</small><br>' + label + ' $' + this.y.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
               },
               style: {
-                color: 'white'
+                color: 'white',
+                fontSize: 10,
+                lineHeight: 12
               }
             },
             spacing:[0, 0, 0, 0],
@@ -740,7 +743,7 @@
               name: 'PRICE',
               data: [0],
               color: '#222',
-              dashStyle: 'dash',
+              dashStyle: 'ShortDash',
               stacking: 'stream',
               animation: false,
               lineWidth: 2,
