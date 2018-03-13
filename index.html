@@ -35,6 +35,21 @@
         width: calc(100% + 1px);
       }
 
+      .chart .live {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        background-color: #d16547;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        visibility: hidden;
+      }
+
+      .chart .live.active {
+        visibility: visible;
+      }
+
       .control input {
         flex: 1 1 auto;
         border: none;
@@ -199,7 +214,7 @@
 
         startListening(amount) {
           this.setVisibleAmount(amount);
-          this.stopListening();
+          this.closeConnections();
 
           [{
             name: 'bitstamp',
@@ -443,9 +458,19 @@
               this.sockets.push(ws);
             }
           });
+
+          this.chartComponent.setState({following: true});
+          this.chartComponent.forceUpdate();
         }
 
         stopListening() {
+          this.closeConnections();
+
+          this.chartComponent.setState({following: false});
+          this.chartComponent.forceUpdate();
+        }
+
+        closeConnections() {
           if (this.sockets && this.sockets.length) {
             this.sockets.forEach((socket, index) => {
               console.log('[close] websocket', '#' + index);
@@ -561,12 +586,8 @@
         render() {
           return (
             <div>
-              <div className="chart">
-                <DepthChart ref={instance => { this.chartComponent = instance; }}/>
-              </div>
-              <div>
-                <Table data={this.state.data}/>
-              </div>
+              <DepthChart ref={instance => { this.chartComponent = instance; }}/>
+              <Table data={this.state.data}/>
             </div>
           );
         }
@@ -576,11 +597,15 @@
         constructor(props) {
           super(props);
 
-          this.interval = 5000; // 5s
-          this.scroll = {
-            enabled: false,
-            reference: null
-          };
+          this.state = {
+            following: false,
+            scrolling: false,
+            range: 20,
+          }
+
+          this.interval = 5000;
+          this.scrollAt = null;
+          this.events = {};
 
           var context = this;
 
@@ -624,7 +649,7 @@
                 minPadding: 0,
                 maxPadding: 0,
                 min: 0,
-                max: 20
+                max: 0
             },
             yAxis: [{
                 gridLineColor: 'rgba(0, 0, 0, .05)',
@@ -748,40 +773,89 @@
         }
 
         componentDidMount() {
-          window.addEventListener('mousemove', this.doScroll.bind(this));
-          window.addEventListener('mouseup', this.stopScroll.bind(this));
+          this.events.doScroll = this.doScroll.bind(this);
+          this.events.stopScroll = this.stopScroll.bind(this);
+
+          window.addEventListener('mousemove', this.events.doScroll);
+          window.addEventListener('mouseup', this.events.stopScroll);
         }
 
         componentWillUnmount() {
-          window.removeEventListener('mousemove', this.doScroll.bind(this));
-          window.removeEventListener('mouseup', this.stopScroll.bind(this));
+          window.removeEventListener('mousemove', this.events.doScroll);
+          window.removeEventListener('mouseup', this.events.stopScroll);
         }
 
         startScroll(event) {
-          this.scroll.enabled = true;
-          this.scroll.reference = event.pageX;
-          console.log('scroll started!', this.scroll.reference);
+          this.setState({scrolling: true});
+          this.scrollAt = event.pageX;
         }
 
         stopScroll(event) {
-          this.scroll.enabled = false;
-          console.log('scroll stopped!');
+          this.setState({scrolling: false});
+        }
+
+        doZoom(event) {
+          event.preventDefault();
+
+          const chart = this.refs.chart.getChart();
+          const range = Math.abs(chart.xAxis[0].max - chart.xAxis[0].min);
+          const length = chart.series[0].data.length - 1;
+          const delta = event.deltaY * -1;
+
+          if ((event.deltaX || event.deltaZ || !event.deltaY) || (delta > 0 && length <= range) || (delta < 0 && range <= 1)) {
+            return;
+          }
+
+          const min = chart.xAxis[0].min - delta / 2;
+          const max = chart.xAxis[0].max + delta / 2;
+          console
+          chart.xAxis[0].setExtremes(min, max);
+  
+          this.setState({
+            range: Math.abs(max - min),
+            following: max === length
+          });
+                    
+          chart.redraw();
         }
 
         doScroll(event) {
-          if (!this.scroll.enabled) {
+          if (!this.state.scrolling) {
             return;
           }
 
           const point = event.pageX;
 
           const chart = this.refs.chart.getChart();
-          const scale = (Math.abs(chart.xAxis[0].max - chart.xAxis[0].min) / chart.chartWidth) * (this.scroll.reference - point);
+          const range = Math.abs(chart.xAxis[0].max - chart.xAxis[0].min);
+          const scale = (range / chart.chartWidth) * (this.scrollAt - point);
+          
+          if (!scale) {
+            return;
+          }
 
-          chart.xAxis[0].setExtremes(chart.xAxis[0].min + scale, chart.xAxis[0].max + scale);
+          const max = chart.series[0].data.length - 1;
+
+          let left, right;
+
+          if (scale < 0) {
+            right = Math.min(max, chart.xAxis[0].max + scale);
+            left = Math.max(0, right - this.state.range);
+
+            right = Math.min(max, Math.max(left + range, right));
+          } else {
+            left = Math.max(0, chart.xAxis[0].min + scale);
+            right = Math.min(max, left + this.state.range);
+
+            left = Math.max(0, Math.min(right - range, left));
+          }
+          
+          this.setState({following: right === max});
+          
+          chart.xAxis[0].setExtremes(left, right);
           chart.redraw();
-
-          this.scroll.reference = event.pageX;
+          
+          this.scrollAt = event.pageX;
         }
 
         shouldComponentUpdate() {
@@ -804,7 +878,10 @@
               chart.series[2].addPoint(0, false);
 
               const max = chart.series[0].data.length;
-              //chart.xAxis[0].setExtremes(Math.max(0, max - 100), max);
+
+              if (this.state.following) {
+                chart.xAxis[0].setExtremes(Math.max(0, max - this.state.range), max);
+              }
             }
 
             this.timestamp = now;
@@ -822,7 +899,7 @@
 
         render() {
           return (
-            <div onMouseDown={this.startScroll.bind(this)}>
+            <div className="chart" onMouseDown={this.startScroll.bind(this)} onWheel={this.doZoom.bind(this)}>
               <ReactHighcharts config={this.config} ref="chart"/>
             </div>
           );
@@ -834,7 +911,7 @@
           super();
 
           this.state = {
-            minAmount: 0,
+            minAmount: 100000,
             running: false
           };
         }
