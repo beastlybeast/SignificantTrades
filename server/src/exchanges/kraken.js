@@ -22,7 +22,7 @@ class Kraken extends Exchange {
 			.then(response => this.emitData(this.format(response)))
 			.catch(this.emitError);
 	}
-		
+
 	disconnect() {
 		clearInterval(this.interval);
 
@@ -30,7 +30,7 @@ class Kraken extends Exchange {
 
 		return this;
 	}
-		
+
 }
 
 module.exports = Kraken;
