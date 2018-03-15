@@ -8,8 +8,11 @@
 </template>
 
 <script>
-  import TradeList from './components/TradeList.vue'
+  import TradeList from './components/TradeList.vue';
   import TradeActivity from './components/TradeActivity.vue'
+  import state from './state';
+
+  
 
   export default {
     components: {
@@ -18,7 +21,6 @@
     name: 'app',
     data () {
       return {
-        msg: 'Welcome to Your Vue.js App'
       }
     }
   }

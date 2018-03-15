@@ -7,33 +7,46 @@ class Bitmex extends Exchange {
 		super(options);
 
 		this.id = 'bitmex';
+
+		this.options = Object.assign({
+			url: 'wss://www.bitmex.com/realtime?subscribe=trade:XBTUSD',
+		}, this.options);
 	}
 
 	connect() {
+		console.log('[bitmex] connecting');
+		
 		this.server = new WebSocket(this.getUrl());
+		this.server.on('message', event => this.emitData(this.format(event)));
 
-		this.server.onmessage = (event) => this.emitMessage(this.format(event));
-		this.server.onopen = (event) => {
-			this.server.send(JSON.stringify({
-				event: 'subscribe',
-				channel: 'trades',
-				symbol: 'tBTCUSD',
-			}))
+		this.server.on('open', this.emitOpen.bind(this));
 
-			this.emitOpen(event);
-		};
-		this.server.onclose = (event) => this.emitClose(event);
-		this.server.onerror = (event) => this.emitError(event);
+		this.server.on('close', this.emitClose.bind(this));
+
+		this.server.on('error', this.emitError.bind(this));
 	}
 
 	disconnect() {
 		this.server.close();
-
-		this.emitClose();
 	}
 
 	format(event) {
-		return event;
+		const json = JSON.parse(event);
+
+		if (json && json.data && json.data.length) {
+			json.data.map(trade => {
+				return [
+					trade.trdMatchID,
+					+new Date(trade.timestamp),
+					trade.price,
+					trade.size,
+					trade.side === 'Buy',
+					trade.tickDirection.indexOf('Zero') === 0
+				];
+			})
+		}
+
+		return false;
 	}
 
 }

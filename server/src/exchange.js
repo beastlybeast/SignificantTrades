@@ -4,42 +4,46 @@ const WebSocket = require('ws');
 class Exchange extends EventEmitter {
 
 	constructor(options) {
-		if (!options || typeof options !== 'object') {
-			return Error('Exchange need options');
-		}
+		super();
 
-		if (!options.url || ['string', 'function'].indexOf(typeof options.url) === -1) {
-			return Error('Exchange need valid url or function');
-		}
-
-		this.options = Object.assign({
-		}, options);
-
-		if (!options.name) {
-			this.name = options.url.split('//')[0].substr(0, 8);
+		if (options && typeof options === 'string') {
+			this.options = {
+				url: options
+			}
+		} else {
+			this.options = Object.assign({
+			}, options);
 		}
 	}
 
 	emitOpen(event) {
-		console.log('[connected]', this.id);
+		console.log(`[${this.id}] connected`);
 
 		this.emit('open', event);
 	}
 
 	emitData(data) {
-		this.emit('data', data);
+		if (!data || !data.length) {
+			return;
+		}
+
+		console.log(`[${this.id}] emit ->`, data);
+		this.emit('data', {
+			id: this.id,
+			data: data
+		});
 	}
 
-	onError(error) {
-		this.emit('error', error);
+	emitError(error) {
+		console.log(`[${this.id}] error`, error.message);
 	}
 
-	onClose(event) {
-		console.log('[disconnected]', this.id);
+	emitClose(event) {
+		console.log(`[${this.id}] closed`);
 	}
 
 	getUrl() {
-		return typeof this.options.url === 'function' ? this.options.url.apply(this) : url;
+		return typeof this.options.url === 'function' ? this.options.url.apply(this) : this.options.url;
 	}
 
 	format(data) {
