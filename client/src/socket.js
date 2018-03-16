@@ -10,7 +10,7 @@ const emitter = new Vue({
   methods: {
     connect() {
       console.log('connect()');
-      this.socket = new WebSocket('wss://echo.websocket.org');
+      this.socket = new WebSocket('ws://localhost:3000');
 
       this.socket.onopen = event => {
         console.log('emitter emit connected');

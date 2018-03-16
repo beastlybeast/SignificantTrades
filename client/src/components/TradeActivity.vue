@@ -8,6 +8,7 @@
 <script>
   import Highcharts from 'highcharts';
   import socket from '../socket';
+  import moment from 'moment';
 
   const data = {
     name: 'Tokyo',
@@ -23,8 +24,21 @@
   }
 
   socket.$on('message', event => {
-    console.log('message');
+    console.log(this);
   })
+
+  let cursor = 6690;
+  let timestamp = +new Date();
+  const prices = [];
+  const buys = [];
+  const sell = [];
+  for (let i=0; i<50; i++) {
+    cursor += (Math.random() * 10) - 10;
+    timestamp = timestamp + (i * Math.random() * 100);
+    prices.push([timestamp, cursor]);
+    buys.push([timestamp, Math.random() * 20]);
+    sell.push([timestamp, Math.random() * 20]);
+  }
 
   export default {
     data() {
@@ -71,8 +85,6 @@
               tickWidth: 0,
               minPadding: 0,
               maxPadding: 0,
-              min: 0,
-              max: 0
           },
           yAxis: [{
               gridLineColor: 'rgba(0, 0, 0, .05)',
@@ -102,8 +114,6 @@
             shadow: false,
             hideDelay: 0,
             formatter: function(e) {
-              const date = moment(new Date(+new Date() - (this.series.data.length - this.point.index - 1) * context.interval));
-
               let label = '';
 
               switch (this.series.index) {
@@ -118,7 +128,7 @@
                   break;
               }
 
-              return '<small>' + date.format('LTS') + '</small><br>' + label + ' $' + this.y.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
+              return '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + label + ' $' + this.y.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
             },
             style: {
               color: 'white',
@@ -164,7 +174,7 @@
             yAxis: 1,
             zIndex: 1,
             name: 'PRICE',
-            data: [0],
+            data: prices,
             color: '#222',
             dashStyle: 'ShortDash',
             stacking: 'stream',
@@ -174,7 +184,7 @@
             name: 'SELL',
             stacking: 'area',
             type: 'area',
-            data: [0],
+            data: sell,
             color: '#E57373',
             fillColor: '#F44336',
             animation: false,
@@ -186,7 +196,7 @@
             name: 'BUY',
             stacking: 'area',
             type: 'area',
-            data: [0],
+            data: buys,
             color: '#9CCC65',
             fillColor: '#7CB342',
             animation: false,
