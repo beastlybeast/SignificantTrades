@@ -7,7 +7,7 @@
 
 <script>
   import TradeList from './components/TradeList.vue';
-  import TradeActivity from './components/TradeActivity.vue'
+  import TradeActivity from './components/TradeActivity.vue';
   import socket from './socket';
 
   socket.connect();
@@ -27,6 +27,7 @@
 <style lang="scss">
   body {
     margin: 0;
+    font-family: 'Roboto', sans-serif;
   }
 
   #app {

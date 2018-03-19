@@ -1,5 +1,5 @@
 {
-  "name": "signifixanttrades-client",
+  "name": "significanttrades-client",
   "description": "A Vue.js project",
   "version": "1.0.0",
   "author": "KEVIN ROSTAGNI <kevin.rostagni@seloger.com>",
@@ -10,6 +10,9 @@
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
   },
   "dependencies": {
+    "@fortawesome/fontawesome": "^1.1.4",
+    "@fortawesome/fontawesome-free-solid": "^5.0.8",
+    "@fortawesome/vue-fontawesome": "0.0.22",
     "moment": "^2.21.0",
     "vue": "^2.5.11",
     "vue2-highcharts": "^1.1.8"
