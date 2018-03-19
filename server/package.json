@@ -19,6 +19,7 @@
   "homepage": "https://github.com/Tucsky/SignificantTrades#readme",
   "dependencies": {
     "axios": "^0.18.0",
+    "pusher-js": "^4.2.2",
     "qs": "^6.5.1",
     "ws": "^5.0.0"
   }

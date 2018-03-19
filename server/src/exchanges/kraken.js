@@ -11,22 +11,32 @@ class Kraken extends Exchange {
 
 		this.id = 'kraken';
 
+		this.mapping = {
+			BTCUSD: 'XXBTZUSD'
+		}
+
 		this.options = Object.assign({
 			url: 'https://api.kraken.com/0/public/Trades',
-			pair: 'XXBTZUSD',
 			interval: 3000
 		}, this.options);
 	}
 
-	connect() {
+	connect(pair) {
+		if (!this.mapping[pair]) {
+			return;
+		}
+
 		console.log('[kraken] connecting');
-		
+
+		this.pair = this.mapping[pair];
+
 		this.schedule();
 
 		this.emitOpen();
 	}
 
 	schedule() {
+		console.log('[kraken] schedule get');
 		clearTimeout(this.timeout);
 		this.timeout = setTimeout(this.get.bind(this), this.options.interval);
 	}
@@ -36,13 +46,13 @@ class Kraken extends Exchange {
 		this.source = token.source();
 
 		const params = {
-			pair: this.options.pair
+			pair: this.pair
 		}
 
-		if (this.last) {
-			params.since = this.last;
+		if (this.reference) {
+			params.since = this.reference;
 		}
-		
+
 		const headers = {
 			'API-Key': this.options.key,
 			'API-Sign': this.getSignature(this.getUrl(), params)
@@ -80,30 +90,36 @@ class Kraken extends Exchange {
 	disconnect() {
 		clearTimeout(this.timeout);
 		this.source && this.source.cancel();
-		
+
+		delete this.reference;
+
 		this.emitClose();
 	}
 
 	format(response) {
-		if (response.result && response.result[this.options.pair]) {
-			const output = [];
+		const initial = typeof this.reference === 'undefined';
 
-			for (let trade of response.result[this.options.pair]) {
-				output.push([
-					String(trade[2]).replace(/\D/, '') + trade[3] + trade[4], // id
-					trade[2], // timestamp
-					trade[0], // price
-					trade[1], // volume
-					trade[3] === 'b' ? 1 : 0, // is buy
-					trade[4] === 'l' ? 1 : 0, // is limit
-				]);
-			}
-		
+		if (response.result && response.result[this.pair]) {
 			if (response.result.last) {
-				this.last = response.result.last;
+				this.reference = response.result.last;
 			}
 
-			return output;
+			if (!initial) {
+				const output = [];
+
+				for (let trade of response.result[this.pair]) {
+					output.push([
+						this.id + String(trade[2]).replace(/\D/, '') + trade[3] + trade[4], // id
+						trade[2] * 1000, // timestamp
+						+trade[0], // price
+						+trade[1], // volume
+						trade[3] === 'b' ? 1 : 0, // is buy
+						trade[4] === 'l' ? 1 : 0, // is limit
+					]);
+				}
+
+				return output;
+			}
 		}
 	}
 

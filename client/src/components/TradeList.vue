@@ -29,6 +29,8 @@
     },
     data () {
       return {
+        ticks: {},
+        groupBy: 10000,
         dollarSign: dollarSign,
         trades: [],
         gifs: []
@@ -44,7 +46,7 @@
           let image;
           let amount = (trade[2] * trade[3]).toFixed(2);
 
-          if (trade[4] === 'b') {
+          if (trade[4]) {
             classname.push('buy');
             icon = angleUp;
           } else {
@@ -62,11 +64,11 @@
             amount = (amount / 1000).toFixed(1) + 'K';
           } else if (amount >= 1000) {
             amount = (amount / 1000).toFixed(1) + 'K';
-          } 
+          }
 
           this.trades.unshift({
             id: trade[0],
-            side: trade[4] === 'b' ? 'BUY' : 'SELL',
+            side: trade[4] ? 'BUY' : 'SELL',
             exchange: event.exchange,
             price: trade[2].toFixed(1),
             amount: amount,
@@ -118,15 +120,15 @@
         const seconds = Math.floor((new Date() - timestamp) / 1000);
         let interval, output;
 
-        if ((interval = Math.floor(seconds / 31536000)) > 1) 
+        if ((interval = Math.floor(seconds / 31536000)) > 1)
           output = interval + 'y';
-        else if ((interval = Math.floor(seconds / 2592000)) > 1) 
+        else if ((interval = Math.floor(seconds / 2592000)) > 1)
           output = interval + 'm';
-        else if ((interval = Math.floor(seconds / 86400)) > 1) 
+        else if ((interval = Math.floor(seconds / 86400)) > 1)
           output = interval + 'd';
-        else if ((interval = Math.floor(seconds / 3600)) > 1) 
+        else if ((interval = Math.floor(seconds / 3600)) > 1)
           output = interval + 'h';
-        else if ((interval = Math.floor(seconds / 60)) > 1) 
+        else if ((interval = Math.floor(seconds / 60)) > 1)
           output = interval + 'm';
         else
           output = Math.ceil(seconds) + 's';
@@ -156,6 +158,10 @@
       background-size: cover;
       background-blend-mode: overlay;
       position: relative;
+
+      &.trades__item--empty {
+        justify-content: center;
+      }
 
       &.trades__item--sell {
         background-color: lighten($red, 50%);

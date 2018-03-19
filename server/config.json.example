@@ -1,8 +1,0 @@
-{
-	"exchanges": {
-		"kraken": {
-			"key": "YOURAPIKEY",
-			"secret": "YOURSECRETKEY"
-		}
-	}
-}

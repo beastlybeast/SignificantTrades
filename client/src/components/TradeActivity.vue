@@ -182,21 +182,28 @@
       }
     },
     created() {
-      // console.log('bind socket event to TradeActivity');
-
+      console.log('tradeactivity listening...');
       socket.$on('trades', event => {
         if (!this.chart) {
           return;
         }
-        
+
         this.updateChart(this.getTicks(event.data));
       });
     },
     mounted() {
-      // console.log('mount chart...');
+      console.log('tradeactivity mounted...');
+
       this.chart = Highcharts.chart(this.$el.querySelector('.chart-canvas'), this.options);
 
-      this.updateChart(this.getTicks(), true);
+      this.redrawInterval = setInterval(this.chart.redraw, 1000);
+
+      if (socket.trades && socket.trades.length > 1) {
+        console.log('initial socket.trades detected...');
+        this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
+        this.ajustTimeframe();
+        this.updateChart(this.getTicks(), true);
+      }
 
       this._doZoom = this.doZoom.bind(this);
       this._doScroll = this.doScroll.bind(this);
@@ -210,6 +217,8 @@
       this.$el.removeEventListener('mousewheel', this._doZoom);
       window.removeEventListener('mousemove', this._doScroll);
       window.removeEventListener('mouseup', this._stopScroll);
+
+      clearInterval(this.redrawInterval);
     },
     methods: {
       getTicks(input) {
@@ -228,24 +237,28 @@
           data = socket.trades.slice(0);
         }
 
+        data = data.sort((a, b) => a[1] - b[1]);
+
+        const min = this.chart.series[0].data.length ? this.chart.series[0].data[this.chart.series[0].data.length - 1].category : 0;
+
         const sells = [];
         const buys = [];
         const prices = [];
 
         for (let i=0; i<data.length; i++) {
+          data[i][1] = Math.max(data[i][1], tick && tick.timestamps.length ? tick.timestamps[0] : min);
+
           if (!tick || data[i][1] - tick.timestamps[0] > this.timeframe) {
             if (tick) {
-              // console.log('tick ended, calculate close value');
+              //console.log('tick ended, calculate close value');
               const points = this.tickToPoints(tick);
 
               buys.push(points.buys);
               sells.push(points.sells);
               prices.push(points.prices);
 
-              // console.log('tick.buys: ', points.buys[1], 'tick.sells: ', points.sells[1], 'vwap: ', points.prices[1]);
             }
 
-            // console.log('create new tick (at timestamp: ' + data[i][1] + ')');
             tick = this.unfinishedTick = {
               timestamps: [data[i][1]],
               prices: [data[i][2]],
@@ -254,20 +267,15 @@
               sells: 0,
             };
           } else {
-            // console.log('update tick (start: ' + moment(tick.timestamps[0]).format('LTS') + ', current: ' + moment(data[i][1]).format('LTS') + ')');
-
             tick.timestamps.push(data[i][1]);
             tick.prices.push(data[i][2]);
             tick.sizes.push(data[i][3]);
           }
 
-          tick[data[i][4] === 'b' ? 'buys' : 'sells'] += (data[i][3] * data[i][2]);
+          tick[data[i][4] ? 'buys' : 'sells'] += (data[i][3] * data[i][2]);
 
-          // console.log('add', data[i][4] === 'b' ? 'buys' : 'sells', '(' + (data[i][3]) + ' units at price ' + data[i][2] + ')', 'to tick (total worth ' + tick[data[i][4] === 'b' ? 'buys' : 'sells'] + ')');
+          //console.log('add', data[i][4] === 'b' ? 'buys' : 'sells', '(' + (data[i][3]) + ' units at price ' + data[i][2] + ')', 'to tick (total worth ' + tick[data[i][4] === 'b' ? 'buys' : 'sells'] + ')');
         }
-
-        // console.log('tick', tick, 'this.unfinishedTick', this.unfinishedTick);
-        // console.log('getTicks(input) contains', prices.length);
 
         return {
           useLastTick: this.unfinishedTick,
@@ -296,26 +304,23 @@
           }
         } else {
           for (let i=0; i<ticks.prices.length; i++) {
-            // console.log('add chart tick (at index', this.chart.series[0].data.length, ')');
-            this.chart.series[0].addPoint(ticks.prices[i]);
-            this.chart.series[1].addPoint(ticks.sells[i]);
-            this.chart.series[2].addPoint(ticks.buys[i]);
+            this.chart.series[0].addPoint(ticks.prices[i], false);
+            this.chart.series[1].addPoint(ticks.sells[i], false);
+            this.chart.series[2].addPoint(ticks.buys[i], false);
           }
         }
 
         if (this.unfinishedTick) {
-          // console.log('unfinished tick detected !!');
-          const points = this.tickToPoints(this.unfinishedTick);
-          if (this.chart.series[0].data.length) {
-            // console.log('update last points');
-            this.chart.series[0].data[this.chart.series[0].data.length - 1].update(points.prices)
-            this.chart.series[1].data[this.chart.series[1].data.length - 1].update(points.sells);
-            this.chart.series[2].data[this.chart.series[2].data.length - 1].update(points.buys);
+
+        const points = this.tickToPoints(this.unfinishedTick);
+          if (this.chart.series[0].data.length && !replace) {
+            this.chart.series[0].data[this.chart.series[0].data.length - 1].update(points.prices, false)
+            this.chart.series[1].data[this.chart.series[1].data.length - 1].update(points.sells, false);
+            this.chart.series[2].data[this.chart.series[2].data.length - 1].update(points.buys, false);
           } else {
-            // console.log('series does not contains any data ===> addpoint');
-            this.chart.series[0].addPoint(points.prices);
-            this.chart.series[1].addPoint(points.sells);
-            this.chart.series[2].addPoint(points.buys);
+            this.chart.series[0].addPoint(points.prices, false);
+            this.chart.series[1].addPoint(points.sells, false);
+            this.chart.series[2].addPoint(points.buys, false);
           }
         }
 
@@ -328,6 +333,10 @@
         }
       },
       doZoom(event) {
+        if (!this.chart.series[0].data.length) {
+          return;
+        }
+
         event.preventDefault();
         let axisMin = this.chart.xAxis[0].min;
         let axisMax = this.chart.xAxis[0].max;
@@ -338,7 +347,7 @@
         const range = axisMax - axisMin;
 
         if (
-          (event.deltaX || event.deltaZ || !event.deltaY) 
+          (event.deltaX || event.deltaZ || !event.deltaY)
           || (event.deltaY > 0 && range >= (dataMax - dataMin))
         ) {
           // range already maxed out / deltaY too weak
@@ -356,16 +365,18 @@
 
         this.range = axisMax - axisMin;
 
-        this.ajustTimeframe();
+        if (this.ajustTimeframe()) {
+          this.updateChart(this.getTicks(), true);
+        }
       },
       startScroll(event) {
         this.scrolling = event.pageX;
       },
       doScroll(event) {
-        if (isNaN(this.scrolling)) {
+        if (isNaN(this.scrolling) || !this.chart.series[0].data.length) {
           return;
         }
-      
+
         const range = this.chart.xAxis[0].max - this.chart.xAxis[0].min;
         const scale = (range / this.chart.chartWidth) * (this.scrolling - event.pageX);
 
@@ -443,8 +454,10 @@
           console.log('ajust timeframe based on range', this.range, ':', timeframe, '(was ' + current + ')');
           this.timeframe = timeframe;
 
-          this.updateChart(this.getTicks(event.data), true);
+          return true;
         }
+
+        return false;
       }
     }
   }

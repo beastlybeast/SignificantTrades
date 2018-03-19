@@ -6,14 +6,9 @@ class Exchange extends EventEmitter {
 	constructor(options) {
 		super();
 
-		if (options && typeof options === 'string') {
-			this.options = {
-				url: options
-			}
-		} else {
-			this.options = Object.assign({
-			}, options);
-		}
+		this.options = Object.assign({
+			// default exchanges options
+		}, options || {});
 	}
 
 	emitOpen(event) {
@@ -29,7 +24,7 @@ class Exchange extends EventEmitter {
 
 		console.log(`[${this.id}] emit ->`, data);
 		this.emit('data', {
-			id: this.id,
+			exchange: this.id,
 			data: data
 		});
 	}
@@ -43,7 +38,7 @@ class Exchange extends EventEmitter {
 	}
 
 	getUrl() {
-		return typeof this.options.url === 'function' ? this.options.url.apply(this) : this.options.url;
+		return typeof this.options.url === 'function' ? this.options.url.apply(this, arguments) : this.options.url;
 	}
 
 	format(data) {

@@ -1,31 +1,35 @@
 const WebSocket = require('ws');
 const url = require('url');
+const config = require('../config');
 
 class Server {
 
-	constructor(configuration) {
-		this.configuration = Object.assign({
+	constructor(options) {
+		this.options = Object.assign({
+			pair: 'BTCUSD',
 			port: 8080,
 			exchange: []
-		}, configuration);
+		}, options);
 
-		if (!this.configuration.exchanges || !this.configuration.exchanges.length) {
+		if (!this.options.exchanges || !this.options.exchanges.length) {
 			throw new Error('You need to specify at least one exchange to track');
 		}
 
-		this.exchanges = this.configuration.exchanges;
+		this.exchanges = this.options.exchanges;
 
 		this.listen();
 		this.connect();
+
+		// setTimeout(this.disconnect.bind(this), 10000);
 	}
 
 	listen() {
 		this.wss = new WebSocket.Server({
-			port: this.configuration.port
+			port: this.options.port
 		});
 
 		this.wss.on('listening', (ws, req) =>  {
-			console.log('server listening on port ' + this.configuration.port);
+			console.log('server listening on port ' + this.options.port);
 		});
 
 		this.wss.on('connection', (ws, req) =>  {
@@ -39,15 +43,17 @@ class Server {
 	}
 
 	connect() {
+		console.log('[server] connect exchange using pair', this.options.pair);
+
 		this.exchanges.forEach(exchange => {
-			exchange.connect();
+			exchange.connect(this.options.pair);
 		});
 	}
 
 	broadcast(data) {
 		this.wss.clients.forEach(client => {
 			if (client.readyState === WebSocket.OPEN) {
-				client.send(data);
+				client.send(JSON.stringify(data));
 			}
 		});
 	}

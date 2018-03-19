@@ -15,7 +15,7 @@ class Bitmex extends Exchange {
 
 	connect() {
 		console.log('[bitmex] connecting');
-		
+
 		this.server = new WebSocket(this.getUrl());
 		this.server.on('message', event => this.emitData(this.format(event)));
 
@@ -27,16 +27,18 @@ class Bitmex extends Exchange {
 	}
 
 	disconnect() {
-		this.server.close();
+		if (this.server && this.server.readyState < 2) {
+			this.server.close();
+		}
 	}
 
 	format(event) {
 		const json = JSON.parse(event);
 
 		if (json && json.data && json.data.length) {
-			json.data.map(trade => {
+			return json.data.map(trade => {
 				return [
-					trade.trdMatchID,
+					this.id + trade.trdMatchID,
 					+new Date(trade.timestamp),
 					trade.price,
 					trade.size,
