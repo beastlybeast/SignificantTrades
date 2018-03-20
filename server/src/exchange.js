@@ -6,6 +6,8 @@ class Exchange extends EventEmitter {
 	constructor(options) {
 		super();
 
+		this.timestamps = {};
+
 		this.options = Object.assign({
 			// default exchanges options
 		}, options || {});
@@ -22,7 +24,9 @@ class Exchange extends EventEmitter {
 			return;
 		}
 
-		console.log(`[${this.id}] emit ->`, data);
+		this.timestamps[this.id] =
+
+		// console.log(`[${this.id}] emit ->`, data);
 		this.emit('data', {
 			exchange: this.id,
 			data: data

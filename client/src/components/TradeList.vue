@@ -21,6 +21,7 @@
   import angleDown from '@fortawesome/fontawesome-free-solid/faAngleDown';
   import dollarSign from '@fortawesome/fontawesome-free-solid/faDollarSign';
 
+  import options from '../options';
   import socket from '../socket';
 
   export default {
@@ -30,7 +31,6 @@
     data () {
       return {
         ticks: {},
-        groupBy: 10000,
         dollarSign: dollarSign,
         trades: [],
         gifs: []
@@ -41,6 +41,54 @@
 
       socket.$on('trades', event => {
         for (let trade of event.data) {
+          //console.log('loop ', (event.data.indexOf(trade) + 1) + '/' + event.data.length, JSON.stringify(event.data.map(a => trade[0] === a[0] ? '>>' + a[0] + '<<' : a[0]).join(' ')));
+          if (options.groupBy) {
+            if (this.ticks[event.exchange]) {
+              if (+new Date() - this.ticks[event.exchange][1] > 5000) {
+                //console.log('[' + event.exchange + '/' + this.ticks[event.exchange][0] + ' T+'+(+new Date() - this.ticks[event.exchange][1])+'] ticked row too late (' + (+new Date() - this.ticks[event.exchange][1]) + 'ms > 5000)');
+                delete this.ticks[event.exchange];
+              } else {
+                this.ticks[event.exchange][2] = (this.ticks[event.exchange][2] * this.ticks[event.exchange][3] + trade[2] * trade[3]) / 2 / ((this.ticks[event.exchange][3] + trade[3]) / 2);
+                this.ticks[event.exchange][3] += trade[3];
+
+                //console.log('[' + event.exchange + '/' + this.ticks[event.exchange][0] + ' T+'+(+new Date() - this.ticks[event.exchange][1])+'] increase ticked row value (' + (this.ticks[event.exchange][2] * this.ticks[event.exchange][3]).toFixed(2) + '/' + options.groupBy + ')');
+
+                if (this.ticks[event.exchange][2] * this.ticks[event.exchange][3] >= options.groupBy) {
+                  //console.log('[' + event.exchange + '/' + this.ticks[event.exchange][0] + ' T+'+(+new Date() - this.ticks[event.exchange][1])+'] append ticked row (groupby amount reached ' + (this.ticks[event.exchange][2] * this.ticks[event.exchange][3]).toFixed(2) + ')');
+                  this.appendTrade(this.ticks[event.exchange], event.exchange);
+                  delete this.ticks[event.exchange];
+                }
+
+                continue;
+              }
+            }
+
+            if (!this.ticks[event.exchange] && trade[2] * trade[3] < options.groupBy) {
+              this.ticks[event.exchange] = trade;
+              //console.log('[' + event.exchange + '/' + this.ticks[event.exchange][0] + ' T+'+(+new Date() - this.ticks[event.exchange][1])+'] create ticked row (' + (trade[2] * trade[3]).toFixed(2) + ' < ' + options.groupBy);
+              continue;
+            }
+          }
+
+          //console.log('appendTrade', trade[0]);
+          this.appendTrade(trade, event.exchange);
+        }
+
+        this.trades.splice(100, this.trades.length);
+      });
+    },
+    render() {
+      console.log('render tradelist.vue');
+    },
+    mounted() {
+      this.timeAgoInterval = setInterval(() => {
+        for (let element of this.$el.querySelectorAll('[timestamp]')) {
+          element.innerHTML = this.ago(element.getAttribute('timestamp'));
+        }
+      }, 1000);
+    },
+    methods: {
+      appendTrade(trade, exchange) {
           let classname = [];
           let icon;
           let image;
@@ -69,7 +117,7 @@
           this.trades.unshift({
             id: trade[0],
             side: trade[4] ? 'BUY' : 'SELL',
-            exchange: event.exchange,
+            exchange: exchange,
             price: trade[2].toFixed(1),
             amount: amount,
             classname: classname.map(a => 'trades__item--' + a).join(' '),
@@ -78,19 +126,7 @@
             timestamp: trade[1],
             image: image
           });
-        }
-
-        this.trades.splice(100, this.trades.length);
-      });
-    },
-    mounted() {
-      this.timeAgoInterval = setInterval(() => {
-        for (let element of this.$el.querySelectorAll('[timestamp]')) {
-          element.innerHTML = this.ago(element.getAttribute('timestamp'));
-        }
-      }, 1000);
-    },
-    methods: {
+      },
       getGifs(refresh) {
         let storage = localStorage ? JSON.parse(localStorage.getItem('1mgifs')) : null;
 

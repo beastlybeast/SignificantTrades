@@ -54,8 +54,6 @@ class Binance extends Exchange {
         +trade.q,
         trade.m ? 1 : 0
       ]]
-    } else {
-      console.error('[binance] unrecognized expression', event);
     }
 
 		return false;

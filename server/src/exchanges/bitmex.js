@@ -41,9 +41,9 @@ class Bitmex extends Exchange {
 					this.id + trade.trdMatchID,
 					+new Date(trade.timestamp),
 					trade.price,
-					trade.size,
-					trade.side === 'Buy',
-					trade.tickDirection.indexOf('Zero') === 0
+					trade.size / trade.price,
+					trade.side === 'Buy' ? 1 : 0,
+					trade.tickDirection.indexOf('Zero') === 0 ? 1 : 0
 				];
 			})
 		}

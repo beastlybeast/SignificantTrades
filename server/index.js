@@ -19,19 +19,15 @@ new Server({
 	port: 3000,
 	pair: config.pair,
 	exchanges: [
-		new Kraken({
-			key: config.exchanges.kraken.key,
-			secret: config.exchanges.kraken.secret
-		}),
-		//new Bitmex(),
-		/*new Okex({
-			key: config.exchanges.okex.key,
-			secret: config.exchanges.okex.secret,
-		}),*/
+		new Bitmex(),
 		new Gdax(),
 		new Bitstamp(),
 		new Bitfinex(),
 		new Binance(),
+		new Kraken({
+			key: config.exchanges.kraken.key,
+			secret: config.exchanges.kraken.secret
+		}),
 		new Okex(),
 	]
 });

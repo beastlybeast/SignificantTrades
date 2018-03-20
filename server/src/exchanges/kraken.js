@@ -36,7 +36,6 @@ class Kraken extends Exchange {
 	}
 
 	schedule() {
-		console.log('[kraken] schedule get');
 		clearTimeout(this.timeout);
 		this.timeout = setTimeout(this.get.bind(this), this.options.interval);
 	}

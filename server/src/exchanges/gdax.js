@@ -60,9 +60,9 @@ class Gdax extends Exchange {
           if (!trade || !trade.sizes.length) {
             if (obj.reason === 'filled') {
               if (!trade) {
-                console.log('[gdax] received filled order without trade');
+                console.log("[gdax] received filled order without trade");
               } else {
-                console.log('[gdax] received filled order without sizes');
+                console.log("[gdax] received filled order without sizes");
               }
             }
             return;
@@ -103,7 +103,7 @@ class Gdax extends Exchange {
 
     setInterval(() => {
       console.log('[gdax] orderbook length', Object.keys(this.orderbook).length);
-    }, 10000)
+    }, 60000)
 	}
 
 	disconnect() {

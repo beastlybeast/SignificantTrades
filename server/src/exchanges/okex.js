@@ -19,7 +19,7 @@ class Okex extends Exchange {
 
 	connect(pair) {
     if (this.mapping[pair]) {
-      console.log('[okex] connecting', this.getUrl());
+      console.log('[okex] connecting');
 
       this.server = new WebSocket(this.getUrl());
 
@@ -29,7 +29,6 @@ class Okex extends Exchange {
         this.server.send(JSON.stringify({event:'addChannel', channel:'ok_sub_spot_' + this.mapping[pair] + '_deals'}));
 
         this.keepalive = setInterval(() => {
-          console.log('[okex] ping');
           this.server.send(JSON.stringify({event: 'ping'}));
         }, 30000);
       });
@@ -55,7 +54,6 @@ class Okex extends Exchange {
     const initial = typeof this.reference === 'undefined';
 
     if (!json || !json[0] || json[0].channel === 'addChannel') {
-      console.error('[okex] unrecognized expression', json);
       return;
     }
 

@@ -5,6 +5,8 @@ const config = require('../config');
 class Server {
 
 	constructor(options) {
+		this.timestamps = {};
+
 		this.options = Object.assign({
 			pair: 'BTCUSD',
 			port: 8080,
@@ -39,7 +41,9 @@ class Server {
 
 		this.exchanges.forEach(exchange => {
 			exchange.on('data', this.broadcast.bind(this));
-		})
+		});
+
+		this.profilerInterval = setInterval(this.profileExchanges.bind(this), 10000);
 	}
 
 	connect() {
@@ -51,6 +55,8 @@ class Server {
 	}
 
 	broadcast(data) {
+		this.timestamps[data.exchange] = +new Date();
+
 		this.wss.clients.forEach(client => {
 			if (client.readyState === WebSocket.OPEN) {
 				client.send(JSON.stringify(data));
@@ -62,6 +68,21 @@ class Server {
 		this.exchanges.forEach(exchange => {
 			exchange.disconnect();
 		});
+	}
+
+	profileExchanges() {
+		const now = +new Date();
+
+		this.exchanges.forEach(exchange => {
+			if (!this.timestamps[exchange.id]) {
+				console.log('[warning] no data sent from ' + exchange.id);
+				return;
+			}
+			if (now - this.timestamps[exchange.id] > 1000 * 60 * 5) {
+				console.log('[warning] ' + exchange.id + ' hasn\'t sent any data since more than 5 minutes');
+				return;
+			}
+		})
 	}
 
 }
