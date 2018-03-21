@@ -317,13 +317,14 @@
             this.chart.series[0].addPoint(ticks.prices[i], false);
             this.chart.series[1].addPoint(ticks.sells[i], false);
             this.chart.series[2].addPoint(ticks.buys[i], false);
-            this.chart.redraw();
           }
+
+          this.chart.redraw();
         }
 
         if (this.unfinishedTick) {
+          const points = this.tickToPoints(this.unfinishedTick);
 
-        const points = this.tickToPoints(this.unfinishedTick);
           if (this.chart.series[0].data.length && !replace) {
             this.chart.series[0].data[this.chart.series[0].data.length - 1].update(points.prices, false)
             this.chart.series[1].data[this.chart.series[1].data.length - 1].update(points.sells, false);
@@ -332,8 +333,9 @@
             this.chart.series[0].addPoint(points.prices, false);
             this.chart.series[1].addPoint(points.sells, false);
             this.chart.series[2].addPoint(points.buys, false);
-            this.chart.redraw();
           }
+
+          this.chart.redraw();
         }
 
         if (this.follow && this.chart.series[0].data.length) {

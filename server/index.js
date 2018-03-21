@@ -14,13 +14,15 @@ const Bitfinex = require('./src/exchanges/Bitfinex');
 const Okex = require('./src/exchanges/Okex');
 const Bitstamp = require('./src/exchanges/Bitstamp');
 const Binance = require('./src/exchanges/Binance');
+const Huobi = require('./src/exchanges/Huobi');
 
 new Server({
 	port: 3000,
 	pair: config.pair,
 	exchanges: [
-		new Bitmex(),
 		new Gdax(),
+		/*new Huobi(),
+		new Bitmex(),
 		new Bitstamp(),
 		new Bitfinex(),
 		new Binance(),
@@ -28,6 +30,6 @@ new Server({
 			key: config.exchanges.kraken.key,
 			secret: config.exchanges.kraken.secret
 		}),
-		new Okex(),
+		new Okex(),*/
 	]
 });

@@ -37,6 +37,7 @@ class Gdax extends Exchange {
 
         case 'match':
           trade = this.orderbook[obj.taker_order_id];
+          console.log(obj);
 
           if (!trade) {
             return;
@@ -57,34 +58,39 @@ class Gdax extends Exchange {
         break;
 
         case 'done':
-          if (!trade || !trade.sizes.length) {
-            if (obj.reason === 'filled') {
-              if (!trade) {
-                console.log("[gdax] received filled order without trade");
-              } else {
-                console.log("[gdax] received filled order without sizes");
-              }
-            }
-            return;
-          }
-
           if (!+obj.remaining_size || obj.reason === 'canceled') {
             delete this.orderbook[obj.order_id];
           }
 
-          trade.size = +trade.sizes.reduce((a, b) => a + b).toFixed(8);
-          trade.price = (trade.prices.map((price, index) => price * trade.sizes[index]).reduce((a, b) => a + b) / trade.prices.length) / (trade.sizes.reduce((a, b) => a + b) / trade.sizes.length);
-
-          if (obj.reason === 'filled') {
-            this.emitData([[
-              this.id + trade.order_id,
-              +new Date(obj.time),
-              trade.price,
-              +trade.size,
-              trade.side === 'buy' ? 1 : 0,
-              trade.order_type === 'limit' ? 1 : 0,
-            ]]);
+          if (obj.reason === 'canceled') {
+            return;
           }
+
+          if (!trade) {
+            if (obj.size || obj.fund) {
+              console.log('trade not in OB but size specified', obj.size, 'x', obj.price);
+            }
+
+            return;
+          }
+
+          console.log(trade.side, trade.sizes, trade.size);
+
+          if (!trade.sizes.length && !trade.size) {
+            return;
+          } else if (trade.sizes.length) {
+            trade.size = +trade.sizes.reduce((a, b) => a + b).toFixed(8);
+            trade.price = (trade.prices.map((price, index) => price * trade.sizes[index]).reduce((a, b) => a + b) / trade.prices.length) / (trade.sizes.reduce((a, b) => a + b) / trade.sizes.length);
+          }
+
+          this.emitData([[
+            this.id + trade.order_id,
+            +new Date(obj.time),
+            trade.price,
+            +trade.size,
+            trade.side === 'buy' ? 1 : 0,
+            trade.order_type === 'limit' ? 1 : 0,
+          ]]);
       }
     });
 
