@@ -8,6 +8,7 @@ class Gdax extends Exchange {
 
     this.id = 'gdax';
     this.orderbook = {};
+    this.receiveds = {};
 
 		this.options = Object.assign({
 			url: 'wss://ws-feed.gdax.com',
@@ -25,64 +26,42 @@ class Gdax extends Exchange {
 
       let obj = JSON.parse(data);
 
-      let trade = this.orderbook[obj.order_id];
-
       switch (obj.type) {
         case 'received':
-          obj.sizes = [];
-          obj.prices = [];
-
-          this.orderbook[obj.order_id] = obj;
+          //console.log(obj.order_id, 'wanna', obj.side, obj.size, 'BTC', 'for', obj.size * obj.price, '('+obj.order_type+')');
+          this.receiveds[obj.order_id] = obj;
           break;
 
         case 'match':
-          trade = this.orderbook[obj.taker_order_id];
-          console.log(obj);
+          console.log(obj.maker_order_id, obj.side === 'buy' ? 'brought' : 'sold', obj.size, 'BTC', 'at', '$' + (+obj.price).toFixed(2), '(of '+obj.taker_order_id+')');
 
-          if (!trade) {
-            return;
-          }
+          if (!this.orderbook[obj.maker_order_id])
+            this.orderbook[obj.maker_order_id] = 0;
 
-          if (!trade.prices) {
-            trade.prices = [];
-          }
+          if (!this.orderbook[obj.taker_order_id])
+            this.orderbook[obj.taker_order_id] = 0;
 
-          if (!trade.sizes) {
-            trade.sizes = [];
-          }
-
-          trade.sizes.push(+obj.size);
-          trade.prices.push(+obj.price);
-
-          this.orderbook[obj.order_id] = trade;
+          this.orderbook[obj.maker_order_id] += +(obj.size);
+          this.orderbook[obj.taker_order_id] += +(obj.size);
         break;
 
         case 'done':
-          if (!+obj.remaining_size || obj.reason === 'canceled') {
-            delete this.orderbook[obj.order_id];
-          }
+          if (this.orderbook[obj.order_id]) {
+            let price;
 
-          if (obj.reason === 'canceled') {
-            return;
-          }
-
-          if (!trade) {
-            if (obj.size || obj.fund) {
-              console.log('trade not in OB but size specified', obj.size, 'x', obj.price);
+            if (this.receiveds[obj.order_id]) {
+              price = +this.receiveds[obj.order_id].price;
+            } else if (obj.price) {
+              price = +obj.price;
+            } else {
+              console.log('cannot determine price action of order', obj.order_id);
             }
 
-            return;
+            console.log(obj.order_id, (this.reason === 'filled' ? 'exited' : 'canceled') + ' after', obj.side === 'buy' ? 'buying' : 'selling', this.orderbook[obj.order_id], 'BTC', 'at', isNaN(price) ? 'UNKNOWN' : '$' + price.toFixed(2))
+          } else if (obj.reason === 'filled') {
+            console.log(obj.order_id, 'exited without any recorded trades after', ((+new Date(obj.time)) - (+new Date(this.receiveds[obj.order_id].time)) / 1000) + 's');
           }
-
-          console.log(trade.side, trade.sizes, trade.size);
-
-          if (!trade.sizes.length && !trade.size) {
-            return;
-          } else if (trade.sizes.length) {
-            trade.size = +trade.sizes.reduce((a, b) => a + b).toFixed(8);
-            trade.price = (trade.prices.map((price, index) => price * trade.sizes[index]).reduce((a, b) => a + b) / trade.prices.length) / (trade.sizes.reduce((a, b) => a + b) / trade.sizes.length);
-          }
-
+/*
           this.emitData([[
             this.id + trade.order_id,
             +new Date(obj.time),
@@ -90,7 +69,7 @@ class Gdax extends Exchange {
             +trade.size,
             trade.side === 'buy' ? 1 : 0,
             trade.order_type === 'limit' ? 1 : 0,
-          ]]);
+          ]]);*/
       }
     });
 
