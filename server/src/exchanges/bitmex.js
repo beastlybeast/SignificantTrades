@@ -8,13 +8,25 @@ class Bitmex extends Exchange {
 
 		this.id = 'bitmex';
 
+		this.mapping = {
+			BTCUSD: 'XBTUSD',
+			ADABTC: 'ADAM18',
+			BCHBTC: 'BCHM18',
+			ETHBTC: 'ETHM18',
+			LTCBTC: 'LTCM18',
+			XRPBTC: 'XRPM18',
+		}
+
 		this.options = Object.assign({
-			url: 'wss://www.bitmex.com/realtime?subscribe=trade:XBTUSD',
+			url: () => {
+				return 'wss://www.bitmex.com/realtime?subscribe=trade:' + this.pair
+			},
 		}, this.options);
 	}
 
-	connect() {
-		console.log('[bitmex] connecting');
+	connect(pair) {
+    if (!super.connect(pair))  
+      return;
 
 		this.server = new WebSocket(this.getUrl());
 		this.server.on('message', event => this.emitData(this.format(event)));
@@ -27,6 +39,9 @@ class Bitmex extends Exchange {
 	}
 
 	disconnect() {
+    if (!super.disconnect())  
+      return;
+
 		if (this.server && this.server.readyState < 2) {
 			this.server.close();
 		}

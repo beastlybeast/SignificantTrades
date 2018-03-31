@@ -1,9 +1,23 @@
 <template>
   <div class="settings-container" v-bind:class="{ open: opened }">
-    <a href="#" class="toggle-settings" v-on:click="hideSettings"><font-awesome-icon :icon="timesIcon" /></a>
-    <div class="form-group">
-      <label for="option-group-by">Grouper les trades ({{options.groupBy}})</label>
-      <input type="range" id="option-group-by" class="form-control" min="0" max="1000000" step="1000" v-model="options.groupBy">
+    <div class="settings-scroller">
+      <a href="#" class="toggle-settings" v-on:click="hideSettings"><font-awesome-icon :icon="timesIcon" /></a>
+      <div class="settings-wrapper">
+        <div class="form-group mb15">
+          <label for="option-group-by">Pair</label>
+          <input type="string" placeholder="BTCUSD" class="form-control" v-model="options.pair" @change="switchPair">
+        </div>
+        <div class="settings-column">
+          <div class="form-group mb15">
+            <label for="option-group-by">Stack trades ({{options.groupBy}})</label>
+            <input type="number" min="0" max="10000000" step="10000" class="form-control" v-model="options.groupBy">
+          </div>
+          <div class="form-group mb15">
+            <label for="option-group-by">Max rows</label>
+            <input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -11,14 +25,13 @@
 <script>
   import FontAwesomeIcon from '@fortawesome/vue-fontawesome';
   import times from '@fortawesome/fontawesome-free-solid/faTimes';
-  import options from '../options';
+
+  import options from '../services/options';
+  import socket from '../services/socket';
 
   export default {
     components: {
       FontAwesomeIcon
-    },
-    render() {
-      console.log('render settings.vue');
     },
     data() {
       return {
@@ -42,26 +55,40 @@
     methods: {
       hideSettings() {
         options.hide();
+      },
+      switchPair(event) {
+        socket.send('pair', this.options.pair);
       }
     }
   }
 </script>
 
 <style lang="scss">
+	@import '../assets/variables';
+
   .settings-container {
     position: absolute;
     z-index: 1;
-    opacity: 0;
     visibility: hidden;
-    transform: scale(1.2);
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(black, .7);
     color: white;
-    padding: 20px;
-    transition: all .2s, visibility .2s linear .2s;
+    transition: all .8s $easeOutExpo .2s, visibility .1s linear 1.5s;
+    pointer-events: none;
+
+    .settings-scroller {
+      max-height: 100%;
+      overflow: auto;
+      transform: scale(1.2);
+      opacity: 0;
+      transition: all .2s $easeOutExpo;
+
+      .settings-wrapper {
+        padding: 20px;
+      }
+    }
 
     a {
       color: white;
@@ -69,16 +96,41 @@
 
     .toggle-settings {
       position: absolute;
-      right: 10px;
-      top: 10px;
+      right: 5px;
+      top: 2px;
+      line-height: 1px;
+      font-size: 24px;
+      opacity: .2;
+      
+      &:hover {
+        opacity: 1;
+      }
+    }
+
+    .settings-column {
+      display: flex;
+
+      > div {
+        margin-right: 16px;
+        flex-grow: 1;
+        flex-basis: 50%;
+
+        &:last-child {
+          margin: 0;
+        }
+      }
     }
 
     .form-group {
-      > label,
-      > .form-control {
-        display: block;
-        width: 100%;
-        font-size: 12px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+
+      .form-control {
+        padding: 10px 12px;
+        background-color: white;
+        border-radius: 2px;
+        border: 0;
       }
 
       > label {
@@ -87,10 +139,17 @@
     }
 
     &.open {
-      transition: all .2s;
+      transition: all .3s $easeOutExpo;
       visibility: visible;
       transform: none;
-      opacity: 1;
+      background-color: rgba(black, .7);
+      pointer-events: auto;
+
+      .settings-scroller {
+        transition: all .3s $easeOutExpo .2s;
+        transform: none;
+        opacity: 1;
+      }
 
       ~ .app-wrapper {
         filter: blur(10px);

@@ -6,10 +6,12 @@
 
 <script>
   import Highcharts from 'highcharts';
-  import socket from '../socket';
-  import moment from 'moment';
+  import options from '../services/options';
+  import socket from '../services/socket';
+  import helper from '../services/helper';
 
   export default {
+    mixins: [helper],
     data() {
       return {
         zoom: 1,
@@ -89,19 +91,7 @@
             formatter: function(e) {
               let label = '';
 
-              switch (this.series.index) {
-                case 0:
-                  label = 'BTCUSD';
-                  break;
-                case 1:
-                  label = 'SELL';
-                  break;
-                case 2:
-                  label = 'BUY';
-                  break;
-              }
-
-              return '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + label + ' $' + this.y.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
+              return '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + this.series.name + ' ' + e.chart.symbol + this.y.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
             },
             style: {
               color: 'white',
@@ -150,7 +140,7 @@
             data: [],
             color: '#222',
             dashStyle: 'ShortDash',
-            stacking: 'stream',
+            // stacking: 'stream',
             animation: false,
             lineWidth: 2,
           },{
@@ -181,29 +171,32 @@
         }
       }
     },
-    render() {
-      console.log('render tradeactivity.vue');
-    },
     created() {
-      //console.log('tradeactivity listening...');
-      socket.$on('trades', event => {
+      socket.$on('pair', pair => {
+        if (this.chart) {
+          this.chart.symbol = this.getSymbol(pair, true);
+          this.chart.series[0].update({name: pair}, false);
+        }
+      });
+
+      socket.$on('trades', trades => {
         if (!this.chart) {
           return;
         }
 
-        this.updateChart(this.getTicks(event.data));
+        this.updateChart(this.getTicks(trades));
       });
     },
     mounted() {
-      //console.log('tradeactivity mounted...');
-
       this.chart = Highcharts.chart(this.$el.querySelector('.chart-canvas'), this.options);
+
+      this.chart.symbol = this.getSymbol(options.pair, true);
+      this.chart.series[0].update({name: options.pair}, false);
 
       this.redrawInterval = setInterval(this.chart.redraw.bind(this.chart), 1000);
 
       if (socket.trades && socket.trades.length > 1) {
-        //console.log('initial socket.trades detected...');
-        this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
+        this.range = socket.trades[socket.trades.length - 1][2] - socket.trades[0][2];
         this.ajustTimeframe();
         this.updateChart(this.getTicks(), true);
       }
@@ -240,7 +233,7 @@
           data = socket.trades.slice(0);
         }
 
-        data = data.sort((a, b) => a[1] - b[1]);
+        data = data.sort((a, b) => a[2] - b[2]);
 
         const min = this.chart.series[0].data.length ? this.chart.series[0].data[this.chart.series[0].data.length - 1].category : 0;
 
@@ -249,43 +242,34 @@
         const prices = [];
 
         for (let i=0; i<data.length; i++) {
-          //data[i][1] = Math.max(data[i][1], tick && tick.timestamps.length ? tick.timestamps[0] : min);
 
-          if (!tick || data[i][1] - tick.timestamps[0] > this.timeframe) {
+          if (!tick || data[i][2] - tick.timestamps[0] > this.timeframe) {
             if (tick) {
-              //console.log('tick ended', JSON.stringify(tick.timestamps.map(a => 'T+' + (a - tick.timestamps[0]).toFixed() + 'ms')));
-
               const points = this.tickToPoints(tick);
 
               buys.push(points.buys);
               sells.push(points.sells);
               prices.push(points.prices);
-
             }
 
             tick = this.unfinishedTick = {
-              timestamps: [data[i][1]],
-              prices: [data[i][2]],
-              sizes: [data[i][3]],
+              timestamps: [data[i][2]],
+              prices: [data[i][3]],
+              sizes: [data[i][4]],
               buys: 0,
               sells: 0,
             };
 
-            //console.log('create tick', JSON.stringify(tick.timestamps.map(a => 'T+' + (a - tick.timestamps[0]).toFixed() + 'ms')));
           } else {
-            if (data[i][1] < tick.timestamps[0]) {
-              //console.info('floor timestamp to tick', 'T-' + (data[i][1] - tick.timestamps[0]).toFixed() + 'ms => T+0ms');
-              data[i][1] = tick.timestamps[0];
+            if (data[i][2] < tick.timestamps[0]) {
+              data[i][2] = tick.timestamps[0];
             }
-            tick.timestamps.push(data[i][1]);
-            tick.prices.push(data[i][2]);
-            tick.sizes.push(data[i][3]);
-            //console.log('append to tick', JSON.stringify(tick.timestamps.map(a => 'T+' + (a - tick.timestamps[0]).toFixed() + 'ms')));
+            tick.timestamps.push(data[i][2]);
+            tick.prices.push(data[i][3]);
+            tick.sizes.push(data[i][4]);
           }
 
-          tick[data[i][4] ? 'buys' : 'sells'] += (data[i][3] * data[i][2]);
-
-          ////console.log('add', data[i][4] === 'b' ? 'buys' : 'sells', '(' + (data[i][3]) + ' units at price ' + data[i][2] + ')', 'to tick (total worth ' + tick[data[i][4] === 'b' ? 'buys' : 'sells'] + ')');
+          tick[data[i][5] ? 'buys' : 'sells'] += (data[i][4] * data[i][3]);
         }
 
         return {
@@ -324,6 +308,8 @@
 
         if (this.unfinishedTick) {
           const points = this.tickToPoints(this.unfinishedTick);
+
+          socket.$emit('price', points.prices[1]);
 
           if (this.chart.series[0].data.length && !replace) {
             this.chart.series[0].data[this.chart.series[0].data.length - 1].update(points.prices, false)
@@ -364,7 +350,6 @@
           (event.deltaX || event.deltaZ || !event.deltaY)
           || (event.deltaY > 0 && range >= (dataMax - dataMin))
         ) {
-          // range already maxed out / deltaY too weak
           return;
         }
 
@@ -465,7 +450,6 @@
         }
 
         if (timeframe != current) {
-          //console.log('ajust timeframe based on range', this.range, ':', timeframe, '(was ' + current + ')');
           this.timeframe = timeframe;
 
           return true;

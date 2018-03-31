@@ -4,6 +4,8 @@ const emitter = new Vue({
   data() {
     return {
       groupBy: 100000,
+      maxRows: 20,
+      pair: 'BTCUSD',
     }
   },
   methods: {

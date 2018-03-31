@@ -8,6 +8,32 @@ class Bitstamp extends Exchange {
 
 		this.id = 'bitstamp';
 
+    this.pairs = [
+      'LTCUSD',
+      'ETHUSD',
+      'XRPEUR',
+      'BCHUSD',
+      'BCHEUR',
+      'BTCEUR',
+      'XRPBTC',
+      'EURUSD',
+      'BCHBTC',
+      'LTCEUR',
+      'BTCUSD',
+      'LTCBTC',
+      'XRPUSD',
+      'ETHBTC',
+      'ETHEUR'
+    ];
+
+		this.mapping = pair => {
+      if (this.pairs.indexOf(pair) !== -1) {
+        return pair.toLowerCase();
+      }
+
+      return false;
+    }
+
 		this.options = Object.assign({
 			appId: 'de504dc5763aeef9ff52',
 			channel: 'live_trades',
@@ -15,11 +41,12 @@ class Bitstamp extends Exchange {
 		}, this.options);
 	}
 
-	connect() {
-    console.log('[bitstamp] connecting');
+	connect(pair) {
+    if (!super.connect(pair))  
+      return;
 
     this.server = new Pusher(this.options.appId);
-    const channel = this.server.subscribe(this.options.channel);
+    const channel = this.server.subscribe(this.options.channel + (this.pair === 'btcusd' ? '' : '_' + this.pair));
 
     this.server.bind(this.options.bind, trade => this.emitData(this.format(trade)));
 
@@ -29,7 +56,9 @@ class Bitstamp extends Exchange {
 	}
 
 	disconnect() {
-    console.log('[bitstamp] state', this.server.connection.state);
+    if (!super.disconnect())  
+      return;
+      
     if (this.server && this.server.connection.state === 'connected') {
       this.server.disconnect();
     }

@@ -9,8 +9,227 @@ class Huobi extends Exchange {
 
     this.id = 'huobi';
 
-    this.mapping = {
-      BTCUSD: 'btcusdt'
+    this.pairs = [
+      'NASETH',
+      'EOSETH',
+      'ZECUSDT',
+      'EVXBTC',
+      'MDSETH',
+      'SMTETH',
+      'TRXETH',
+      'THETAUSDT',
+      'LUNETH',
+      'SMTUSDT',
+      'BCHBTC',
+      'LETUSDT',
+      'GNXETH',
+      'MTLBTC',
+      'CHATETH',
+      'QTUMUSDT',
+      'SNTBTC',
+      'WPRBTC',
+      'ELFETH',
+      'ZILBTC',
+      'UTKBTC',
+      'SBTCBTC',
+      'TNTBTC',
+      'NEOUSDT',
+      'MCOBTC',
+      'OSTETH',
+      'BT2BTC',
+      'HSRETH',
+      'TOPCETH',
+      'SALTETH',
+      'AIDOCETH',
+      'WAXBTC',
+      'DTAETH',
+      'BTCUSDT',
+      'GASETH',
+      'NEOBTC',
+      'BTMBTC',
+      'BLZETH',
+      'BATETH',
+      'APPCBTC',
+      'CMTBTC',
+      'ONTBTC',
+      'QTUMETH',
+      'IOSTBTC',
+      'REQBTC',
+      'BTMETH',
+      'RUFFBTC',
+      'ZECBTC',
+      'DGDETH',
+      'DATETH',
+      'STKETH',
+      'HTETH',
+      'QUNETH',
+      'ELFBTC',
+      'CMTETH',
+      'CTXCETH',
+      'SNTUSDT',
+      'MDSUSDT',
+      'STORJUSDT',
+      'WAXETH',
+      'POWRBTC',
+      'SNCBTC',
+      'VENUSDT',
+      'TNBETH',
+      'SWFTCETH',
+      'EOSBTC',
+      'LINKETH',
+      'HTUSDT',
+      'RDNBTC',
+      'LUNBTC',
+      'GNXBTC',
+      'ELABTC',
+      'LETETH',
+      'IOSTUSDT',
+      'EVXETH',
+      'ACTETH',
+      'BCHUSDT',
+      'ICXETH',
+      'BCXBTC',
+      'MTNETH',
+      'PROPYETH',
+      'XRPUSDT',
+      'ICXBTC',
+      'THETAETH',
+      'SNCETH',
+      'DBCETH',
+      'ITCUSDT',
+      'SMTBTC',
+      'SRNETH',
+      'ETHUSDT',
+      'ITCBTC',
+      'OMGBTC',
+      'STKBTC',
+      'MDSBTC',
+      'TOPCBTC',
+      'ADXBTC',
+      'ETCBTC',
+      'KNCBTC',
+      'CVCBTC',
+      'QSPETH',
+      'BTGBTC',
+      'EDUBTC',
+      'ZLAETH',
+      'MTXETH',
+      'EOSUSDT',
+      'RCNBTC',
+      'UTKETH',
+      'RCNETH',
+      'GNTUSDT',
+      'APPCETH',
+      'WICCBTC',
+      'YEEBTC',
+      'YEEETH',
+      'OMGUSDT',
+      'LINKBTC',
+      'XEMUSDT',
+      'HSRUSDT',
+      'DASHBTC',
+      'QUNBTC',
+      'QASHETH',
+      'DTABTC',
+      'AIDOCBTC',
+      'DATBTC',
+      'RUFFETH',
+      'SALTBTC',
+      'ELAETH',
+      'IOSTETH',
+      'THETABTC',
+      'LETBTC',
+      'DTAUSDT',
+      'SOCETH',
+      'ELAUSDT',
+      'ZILUSDT',
+      'MANABTC',
+      'XRPBTC',
+      'ONTETH',
+      'LTCUSDT',
+      'DBCBTC',
+      'BCDBTC',
+      'SWFTCBTC',
+      'CVCUSDT',
+      'CTXCBTC',
+      'NASUSDT',
+      'GNTETH',
+      'TRXUSDT',
+      'HTBTC',
+      'ENGETH',
+      'PAYETH',
+      'CVCETH',
+      'TNBBTC',
+      'MEEETH',
+      'POWRETH',
+      'BLZBTC',
+      'PAYBTC',
+      'ADXETH',
+      'EKOETH',
+      'SRNBTC',
+      'OCNETH',
+      'VENETH',
+      'ABTETH',
+      'BIFIBTC',
+      'ACTBTC',
+      'ETCUSDT',
+      'OSTBTC',
+      'MCOETH',
+      'ABTBTC',
+      'STORJBTC',
+      'VENBTC',
+      'GNTBTC',
+      'LSKBTC',
+      'EKOBTC',
+      'LTCBTC',
+      'OCNBTC',
+      'RUFFUSDT',
+      'WPRETH',
+      'ASTBTC',
+      'DASHUSDT',
+      'DGDBTC',
+      'ZILETH',
+      'ZRXBTC',
+      'ETHBTC',
+      'REQETH',
+      'TRXBTC',
+      'WICCETH',
+      'NASBTC',
+      'MEEBTC',
+      'ENGBTC',
+      'LSKETH',
+      'RPXBTC',
+      'TNTETH',
+      'MTXBTC',
+      'SOCBTC',
+      'EDUETH',
+      'HSRBTC',
+      'QTUMBTC',
+      'QSPBTC',
+      'BATBTC',
+      'QASHBTC',
+      'ITCETH',
+      'XEMBTC',
+      'MANAETH',
+      'GASBTC',
+      'MTNBTC',
+      'CHATBTC',
+      'BT1BTC',
+      'ZLABTC',
+      'OMGETH',
+      'PROPYBTC',
+      'RDNETH',
+      'ELFUSDT'
+    ];
+
+    this.mapping = pair => {
+      pair = pair.replace(/USD$/, 'USDT');
+
+      if (this.pairs.indexOf(pair) !== -1) {
+        return pair.toLowerCase();
+      }
+
+      return false;
     }
 
 		this.options = Object.assign({
@@ -18,8 +237,9 @@ class Huobi extends Exchange {
 		}, this.options);
 	}
 
-	connect() {
-		console.log('[huobi] connecting');
+	connect(pair) {
+    if (!super.connect(pair))  
+      return;
 
     this.server = new WebSocket(this.getUrl());
 
@@ -27,9 +247,11 @@ class Huobi extends Exchange {
 
 		this.server.on('open', event => {
       this.server.send(JSON.stringify({
-        sub: 'market.btcusdt.trade.detail',
-        id: 'btcusdt',
+        sub: 'market.' + this.pair + '.trade.detail',
+        id: this.pair,
       }));
+
+      this.emitOpen(event);
     });
 
 		this.server.on('close', this.emitClose.bind(this));
@@ -38,6 +260,9 @@ class Huobi extends Exchange {
 	}
 
 	disconnect() {
+    if (!super.disconnect())  
+      return;
+
     if (this.server && this.server.readyState < 2) {
       this.server.close();
     }
@@ -53,9 +278,7 @@ class Huobi extends Exchange {
     if (json.ping) {
       this.server.send(JSON.stringify({pong: json.ping}));
       return;
-    }
-
-    if (json.tick && json.tick.data && json.tick.data.length) {
+    } else if (json.tick && json.tick.data && json.tick.data.length) {
       return json.tick.data.map(trade => [
         trade.id,
         trade.ts,

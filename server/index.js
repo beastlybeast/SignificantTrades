@@ -3,9 +3,15 @@ const WebSocket = require('ws');
 const Axios = require('axios');
 const Server = require('./src/Server');
 
+let json;
+
+try {
+	let json = require('./config');
+} catch (error) {}
+
 const config = Object.assign({
 	pair: 'BTCUSD'
-}, require('./config'));
+}, json);
 
 const Kraken = require('./src/exchanges/Kraken');
 const Bitmex = require('./src/exchanges/Bitmex');
@@ -15,21 +21,21 @@ const Okex = require('./src/exchanges/Okex');
 const Bitstamp = require('./src/exchanges/Bitstamp');
 const Binance = require('./src/exchanges/Binance');
 const Huobi = require('./src/exchanges/Huobi');
+const Hitbtc = require('./src/exchanges/Hitbtc');
 
 new Server({
 	port: 3000,
+	pack: false,
 	pair: config.pair,
 	exchanges: [
-		new Gdax(),
+		//new Bitstamp(),
+		new Kraken(),
 		/*new Huobi(),
+		new Hitbtc(),
+		new Okex(),
 		new Bitmex(),
-		new Bitstamp(),
-		new Bitfinex(),
 		new Binance(),
-		new Kraken({
-			key: config.exchanges.kraken.key,
-			secret: config.exchanges.kraken.secret
-		}),
-		new Okex(),*/
+		new Bitfinex(),
+		new Gdax()*/
 	]
 });

@@ -12,8 +12,64 @@ class Kraken extends Exchange {
 		this.id = 'kraken';
 
 		this.mapping = {
-			BTCUSD: 'XXBTZUSD'
-		}
+			BCHEUR: 'BCHEUR',
+			BCHUSD: 'BCHUSD',
+			BCHBTC: 'BCHXBT',
+			DASHEUR: 'DASHEUR',
+			DASHUSD: 'DASHUSD',
+			DASHBTC: 'DASHXBT',
+			EOSETH: 'EOSETH',
+			EOSEUR: 'EOSEUR',
+			EOSUSD: 'EOSUSD',
+			EOSBTC: 'EOSXBT',
+			GNOETH: 'GNOETH',
+			GNOEUR: 'GNOEUR',
+			GNOUSD: 'GNOUSD',
+			GNOBTC: 'GNOXBT',
+			USDTUSD: 'USDTZUSD',
+			ETCETH: 'XETCXETH',
+			ETCBTC: 'XETCXXBT',
+			ETCEUR: 'XETCZEUR',
+			ETCUSD: 'XETCZUSD',
+			ETHBTC: 'XETHXXBT',
+			ETHCAD: 'XETHZCAD',
+			ETHEUR: 'XETHZEUR',
+			ETHGBP: 'XETHZGBP',
+			ETHJPY: 'XETHZJPY',
+			ETHUSD: 'XETHZUSD',
+			ICNETH: 'XICNXETH',
+			ICNBTC: 'XICNXXBT',
+			LTCBTC: 'XLTCXXBT',
+			LTCEUR: 'XLTCZEUR',
+			LTCUSD: 'XLTCZUSD',
+			MLNETH: 'XMLNXETH',
+			MLNBTC: 'XMLNXXBT',
+			REPETH: 'XREPXETH',
+			REPBTC: 'XREPXXBT',
+			REPEUR: 'XREPZEUR',
+			REPUSD: 'XREPZUSD',
+			BTCCAD: 'XXBTZCAD',
+			BTCEUR: 'XXBTZEUR',
+			BTCGBP: 'XXBTZGBP',
+			BTCJPY: 'XXBTZJPY',
+			BTCUSD: 'XXBTZUSD',
+			XDGBTC: 'XXDGXXBT',
+			XLMBTC: 'XXLMXXBT',
+			XLMEUR: 'XXLMZEUR',
+			XLMUSD: 'XXLMZUSD',
+			XMRBTC: 'XXMRXXBT',
+			XMREUR: 'XXMRZEUR',
+			XMRUSD: 'XXMRZUSD',
+			XRPBTC: 'XXRPXXBT',
+			XRPCAD: 'XXRPZCAD',
+			XRPEUR: 'XXRPZEUR',
+			XRPJPY: 'XXRPZJPY',
+			XRPUSD: 'XXRPZUSD',
+			ZECBTC: 'XZECXXBT',
+			ZECEUR: 'XZECZEUR',
+			ZECJPY: 'XZECZJPY',
+			ZECUSD: 'XZECZUSD'
+		};
 
 		this.options = Object.assign({
 			url: 'https://api.kraken.com/0/public/Trades',
@@ -22,13 +78,8 @@ class Kraken extends Exchange {
 	}
 
 	connect(pair) {
-		if (!this.mapping[pair]) {
-			return;
-		}
-
-		console.log('[kraken] connecting');
-
-		this.pair = this.mapping[pair];
+    if (!super.connect(pair))  
+      return;
 
 		this.schedule();
 
@@ -52,13 +103,13 @@ class Kraken extends Exchange {
 			params.since = this.reference;
 		}
 
-		const headers = {
+		/*const headers = {
 			'API-Key': this.options.key,
 			'API-Sign': this.getSignature(this.getUrl(), params)
-		}
+		}*/
 
 		axios.get(this.getUrl(), {
-			headers: headers,
+			// headers: headers,
 			params: params,
 			cancelToken: this.source.token
 		})
@@ -87,6 +138,9 @@ class Kraken extends Exchange {
 	}
 
 	disconnect() {
+    if (!super.disconnect())  
+      return;
+
 		clearTimeout(this.timeout);
 		this.source && this.source.cancel();
 
@@ -105,8 +159,8 @@ class Kraken extends Exchange {
 
 			if (!initial) {
 				const output = [];
-
 				for (let trade of response.result[this.pair]) {
+
 					output.push([
 						this.id + String(trade[2]).replace(/\D/, '') + trade[3] + trade[4], // id
 						trade[2] * 1000, // timestamp

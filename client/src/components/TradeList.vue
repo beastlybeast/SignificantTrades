@@ -4,13 +4,16 @@
       <li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ 'background-image' : trade.image ? 'url(\'' + trade.image + '\')' : 'none' }">
         <div class="trades__item__side"><font-awesome-icon :icon="trade.icon" /></div>
         <div class="trades__item__exchange">{{ trade.exchange }}</div>
-        <div class="trades__item__price"><font-awesome-icon :icon="dollarSign" />{{ trade.price }}</div>
-        <div class="trades__item__amount"><font-awesome-icon :icon="dollarSign" />{{ trade.amount }}</div>
+        <div class="trades__item__price"><font-awesome-icon :icon="currencyIcon" /> {{ trade.price }}</div>
+        <div class="trades__item__amount">
+          <span class="trades__item__amount__fiat"><font-awesome-icon :icon="currencyIcon" /> {{ trade.amount }}</span>
+          <span class="trades__item__amount__coin"><font-awesome-icon :icon="commodityIcon" /> {{ trade.size }}</span>
+        </div>
         <div class="trades__item__date" :timestamp="trade.timestamp">{{ trade.date }}</div>
       </li>
     </ul>
     <div v-else class="trades__item trades__item--empty">
-      Nothing to show :-(
+      Nothing to show, yet.
     </div>
   </div>
 </template>
@@ -19,66 +22,57 @@
   import FontAwesomeIcon from '@fortawesome/vue-fontawesome';
   import angleUp from '@fortawesome/fontawesome-free-solid/faAngleUp';
   import angleDown from '@fortawesome/fontawesome-free-solid/faAngleDown';
-  import dollarSign from '@fortawesome/fontawesome-free-solid/faDollarSign';
 
-  import options from '../options';
-  import socket from '../socket';
+  import options from '../services/options';
+  import socket from '../services/socket';
+
+  import helper from '../services/helper';
 
   export default {
+    mixins: [helper],
     components: {
       FontAwesomeIcon
     },
     data () {
       return {
         ticks: {},
-        dollarSign: dollarSign,
         trades: [],
-        gifs: []
+        gifs: [],
       }
     },
     created() {
       this.getGifs();
 
-      socket.$on('trades', event => {
-        for (let trade of event.data) {
-          console.log('loop ', (event.data.indexOf(trade) + 1) + '/' + event.data.length, JSON.stringify(event.data.map(a => trade[0] === a[0] ? '>>' + a[0] + '<<' : a[0]).join(' ')));
+      socket.$on('trades', trades => {
+        for (let trade of trades) {
           if (options.groupBy) {
-            if (this.ticks[event.exchange]) {
-              if (+new Date() - this.ticks[event.exchange][1] > 5000) {
-                console.log('[' + event.exchange + '/' + this.ticks[event.exchange][0] + ' T+'+(+new Date() - this.ticks[event.exchange][1])+'] ticked row too late (' + (+new Date() - this.ticks[event.exchange][1]) + 'ms > 5000)');
-                delete this.ticks[event.exchange];
+            if (this.ticks[trade[0]]) {
+              if (+new Date() - this.ticks[trade[0]][2] > 5000) {
+                delete this.ticks[trade[0]];
               } else {
-                this.ticks[event.exchange][2] = (this.ticks[event.exchange][2] * this.ticks[event.exchange][3] + trade[2] * trade[3]) / 2 / ((this.ticks[event.exchange][3] + trade[3]) / 2);
-                this.ticks[event.exchange][3] += trade[3];
+                this.ticks[trade[0]][3] = (this.ticks[trade[0]][3] * this.ticks[trade[0]][4] + trade[3] * trade[4]) / 2 / ((this.ticks[trade[0]][4] + trade[4]) / 2);
+                this.ticks[trade[0]][4] += trade[4];
 
-                console.log('[' + event.exchange + '/' + this.ticks[event.exchange][0] + ' T+'+(+new Date() - this.ticks[event.exchange][1])+'] increase ticked row value (' + (this.ticks[event.exchange][2] * this.ticks[event.exchange][3]).toFixed(2) + '/' + options.groupBy + ')');
-
-                if (this.ticks[event.exchange][2] * this.ticks[event.exchange][3] >= options.groupBy) {
-                  console.log('[' + event.exchange + '/' + this.ticks[event.exchange][0] + ' T+'+(+new Date() - this.ticks[event.exchange][1])+'] append ticked row (groupby amount reached ' + (this.ticks[event.exchange][2] * this.ticks[event.exchange][3]).toFixed(2) + ')');
-                  this.appendTrade(this.ticks[event.exchange], event.exchange);
-                  delete this.ticks[event.exchange];
+                if (this.ticks[trade[0]][3] * this.ticks[trade[0]][4] >= options.groupBy) {
+                  this.appendTrade(this.ticks[trade[0]]);
+                  delete this.ticks[trade[0]];
                 }
 
                 continue;
               }
             }
 
-            if (!this.ticks[event.exchange] && trade[2] * trade[3] < options.groupBy) {
-              this.ticks[event.exchange] = trade;
-              console.log('[' + event.exchange + '/' + this.ticks[event.exchange][0] + ' T+'+(+new Date() - this.ticks[event.exchange][1])+'] create ticked row (' + (trade[2] * trade[3]).toFixed(2) + ' < ' + options.groupBy + ')');
+            if (!this.ticks[trade[0]] && trade[3] * trade[4] < options.groupBy) {
+              this.ticks[trade[0]] = trade;
               continue;
             }
           }
 
-          console.log('appendTrade', trade[0]);
-          this.appendTrade(trade, event.exchange);
+          this.appendTrade(trade);
         }
 
-        this.trades.splice(100, this.trades.length);
+        this.trades.splice(+options.maxRows || 20, this.trades.length);
       });
-    },
-    render() {
-      console.log('render tradelist.vue');
     },
     mounted() {
       this.timeAgoInterval = setInterval(() => {
@@ -88,44 +82,45 @@
       }, 1000);
     },
     methods: {
-      appendTrade(trade, exchange) {
-          let classname = [];
-          let icon;
-          let image;
-          let amount = (trade[2] * trade[3]).toFixed(2);
+      appendTrade(trade) {
+        let classname = [];
+        let icon;
+        let image;
+        let amount = (trade[3] * trade[4]).toFixed(2);
 
-          if (trade[4]) {
-            classname.push('buy');
-            icon = angleUp;
-          } else {
-            classname.push('sell');
-            icon = angleDown;
-          }
+        if (trade[5]) {
+          classname.push('buy');
+          icon = angleUp;
+        } else {
+          classname.push('sell');
+          icon = angleDown;
+        }
 
-          if (amount >= 1000000) {
-            image = this.gifs[Math.floor(Math.random() * (this.gifs.length - 1))];
-            classname.push('significant');
-            classname.push('1m');
-            amount = (amount / 1000000).toFixed(1) + 'M';
-          } else if (amount >= 100000) {
-            classname.push('significant');
-            amount = (amount / 1000).toFixed(1) + 'K';
-          } else if (amount >= 1000) {
-            amount = (amount / 1000).toFixed(1) + 'K';
-          }
+        if (amount >= 1000000) {
+          image = this.gifs[Math.floor(Math.random() * (this.gifs.length - 1))];
+          classname.push('significant');
+          classname.push('1m');
+          amount = (amount / 1000000).toFixed(1) + 'M';
+        } else if (amount >= 100000) {
+          classname.push('significant');
+          amount = (amount / 1000).toFixed(1) + 'K';
+        } else if (amount >= 1000) {
+          amount = (amount / 1000).toFixed(1) + 'K';
+        }
 
-          this.trades.unshift({
-            id: trade[0],
-            side: trade[4] ? 'BUY' : 'SELL',
-            exchange: exchange,
-            price: trade[2].toFixed(1),
-            amount: amount,
-            classname: classname.map(a => 'trades__item--' + a).join(' '),
-            icon: icon,
-            date: this.ago(trade[1]),
-            timestamp: trade[1],
-            image: image
-          });
+        this.trades.unshift({
+          id: trade[1],
+          side: trade[5] ? 'BUY' : 'SELL',
+          size: trade[4].toFixed(5),
+          exchange: trade[0],
+          price: trade[3].toFixed(2),
+          amount: amount,
+          classname: classname.map(a => 'trades__item--' + a).join(' '),
+          icon: icon,
+          date: this.ago(trade[2]),
+          timestamp: trade[2],
+          image: image
+        });
       },
       getGifs(refresh) {
         let storage = localStorage ? JSON.parse(localStorage.getItem('1mgifs')) : null;
@@ -141,13 +136,6 @@
               }
               for (let item of res.data) {
                 this.gifs.push(item.images.original.url);
-              }
-
-              if (localStorage) {
-                localStorage.setItem('1mgifs', JSON.stringify({
-                  timestamp: +new Date(),
-                  data: this.gifs
-                }));
               }
             });
         }
@@ -176,13 +164,13 @@
 </script>
 
 <style lang="scss">
-  $green: #7CB342;
-  $red: #F44336;
+  @import '../assets/variables';
 
   .trades {
     ul {
       margin: 0;
       padding: 0;
+      display: flex;
       flex-flow: column nowrap;
     }
 
@@ -197,10 +185,12 @@
 
       &.trades__item--empty {
         justify-content: center;
+        padding: 20px;
+        font-size: 80%;
       }
 
       &.trades__item--sell {
-        background-color: lighten($red, 50%);
+        background-color: lighten($red, 35%);
         color: $red;
         &.trades__item--significant {
           background-color: $red;
@@ -256,6 +246,30 @@
 
         &.trades__item__amount, &.trades__item__price {
           flex-grow: 1.5;
+        }
+
+        &.trades__item__amount {
+          > span {
+            position: absolute;
+            transition: all .1s ease-in-out;
+
+            &.trades__item__amount__coin {
+              transform: translateX(25%);
+              opacity: 0;
+            }
+          }
+
+          &:hover {
+            > span.trades__item__amount__coin {
+              transform: none;
+              opacity: 1;
+            }
+
+            > span.trades__item__amount__fiat {
+              transform: translateX(-25%);
+              opacity: 0;
+            }
+          }
         }
 
         &.trades__item__date {
