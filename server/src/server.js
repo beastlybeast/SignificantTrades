@@ -11,7 +11,7 @@ class Server {
 		this.options = Object.assign({
 			pair: 'BTCUSD',
 			port: 8080,
-			pack: false,
+			delay: false,
 			exchange: []
 		}, options);
 
@@ -41,7 +41,7 @@ class Server {
 		this.wss.on('connection', (ws, req) =>  {
 			const location = url.parse(req.url, true);
 			const ip = req.connection.remoteAddress;
-			console.log('[client] ' + ip + ' join from ' + req.url);
+			console.log('[client] ' + ip + ' joined ' + req.url);
 
 			ws.send(JSON.stringify({
 				type: 'welcome',
@@ -106,12 +106,12 @@ class Server {
 				for (let trade of event.data) {
 					trade.unshift(event.exchange);
 
-					if (this.options.pack) {
+					if (this.options.delay) {
 						this.queue.unshift(trade);
 					}
 				}
 
-				if (!this.options.pack) {
+				if (!this.options.delay) {
 					this.broadcast(event.data);
 				}
 			});
@@ -148,7 +148,7 @@ class Server {
 			});
 		});
 
-		this.profilerInterval = setInterval(this.profileExchanges.bind(this), 60000);
+		this.profilerInterval = setInterval(this.profiler.bind(this), 60000);
 	}
 
 	connect() {
@@ -160,8 +160,8 @@ class Server {
 			exchange.connect(this.options.pair);
 		});
 
-		if (this.options.pack) {
-			this.packInterval = setInterval(() => {
+		if (this.options.delay) {
+			this.delayInterval = setInterval(() => {
 				if (!this.queue.length) {
 					return;
 				}
@@ -169,7 +169,7 @@ class Server {
 				this.broadcast(this.queue);
 
 				this.queue = [];
-			}, this.options.pack || 1000);
+			}, this.options.delay || 1000);
 		}
 	}
 
@@ -182,7 +182,7 @@ class Server {
 	}
 
 	disconnect() {
-		clearInterval(this.packInterval);
+		clearInterval(this.delayInterval);
 
 		this.connected = false;
 
@@ -206,7 +206,7 @@ class Server {
 		});
 	}
 
-	profileExchanges() {
+	profiler() {
 		const now = +new Date();
 
 		this.exchanges.forEach(exchange => {
@@ -218,8 +218,12 @@ class Server {
 				console.log('[warning] no data sent from ' + exchange.id);
 				return;
 			}
+
 			if (now - this.timestamps[exchange.id] > 1000 * 60 * 5) {
 				console.log('[warning] ' + exchange.id + ' hasn\'t sent any data since more than 5 minutes');
+				exchange.reconnect();
+				
+				delete this.timestamps[exchange.id];
 				return;
 			}
 		})

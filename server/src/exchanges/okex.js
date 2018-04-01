@@ -505,8 +505,6 @@ class Okex extends Exchange {
     if (!super.connect(pair))  
       return;
 
-    console.log('[okex] connecting');
-
     this.server = new WebSocket(this.getUrl());
 
     this.server.on('message', event => this.emitData(this.format(event)));
@@ -521,7 +519,11 @@ class Okex extends Exchange {
       this.emitOpen(event);
     });
 
-    this.server.on('close', this.emitClose.bind(this));
+    this.server.on('close', event => {
+      this.emitClose(event);
+
+      clearInterval(this.keepalive);
+    });
 
     this.server.on('error', this.emitError.bind(this));
 	}

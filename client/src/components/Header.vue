@@ -1,32 +1,25 @@
 <template>
   <header class="header">
-    <div class="header__title"><font-awesome-icon :icon="currencyIcon" /> {{ title }}</div>
-    <button class="toggle-options" type="button" v-on:click="toggleSettings"><font-awesome-icon :icon="cogIcon" /></button>
+    <div class="header__title"><span class="icon-currency"></span> <span v-html="title"></span></div>
+    <button class="toggle-options" type="button" v-on:click="toggleSettings"><span class="icon-cog"></span></button>
   </header>
 </template>
 
 <script>
-  import FontAwesomeIcon from '@fortawesome/vue-fontawesome';
-  import cog from '@fortawesome/fontawesome-free-solid/faCog';
   import options from '../services/options';
-  
   import socket from '../services/socket';
-  import helper from '../services/helper';
 
   export default {
-    mixins: [helper],
-    components: {
-      FontAwesomeIcon
-    },
     data() {
       return {
         title: 'SignificantTrades',
-        cogIcon: cog
       }
     },
     created() {
       socket.$on('price', price => {
-        window.document.title = this.title = this.formatPrice(price);
+        this.title = formatPrice(price);
+        
+        window.document.title = this.title.replace(/<\/?[^>]+(>|$)/g, '');
       });
     },
     methods: {
@@ -38,6 +31,8 @@
 </script>
 
 <style lang="scss">
+	@import '../assets/sass/variables';
+  
   header.header {
     display: flex;
     background-color: #222;
@@ -51,16 +46,27 @@
 
     button {
       border: 0;
-      background-color: rgba(white, .1);
+      background: none;
       color: white;
-      padding: 10px 14px;
-      font-size: 16px;
+      padding: 6px 10px 5px;
+      font-size: 20px;
+
       align-self: stretch;
       cursor: pointer;
 
+      .icon-cog {
+        transition: all .2s $easeOutExpo;
+        display: inline-block;
+      }
+
       &:hover,
       &:active {
-        background-color: #E91E63;
+        .icon-cog {
+          transition: transform .2s $easeOutExpo, text-shadow 5s $easeOutExpo;
+          
+          transform: rotateZ(180deg) scale(1.2);
+          text-shadow: 0 0 5px rgba(white, .5), 0 0 20px rgba(white, .2);
+        }
       }
     }
   }

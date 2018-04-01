@@ -2,12 +2,12 @@
   <div class="trades">
     <ul v-if="trades.length">
       <li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ 'background-image' : trade.image ? 'url(\'' + trade.image + '\')' : 'none' }">
-        <div class="trades__item__side"><font-awesome-icon :icon="trade.icon" /></div>
+        <div class="trades__item__side icon-side"></div>
         <div class="trades__item__exchange">{{ trade.exchange }}</div>
-        <div class="trades__item__price"><font-awesome-icon :icon="currencyIcon" /> {{ trade.price }}</div>
+        <div class="trades__item__price"><span class="icon-currency"></span> <span v-html="trade.price"></span></div>
         <div class="trades__item__amount">
-          <span class="trades__item__amount__fiat"><font-awesome-icon :icon="currencyIcon" /> {{ trade.amount }}</span>
-          <span class="trades__item__amount__coin"><font-awesome-icon :icon="commodityIcon" /> {{ trade.size }}</span>
+          <span class="trades__item__amount__fiat"><span class="icon-currency"></span> <span v-html="trade.amount"></span></span>
+          <span class="trades__item__amount__coin"><span class="icon-commodity"></span> <span v-html="trade.size"></span></span>
         </div>
         <div class="trades__item__date" :timestamp="trade.timestamp">{{ trade.date }}</div>
       </li>
@@ -19,20 +19,10 @@
 </template>
 
 <script>
-  import FontAwesomeIcon from '@fortawesome/vue-fontawesome';
-  import angleUp from '@fortawesome/fontawesome-free-solid/faAngleUp';
-  import angleDown from '@fortawesome/fontawesome-free-solid/faAngleDown';
-
   import options from '../services/options';
   import socket from '../services/socket';
 
-  import helper from '../services/helper';
-
   export default {
-    mixins: [helper],
-    components: {
-      FontAwesomeIcon
-    },
     data () {
       return {
         ticks: {},
@@ -86,14 +76,12 @@
         let classname = [];
         let icon;
         let image;
-        let amount = (trade[3] * trade[4]).toFixed(2);
+        let amount = trade[3] * trade[4];
 
         if (trade[5]) {
           classname.push('buy');
-          icon = angleUp;
         } else {
           classname.push('sell');
-          icon = angleDown;
         }
 
         if (amount >= 1000000) {
@@ -106,14 +94,16 @@
           amount = (amount / 1000).toFixed(1) + 'K';
         } else if (amount >= 1000) {
           amount = (amount / 1000).toFixed(1) + 'K';
+        } else {
+          amount = formatPrice(amount);
         }
 
         this.trades.unshift({
           id: trade[1],
           side: trade[5] ? 'BUY' : 'SELL',
-          size: trade[4].toFixed(5),
+          size: trade[4],
           exchange: trade[0],
-          price: trade[3].toFixed(2),
+          price: formatPrice(trade[3]),
           amount: amount,
           classname: classname.map(a => 'trades__item--' + a).join(' '),
           icon: icon,
@@ -164,7 +154,7 @@
 </script>
 
 <style lang="scss">
-  @import '../assets/variables';
+	@import '../assets/sass/variables';
 
   .trades {
     ul {
@@ -192,16 +182,26 @@
       &.trades__item--sell {
         background-color: lighten($red, 35%);
         color: $red;
+
         &.trades__item--significant {
           background-color: $red;
+        }
+
+        .icon-side:before {
+          content: unicode($icon-down);
         }
       }
 
       &.trades__item--buy {
         background-color: lighten($green, 50%);
         color: $green;
+
         &.trades__item--significant {
           background-color: $green;
+        }
+
+        .icon-side:before {
+          content: unicode($icon-up);
         }
       }
 
@@ -238,18 +238,21 @@
         &.trades__item__side {
           flex-grow: 0;
           flex-basis: 20px;
+          font-size: 18px;
         }
 
         &.trades__item__exchange {
-          flex-grow: 1.25;
-        }
-
-        &.trades__item__amount, &.trades__item__price {
-          flex-grow: 1.5;
+          flex-grow: .75;
+          min-width: 70px;
         }
 
         &.trades__item__amount {
+          position: relative;
+
           > span {
+            max-width: 110%;
+            overflow: hidden;
+            text-overflow: ellipsis;
             position: absolute;
             transition: all .1s ease-in-out;
 
@@ -274,6 +277,8 @@
 
         &.trades__item__date {
           text-align: right;
+          flex-basis: 40px;
+          flex-grow: 0;
         }
       }
     }

@@ -8,10 +8,8 @@
   import Highcharts from 'highcharts';
   import options from '../services/options';
   import socket from '../services/socket';
-  import helper from '../services/helper';
 
   export default {
-    mixins: [helper],
     data() {
       return {
         zoom: 1,
@@ -88,10 +86,8 @@
             padding: 4,
             shadow: false,
             hideDelay: 0,
-            formatter: function(e) {
-              let label = '';
-
-              return '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + this.series.name + ' ' + e.chart.symbol + this.y.toFixed(2).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
+            formatter: function(e) {            
+              return '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + this.series.name + ' ' + app.getAttribute('data-symbol') + formatPrice(this.y).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
             },
             style: {
               color: 'white',
@@ -173,10 +169,11 @@
     },
     created() {
       socket.$on('pair', pair => {
-        if (this.chart) {
-          this.chart.symbol = this.getSymbol(pair, true);
-          this.chart.series[0].update({name: pair}, false);
+        if (!this.chart) {
+          return;
         }
+
+        this.chart.series[0].update({name: pair}, false);
       });
 
       socket.$on('trades', trades => {
@@ -188,12 +185,10 @@
       });
     },
     mounted() {
+      this.options.series[0].name = options.pair;
       this.chart = Highcharts.chart(this.$el.querySelector('.chart-canvas'), this.options);
 
-      this.chart.symbol = this.getSymbol(options.pair, true);
-      this.chart.series[0].update({name: options.pair}, false);
-
-      this.redrawInterval = setInterval(this.chart.redraw.bind(this.chart), 1000);
+      //this.redrawInterval = setInterval(this.chart.redraw.bind(this.chart), 1000);
 
       if (socket.trades && socket.trades.length > 1) {
         this.range = socket.trades[socket.trades.length - 1][2] - socket.trades[0][2];

@@ -1,7 +1,7 @@
 <template>
   <div class="settings-container" v-bind:class="{ open: opened }">
     <div class="settings-scroller">
-      <a href="#" class="toggle-settings" v-on:click="hideSettings"><font-awesome-icon :icon="timesIcon" /></a>
+      <a href="#" class="toggle-settings icon-times" v-on:click="hideSettings"></a>
       <div class="settings-wrapper">
         <div class="form-group mb15">
           <label for="option-group-by">Pair</label>
@@ -23,19 +23,12 @@
 </template>
 
 <script>
-  import FontAwesomeIcon from '@fortawesome/vue-fontawesome';
-  import times from '@fortawesome/fontawesome-free-solid/faTimes';
-
   import options from '../services/options';
   import socket from '../services/socket';
 
   export default {
-    components: {
-      FontAwesomeIcon
-    },
     data() {
       return {
-        timesIcon: times,
         options: options,
         opened: false
       }
@@ -64,7 +57,7 @@
 </script>
 
 <style lang="scss">
-	@import '../assets/variables';
+	@import '../assets/sass/variables';
 
   .settings-container {
     position: absolute;
@@ -98,7 +91,6 @@
       position: absolute;
       right: 5px;
       top: 2px;
-      line-height: 1px;
       font-size: 24px;
       opacity: .2;
       

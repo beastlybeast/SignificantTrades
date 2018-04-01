@@ -1,0 +1,27 @@
+$green: #7CB342;
+$red: #F44336;
+$blue: #2196F3;
+$yellow: #ffc107;
+
+$easeOutExpo: cubic-bezier(0.005, 1.000, 0.220, 1.000);
+
+$icon-bitcoin: \e900;
+$icon-btc: \e901;
+$icon-dollar: \e902;
+$icon-down: \e903;
+$icon-eth: \e904;
+$icon-euro: \e905;
+$icon-info: \e906;
+$icon-monero: \e907;
+$icon-pound: \e908;
+$icon-times: \e909;
+$icon-up: \e90a;
+$icon-warning: \e90b;
+$icon-yen: \e90c;
+$icon-cog: \e90d;
+$icon-check: \e90e;
+$icon-coin: \e90f;
+
+@function unicode($str) {
+  @return unquote("\"") + $str + unquote("\"");
+}

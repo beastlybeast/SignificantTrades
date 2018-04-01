@@ -1,7 +1,7 @@
 <template>
 	<div class="alerts">
 		<div v-for="(alert, index) in alerts" class="alert" :key="alert.id" :class="'alert--' + alert.type" v-on:click="dismiss(index)">
-			<font-awesome-icon class="alert__icon" :icon="alert.icon" />
+			<span class="alert__icon icon-"></span>
 			<div class="alert__title">{{ alert.title }}</div>
 			<div v-if="alert.message" class="alert__message">{{ alert.message }}</div>
 		</div>
@@ -9,30 +9,28 @@
 </template>
 
 <script>
-  import FontAwesomeIcon from '@fortawesome/vue-fontawesome';
-  import exclamationTriangle from '@fortawesome/fontawesome-free-solid/faExclamationTriangle';
-  import infoCircle from '@fortawesome/fontawesome-free-solid/faInfoCircle';
-  import exclamationCircle from '@fortawesome/fontawesome-free-solid/faExclamationCircle';
-  import check from '@fortawesome/fontawesome-free-solid/faCheck';
-
   import options from '../services/options';
   import socket from '../services/socket';
 
   export default {
-    components: {
-      FontAwesomeIcon
-    },
     data() {
       return {
-        warningIcon: exclamationTriangle,
-        errorIcon: exclamationCircle,
-        infoIcon: infoCircle,
-        successIcon: check,
 				alerts: []
       }
     },
     created() {
       socket.$on('alert', alert => {
+				if (alert.data) {
+					if (alert.data.type === 'connected' || alert.data.type === 'disconnected') {
+						for (let _alert of this.alerts) {
+							if (_alert.data && _alert.data.exchange === alert.data.exchange && _alert.data.type != alert.data.type) {
+								this.alerts.splice(this.alerts.indexOf(_alert), 1);
+								break;
+							}
+						}
+					}
+				}
+
 				if (!alert.title) {
 					alert.title = alert.message;
 
@@ -42,8 +40,6 @@
 				if (!alert.title && !alert.message) {
 					return;
 				}
-
-				alert.icon = this[alert.type + 'Icon'];
 
 				alert.id = Math.random().toString(36).substring(7);
 
@@ -59,7 +55,7 @@
 </script>
 
 <style lang="scss">
-	@import '../assets/variables';
+	@import '../assets/sass/variables';
 
 	.alert {
 		display: flex;
@@ -86,18 +82,34 @@
 
 		&.alert--error {
 			background-color: $red;
+
+			.alert__icon:before {
+				content: unicode($icon-times);
+			}
 		}
 
 		&.alert--warning {
 			background-color: $yellow;
+
+			.alert__icon:before {
+				content: unicode($icon-warning);
+			}
 		}
 
 		&.alert--success {
 			background-color: $green;
+
+			.alert__icon:before {
+				content: unicode($icon-check);
+			}
 		}
 
 		&.alert--info {
 			background-color: $blue;
+
+			.alert__icon:before {
+				content: unicode($icon-info);
+			}
 		}
 	}
 </style>

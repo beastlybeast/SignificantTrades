@@ -1,8 +1,6 @@
 import Vue from 'vue'
-import helper from './helper'
 
 const emitter = new Vue({
-  mixins: [helper],
   data() {
     return {
       trades: [],
@@ -58,8 +56,6 @@ const emitter = new Vue({
 
               const actives = data.exchanges.filter(exchange => exchange.connected);
 
-              this.currencyIcon = this.getSymbol(data.pair); 
-
               this.$emit('pair', data.pair);
 
               this.$emit('alert', {
@@ -71,8 +67,6 @@ const emitter = new Vue({
             case 'pair':
               this.$emit('pair', data.pair);  
 
-              this.currencyIcon = this.getSymbol(data.pair); 
-
               this.$emit('alert', {
                 type: 'info',
                 title: `Now tracking ${data.pair}`,
@@ -80,12 +74,21 @@ const emitter = new Vue({
             break;
             case 'exchange_connected':
               this.$emit('alert', {
+                data: {
+                  type: 'connected',
+                  exchange: data.id,
+                },
+                id: `${data.id}_connected`,
                 type: 'success',
                 message: `[${data.id}] connected`
               });   
             break;
             case 'exchange_disconnected':
               this.$emit('alert', {
+                data: {
+                  type: 'disconnected',
+                  exchange: data.id,
+                },
                 type: 'error',
                 message: `[${data.id}] disconnected`
               });   

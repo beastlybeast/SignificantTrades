@@ -329,8 +329,6 @@ class Binance extends Exchange {
     if (!super.connect(pair))  
       return;
 
-		console.log('[binance] connecting');
-
     this.server = new WebSocket(this.getUrl(this.mapping[pair]));
 
 		this.server.on('message', event => this.emitData(this.format(event)));
@@ -360,7 +358,7 @@ class Binance extends Exchange {
         trade.E,
         +trade.p,
         +trade.q,
-        trade.m ? 1 : 0
+        trade.m ? 0 : 1
       ]]
     }
 

@@ -1,0 +1,107 @@
+$iconpath: 'assets/fonts';
+
+@font-face {
+  font-family: 'icon';
+  src:  url('#{$iconpath}/icon.eot?spihm5');
+  src:  url('#{$iconpath}/icon.eot?spihm5#iefix') format('embedded-opentype'),
+    url('#{$iconpath}/icon.ttf?spihm5') format('truetype'),
+    url('#{$iconpath}/icon.woff?spihm5') format('woff'),
+    url('#{$iconpath}/icon.svg?spihm5#icon') format('svg');
+  font-weight: normal;
+  font-style: normal;
+}
+
+[class^="icon-"], [class*=" icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'icon' !important;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-cog {
+  &:before {
+    content: unicode($icon-cog); 
+  }
+}
+.icon-bitcoin {
+  &:before {
+    content: unicode($icon-bitcoin); 
+  }
+}
+.icon-btc {
+  &:before {
+    content: unicode($icon-btc); 
+  }
+}
+.icon-dollar {
+  &:before {
+    content: unicode($icon-dollar); 
+  }
+}
+.icon-down {
+  &:before {
+    content: unicode($icon-down); 
+  }
+}
+.icon-eth {
+  &:before {
+    content: unicode($icon-eth); 
+  }
+}
+.icon-euro {
+  &:before {
+    content: unicode($icon-euro); 
+  }
+}
+.icon-info {
+  &:before {
+    content: unicode($icon-info); 
+  }
+}
+.icon-monero {
+  &:before {
+    content: unicode($icon-monero); 
+  }
+}
+.icon-pound {
+  &:before {
+    content: unicode($icon-pound); 
+  }
+}
+.icon-times {
+  &:before {
+    content: unicode($icon-times); 
+  }
+}
+.icon-up {
+  &:before {
+    content: unicode($icon-up); 
+  }
+}
+.icon-warning {
+  &:before {
+    content: unicode($icon-warning); 
+  }
+}
+.icon-yen {
+  &:before {
+    content: unicode($icon-yen); 
+  }
+}
+.icon-check {
+  &:before {
+    content: unicode($icon-check); 
+  }
+}
+.icon-coin {
+  &:before {
+    content: unicode($icon-coin); 
+  }
+}

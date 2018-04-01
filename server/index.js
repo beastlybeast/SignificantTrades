@@ -10,7 +10,9 @@ try {
 } catch (error) {}
 
 const config = Object.assign({
-	pair: 'BTCUSD'
+	pair: 'BTCUSD',
+	port: 3000,
+	delay: 200,
 }, json);
 
 const Kraken = require('./src/exchanges/Kraken');
@@ -24,18 +26,20 @@ const Huobi = require('./src/exchanges/Huobi');
 const Hitbtc = require('./src/exchanges/Hitbtc');
 
 new Server({
-	port: 3000,
-	pack: false,
+	port: config.port,
+	delay: config.delay,
 	pair: config.pair,
 	exchanges: [
-		//new Bitstamp(),
+		new Bitstamp(),
 		new Kraken(),
-		/*new Huobi(),
+		new Huobi(),
 		new Hitbtc(),
 		new Okex(),
 		new Bitmex(),
 		new Binance(),
 		new Bitfinex(),
-		new Gdax()*/
+		new Gdax()
 	]
 });
+
+
