@@ -14,8 +14,8 @@ const emitter = new Vue({
       if (this.socket && this.socket.readyState === 1) {
         return;
       }
-      console.log(process.env);
-      this.socket = new WebSocket('ws://localhost:3000');
+
+      this.socket = new WebSocket(process.env.API_URL || 'ws://localhost:3000');
 
       this.socket.onopen = event => {
         this.connected = true;
