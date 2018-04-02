@@ -35,6 +35,10 @@
 
       socket.$on('trades', trades => {
         for (let trade of trades) {
+          if (options.exchanges.indexOf(trade[0]) === -1) {
+            return;
+          }
+
           if (options.groupBy) {
             if (this.ticks[trade[0]]) {
               if (+new Date() - this.ticks[trade[0]][2] > 5000) {

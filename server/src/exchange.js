@@ -72,6 +72,8 @@ class Exchange extends EventEmitter {
 
 		this.connected = true;
 
+		this.reconnectionDelay = 5000;
+
 		this.emit('open', event);
 	}
 

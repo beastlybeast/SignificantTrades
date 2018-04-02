@@ -7,10 +7,22 @@ const emitter = new Vue({
       maxRows: 20,
       pair: 'BTCUSD',
       excluded: '',
-      averageLength: 3
+      averageLength: 3,
+      exchanges: []
     }
   },
   methods: {
+    toggleExchange(exchange) {
+      const index = this.exchanges.indexOf(exchange);
+
+      if (index === -1) {
+        this.exchanges.push(exchange);
+      } else {
+        this.exchanges.splice(index, 1);
+      }
+
+      this.$emit('exchanges', this.exchanges);
+    },
     show() {
       this.opened = true;
       this.$emit('open');

@@ -1,19 +1,19 @@
 <template>
-  <div class="settings-container" v-bind:class="{ open: opened }">
-    <div class="settings-scroller">
+  <div class="settings__container" v-bind:class="{ open: opened }">
+    <div class="settings__scroller">
       <a href="#" class="toggle-settings icon-times" v-on:click="hideSettings"></a>
-      <div class="settings-wrapper">
-        <div class="settings-column">
+      <div class="settings__wrapper">
+        <div class="settings__column">
           <div class="form-group mb15">
             <label for="option-group-by">Pair</label>
             <input type="string" placeholder="BTCUSD" class="form-control" v-model="options.pair" @change="switchPair">
           </div>
           <div class="form-group mb15">
-            <label for="option-group-by">Exclude</label>
-            <input type="string" placeholder="bitmex, bithumb" class="form-control" v-model="options.excluded">
+            <label for="option-group-by">MA length</label>
+            <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.averageLength">
           </div>
         </div>
-        <div class="settings-column">
+        <div class="settings__column">
           <div class="form-group mb15">
             <label for="option-group-by">Stack trades ({{options.groupBy}})</label>
             <input type="number" min="0" max="10000000" step="10000" class="form-control" v-model="options.groupBy">
@@ -24,8 +24,16 @@
           </div>
         </div>
         <div class="form-group mb15">
-          <label for="option-group-by">Moving average length (ticks)</label>
-          <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.averageLength">
+          <label>Filter exchanges ({{ options.exchanges.length}} selected)</label>
+          <div class="settings__exchanges">
+            <a v-for="(exchange, index) in exchanges" v-bind:key="index" 
+              class="settings__exchanges__item"  
+              href="#" 
+              v-on:click="options.toggleExchange(exchange)" 
+              v-bind:class="{'settings__exchanges__item--active': options.exchanges.indexOf(exchange) !== -1}">
+              {{ exchange }}
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -39,11 +47,16 @@
   export default {
     data() {
       return {
+        exchanges: [],
         options: options,
         opened: false
       }
     },
     created() {
+      socket.$on('exchanges', exchanges => {
+        this.exchanges = exchanges;
+      });
+
       this.onopen = () => this.opened = true;
       this.onclose = () => this.opened = false;
     },
@@ -61,7 +74,7 @@
       },
       switchPair(event) {
         socket.send('pair', this.options.pair);
-      }
+      },
     }
   }
 </script>
@@ -69,7 +82,7 @@
 <style lang="scss">
 	@import '../assets/sass/variables';
 
-  .settings-container {
+  .settings__container {
     position: absolute;
     z-index: 1;
     visibility: hidden;
@@ -81,14 +94,14 @@
     transition: all .8s $easeOutExpo .2s, visibility .1s linear 1.5s;
     pointer-events: none;
 
-    .settings-scroller {
+    .settings__scroller {
       max-height: 100%;
       overflow: auto;
       transform: scale(1.2);
       opacity: 0;
       transition: all .2s $easeOutExpo;
 
-      .settings-wrapper {
+      .settings__wrapper {
         padding: 20px;
       }
     }
@@ -109,14 +122,15 @@
       }
     }
 
-    .settings-column {
+    .settings__column {
       display: flex;
 
       > div {
         margin-right: 16px;
         flex-grow: 1;
         flex-basis: 50%;
-
+        max-width: calc(50% - 8px);
+        
         &:last-child {
           margin: 0;
         }
@@ -140,14 +154,33 @@
       }
     }
 
+    .settings__exchanges {
+      .settings__exchanges__item {
+        padding: 5px 8px;
+        background-color: black;
+        color: white;
+        opacity: .3;
+        transition: all .2s $easeOutExpo;
+        border-radius: 2px;
+        margin-right: 2px;
+        margin-bottom: 3px;
+        display: inline-block;
+
+        &.settings__exchanges__item--active {
+          background-color: $green;
+          opacity: 1;
+        }
+      }
+    }
+
     &.open {
       transition: all .3s $easeOutExpo;
       visibility: visible;
       transform: none;
-      background-color: rgba(black, .7);
+      background-color: rgba(black, .5);
       pointer-events: auto;
 
-      .settings-scroller {
+      .settings__scroller {
         transition: all .3s $easeOutExpo .2s;
         transform: none;
         opacity: 1;
@@ -155,6 +188,7 @@
 
       ~ .app-wrapper {
         filter: blur(10px);
+        transform: scale(1.25);
       }
     }
   }

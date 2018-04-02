@@ -19,8 +19,6 @@
   import socket from './services/socket';
   import options from './services/options';
 
-  socket.connect();
-
   export default {
     components: {
       Alerts, Header, Settings, TradeList, TradeChart
@@ -75,6 +73,9 @@
         return price.toFixed(6 - price.toFixed().length);
       }
     },
+    mounted() {
+      socket.connect();
+    },
     methods: {
       updatePairCurrency(pair) {
         const symbols = {
@@ -110,6 +111,12 @@
 	@import './assets/sass/basic';
 	@import './assets/sass/icons';
 
+  .icon-commodity,
+  .icon-currency {
+    top: 1px;
+    position: relative;
+  }
+
   #app {
     width: 100%;
     overflow: hidden;
@@ -120,10 +127,8 @@
       width: 320px;
     }
 
-    .icon-commodity,
-    .icon-currency {
-      top: 1px;
-      position: relative;
+    > .app-wrapper {
+      transition: all .2s $easeOutExpo;
     }
     
     .icon-commodity:before {

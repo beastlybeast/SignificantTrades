@@ -13,7 +13,7 @@
     data() {
       return {
         zoom: 1,
-        range: 1000 * 60 * 20,
+        range: 1000 * 60 * 5,
         timeframe: 10000,
         follow: true,
         unfinishedTick: null,
@@ -184,6 +184,11 @@
 
         this.updateChart(this.getTicks(trades));
       });
+
+      options.$on('exchanges', exchanges => {
+        console.log('reload whole chart with new exchanges', exchanges);
+        this.updateChart(this.getTicks(), true);
+      })
     },
     mounted() {
       this.options.series[0].name = options.pair;
@@ -223,13 +228,13 @@
           if (this.unfinishedTick) {
             tick = this.unfinishedTick;
           }
-          data = input;
+          data = input.sort((a, b) => a[2] - b[2]);
         } else {
           delete this.unfinishedTick;
           data = socket.trades.slice(0);
         }
 
-        data = data.sort((a, b) => a[2] - b[2]);
+        data = data.filter(a => options.exchanges.indexOf(a[0]) !== -1);
 
         const min = this.chart.series[0].data.length ? this.chart.series[0].data[this.chart.series[0].data.length - 1].category : 0;
 
@@ -294,6 +299,11 @@
         };
       },
       updateChart(ticks, replace = false) {
+        if (ticks.prices.length && !replace && this.ajustTimeframe()) {
+          console.log('need ajust timeframe, abort current update & regenerate ticks');
+          return this.updateChart(this.getTicks(), true);
+        }
+
         if (replace) {
           if (ticks && ticks.prices && ticks.prices.length) {
             this.chart.series[0].setData(ticks.prices, false);
@@ -454,6 +464,7 @@
         }
 
         if (timeframe != current) {
+          console.log('timeframe ajustement needed', 'current:', current, 'new:', timeframe);
           this.timeframe = timeframe;
 
           return true;

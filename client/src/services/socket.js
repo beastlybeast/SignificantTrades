@@ -43,7 +43,6 @@ const emitter = new Vue({
           */
 
           data = data
-            .filter(a => options.excluded.toLowerCase().indexOf(a[0]) === -1)
             .sort((a, b) => a[2] - b[2]);
           
           this.trades = this.trades.concat(data);
@@ -60,14 +59,17 @@ const emitter = new Vue({
             case 'welcome':
               this.$emit('welcome', data);   
 
-              const actives = data.exchanges.filter(exchange => exchange.connected);
+              const actives = data.exchanges
+                .filter(exchange => exchange.connected)
+                .map(exchange => exchange.id);
+              this.$emit('exchanges', actives);
 
               this.$emit('pair', data.pair);
 
               this.$emit('alert', {
                 type: 'info',
                 title: `Tracking ${data.pair}`,
-                message: !actives.length ? 'No connected exchanges' : 'Through ' + actives.map(exchange => exchange.id.toUpperCase()).join(', ')
+                message: !actives.length ? 'No connected exchanges' : 'Through ' + actives.join(', ').toUpperCase()
               });  
             break;
             case 'pair':

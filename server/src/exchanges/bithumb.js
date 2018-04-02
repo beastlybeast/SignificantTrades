@@ -99,13 +99,17 @@ class Bithumb extends Exchange {
 	}
 
 	format(data) {
-		const output = data.filter(trade => trade.cont_no > this.reference).map(trade => [
-			trade.cont_no,
-			+new Date(trade.transaction_date),
-			+trade.price * 0.000942,
-			+trade.units_traded,
-			trade.type === 'bid' ? 1 : 0
-		]);
+		let output = [];
+		
+		if (this.reference) {
+			output = data.filter(trade => trade.cont_no > this.reference).map(trade => [
+				trade.cont_no,
+				+new Date(trade.transaction_date),
+				+trade.price * 0.000942,
+				+trade.units_traded,
+				trade.type === 'bid' ? 1 : 0
+			]);
+		}
 
 		this.reference = data[0].cont_no;
 
