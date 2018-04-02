@@ -1,4 +1,4 @@
-const Exchange = require('../Exchange');
+const Exchange = require('../exchange');
 const WebSocket = require('ws');
 
 class Binance extends Exchange {

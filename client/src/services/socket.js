@@ -15,7 +15,7 @@ const emitter = new Vue({
         return;
       }
 
-      this.socket = new WebSocket('ws://localhost:3000');
+      this.socket = new WebSocket('wss://btcusd.kevinrostagni.me/');
 
       this.socket.onopen = event => {
         this.connected = true;

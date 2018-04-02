@@ -1,29 +1,29 @@
 
 const WebSocket = require('ws');
 const Axios = require('axios');
-const Server = require('./src/Server');
+const Server = require('./src/server');
 
 let json;
 
 try {
-	let json = require('./config');
+	json = require('./config');
 } catch (error) {}
 
 const config = Object.assign({
 	pair: 'BTCUSD',
 	port: 3000,
 	delay: 200,
-}, json);
+}, json || {});
 
-const Kraken = require('./src/exchanges/Kraken');
-const Bitmex = require('./src/exchanges/Bitmex');
-const Gdax = require('./src/exchanges/Gdax');
-const Bitfinex = require('./src/exchanges/Bitfinex');
-const Okex = require('./src/exchanges/Okex');
-const Bitstamp = require('./src/exchanges/Bitstamp');
-const Binance = require('./src/exchanges/Binance');
-const Huobi = require('./src/exchanges/Huobi');
-const Hitbtc = require('./src/exchanges/Hitbtc');
+const Kraken = require('./src/exchanges/kraken');
+const Bitmex = require('./src/exchanges/bitmex');
+const Gdax = require('./src/exchanges/gdax');
+const Bitfinex = require('./src/exchanges/bitfinex');
+const Okex = require('./src/exchanges/okex');
+const Bitstamp = require('./src/exchanges/bitstamp');
+const Binance = require('./src/exchanges/binance');
+const Huobi = require('./src/exchanges/huobi');
+const Hitbtc = require('./src/exchanges/hitbtc');
 
 new Server({
 	port: config.port,

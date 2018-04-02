@@ -1,4 +1,4 @@
-const Exchange = require('../Exchange');
+const Exchange = require('../exchange');
 const Pusher = require('pusher-js');
 
 class Bitstamp extends Exchange {
