@@ -24,13 +24,15 @@ const Bitstamp = require('./src/exchanges/bitstamp');
 const Binance = require('./src/exchanges/binance');
 const Huobi = require('./src/exchanges/huobi');
 const Hitbtc = require('./src/exchanges/hitbtc');
+const Poloniex = require('./src/exchanges/poloniex');
+const Bithumb = require('./src/exchanges/bithumb');
 
 new Server({
 	port: config.port,
 	delay: config.delay,
 	pair: config.pair,
 	exchanges: [
-		new Bitstamp(),
+		/*new Bitstamp(),
 		new Kraken(),
 		new Huobi(),
 		new Hitbtc(),
@@ -38,7 +40,9 @@ new Server({
 		new Bitmex(),
 		new Binance(),
 		new Bitfinex(),
-		new Gdax()
+		new Gdax(),*/
+		//new Poloniex(),
+		new Bithumb()
 	]
 });
 
