@@ -14,4 +14,4 @@ deploy:
   github_token: $github_token
   local_dir: client
   on:
-    branch: gh-pages
+    branch: master
