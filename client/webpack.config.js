@@ -93,7 +93,7 @@ if (process.env.NODE_ENV === 'production') {
     new webpack.DefinePlugin({
       'process.env': {
         NODE_ENV: '"production"',
-        API_URL: process.env.API_URL
+        API_URL: process.env.API_URL ? '\'' + process.env.API_URL + '\'' : null
       }
     }),
     new webpack.optimize.UglifyJsPlugin({
