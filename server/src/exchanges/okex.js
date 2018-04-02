@@ -505,27 +505,27 @@ class Okex extends Exchange {
     if (!super.connect(pair))  
       return;
 
-    this.server = new WebSocket(this.getUrl());
+    this.api = new WebSocket(this.getUrl());
 
-    this.server.on('message', event => this.emitData(this.format(event)));
+    this.api.on('message', event => this.emitData(this.format(event)));
 
-    this.server.on('open', event => {
-      this.server.send(JSON.stringify({event:'addChannel', channel:'ok_sub_spot_' + this.mapping[pair] + '_deals'}));
+    this.api.on('open', event => {
+      this.api.send(JSON.stringify({event:'addChannel', channel:'ok_sub_spot_' + this.mapping[pair] + '_deals'}));
 
       this.keepalive = setInterval(() => {
-        this.server.send(JSON.stringify({event: 'ping'}));
+        this.api.send(JSON.stringify({event: 'ping'}));
       }, 30000);
 
       this.emitOpen(event);
     });
 
-    this.server.on('close', event => {
+    this.api.on('close', event => {
       this.emitClose(event);
 
       clearInterval(this.keepalive);
     });
 
-    this.server.on('error', this.emitError.bind(this));
+    this.api.on('error', this.emitError.bind(this));
 	}
 
 	disconnect() {
@@ -534,8 +534,8 @@ class Okex extends Exchange {
 
     clearInterval(this.keepalive);
 
-    if (this.server && this.server.readyState < 2) {
-      this.server.close();
+    if (this.api && this.api.readyState < 2) {
+      this.api.close();
 
       delete this.reference;
     }

@@ -1,5 +1,7 @@
 import Vue from 'vue'
 
+import options from './options'
+
 const emitter = new Vue({
   data() {
     return {
@@ -14,7 +16,7 @@ const emitter = new Vue({
       if (this.socket && this.socket.readyState === 1) {
         return;
       }
-      
+
       this.socket = new WebSocket(process.env.API_URL || 'ws://localhost:3000');
 
       this.socket.onopen = event => {
@@ -28,6 +30,8 @@ const emitter = new Vue({
       this.socket.onmessage = event => {
         let data = JSON.parse(event.data);
 
+        const excluded = options.excluded;
+
         if (!data) {
           throw new Error('Unable to read socket message');
         }
@@ -35,10 +39,12 @@ const emitter = new Vue({
         if (Array.isArray(data) && data.length) {
 
           /* received message is trade data 
-              => sort, store and transmit to components
+              => filter, sort, store and transmit to components
           */
 
-          data = data.sort((a, b) => a[2] - b[2]);
+          data = data
+            .filter(a => options.excluded.toLowerCase().indexOf(a[0]) === -1)
+            .sort((a, b) => a[2] - b[2]);
           
           this.trades = this.trades.concat(data);
 

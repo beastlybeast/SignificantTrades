@@ -41,8 +41,8 @@ class Gdax extends Exchange {
     if (!super.connect(pair))  
       return;
 
-		this.server = new WebSocket(this.getUrl());
-		this.server.on('message', data => {
+		this.api = new WebSocket(this.getUrl());
+		this.api.on('message', data => {
       if (!data) {
         return;
       }
@@ -60,8 +60,8 @@ class Gdax extends Exchange {
       }
     });
 
-		this.server.on('open', event => {
-      this.server.send(JSON.stringify({
+		this.api.on('open', event => {
+      this.api.send(JSON.stringify({
         type: 'subscribe',
         channels: [{"name": "full", "product_ids": [this.pair]}]
       }));
@@ -69,16 +69,16 @@ class Gdax extends Exchange {
       this.emitOpen(event);
     });
 
-		this.server.on('close', this.emitClose.bind(this));
-    this.server.on('error', this.emitError.bind(this));
+		this.api.on('close', this.emitClose.bind(this));
+    this.api.on('error', this.emitError.bind(this));
 	}
 
 	disconnect() {
     if (!super.disconnect())
       return;
 
-    if (this.server && this.server.readyState < 2) {
-      this.server.close();
+    if (this.api && this.api.readyState < 2) {
+      this.api.close();
     }
 	}
 

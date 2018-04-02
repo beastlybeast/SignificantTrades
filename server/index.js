@@ -32,7 +32,7 @@ new Server({
 	delay: config.delay,
 	pair: config.pair,
 	exchanges: [
-		/*new Bitstamp(),
+		new Bitstamp(),
 		new Kraken(),
 		new Huobi(),
 		new Hitbtc(),
@@ -40,8 +40,8 @@ new Server({
 		new Bitmex(),
 		new Binance(),
 		new Bitfinex(),
-		new Gdax(),*/
-		//new Poloniex(),
+		new Gdax(),
+		new Poloniex(),
 		new Bithumb()
 	]
 });

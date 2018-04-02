@@ -3,9 +3,15 @@
     <div class="settings-scroller">
       <a href="#" class="toggle-settings icon-times" v-on:click="hideSettings"></a>
       <div class="settings-wrapper">
-        <div class="form-group mb15">
-          <label for="option-group-by">Pair</label>
-          <input type="string" placeholder="BTCUSD" class="form-control" v-model="options.pair" @change="switchPair">
+        <div class="settings-column">
+          <div class="form-group mb15">
+            <label for="option-group-by">Pair</label>
+            <input type="string" placeholder="BTCUSD" class="form-control" v-model="options.pair" @change="switchPair">
+          </div>
+          <div class="form-group mb15">
+            <label for="option-group-by">Exclude</label>
+            <input type="string" placeholder="bitmex, bithumb" class="form-control" v-model="options.excluded">
+          </div>
         </div>
         <div class="settings-column">
           <div class="form-group mb15">
@@ -16,6 +22,10 @@
             <label for="option-group-by">Max rows</label>
             <input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
           </div>
+        </div>
+        <div class="form-group mb15">
+          <label for="option-group-by">Moving average length (ticks)</label>
+          <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.averageLength">
         </div>
       </div>
     </div>

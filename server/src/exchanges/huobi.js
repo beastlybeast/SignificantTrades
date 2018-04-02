@@ -241,12 +241,12 @@ class Huobi extends Exchange {
     if (!super.connect(pair))  
       return;
 
-    this.server = new WebSocket(this.getUrl());
+    this.api = new WebSocket(this.getUrl());
 
-		this.server.on('message', event => this.emitData(this.format(event)));
+		this.api.on('message', event => this.emitData(this.format(event)));
 
-		this.server.on('open', event => {
-      this.server.send(JSON.stringify({
+		this.api.on('open', event => {
+      this.api.send(JSON.stringify({
         sub: 'market.' + this.pair + '.trade.detail',
         id: this.pair,
       }));
@@ -254,17 +254,17 @@ class Huobi extends Exchange {
       this.emitOpen(event);
     });
 
-		this.server.on('close', this.emitClose.bind(this));
+		this.api.on('close', this.emitClose.bind(this));
 
-    this.server.on('error', this.emitError.bind(this));
+    this.api.on('error', this.emitError.bind(this));
 	}
 
 	disconnect() {
     if (!super.disconnect())  
       return;
 
-    if (this.server && this.server.readyState < 2) {
-      this.server.close();
+    if (this.api && this.api.readyState < 2) {
+      this.api.close();
     }
 	}
 
@@ -276,7 +276,7 @@ class Huobi extends Exchange {
     }
 
     if (json.ping) {
-      this.server.send(JSON.stringify({pong: json.ping}));
+      this.api.send(JSON.stringify({pong: json.ping}));
       return;
     } else if (json.tick && json.tick.data && json.tick.data.length) {
       return json.tick.data.map(trade => [

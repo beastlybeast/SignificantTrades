@@ -118,7 +118,7 @@
         if (!refresh && storage && +new Date() - storage.timestamp < 1000 * 60 * 60) {
           this.gifs = storage.data;
         } else {
-          fetch('http://api.giphy.com/v1/gifs/search?q=money&rating=r&limit=100&api_key=b5Y5CZcpj9spa0xEfskQxGGnhChYt3hi')
+          fetch('https://api.giphy.com/v1/gifs/search?q=money&rating=r&limit=100&api_key=b5Y5CZcpj9spa0xEfskQxGGnhChYt3hi')
             .then(res => res.json())
             .then(res => {
               if (!res.data || !res.data.length) {

@@ -51,9 +51,9 @@ npm run dev
 Profit !
 
 *TODO*
-- [ ] Setup a little demo on github
-- [ ] Improve client performances
-- [ ] Inter-exchanges volume averaged price
+- [x] Setup a little demo on github
+- [x] Improve client performances
+- [x] Inter-exchanges volume averaged price
 - [ ] Multiple channels monitoring at once (need storage server side)
 - [ ] Alerts & push notifications
 

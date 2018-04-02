@@ -1,8 +1,6 @@
 const Exchange = require('../exchange');
 const WebSocket = require('ws');
 const axios = require('axios');
-const qs = require('qs');
-const crypto = require('crypto');
 
 class Kraken extends Exchange {
 
@@ -103,13 +101,7 @@ class Kraken extends Exchange {
 			params.since = this.reference;
 		}
 
-		/*const headers = {
-			'API-Key': this.options.key,
-			'API-Sign': this.getSignature(this.getUrl(), params)
-		}*/
-
 		axios.get(this.getUrl(), {
-			// headers: headers,
 			params: params,
 			cancelToken: this.source.token
 		})
@@ -174,17 +166,6 @@ class Kraken extends Exchange {
 				return output;
 			}
 		}
-	}
-
-	getSignature(path, params) {
-		const message = qs.stringify(params);
-		const secret_buffer = new Buffer(this.options.secret, 'base64');
-		const hash = new crypto.createHash('sha256');
-		const hmac = new crypto.createHmac('sha512', secret_buffer);
-		const hash_digest = hash.update((new Date() * 1000) + message).digest('binary');
-		const hmac_digest = hmac.update(path + hash_digest, 'binary').digest('base64');
-
-		return hmac_digest;
 	}
 
 }

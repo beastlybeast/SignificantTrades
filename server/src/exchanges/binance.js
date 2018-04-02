@@ -329,23 +329,23 @@ class Binance extends Exchange {
     if (!super.connect(pair))  
       return;
 
-    this.server = new WebSocket(this.getUrl(this.mapping[pair]));
+    this.api = new WebSocket(this.getUrl(this.mapping[pair]));
 
-		this.server.on('message', event => this.emitData(this.format(event)));
+		this.api.on('message', event => this.emitData(this.format(event)));
 
-		this.server.on('open', this.emitOpen.bind(this));
+		this.api.on('open', this.emitOpen.bind(this));
 
-		this.server.on('close', this.emitClose.bind(this));
+		this.api.on('close', this.emitClose.bind(this));
 
-		this.server.on('error', this.emitError.bind(this));
+		this.api.on('error', this.emitError.bind(this));
 	}
 
 	disconnect() {
     if (!super.disconnect())  
       return;
 
-    if (this.server && this.server.readyState < 2) {
-      this.server.close();
+    if (this.api && this.api.readyState < 2) {
+      this.api.close();
     }
 	}
 

@@ -6,6 +6,8 @@ const emitter = new Vue({
       groupBy: 100000,
       maxRows: 20,
       pair: 'BTCUSD',
+      excluded: '',
+      averageLength: 3
     }
   },
   methods: {

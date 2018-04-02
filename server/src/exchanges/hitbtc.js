@@ -659,12 +659,12 @@ class Huobi extends Exchange {
     if (!super.connect(pair))  
       return;
 
-    this.server = new WebSocket(this.getUrl());
+    this.api = new WebSocket(this.getUrl());
 
-		this.server.on('message', event => this.emitData(this.format(event)));
+		this.api.on('message', event => this.emitData(this.format(event)));
 
-		this.server.on('open', event => {
-      this.server.send(JSON.stringify({
+		this.api.on('open', event => {
+      this.api.send(JSON.stringify({
 				method: 'subscribeTrades',
 				params: {
 					symbol: this.pair
@@ -674,9 +674,9 @@ class Huobi extends Exchange {
       this.emitOpen(event);
     });
 
-		this.server.on('close', this.emitClose.bind(this));
+		this.api.on('close', this.emitClose.bind(this));
 
-    this.server.on('error', this.emitError.bind(this));
+    this.api.on('error', this.emitError.bind(this));
 	}
 
 	disconnect() {
@@ -684,11 +684,11 @@ class Huobi extends Exchange {
       return;
 		}
 
-    if (this.server && this.server.readyState < 2) {
-      this.server.close();
+    if (this.api && this.api.readyState < 2) {
+      this.api.close();
     } else {
 
-			console.log('hitbtc server readystate', this.server.readyState);
+			console.log('hitbtc server readystate', this.api.readyState);
 		}
 	}
 

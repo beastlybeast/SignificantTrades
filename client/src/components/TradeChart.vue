@@ -17,6 +17,7 @@
         timeframe: 10000,
         follow: true,
         unfinishedTick: null,
+        averages: [],
         chart: null,
         options: {
           chart: {
@@ -242,6 +243,12 @@
             if (tick) {
               const points = this.tickToPoints(tick);
 
+              this.averages.push([points.prices[1], tick.sizes.reduce((a, b) => a + b)]);
+
+              if (this.averages.length > options.averageLength) {
+                this.averages.splice(0, this.averages.length - options.averageLength);
+              }
+
               buys.push(points.buys);
               sells.push(points.sells);
               prices.push(points.prices);
@@ -276,7 +283,9 @@
       },
       tickToPoints(tick) {
         const timestamp = tick.timestamps.sort((a, b) => a - b)[0];
-        const average = (tick.prices.map((price, index) => price * tick.sizes[index]).reduce((a, b) => a + b) / tick.prices.length) / (tick.sizes.reduce((a, b) => a + b) / tick.sizes.length)
+        const prices = this.averages.map(a => a[0]).concat(tick.prices);
+        const sizes = this.averages.map(a => a[1]).concat(tick.sizes);
+        const average = (prices.map((price, index) => price * sizes[index]).reduce((a, b) => a + b) / prices.length) / (sizes.reduce((a, b) => a + b) / sizes.length)
 
         return {
           buys: [timestamp, tick.buys],

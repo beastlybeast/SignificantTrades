@@ -45,22 +45,22 @@ class Bitstamp extends Exchange {
     if (!super.connect(pair))  
       return;
 
-    this.server = new Pusher(this.options.appId);
-    const channel = this.server.subscribe(this.options.channel + (this.pair === 'btcusd' ? '' : '_' + this.pair));
+    this.api = new Pusher(this.options.appId);
+    const channel = this.api.subscribe(this.options.channel + (this.pair === 'btcusd' ? '' : '_' + this.pair));
 
-    this.server.bind(this.options.bind, trade => this.emitData(this.format(trade)));
+    this.api.bind(this.options.bind, trade => this.emitData(this.format(trade)));
 
-    this.server.connection.bind('error', this.emitError.bind(this));
-    this.server.connection.bind('connected', this.emitOpen.bind(this));
-    this.server.connection.bind('disconnected', this.emitClose.bind(this));
+    this.api.connection.bind('error', this.emitError.bind(this));
+    this.api.connection.bind('connected', this.emitOpen.bind(this));
+    this.api.connection.bind('disconnected', this.emitClose.bind(this));
 	}
 
 	disconnect() {
     if (!super.disconnect())  
       return;
       
-    if (this.server && this.server.connection.state === 'connected') {
-      this.server.disconnect();
+    if (this.api && this.api.connection.state === 'connected') {
+      this.api.disconnect();
     }
 	}
 
