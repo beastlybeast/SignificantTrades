@@ -1,6 +1,4 @@
-
-const WebSocket = require('ws');
-const Axios = require('axios');
+const fs = require('fs');
 const Server = require('./src/server');
 
 let json;
@@ -15,35 +13,25 @@ const config = Object.assign({
 	delay: 200,
 }, json || {});
 
-const Kraken = require('./src/exchanges/kraken');
-const Bitmex = require('./src/exchanges/bitmex');
-const Gdax = require('./src/exchanges/gdax');
-const Bitfinex = require('./src/exchanges/bitfinex');
-const Okex = require('./src/exchanges/okex');
-const Bitstamp = require('./src/exchanges/bitstamp');
-const Binance = require('./src/exchanges/binance');
-const Huobi = require('./src/exchanges/huobi');
-const Hitbtc = require('./src/exchanges/hitbtc');
-const Poloniex = require('./src/exchanges/poloniex');
-const Bithumb = require('./src/exchanges/bithumb');
+if (!config.exchanges || !config.exchanges.length) {
+	config.exchanges = process.argv.slice(2);
+
+	if (!config.exchanges.length) {
+		fs.readdirSync('./src/exchanges/').forEach(file => {
+			/\.js$/.test(file) && config.exchanges.push(file.replace(/\.js$/, ''));
+		})
+	}
+}
+
+for (let name of config.exchanges) {
+	const exchange = require('./src/exchanges/' + name);
+
+	config.exchanges[config.exchanges.indexOf(name)] = new exchange(config[name] || {});
+}
 
 new Server({
 	port: config.port,
 	delay: config.delay,
 	pair: config.pair,
-	exchanges: [
-		new Bitstamp(),
-		new Kraken(),
-		new Huobi(),
-		new Hitbtc(),
-		new Okex(),
-		new Bitmex(),
-		new Binance(),
-		new Bitfinex(),
-		new Gdax(),
-		new Poloniex(),
-		new Bithumb()
-	]
+	exchanges: config.exchanges
 });
-
-

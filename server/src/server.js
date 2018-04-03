@@ -12,7 +12,6 @@ class Server {
 			pair: 'BTCUSD',
 			port: 8080,
 			delay: false,
-			exchange: []
 		}, options);
 
 		if (!this.options.exchanges || !this.options.exchanges.length) {
@@ -197,7 +196,7 @@ class Server {
 		}
 
 		console.log(`[${method}] starting`);
-		
+
 		this.processingAction = true;
 
 		fn(() => {
@@ -222,7 +221,7 @@ class Server {
 			if (now - this.timestamps[exchange.id] > 1000 * 60 * 5) {
 				console.log('[warning] ' + exchange.id + ' hasn\'t sent any data since more than 5 minutes');
 				exchange.reconnect();
-				
+
 				delete this.timestamps[exchange.id];
 				return;
 			}
