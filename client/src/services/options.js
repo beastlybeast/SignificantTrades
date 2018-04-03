@@ -11,6 +11,11 @@ const emitter = new Vue({
       exchanges: []
     }
   },
+  created() {
+    for (let prop in this.$data) {
+      this.$watch(prop, this.onChange.bind(this, prop));
+    }
+  },
   methods: {
     toggleExchange(exchange) {
       const index = this.exchanges.indexOf(exchange);
@@ -20,8 +25,6 @@ const emitter = new Vue({
       } else {
         this.exchanges.splice(index, 1);
       }
-
-      this.$emit('exchanges', this.exchanges);
     },
     show() {
       this.opened = true;
@@ -31,6 +34,12 @@ const emitter = new Vue({
       this.opened = false;
       this.$emit('close');
     },
+    onChange(prop, current, old) {
+      this.$emit('change', {
+        prop: prop,
+        value: current
+      })
+    }
   }
 });
 

@@ -87,7 +87,7 @@
             padding: 4,
             shadow: false,
             hideDelay: 0,
-            formatter: function(e) {            
+            formatter: function(e) {
               return '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + this.series.name + ' ' + app.getAttribute('data-symbol') + formatPrice(this.y).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
             },
             style: {
@@ -185,9 +185,13 @@
         this.updateChart(this.getTicks(trades));
       });
 
-      options.$on('exchanges', exchanges => {
-        console.log('reload whole chart with new exchanges', exchanges);
-        this.updateChart(this.getTicks(), true);
+      options.$on('change', data => {
+        switch (data.prop) {
+          case 'exchanges':
+          case 'averageLength':
+            this.updateChart(this.getTicks(), true);
+          break;
+        }
       })
     },
     mounted() {
@@ -305,11 +309,11 @@
         }
 
         if (replace) {
-          if (ticks && ticks.prices && ticks.prices.length) {
-            this.chart.series[0].setData(ticks.prices, false);
-            this.chart.series[1].setData(ticks.sells, false);
-            this.chart.series[2].setData(ticks.buys, false);
-          }
+          this.chart.series[0].setData(ticks.prices, false);
+          this.chart.series[1].setData(ticks.sells, false);
+          this.chart.series[2].setData(ticks.buys, false);
+
+          this.chart.redraw();
         } else {
           for (let i=0; i<ticks.prices.length; i++) {
             this.chart.series[0].addPoint(ticks.prices[i], false);
@@ -451,12 +455,14 @@
           timeframe = 10000; // 10s
         } else if (this.range < hour) {
           timeframe = 30000; // 30s
-        } else if (this.range < hour * 4) {
+        } else if (this.range < hour * 2) {
           timeframe = 60000; // 1min
-        } else if (this.range < hour * 12) {
+        } else if (this.range < hour * 6) {
           timeframe = 60000 * 5; // 5min
-        } else if (this.range < hour * 24) {
+        } else if (this.range < hour * 12) {
           timeframe = 60000 * 15; // 15min
+        } else if (this.range < hour * 24) {
+          timeframe = 60000 * 30; // 30min
         } else if (this.range < hour * 24 * 7) {
           timeframe = 3600000; // 1h
         } else {

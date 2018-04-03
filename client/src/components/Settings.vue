@@ -26,10 +26,10 @@
         <div class="form-group mb15">
           <label>Filter exchanges ({{ options.exchanges.length}} selected)</label>
           <div class="settings__exchanges">
-            <a v-for="(exchange, index) in exchanges" v-bind:key="index" 
-              class="settings__exchanges__item"  
-              href="#" 
-              v-on:click="options.toggleExchange(exchange)" 
+            <a v-for="(exchange, index) in exchanges" v-bind:key="index"
+              class="settings__exchanges__item"
+              href="#"
+              v-on:click="options.toggleExchange(exchange)"
               v-bind:class="{'settings__exchanges__item--active': options.exchanges.indexOf(exchange) !== -1}">
               {{ exchange }}
             </a>
@@ -116,7 +116,7 @@
       top: 2px;
       font-size: 24px;
       opacity: .2;
-      
+
       &:hover {
         opacity: 1;
       }
@@ -130,7 +130,7 @@
         flex-grow: 1;
         flex-basis: 50%;
         max-width: calc(50% - 8px);
-        
+
         &:last-child {
           margin: 0;
         }
