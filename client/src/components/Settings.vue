@@ -55,6 +55,12 @@
     created() {
       socket.$on('exchanges', exchanges => {
         this.exchanges = exchanges;
+
+        options.exchanges = options.exchanges.filter(selected => this.exchanges.indexOf(selected) !== -1);
+
+        if (!options.exchanges.length) {
+          options.exchanges = this.exchanges.filter(exchange => ['bithumb', 'hitbtc'].indexOf(exchange) === -1);
+        }
       });
 
       this.onopen = () => this.opened = true;
@@ -112,7 +118,7 @@
 
     .toggle-settings {
       position: absolute;
-      right: 5px;
+      right: 4px;
       top: 2px;
       font-size: 24px;
       opacity: .2;

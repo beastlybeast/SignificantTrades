@@ -254,7 +254,7 @@
           position: relative;
 
           > span {
-            max-width: 110%;
+            max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
             position: absolute;

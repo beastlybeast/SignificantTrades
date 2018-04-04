@@ -17,7 +17,10 @@
         timeframe: 10000,
         follow: true,
         unfinishedTick: null,
-        averages: [],
+        averages: {
+          prices: [],
+          sizes: [],
+        },
         chart: null,
         options: {
           chart: {
@@ -74,7 +77,7 @@
               tickAmount: 8,
           },{
               gridLineColor: 'rgba(0, 0, 0, 0)',
-              startOnTick: true,
+              startOnTick: false,
           }],
           exporting: {
             enabled: false
@@ -137,7 +140,6 @@
             data: [],
             color: '#222',
             dashStyle: 'ShortDash',
-            // stacking: 'stream',
             animation: false,
             lineWidth: 2,
           },{
@@ -235,6 +237,8 @@
           data = input.sort((a, b) => a[2] - b[2]);
         } else {
           delete this.unfinishedTick;
+          this.averages.prices.splice(0, this.averages.prices.length);
+          this.averages.sizes.splice(0, this.averages.sizes.length);
           data = socket.trades.slice(0);
         }
 
@@ -252,10 +256,12 @@
             if (tick) {
               const points = this.tickToPoints(tick);
 
-              this.averages.push([points.prices[1], tick.sizes.reduce((a, b) => a + b)]);
+              this.averages.prices.push(points.prices[1])
+              this.averages.sizes.push(tick.sizes.reduce((a, b) => a + b));
 
-              if (this.averages.length > options.averageLength) {
-                this.averages.splice(0, this.averages.length - options.averageLength);
+              if (this.averages.prices.length > options.averageLength) {
+                this.averages.prices = this.averages.prices.splice(options.averageLength * -1);
+                this.averages.sizes = this.averages.sizes.splice(options.averageLength * -1);
               }
 
               buys.push(points.buys);
@@ -292,9 +298,25 @@
       },
       tickToPoints(tick) {
         const timestamp = tick.timestamps.sort((a, b) => a - b)[0];
-        const prices = this.averages.map(a => a[0]).concat(tick.prices);
-        const sizes = this.averages.map(a => a[1]).concat(tick.sizes);
-        const average = (prices.map((price, index) => price * sizes[index]).reduce((a, b) => a + b) / prices.length) / (sizes.reduce((a, b) => a + b) / sizes.length)
+
+        /* get tick weighed average
+        */
+        let sizes = [tick.sizes.reduce((a, b) => a + b)];
+        let prices = [(tick.prices.map((price, index) => price * tick.sizes[index])).reduce((a, b) => a + b) / sizes[0]];
+        let average;
+
+        if (options.averageLength) {
+          /* get smoothed weighed average
+          */
+
+          prices = prices.concat(this.averages.prices.slice(options.averageLength * -1));
+          sizes = sizes.concat(this.averages.sizes.slice(options.averageLength * -1));
+
+          average = (prices.map((price, index) => price * sizes[index])).reduce((a, b) => a + b) / sizes.reduce((a, b) => a + b);
+        
+        } else {
+          average = prices[0];
+        }
 
         return {
           buys: [timestamp, tick.buys],
@@ -304,7 +326,6 @@
       },
       updateChart(ticks, replace = false) {
         if (ticks.prices.length && !replace && this.ajustTimeframe()) {
-          console.log('need ajust timeframe, abort current update & regenerate ticks');
           return this.updateChart(this.getTicks(), true);
         }
 
@@ -432,27 +453,10 @@
 
         const hour = 1000 * 60 * 60;
 
-        /*
-          0-10m
-            -> 10s tick
-          10m-60m
-            -> 30s tick
-          1h-4h
-            -> 1m tick
-          4h-12h
-            -> 5m tick
-          12h-24h
-            -> 15m tick
-          1d-7d
-            -> 1h tick
-          7d-2w
-            -> 4h tick
-          2w+
-            -> 1d tick
-        */
-
         if (this.range < hour / 6) {
-          timeframe = 10000; // 10s
+          timeframe = 15000; // 10s
+        } else if (this.range < hour / 2) {
+          timeframe = 20000; // 20s
         } else if (this.range < hour) {
           timeframe = 30000; // 30s
         } else if (this.range < hour * 2) {
@@ -470,7 +474,6 @@
         }
 
         if (timeframe != current) {
-          console.log('timeframe ajustement needed', 'current:', current, 'new:', timeframe);
           this.timeframe = timeframe;
 
           return true;

@@ -686,10 +686,7 @@ class Huobi extends Exchange {
 
     if (this.api && this.api.readyState < 2) {
       this.api.close();
-    } else {
-
-			console.log('hitbtc server readystate', this.api.readyState);
-		}
+    }
 	}
 
 	format(event) {
