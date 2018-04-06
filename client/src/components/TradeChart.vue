@@ -305,10 +305,12 @@
         let prices = [(tick.prices.map((price, index) => price * tick.sizes[index])).reduce((a, b) => a + b) / sizes[0]];
         let average;
 
-        if (options.averageLength) {
+        socket.$emit('price', prices[0]);
+
+        if (options.averageLength > 0) {
+          
           /* get smoothed weighed average
           */
-
           prices = prices.concat(this.averages.prices.slice(options.averageLength * -1));
           sizes = sizes.concat(this.averages.sizes.slice(options.averageLength * -1));
 
@@ -347,8 +349,6 @@
 
         if (this.unfinishedTick) {
           const points = this.tickToPoints(this.unfinishedTick);
-
-          socket.$emit('price', points.prices[1]);
 
           if (this.chart.series[0].data.length && !replace) {
             this.chart.series[0].data[this.chart.series[0].data.length - 1].update(points.prices, false)

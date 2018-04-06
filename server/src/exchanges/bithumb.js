@@ -56,17 +56,14 @@ class Bithumb extends Exchange {
 		axios.get(this.getUrl('recent_transactions', this.pair), {
 			cancelToken: this.source.token
 		})
-			.then(response => {				
-				if (!response || !response.data) {
-					throw new Error('Empty response');
+			.then(response => {		
+				if (response.status !== 200 || !response.data || !response.data.data || !response.data.data.length)  {
+					this.schedule();
+					return;
 				}
 				
 				if (['0000', '200'].indexOf(response.data.status.toString()) === -1) {
 					throw new Error(`Invalid response status (${response.data.status})`);
-				}
-				
-				if (!response.data.data || !response.data.data.length) {
-					throw new Error(`Response does not contains any data`);
 				}
 
 				this.emitData(this.format(response.data.data));

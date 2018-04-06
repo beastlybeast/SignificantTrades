@@ -9,7 +9,7 @@
             <input type="string" placeholder="BTCUSD" class="form-control" v-model="options.pair" @change="switchPair">
           </div>
           <div class="form-group mb15">
-            <label for="option-group-by">MA length</label>
+            <label for="option-group-by">Average periods</label>
             <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.averageLength">
           </div>
         </div>
@@ -106,6 +106,7 @@
       transform: scale(1.2);
       opacity: 0;
       transition: all .2s $easeOutExpo;
+      position: relative;
 
       .settings__wrapper {
         padding: 20px;
