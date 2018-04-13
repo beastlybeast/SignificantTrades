@@ -6,6 +6,7 @@ const emitter = new Vue({
   data() {
     return {
       trades: [],
+      exchanges: [],
       socket: null,
       connected: false,
       reconnectionDelay: 5000
@@ -59,10 +60,10 @@ const emitter = new Vue({
             case 'welcome':
               this.$emit('welcome', data);   
 
-              const actives = data.exchanges
+              this.exchanges = data.exchanges
                 .filter(exchange => exchange.connected)
                 .map(exchange => exchange.id);
-              this.$emit('exchanges', actives);
+              this.$emit('exchanges', this.exchanges);
 
               this.$emit('pair', data.pair);
 
@@ -89,7 +90,12 @@ const emitter = new Vue({
                 id: `${data.id}_connected`,
                 type: 'success',
                 message: `[${data.id}] connected`
-              });   
+              });
+              
+              if (this.exchanges.indexOf(data.id) === -1)
+                this.exchanges.push(data.id);
+
+              this.$emit('exchanges', this.exchanges);
             break;
             case 'exchange_disconnected':
               this.$emit('alert', {
@@ -100,6 +106,11 @@ const emitter = new Vue({
                 type: 'error',
                 message: `[${data.id}] disconnected`
               });   
+              
+              if (this.exchanges.indexOf(data.id) !== -1)
+                this.exchanges.splice(this.exchanges.indexOf(data.id), 1);
+
+              this.$emit('exchanges', this.exchanges);
             break;
             case 'exchange_error':
               this.$emit('alert', {

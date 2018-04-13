@@ -58,7 +58,7 @@
           return '0.00';
         }
 
-        if (price <= 0.00001) {
+        if (price <= 0.0001) {
           return (price * 100000000).toFixed() + ' <small>sats</small>';
         } else if (price >= 1000) {
           return price.toFixed(2);

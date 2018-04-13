@@ -35,29 +35,37 @@
 
       socket.$on('trades', trades => {
         for (let trade of trades) {
-          if (options.exchanges.indexOf(trade[0]) === -1) {
+
+          // group by [exchange name + buy=1/sell=0] (ex bitmex1)
+          const tid = trade[0] + trade[5]; 
+
+          if (options.exchanges.indexOf(tid) === -1) {
             return;
           }
 
           if (options.groupBy) {
-            if (this.ticks[trade[0]]) {
-              if (+new Date() - this.ticks[trade[0]][2] > 5000) {
-                delete this.ticks[trade[0]];
+            if (this.ticks[tid]) {
+              if (+new Date() - this.ticks[tid][2] > 5000) {
+                delete this.ticks[tid];
               } else {
-                this.ticks[trade[0]][3] = (this.ticks[trade[0]][3] * this.ticks[trade[0]][4] + trade[3] * trade[4]) / 2 / ((this.ticks[trade[0]][4] + trade[4]) / 2);
-                this.ticks[trade[0]][4] += trade[4];
 
-                if (this.ticks[trade[0]][3] * this.ticks[trade[0]][4] >= options.groupBy) {
-                  this.appendTrade(this.ticks[trade[0]]);
-                  delete this.ticks[trade[0]];
+                // average group prices
+                this.ticks[tid][3] = (this.ticks[tid][3] * this.ticks[tid][4] + trade[3] * trade[4]) / 2 / ((this.ticks[tid][4] + trade[4]) / 2);
+                
+                // sum volume
+                this.ticks[tid][4] += trade[4];
+
+                if (this.ticks[tid][3] * this.ticks[tid][4] >= options.groupBy) {
+                  this.appendTrade(this.ticks[tid]);
+                  delete this.ticks[tid];
                 }
 
                 continue;
               }
             }
 
-            if (!this.ticks[trade[0]] && trade[3] * trade[4] < options.groupBy) {
-              this.ticks[trade[0]] = trade;
+            if (!this.ticks[tid] && trade[3] * trade[4] < options.groupBy) {
+              this.ticks[tid] = trade;
               continue;
             }
           }
