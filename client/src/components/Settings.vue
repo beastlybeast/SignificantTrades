@@ -4,26 +4,32 @@
       <a href="#" class="toggle-settings icon-times" v-on:click="hideSettings"></a>
       <div class="settings__wrapper" ref="settingsWrapper">
         <div class="settings__column">
-          <div class="form-group mb15">
-            <label for="option-group-by">Pair</label>
+          <div class="form-group mb15" title="The current pair">
+            <label>Pair</label>
             <input type="string" placeholder="BTCUSD" class="form-control" v-model="options.pair" @change="switchPair">
           </div>
-          <div class="form-group mb15">
-            <label for="option-group-by">Average periods</label>
+          <div class="form-group mb15" title="VWAP the price line over n ticks">
+            <label>Average price</label>
             <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.averageLength">
           </div>
         </div>
         <div class="settings__column">
-          <div class="form-group mb15">
-            <label for="option-group-by">Stack trades ({{options.groupBy}})</label>
+          <div class="form-group mb15" title="Stack rows on specific amount">
+            <label>Stack rows</label>
             <input type="number" min="0" max="10000000" step="10000" class="form-control" v-model="options.groupBy">
           </div>
-          <div class="form-group mb15">
-            <label for="option-group-by">Max rows</label>
+          <div class="form-group mb15" title="Max rows the app has to render">
+            <label>Max rows</label>
             <input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
           </div>
         </div>
-        <div class="form-group mb15">
+        <div class="settings__column" title="Tick length factor/size (% of visible range or time in ms)">
+          <div class="form-group mb15">
+            <label>Tick length</label>
+            <input type="string" placeholder="XX% or XXXXXms" class="form-control" v-model="options.tickLength">
+          </div>
+        </div>
+        <div class="form-group mb15" title="Enable/disable exchanges (from list & chart)">
           <label>Filter exchanges ({{ Math.min(options.exchanges.length, exchanges.length) }} selected)</label>
           <div class="settings__exchanges">
             <a v-for="(exchange, index) in exchanges" v-bind:key="index"
@@ -270,7 +276,7 @@
         max-width: calc(50% - 8px);
 
         &:last-child {
-          margin: 0;
+          margin-right: 0;
         }
       }
     }

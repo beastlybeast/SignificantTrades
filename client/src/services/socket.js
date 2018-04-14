@@ -120,12 +120,14 @@ const emitter = new Vue({
               this.$emit('exchanges', this.exchanges);
             break;
             case 'exchange_error':
-              this.$emit('alert', {
-                type: 'error',
-                title: `[${data.id}] an error occured`,
-                id: `${data.id}_status`,
-                message: data.message
-              });   
+              if (options.debug) {
+                this.$emit('alert', {
+                  type: 'error',
+                  title: `[${data.id}] an error occured`,
+                  id: `${data.id}_status`,
+                  message: data.message
+                });   
+              }
             break;
           }
         }

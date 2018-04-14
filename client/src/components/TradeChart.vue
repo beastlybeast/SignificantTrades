@@ -213,12 +213,21 @@
         this.updateChart(this.getTicks(trades));
       });
 
+      options.$on('follow', () => {
+        this.follow = true;
+      });
+
       setTimeout(() => {
         options.$on('change', data => {
           switch (data.prop) {
             case 'exchanges':
             case 'averageLength':
               this.updateChart(this.getTicks(), true);
+            break;
+            case 'tickLength':
+              if (this.ajustTimeframe()) {
+                this.updateChart(this.getTicks(), true);
+              }
             break;
           }
         })
@@ -227,8 +236,6 @@
     mounted() {
       this.options.series[0].name = options.pair;
       this.chart = Highcharts.chart(this.$el.querySelector('.chart-canvas'), this.options);
-
-      //this.redrawInterval = setInterval(this.chart.redraw.bind(this.chart), 1000);
 
       if (socket.trades && socket.trades.length > 1) {
         this.range = socket.trades[socket.trades.length - 1][2] - socket.trades[0][2];
@@ -271,8 +278,6 @@
         }
 
         data = data.filter(a => options.exchanges.indexOf(a[0]) !== -1);
-
-        const min = this.chart.series[0].data.length ? this.chart.series[0].data[this.chart.series[0].data.length - 1].category : 0;
 
         const sells = [];
         const buys = [];
@@ -355,10 +360,6 @@
         };
       },
       updateChart(ticks, replace = false) {
-        if (ticks.prices.length && !replace && this.ajustTimeframe()) {
-          return this.updateChart(this.getTicks(), true);
-        }
-
         if (replace) {
           this.chart.series[0].setData(ticks.prices, false);
           this.chart.series[1].setData(ticks.sells, false);
@@ -391,16 +392,16 @@
           this.chart.redraw();
         }
 
-        if (this.follow && this.chart.series[0].data.length) {
-          const dataMin = this.chart.series[0].data[0].category;
-          const dataMax = this.chart.series[0].data[this.chart.series[0].data.length - 1].category;
+        if (this.follow && this.chart.series[0].xData.length) {
+          const dataMin = this.chart.series[0].xData[0];
+          const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
           const axisMin = Math.max(dataMin, dataMax - this.range);
 
           this.chart.xAxis[0].setExtremes(axisMin, dataMax, false);
         }
       },
       doZoom(event) {
-        if (!this.chart.series[0].data.length) {
+        if (!this.chart.series[0].xData.length) {
           return;
         }
 
@@ -408,8 +409,8 @@
         let axisMin = this.chart.xAxis[0].min;
         let axisMax = this.chart.xAxis[0].max;
 
-        const dataMin = this.chart.series[0].data[0].category;
-        const dataMax = this.chart.series[0].data[this.chart.series[0].data.length - 1].category;
+        const dataMin = this.chart.series[0].xData[0];
+        const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
 
         const range = axisMax - axisMin;
 
@@ -431,15 +432,19 @@
 
         this.range = axisMax - axisMin;
 
-        if (this.ajustTimeframe()) {
-          this.updateChart(this.getTicks(), true);
-        }
+        clearInterval(this.doZoomTimeframeInterval);
+        
+        this.doZoomTimeframeInterval = setTimeout(() => {
+          if (this.ajustTimeframe()) {
+            this.updateChart(this.getTicks(), true);
+          }
+        }, 1000);
       },
       startScroll(event) {
         this.scrolling = event.pageX;
       },
       doScroll(event) {
-        if (isNaN(this.scrolling) || !this.chart.series[0].data.length) {
+        if (isNaN(this.scrolling) || !this.chart.series[0].xData.length) {
           return;
         }
 
@@ -449,8 +454,8 @@
         let axisMin = this.chart.xAxis[0].min;
         let axisMax = this.chart.xAxis[0].max;
 
-        const dataMin = this.chart.series[0].data[0].category;
-        const dataMax = this.chart.series[0].data[this.chart.series[0].data.length - 1].category;
+        const dataMin = this.chart.series[0].xData[0];
+        const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
 
         axisMin += scale;
         axisMax += scale;
@@ -475,33 +480,31 @@
       stopScroll(event) {
         delete this.scrolling;
       },
-      ajustTimeframe() {
-        const current = parseInt(this.timeframe);
-        let timeframe;
+      getTickLength() {
+        let value = parseFloat(options.tickLength);
+        let type = /\%$/.test(options.tickLength) ? 'percent' : 'length';
+        let output;
 
-        const hour = 1000 * 60 * 60;
-
-        if (this.range < hour / 6) {
-          timeframe = 15000; // 10s
-        } else if (this.range < hour / 2) {
-          timeframe = 20000; // 20s
-        } else if (this.range < hour) {
-          timeframe = 30000; // 30s
-        } else if (this.range < hour * 2) {
-          timeframe = 60000; // 1min
-        } else if (this.range < hour * 6) {
-          timeframe = 60000 * 5; // 5min
-        } else if (this.range < hour * 12) {
-          timeframe = 60000 * 15; // 15min
-        } else if (this.range < hour * 24) {
-          timeframe = 60000 * 30; // 30min
-        } else if (this.range < hour * 24 * 7) {
-          timeframe = 3600000; // 1h
-        } else {
-          timeframe = 3600000 * 24; // 1d
+        if (!value) {
+          value = .1;
+          type = 'percent';
         }
 
-        if (timeframe != current) {
+        if (type === 'percent') {
+          if (value >= .5)
+            value /= 100;
+
+          output = this.range * value;
+        } else {
+          output = value;
+        }
+
+        return parseInt(Math.max(10000, output));
+      },
+      ajustTimeframe() {
+        const timeframe = this.getTickLength();
+
+        if (timeframe != this.timeframe) {
           this.timeframe = timeframe;
 
           return true;

@@ -1,7 +1,8 @@
 <template>
   <header class="header">
     <div class="header__title"><span class="icon-currency"></span> <span v-html="title"></span></div>
-    <button type="button" v-on:click="retrieveChart"><span class="icon-history"></span></button>
+    <button type="button" v-on:click="goLive" title="Stick view on the right"><span class="icon-play"></span></button>
+    <button type="button" v-on:click="retrieveChart" title="Load previous trades"><span class="icon-history"></span></button>
     <button type="button" v-on:click="toggleSettings"><span class="icon-cog"></span></button>
   </header>
 </template>
@@ -33,6 +34,9 @@
         if (interval > 1) {
           socket.fetch(interval);
         }
+      },
+      goLive() {
+        options.follow();
       }
     }
   }
@@ -69,6 +73,11 @@
 
       &:hover,
       &:active {
+        .icon-play {          
+          transform: rotateZ(-7deg) scale(1.2) translateX(10%);
+          text-shadow: 0 0 20px $blue, 0 0 2px white;
+        }
+
         .icon-cog {          
           transform: rotateZ(180deg) scale(1.2);
           text-shadow: 0 0 20px $green, 0 0 2px white;

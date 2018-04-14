@@ -9,6 +9,7 @@ const emitter = new Vue({
       pair: 'BTCUSD',
       excluded: '',
       averageLength: 3,
+      tickLength: '1%',
       exchanges: [],
       debug: false
     }
@@ -38,6 +39,9 @@ const emitter = new Vue({
     },
     toggle() {
       this.$emit('toggle');
+    },
+    follow() {
+      this.$emit('follow');
     },
     onChange(prop, current, old) {
       this.$emit('change', {

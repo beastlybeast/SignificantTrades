@@ -110,3 +110,8 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-history); 
   }
 }
+.icon-play {
+  &:before {
+    content: unicode($icon-play); 
+  }
+}

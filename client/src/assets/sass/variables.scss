@@ -23,6 +23,7 @@ $icon-cog: \e90d;
 $icon-check: \e90e;
 $icon-coin: \e90f;
 $icon-history: \e910;
+$icon-play: \e911;
 
 @function unicode($str) {
   @return unquote("\"") + $str + unquote("\"");
