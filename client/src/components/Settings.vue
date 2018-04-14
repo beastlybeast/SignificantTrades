@@ -37,7 +37,7 @@
         </div>
         <div class="settings__column flex-bottom">
           <div class="form-group">
-            <label v-if="version.number">v{{ version.number }} <sup class="vertion-date">{{ version.date }}</sup></label>
+            <label v-if="version.number">v{{ version.number }} <sup class="version-date">{{ version.date }}</sup></label>
           </div>
           <div class="form-group">
             <label class="label-checkbox flex-right">
@@ -148,7 +148,7 @@
     }
 
     .version-date {
-      opacity: .5;
+      opacity: .75;
     }
 
     .toggle-settings {

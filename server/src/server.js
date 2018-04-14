@@ -186,13 +186,13 @@ class Server {
 								output = output.concat(chunk);
 							}
 						} catch (error) {
-							console.log(`[server/history] unable to get ${path} (ms ${i})`, error);
+							console.log(`[server/history] unable to get ${path} (ms ${i})`);
 						}
 					}
 
-					for (let i = this.chunk.length - 1; i >= 0; i--) {
+					for (let i = 0; i < this.chunk.length; i++) {
 						if (this.chunk[i][2] < from) {
-							break;
+							continue;
 						}
 
 						output.push(this.chunk[i]);
