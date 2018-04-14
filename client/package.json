@@ -1,7 +1,7 @@
 {
   "name": "significanttrades-client",
-  "description": "A Vue.js project",
-  "version": "1.0.0",
+  "description": "better than 1m chart",
+  "version": "1.1.0",
   "homepage": "https://tucsky.github.io/SignificantTrades/",
   "author": "KEVIN ROSTAGNI <kevin.rostagni@seloger.com>",
   "license": "MIT",

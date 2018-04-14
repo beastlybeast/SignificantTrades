@@ -35,11 +35,16 @@
             </a>
           </div>
         </div>
-        <div class="form-group">
-          <label class="label-checkbox text-right">
-            <input type="checkbox" class="form-control" v-model="options.debug"> 
-            <span>Show debug</span>
-          </label>
+        <div class="settings__column flex-bottom">
+          <div class="form-group">
+            <label v-if="version.number">v{{ version.number }} <sup class="vertion-date">{{ version.date }}</sup></label>
+          </div>
+          <div class="form-group">
+            <label class="label-checkbox flex-right">
+              <input type="checkbox" class="form-control" v-model="options.debug"> 
+              <span>Show debug</span>
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -56,7 +61,11 @@
         exchanges: [],
         options: options,
         opened: false,
-        height: 0
+        height: 0,
+        version: {
+          number: process.env.VERSION,
+          date: process.env.BUILD_DATE
+        }
       }
     },
     created() {
@@ -138,6 +147,10 @@
       color: white;
     }
 
+    .version-date {
+      opacity: .5;
+    }
+
     .toggle-settings {
       position: absolute;
       right: 4px;
@@ -147,21 +160,6 @@
 
       &:hover {
         opacity: 1;
-      }
-    }
-
-    .settings__column {
-      display: flex;
-
-      > div {
-        margin-right: 16px;
-        flex-grow: 1;
-        flex-basis: 50%;
-        max-width: calc(50% - 8px);
-
-        &:last-child {
-          margin: 0;
-        }
       }
     }
 
@@ -239,10 +237,6 @@
         user-select: none;
         cursor: pointer;
 
-        &.text-right {
-          justify-content: flex-end;
-        }
-
         input + span {
           margin-left: 5px !important;
         }
@@ -258,6 +252,26 @@
 
       > label {
         margin-bottom: 5px;
+
+        &:last-child {
+          margin: 0;
+        }
+      }
+    }
+
+    .settings__column {
+      display: flex;
+      flex-direction: row;
+
+      > div {
+        margin-right: 16px;
+        flex-grow: 1;
+        flex-basis: 50%;
+        max-width: calc(50% - 8px);
+
+        &:last-child {
+          margin: 0;
+        }
       }
     }
 

@@ -18,3 +18,27 @@ a {
 .mb15 {
 	margin-bottom: 15px;
 }
+
+.flex-right {
+	justify-content: flex-end;
+}
+
+.flex-left {
+	justify-content: flex-start;
+}
+
+.flex-center {
+	justify-content: center;
+}
+
+.flex-top {
+	align-items: flex-start;
+}
+
+.flex-bottom {
+	align-items: flex-end;
+}
+
+.flex-middle {
+	align-items: center;
+}
