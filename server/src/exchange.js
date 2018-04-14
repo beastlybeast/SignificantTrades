@@ -105,6 +105,9 @@ class Exchange extends EventEmitter {
 				group[id][2] = (group[id][2].map((price, index) => price * group[id][3][index]).reduce((a, b) => a + b) / group[id][2].length) / (group[id][3].reduce((a, b) => a + b) / group[id][3].length);
 				group[id][3] = group[id][3].reduce((a, b) => a + b);
 
+				group[id][2] = +group[id][2].toFixed(Math.max(2, 7 - group[id][2].toFixed().length));
+				group[id][3] = +group[id][3].toFixed(Math.max(2, 7 - group[id][3].toFixed().length));
+
 				return group[id];
 			})
 		});

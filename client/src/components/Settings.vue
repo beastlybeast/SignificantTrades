@@ -1,8 +1,8 @@
 <template>
-  <div class="settings__container" v-bind:class="{ open: opened }">
+  <div class="settings__container" v-bind:class="{ open: opened }" v-bind:style="{ maxHeight: height + 'px' }">
     <div class="settings__scroller">
       <a href="#" class="toggle-settings icon-times" v-on:click="hideSettings"></a>
-      <div class="settings__wrapper">
+      <div class="settings__wrapper" ref="settingsWrapper">
         <div class="settings__column">
           <div class="form-group mb15">
             <label for="option-group-by">Pair</label>
@@ -24,7 +24,7 @@
           </div>
         </div>
         <div class="form-group mb15">
-          <label>Filter exchanges ({{ options.exchanges.length}} selected)</label>
+          <label>Filter exchanges ({{ Math.min(options.exchanges.length, exchanges.length) }} selected)</label>
           <div class="settings__exchanges">
             <a v-for="(exchange, index) in exchanges" v-bind:key="index"
               class="settings__exchanges__item"
@@ -34,6 +34,12 @@
               {{ exchange }}
             </a>
           </div>
+        </div>
+        <div class="form-group">
+          <label class="label-checkbox text-right">
+            <input type="checkbox" class="form-control" v-model="options.debug"> 
+            <span>Show debug</span>
+          </label>
         </div>
       </div>
     </div>
@@ -49,36 +55,50 @@
       return {
         exchanges: [],
         options: options,
-        opened: false
+        opened: false,
+        height: 0
       }
     },
     created() {
       socket.$on('exchanges', exchanges => {
         this.exchanges = exchanges;
 
-        options.exchanges = options.exchanges.filter(selected => this.exchanges.indexOf(selected) !== -1);
+        // options.exchanges = options.exchanges.filter(selected => this.exchanges.indexOf(selected) !== -1);
 
         if (!options.exchanges.length) {
           options.exchanges = this.exchanges.filter(exchange => ['bithumb', 'hitbtc'].indexOf(exchange) === -1);
         }
       });
 
-      this.onopen = () => this.opened = true;
+      this.onopen = () => {
+        this.height = this.$refs.settingsWrapper.clientHeight;
+        this.opened = true;
+      };
       this.onclose = () => this.opened = false;
+      this.ontoggle = () => {
+        if (this.opened) {
+          this.onclose();
+        } else {
+          this.onopen();
+        }
+      };
     },
     mounted() {
       options.$on('open', this.onopen);
       options.$on('close', this.onclose);
+      options.$on('toggle', this.ontoggle);
     },
     beforeDestroy() {
       options.$off('open', this.onopen);
       options.$off('close', this.onclose);
+      options.$off('toggle', this.ontoggle);
     },
     methods: {
       hideSettings() {
         options.hide();
       },
       switchPair(event) {
+        socket.$emit('alert', 'clear');
         socket.send('pair', this.options.pair);
       },
     }
@@ -89,7 +109,6 @@
 	@import '../assets/sass/variables';
 
   .settings__container {
-    position: absolute;
     z-index: 1;
     visibility: hidden;
     top: 0;
@@ -99,6 +118,8 @@
     color: white;
     transition: all .8s $easeOutExpo .2s, visibility .1s linear 1.5s;
     pointer-events: none;
+    max-height: 0;
+    overflow: hidden;
 
     .settings__scroller {
       max-height: 100%;
@@ -154,6 +175,85 @@
         background-color: white;
         border-radius: 2px;
         border: 0;
+
+        &[type=checkbox] {
+          visibility: hidden;
+          position: relative;
+          -webkit-appearance: unset;
+          height: auto;
+          width: auto;
+          padding: 0;
+          margin: 0;
+          cursor: pointer;
+
+          &:before, &:after {
+            display: block;
+            visibility: visible;
+            padding: 5px;
+          }
+
+          &:before {
+            content: '';
+            width: 1em;
+            height: 1em;
+            border-radius: 2px;
+            background-color: rgba(white, .3);
+            transition: all .2s $easeOutExpo;
+          }
+
+          &:after {
+            content: unicode($icon-check);
+            font-family: 'icon';
+            line-height: 1em;
+            font-size: 1em;
+            position: absolute;
+            left: 0;
+            top: 0;
+            transform: translateX(-100%) skewX(-10deg);
+            opacity: 0;
+            transition: all .2s $easeOutExpo;
+            color: white;
+          }
+
+          &:checked {
+            &:after {
+              opacity: 1;
+              transform: none;
+            }
+
+            &:before {
+              background-color: $green;
+            }
+          }
+        }
+      }
+
+      .label-checkbox {
+        display: flex;
+        align-items: center;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        cursor: pointer;
+
+        &.text-right {
+          justify-content: flex-end;
+        }
+
+        input + span {
+          margin-left: 5px !important;
+        }
+
+        span + input {
+          margin-left: 5px !important;
+
+          &.form-control:after {
+            transform: translateX(100%) skewX(10deg);
+          }
+        }
       }
 
       > label {
@@ -180,22 +280,21 @@
       }
     }
 
+    &:not(.open) {
+      max-height: 0 !important;
+    }
+
     &.open {
       transition: all .3s $easeOutExpo;
       visibility: visible;
       transform: none;
-      background-color: rgba(black, .5);
+      background-color: #222;
       pointer-events: auto;
 
       .settings__scroller {
         transition: all .3s $easeOutExpo .2s;
         transform: none;
         opacity: 1;
-      }
-
-      ~ .app-wrapper {
-        filter: blur(10px);
-        transform: scale(1.25);
       }
     }
   }

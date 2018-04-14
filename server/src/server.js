@@ -1,5 +1,7 @@
 const WebSocket = require('ws');
 const url = require('url');
+const fs = require('fs');
+const http = require('http');
 
 class Server {
 
@@ -7,11 +9,14 @@ class Server {
 		this.timestamps = {};
 		this.connected = false;
 		this.processingAction = false;
+		this.chunk = [];
 
 		this.options = Object.assign({
 			pair: 'BTCUSD',
 			port: 8080,
 			delay: false,
+			profilerInterval: 60000,
+			backupInterval: 60000 * 10,
 		}, options);
 
 		if (!this.options.exchanges || !this.options.exchanges.length) {
@@ -25,20 +30,15 @@ class Server {
 		this.listen();
 		this.connect();
 
-		// setTimeout(this.disconnect.bind(this), 10000);
+		process.on('SIGINT', this.backup.bind(this, [true]));
 	}
 
 	listen() {
 		this.wss = new WebSocket.Server({
-			port: this.options.port
-		});
-
-		this.wss.on('listening', (ws, req) =>  {
-			console.log('server listening on port ' + this.options.port);
+			noServer: true
 		});
 
 		this.wss.on('connection', (ws, req) =>  {
-			const location = url.parse(req.url, true);
 			const ip = req.connection.remoteAddress;
 			console.log('[client] ' + ip + ' joined ' + req.url);
 
@@ -105,6 +105,8 @@ class Server {
 				for (let trade of event.data) {
 					trade.unshift(event.exchange);
 
+					this.chunk.push(trade);
+
 					if (this.options.delay) {
 						this.queue.unshift(trade);
 					}
@@ -147,13 +149,91 @@ class Server {
 			});
 		});
 
-		this.profilerInterval = setInterval(this.profiler.bind(this), 60000);
+		this.profilerInterval = setInterval(this.profiler.bind(this), this.options.profilerInterval);
+		this.backupInterval = setInterval(this.backup.bind(this), this.options.backupInterval);		
+		
+		this.http = http.createServer((request, response) => {
+			const path = url.parse(request.url).path;
+
+			const routes = [{
+				match: /^\/?history\/(\d+)\/?$/, 
+				response: (timeframe) => {
+					const now = +new Date();
+					const from = now - timeframe * 60 * 1000;
+					let date, name, path, chunk, output = [];
+
+					for (let i = from; i < now; i += 60 * 1000 * 60 * 24) {
+						date = new Date(i);
+						name = this.options.pair + '_' + ('0' + date.getDate()).slice(-2) + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + date.getFullYear();
+						path = 'data/' + name + '.json';
+
+						try {
+							chunk = JSON.parse(fs.readFileSync(path, 'utf8'));
+							
+							if (i === from) {
+								console.log(`[server/history] unpacking ${path} (ms ${i})`, chunk.length);
+
+								for (let j = 0; j < chunk.length; j++) {
+									if (chunk[j][2] < i) {
+										continue;
+									}
+
+									output.push(chunk[j]);
+								}
+							} else {
+								console.log(`[server/history] append ${path} (ms ${i}) to output`, chunk.length);
+
+								output = output.concat(chunk);
+							}
+						} catch (error) {
+							console.log(`[server/history] unable to get ${path} (ms ${i})`, error);
+						}
+					}
+
+					for (let i = this.chunk.length - 1; i >= 0; i--) {
+						if (this.chunk[i][2] < from) {
+							break;
+						}
+
+						output.push(this.chunk[i]);
+					}
+
+					response.setHeader('Access-Control-Allow-Origin', '*');
+					response.setHeader('Content-Type', 'application/json');
+					response.end(JSON.stringify(output));
+				}
+			}];
+
+			for (let route of routes) {
+				if (route.match.test(path)) {
+					route.response.apply(this, path.match(route.match).splice(1));
+					break;
+				}
+			}
+
+			if (!response.finished) {
+				response.writeHead(404);
+				response.end('<a href="https://github.com/Tucsky/SignificantTrades">SignificantTrades</p>');
+			}
+		});
+
+		this.http.on('upgrade', (request, socket, head) => {
+			console.log('on upgrade', request.url);
+			this.wss.handleUpgrade(request, socket, head, ws => {
+				this.wss.emit('connection', ws, request);
+			});
+		});
+		
+		this.http.listen(this.options.port, () => {
+			console.log('http server listening on port ' + this.options.port);
+		});
 	}
 
 	connect() {
 		console.log('[server] connect exchange using pair', this.options.pair);
 
 		this.connected = true;
+		this.chunk = [];
 
 		this.exchanges.forEach(exchange => {
 			exchange.connect(this.options.pair);
@@ -226,6 +306,52 @@ class Server {
 				return;
 			}
 		})
+	}
+
+	backup(exit = false) {
+		const duration = this.options.backupInterval / 1000 + 's';
+
+		const date = new Date();
+		const name = this.options.pair + '_' + ('0' + date.getDate()).slice(-2) + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + date.getFullYear();
+		const path = 'data/' + name + '.json';
+		
+		fs.readFile(path, (err, data) => {
+			if (err) {
+				if (err.code === 'ENOENT') {
+					fs.writeFile(path, JSON.stringify(this.chunk), (err, data) => {
+						if (err) {
+							throw new Error(err);
+						}
+
+						console.log(`[server] backup ${duration} of data into new file "${path}" (${this.chunk.length} trades)`);
+
+						this.chunk.splice(0, this.chunk.length);
+
+						exit && process.exit();
+					});
+
+					return;
+				}
+
+				throw new Error(err);
+			}
+
+			let json = JSON.parse(data);
+
+			json = json.concat(this.chunk);
+
+			fs.writeFile(path, JSON.stringify(json), (err, data) => {
+				if (err) {
+					throw new Error(err);
+				}
+
+				console.log(`[server] backup ${duration} of data into "${path}" (${json.length - this.chunk.length} + ${this.chunk.length} trades)`);
+
+				this.chunk.splice(0, this.chunk.length);
+
+				exit && process.exit();
+			});
+		});
 	}
 
 }

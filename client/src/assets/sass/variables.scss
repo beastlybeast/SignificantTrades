@@ -4,6 +4,7 @@ $blue: #2196F3;
 $yellow: #ffc107;
 
 $easeOutExpo: cubic-bezier(0.005, 1.000, 0.220, 1.000);
+$easeElastic: cubic-bezier(0, 1.4, 1, 1);
 
 $icon-bitcoin: \e900;
 $icon-btc: \e901;
@@ -21,6 +22,7 @@ $icon-yen: \e90c;
 $icon-cog: \e90d;
 $icon-check: \e90e;
 $icon-coin: \e90f;
+$icon-history: \e910;
 
 @function unicode($str) {
   @return unquote("\"") + $str + unquote("\"");

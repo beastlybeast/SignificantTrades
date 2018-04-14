@@ -39,7 +39,7 @@
           // group by [exchange name + buy=1/sell=0] (ex bitmex1)
           const tid = trade[0] + trade[5]; 
 
-          if (options.exchanges.indexOf(tid) === -1) {
+          if (options.exchanges.indexOf(trade[0]) === -1) {
             return;
           }
 

@@ -20,15 +20,21 @@
     },
     created() {
       socket.$on('alert', alert => {
-				if (alert.data) {
-					if (alert.data.type === 'connected' || alert.data.type === 'disconnected') {
-						for (let _alert of this.alerts) {
-							if (_alert.data && _alert.data.exchange === alert.data.exchange && _alert.data.type != alert.data.type) {
-								this.alerts.splice(this.alerts.indexOf(_alert), 1);
-								break;
-							}
+				if (alert === 'clear') {
+					this.alerts.splice(0, this.alerts.length);
+					return;
+				}
+
+				if (alert.id) {
+					for (let _alert of this.alerts) {
+						if (_alert.id === alert.id) {
+							this.alerts.splice(this.alerts.indexOf(_alert), 1);
+
+							break;
 						}
 					}
+				} else {
+					alert.id = Math.random().toString(36).substring(7);
 				}
 
 				if (!alert.title) {
@@ -40,8 +46,6 @@
 				if (!alert.title && !alert.message) {
 					return;
 				}
-
-				alert.id = Math.random().toString(36).substring(7);
 
 				this.alerts.push(alert);
       });

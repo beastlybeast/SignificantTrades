@@ -1,7 +1,8 @@
 <template>
   <header class="header">
     <div class="header__title"><span class="icon-currency"></span> <span v-html="title"></span></div>
-    <button class="toggle-options" type="button" v-on:click="toggleSettings"><span class="icon-cog"></span></button>
+    <button type="button" v-on:click="retrieveChart"><span class="icon-history"></span></button>
+    <button type="button" v-on:click="toggleSettings"><span class="icon-cog"></span></button>
   </header>
 </template>
 
@@ -24,7 +25,14 @@
     },
     methods: {
       toggleSettings() {
-        options.show();
+        options.toggle();
+      },
+      retrieveChart() {
+        const interval = parseInt(window.prompt(`How much data ? (minutes)`, 60));
+
+        if (interval > 1) {
+          socket.fetch(interval);
+        }
       }
     }
   }
@@ -54,18 +62,22 @@
       align-self: stretch;
       cursor: pointer;
 
-      .icon-cog {
-        transition: all .2s $easeOutExpo;
+      > span {
         display: inline-block;
+        transition: all .5s $easeElastic;
       }
 
       &:hover,
       &:active {
-        .icon-cog {
-          transition: transform .2s $easeOutExpo, text-shadow 5s $easeOutExpo;
-          
+        .icon-cog {          
           transform: rotateZ(180deg) scale(1.2);
-          text-shadow: 0 0 5px rgba(white, .5), 0 0 20px rgba(white, .2);
+          text-shadow: 0 0 20px $green, 0 0 2px white;
+        }
+
+        .icon-history {
+          transform: rotateZ(-360deg) scale(1.1);
+          display: inline-block;
+          text-shadow: 0 0 20px $red, 0 0 2px white;
         }
       }
     }

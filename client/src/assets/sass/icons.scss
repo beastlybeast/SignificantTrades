@@ -105,3 +105,8 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-coin); 
   }
 }
+.icon-history {
+  &:before {
+    content: unicode($icon-history); 
+  }
+}

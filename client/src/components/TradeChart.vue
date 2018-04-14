@@ -12,7 +12,6 @@
   export default {
     data() {
       return {
-        zoom: 1,
         range: 1000 * 60 * 5,
         timeframe: 10000,
         follow: true,
@@ -177,6 +176,33 @@
         }
 
         this.chart.series[0].update({name: pair}, false);
+
+        for (let serie of this.chart.series) {
+          serie.setData([], false);
+        }
+
+        this.range = 1000 * 60 * 5;
+        this.timeframe = 10000;
+        this.follow = true;
+
+        const timestamp = +new Date();
+
+        this.chart.xAxis[0].setExtremes(timestamp - this.timeframe, timestamp, false);
+
+        this.chart.redraw();
+      });
+
+      socket.$on('history', () => {
+        if (!this.chart || !socket.trades.length) {
+          return;
+        }
+
+        this.range = socket.trades[socket.trades.length - 1][2] - socket.trades[0][2];
+        this.chart.xAxis[0].setExtremes(socket.trades[0][2], socket.trades[socket.trades.length - 1][2], false);
+        this.follow = true;
+
+        this.ajustTimeframe();
+        this.updateChart(this.getTicks(), true);
       });
 
       socket.$on('trades', trades => {
@@ -187,14 +213,16 @@
         this.updateChart(this.getTicks(trades));
       });
 
-      options.$on('change', data => {
-        switch (data.prop) {
-          case 'exchanges':
-          case 'averageLength':
-            this.updateChart(this.getTicks(), true);
-          break;
-        }
-      })
+      setTimeout(() => {
+        options.$on('change', data => {
+          switch (data.prop) {
+            case 'exchanges':
+            case 'averageLength':
+              this.updateChart(this.getTicks(), true);
+            break;
+          }
+        })
+      }, 1000);
     },
     mounted() {
       this.options.series[0].name = options.pair;

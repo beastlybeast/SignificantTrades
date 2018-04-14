@@ -9,7 +9,7 @@ const emitter = new Vue({
       exchanges: [],
       socket: null,
       connected: false,
-      reconnectionDelay: 5000
+      reconnectionDelay: 2000
     }
   },
   methods: {
@@ -18,7 +18,7 @@ const emitter = new Vue({
         return;
       }
 
-      this.socket = new WebSocket(process.env.API_URL || 'ws://localhost:3000');
+      this.socket = new WebSocket(options.url);
 
       this.socket.onopen = event => {
         this.connected = true;
@@ -68,29 +68,33 @@ const emitter = new Vue({
               this.$emit('pair', data.pair);
 
               this.$emit('alert', {
+                id: `server_status`,
                 type: 'info',
                 title: `Tracking ${data.pair}`,
-                message: !actives.length ? 'No connected exchanges' : 'Through ' + actives.join(', ').toUpperCase()
+                message: !this.exchanges.length ? 'No connected exchanges' : 'Through ' + this.exchanges.join(', ').toUpperCase()
               });  
             break;
             case 'pair':
               this.$emit('pair', data.pair);  
 
               this.$emit('alert', {
+                id: `pair`,
                 type: 'info',
                 title: `Now tracking ${data.pair}`,
               });   
             break;
             case 'exchange_connected':
-              this.$emit('alert', {
-                data: {
-                  type: 'connected',
-                  exchange: data.id,
-                },
-                id: `${data.id}_connected`,
-                type: 'success',
-                message: `[${data.id}] connected`
-              });
+              if (options.debug) {
+                this.$emit('alert', {
+                  data: {
+                    type: 'connected',
+                    exchange: data.id,
+                  },
+                  id: `${data.id}_status`,
+                  type: 'success',
+                  message: `[${data.id}] connected`
+                });
+              }
               
               if (this.exchanges.indexOf(data.id) === -1)
                 this.exchanges.push(data.id);
@@ -98,14 +102,17 @@ const emitter = new Vue({
               this.$emit('exchanges', this.exchanges);
             break;
             case 'exchange_disconnected':
-              this.$emit('alert', {
-                data: {
-                  type: 'disconnected',
-                  exchange: data.id,
-                },
-                type: 'error',
-                message: `[${data.id}] disconnected`
-              });   
+              if (options.debug) {
+                this.$emit('alert', {
+                  data: {
+                    type: 'disconnected',
+                    exchange: data.id,
+                  },
+                  id: `${data.id}_status`,
+                  type: 'error',
+                  message: `[${data.id}] disconnected`
+                });   
+              }
               
               if (this.exchanges.indexOf(data.id) !== -1)
                 this.exchanges.splice(this.exchanges.indexOf(data.id), 1);
@@ -116,6 +123,7 @@ const emitter = new Vue({
               this.$emit('alert', {
                 type: 'error',
                 title: `[${data.id}] an error occured`,
+                id: `${data.id}_status`,
                 message: data.message
               });   
             break;
@@ -130,6 +138,7 @@ const emitter = new Vue({
           this.$emit('alert', {
             type: 'error',
             message: `Connection lost`,
+            id: `server_status`,
           });
 
           this.$emit('disconnected');
@@ -139,10 +148,9 @@ const emitter = new Vue({
       }
 
       this.socket.onerror = err => {
-        console.log('socket error', err);
-
         this.$emit('alert', {
           type: 'error',
+          id: `server_status`,
           message: `Couldn't reach the server`,
         });   
 
@@ -171,7 +179,18 @@ const emitter = new Vue({
 
       this.reconnectionTimeout = setTimeout(this.connect.bind(this), this.reconnectionDelay);
 
-      this.reconnectionDelay *= 2;
+      this.reconnectionDelay *= 1.25;
+    },
+    fetch(interval) {
+      const component = this;
+
+      fetch(options.http_url + '/history/' + interval)
+        .then(res => res.json())
+        .then(data => {
+          this.trades = data;
+
+          this.$emit('history');
+        })
     }
   }
 });

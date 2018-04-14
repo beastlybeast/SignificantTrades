@@ -3,15 +3,19 @@ import Vue from 'vue'
 const emitter = new Vue({
   data() {
     return {
+      url: process.env.API_URL || 'ws://localhost:3000',
       groupBy: 100000,
       maxRows: 20,
       pair: 'BTCUSD',
       excluded: '',
       averageLength: 3,
-      exchanges: []
+      exchanges: [],
+      debug: false
     }
   },
   created() {
+    this.http_url = this.url.replace(/^ws(s?)\:\/\//, 'http$1://');
+
     for (let prop in this.$data) {
       this.$watch(prop, this.onChange.bind(this, prop));
     }
@@ -27,12 +31,13 @@ const emitter = new Vue({
       }
     },
     show() {
-      this.opened = true;
       this.$emit('open');
     },
     hide() {
-      this.opened = false;
       this.$emit('close');
+    },
+    toggle() {
+      this.$emit('toggle');
     },
     onChange(prop, current, old) {
       this.$emit('change', {
