@@ -1,8 +1,8 @@
 <template>
   <header class="header">
     <div class="header__title"><span class="icon-currency"></span> <span v-html="title"></span></div>
-    <button type="button" v-on:click="goLive" title="Stick view on the right"><span class="icon-play"></span></button>
     <button type="button" v-on:click="retrieveChart" title="Load previous trades"><span class="icon-history"></span></button>
+    <button type="button" v-on:click="goLive" title="Stick view on the right"><span class="icon-play"></span></button>
     <button type="button" v-on:click="toggleSettings"><span class="icon-cog"></span></button>
   </header>
 </template>

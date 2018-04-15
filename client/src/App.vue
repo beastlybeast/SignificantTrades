@@ -47,7 +47,7 @@
         }
       }
 
-      window.addEventListener('beforeunload', () => {
+      window.addEventListener('beforeunload', () => {        
         localStorage.setItem('options', JSON.stringify(options.$data));
       });
 

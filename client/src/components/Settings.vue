@@ -179,6 +179,7 @@
         background-color: white;
         border-radius: 2px;
         border: 0;
+        width: calc(100% - 24px);
 
         &[type=checkbox] {
           visibility: hidden;
@@ -273,7 +274,6 @@
         margin-right: 16px;
         flex-grow: 1;
         flex-basis: 50%;
-        max-width: calc(50% - 8px);
 
         &:last-child {
           margin-right: 0;
@@ -289,8 +289,8 @@
         opacity: .3;
         transition: all .2s $easeOutExpo;
         border-radius: 2px;
-        margin-right: 2px;
-        margin-bottom: 3px;
+        margin-right: 4px;
+        margin-bottom: 4px;
         display: inline-block;
 
         &.settings__exchanges__item--active {

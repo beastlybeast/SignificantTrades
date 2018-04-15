@@ -198,11 +198,10 @@
         }
 
         this.range = socket.trades[socket.trades.length - 1][2] - socket.trades[0][2];
-        this.chart.xAxis[0].setExtremes(socket.trades[0][2], socket.trades[socket.trades.length - 1][2], false);
-        this.follow = true;
 
         this.ajustTimeframe();
         this.updateChart(this.getTicks(), true);
+        this.snapRight();
       });
 
       socket.$on('trades', trades => {
@@ -214,7 +213,7 @@
       });
 
       options.$on('follow', () => {
-        this.follow = true;
+        this.snapRight();
       });
 
       setTimeout(() => {
@@ -393,11 +392,7 @@
         }
 
         if (this.follow && this.chart.series[0].xData.length) {
-          const dataMin = this.chart.series[0].xData[0];
-          const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
-          const axisMin = Math.max(dataMin, dataMax - this.range);
-
-          this.chart.xAxis[0].setExtremes(axisMin, dataMax, false);
+          this.snapRight();
         }
       },
       doZoom(event) {
@@ -422,9 +417,10 @@
         }
 
         const delta = range * .1 * (event.deltaY > 0 ? 1 : -1);
+        const deltaX = Math.min(this.chart.chartWidth / 1.5, Math.max(0, event.offsetX - this.chart.chartWidth / 3 / 2)) / (this.chart.chartWidth / 1.5);
 
-        axisMin = Math.max(dataMin, axisMin - delta);
-        axisMax = Math.min(dataMax, axisMax + delta);
+        axisMin = Math.max(dataMin, axisMin - delta * deltaX);
+        axisMax = Math.min(dataMax, axisMax + delta * (1 - deltaX));
 
         this.chart.xAxis[0].setExtremes(axisMin, axisMax);
 
@@ -438,7 +434,7 @@
           if (this.ajustTimeframe()) {
             this.updateChart(this.getTicks(), true);
           }
-        }, 1000);
+        }, 250);
       },
       startScroll(event) {
         this.scrolling = event.pageX;
@@ -479,6 +475,15 @@
       },
       stopScroll(event) {
         delete this.scrolling;
+      },
+      snapRight() {
+        this.follow = true;
+
+        const dataMin = this.chart.series[0].xData[0];
+        const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
+        const axisMin = Math.max(dataMin, dataMax - this.range);
+
+        this.chart.xAxis[0].setExtremes(axisMin, dataMax, false);
       },
       getTickLength() {
         let value = parseFloat(options.tickLength);

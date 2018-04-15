@@ -5,6 +5,7 @@ import options from './options'
 const emitter = new Vue({
   data() {
     return {
+      url: process.env.API_URL || 'ws://localhost:3000',
       trades: [],
       exchanges: [],
       socket: null,
@@ -12,13 +13,16 @@ const emitter = new Vue({
       reconnectionDelay: 2000
     }
   },
+  created() {
+    this.http_url = this.url.replace(/^ws(s?)\:\/\//, 'http$1://');
+  },
   methods: {
     connect() {
       if (this.socket && this.socket.readyState === 1) {
         return;
       }
 
-      this.socket = new WebSocket(options.url);
+      this.socket = new WebSocket(this.url);
 
       this.socket.onopen = event => {
         this.connected = true;
@@ -30,8 +34,6 @@ const emitter = new Vue({
 
       this.socket.onmessage = event => {
         let data = JSON.parse(event.data);
-
-        const excluded = options.excluded;
 
         if (!data) {
           throw new Error('Unable to read socket message');
@@ -186,7 +188,7 @@ const emitter = new Vue({
     fetch(interval) {
       const component = this;
 
-      fetch(options.http_url + '/history/' + interval)
+      fetch(this.http_url + '/history/' + interval)
         .then(res => res.json())
         .then(data => {
           this.trades = data;
