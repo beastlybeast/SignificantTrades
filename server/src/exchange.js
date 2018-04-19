@@ -21,14 +21,14 @@ class Exchange extends EventEmitter {
 		}
 
 		this.pair = null;
-	
+
 		if (this.mapping) {
 			if (typeof this.mapping === 'function') {
 				this.pair = this.mapping(pair);
 			} else {
 				this.pair = this.mapping[pair];
 			}
-			
+
 			if (!this.pair) {
 				console.log(`[${this.id}] unknown pair ${pair}`);
 
@@ -105,7 +105,9 @@ class Exchange extends EventEmitter {
 				group[id][2] = (group[id][2].map((price, index) => price * group[id][3][index]).reduce((a, b) => a + b) / group[id][2].length) / (group[id][3].reduce((a, b) => a + b) / group[id][3].length);
 				group[id][3] = group[id][3].reduce((a, b) => a + b);
 
-				group[id][2] = +group[id][2].toFixed(Math.max(2, 7 - group[id][2].toFixed().length));
+				const firstDigitIndex = group[id][2].toFixed(8).match(/[1-9]/);
+
+				group[id][2] = +group[id][2].toFixed(Math.max(2, 6 - Math.min(0, 3 - (firstDigitIndex ? firstDigitIndex.index : 0)) - group[id][2].toFixed().length));
 				group[id][3] = +group[id][3].toFixed(Math.max(2, 7 - group[id][3].toFixed().length));
 
 				return group[id];
