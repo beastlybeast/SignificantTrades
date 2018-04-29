@@ -339,9 +339,11 @@ class Server {
 			if (!file || !file.trim().length) {
 				return false;
 			}
+
+			return file.split("\n").indexOf(ip) !== -1;
 		}
 
-		return file.split("\n").indexOf(ip) !== -1;
+		return false;
 	}
 
 	backup(exit = false) {
