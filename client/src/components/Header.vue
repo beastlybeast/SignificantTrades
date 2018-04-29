@@ -67,7 +67,11 @@
         options.toggle();
       },
       retrieveChart() {
-        const interval = parseInt(window.prompt(`How much data ? (minutes)`, 60));
+        if (this.fetchProgress) {
+          return;
+        }
+
+        const interval = parseInt(window.prompt(`Load last "x" minutes`, 60));
 
         if (interval > 1) {
           socket.fetch(interval)

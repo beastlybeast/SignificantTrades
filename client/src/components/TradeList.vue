@@ -1,7 +1,7 @@
 <template>
   <div class="trades">
     <ul v-if="trades.length">
-      <li v-for="trade in trades" class="trades__item" :key="trade.exchange + trade.timestamp" :class="trade.classname" :style="{ 'background-image' : trade.image ? 'url(\'' + trade.image + '\')' : 'none' }">
+      <li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ 'background-image' : trade.image ? 'url(\'' + trade.image + '\')' : 'none' }">
         <div class="trades__item__side icon-side"></div>
         <div class="trades__item__exchange">{{ trade.exchange }}</div>
         <div class="trades__item__price"><span class="icon-currency"></span> <span v-html="trade.price"></span></div>
@@ -111,6 +111,7 @@
         }
 
         this.trades.unshift({
+          id: Math.random().toString(36).substring(7),
           side: trade[4] ? 'BUY' : 'SELL',
           size: trade[3],
           exchange: trade[0],

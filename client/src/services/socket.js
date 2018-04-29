@@ -76,7 +76,7 @@ const emitter = new Vue({
 
               this.$emit('exchanges', this.exchanges);
 
-              this.$emit('pair', data.pair);
+              this.$emit('pair', data.pair, true);
 
               this.$emit('alert', {
                 id: `server_status`,
@@ -201,7 +201,16 @@ const emitter = new Vue({
         replace = true;
       }
 
-      return Axios.get(`${this.http_url}/history/${parseInt(from)}/${parseInt(to)}`, {
+      const url = `${this.http_url}/history/${parseInt(from)}/${parseInt(to)}`;
+
+      if (this.lastFetchUrl === url) {
+        return;
+      }
+
+      this.lastFetchUrl = url;
+
+      return new Promise((resolve, reject) => {
+        Axios.get(url, {
           onDownloadProgress: e => this.$emit('fetchProgress', e.loaded / e.total)
         })
         .then(response => {
@@ -226,13 +235,21 @@ const emitter = new Vue({
           if (count !== this.trades.length) {
             this.$emit('history', replace);
           }
+
+          resolve(trades);
         })
-        .catch(err => err && this.$emit('alert', {
-          type: 'error',
-          title: `Unable to retrieve history`,
-          message: err.message,
-          id: `fetch_error`
-        }))
+        .catch(err => {
+          err && this.$emit('alert', {
+            type: 'error',
+            title: `Unable to retrieve history`,
+            message: err.message,
+            id: `fetch_error`
+          });
+
+          reject(err);
+        });
+      });
+      
     }
   }
 });

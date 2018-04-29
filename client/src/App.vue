@@ -74,7 +74,11 @@
       }
     },
     mounted() {
-      socket.connect();
+      socket.fetch(1)
+        .then((response, err) => {
+          console.log(response, err);
+          !err && socket.connect();
+        });
     },
     methods: {
       updatePairCurrency(pair) {
@@ -165,6 +169,74 @@
 
     &[data-commodity="ethereum"] .icon-commodity:before {
       content: unicode($icon-eth);
+    }
+  }
+
+  .stack__container {
+    transition: all .8s $easeOutExpo .2s, visibility .1s linear 1.5s;
+    visibility: hidden;
+    transform: none;
+    pointer-events: none;
+    overflow: hidden;
+    max-height: 1000px;    
+    font-size: 12px;
+
+    .stack__toggler {
+      position: absolute;
+      right: 0;
+      top: 0;
+      font-size: 16px;
+      opacity: .2;
+      padding: 8px;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+
+    .stack__wrapper {
+      padding: 8px 10px;
+      max-height: 100%;
+      overflow: auto;
+      transform: scale(1.2);
+      opacity: 0;
+      transition: all .4s $easeOutExpo;
+      position: relative;
+
+      p {
+        margin: 0 0 2px; 
+
+        &:last-child {
+          margin: 0;
+        }
+
+        code {
+          background-color: rgba(black, .1);
+          font-weight: 400;
+          padding: 3px 4px;
+          line-height: 1;
+          display: inline-block;
+          position: relative;
+          top: -1px;
+        }
+      }
+    }
+
+    &.open {
+      transition: all .3s $easeOutExpo;
+      visibility: visible;
+      transform: none;
+      pointer-events: auto;
+
+      .stack__wrapper {
+        transition: all .3s $easeOutExpo .2s;
+        transform: none;
+        opacity: 1;
+      }
+    }
+
+    &:not(.open) {
+      max-height: 0 !important;
     }
   }
 </style>
