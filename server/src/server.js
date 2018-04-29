@@ -330,11 +330,15 @@ class Server {
 		if (['localhost', '127.0.0.1', '::1'].indexOf(ip) !== -1) {
 			return true;
 		}
+		
+		const whitelistPath = '../admin.txt';
 
-		const file = fs.readFileSync('../admin.txt', 'utf8');
+		if (fs.existsSync(whitelistPath)) {
+			const file = fs.readFileSync(whitelistPath, 'utf8');
 
-		if (!file || !file.trim().length) {
-			return false;
+			if (!file || !file.trim().length) {
+				return false;
+			}
 		}
 
 		return file.split("\n").indexOf(ip) !== -1;
