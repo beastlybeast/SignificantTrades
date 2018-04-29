@@ -179,16 +179,10 @@ class Server {
 						response.end('Interval must be <= than 2 days');
 						return;
 					}
-					let tries = 0;
+
 					for (let i = +from; i <= to; i += 60 * 1000 * 60 * 24) {
-						if (++tries > 5) {
-							process.end();
-							break;
-							return;
-						}
 						date = new Date(i);
-						name = this.options.pair + '_' + ('0' + date.getDate()).slice(-2) + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + date.getFullYear();
-						path = 'data/' + name + '.json';
+						path = 'data/' + (this.options.pair + '_' + date.getFullYear() + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2));
 
 						try {
 							chunk = fs.readFileSync(path, 'utf8').trim().split("\n");
@@ -211,7 +205,7 @@ class Server {
 								}
 							}
 						} catch (error) {
-							console.log(`[server/history] unable to get ${path} (ms ${i})`);
+							console.log(`[server/history] unable to get ${path} (ms ${i})`, error);
 						}
 					}
 					
@@ -355,7 +349,7 @@ class Server {
 
 		const processDate = (date) => {
 			const nextDateTimestamp = +date + 1000 * 60 * 60 * 24;
-			const path = 'data/' + (this.options.pair + '_' + ('0' + date.getDate()).slice(-2) + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + date.getFullYear()) + '.json';
+			const path = 'data/' + (this.options.pair + '_' + date.getFullYear() + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2));
 			
 			const tradesOfTheDay = this.chunk.filter(trade => trade[2] < nextDateTimestamp);
 			

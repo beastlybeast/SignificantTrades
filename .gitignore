@@ -1,4 +1,4 @@
 node_modules/
 server/config.json
-server/data/*.json
+server/data/*
 .DS_Store
