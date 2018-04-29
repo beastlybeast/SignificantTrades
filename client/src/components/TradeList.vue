@@ -1,7 +1,7 @@
 <template>
   <div class="trades">
     <ul v-if="trades.length">
-      <li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ 'background-image' : trade.image ? 'url(\'' + trade.image + '\')' : 'none' }">
+      <li v-for="trade in trades" class="trades__item" :key="trade.exchange + trade.timestamp" :class="trade.classname" :style="{ 'background-image' : trade.image ? 'url(\'' + trade.image + '\')' : 'none' }">
         <div class="trades__item__side icon-side"></div>
         <div class="trades__item__exchange">{{ trade.exchange }}</div>
         <div class="trades__item__price"><span class="icon-currency"></span> <span v-html="trade.price"></span></div>
@@ -37,7 +37,7 @@
         for (let trade of trades) {
 
           // group by [exchange name + buy=1/sell=0] (ex bitmex1)
-          const tid = trade[0] + trade[5]; 
+          const tid = trade[0] + trade[4]; 
 
           if (options.exchanges.indexOf(trade[0]) === -1) {
             return;
@@ -50,12 +50,12 @@
               } else {
 
                 // average group prices
-                this.ticks[tid][3] = (this.ticks[tid][3] * this.ticks[tid][4] + trade[3] * trade[4]) / 2 / ((this.ticks[tid][4] + trade[4]) / 2);
+                this.ticks[tid][2] = (this.ticks[tid][2] * this.ticks[tid][3] + trade[2] * trade[3]) / 2 / ((this.ticks[tid][3] + trade[3]) / 2);
                 
                 // sum volume
-                this.ticks[tid][4] += trade[4];
+                this.ticks[tid][3] += trade[3];
 
-                if (this.ticks[tid][3] * this.ticks[tid][4] >= options.groupBy) {
+                if (this.ticks[tid][2] * this.ticks[tid][3] >= options.groupBy) {
                   this.appendTrade(this.ticks[tid]);
                   delete this.ticks[tid];
                 }
@@ -64,7 +64,7 @@
               }
             }
 
-            if (!this.ticks[tid] && trade[3] * trade[4] < options.groupBy) {
+            if (!this.ticks[tid] && trade[2] * trade[3] < options.groupBy) {
               this.ticks[tid] = trade;
               continue;
             }
@@ -88,9 +88,9 @@
         let classname = [];
         let icon;
         let image;
-        let amount = trade[3] * trade[4];
+        let amount = trade[2] * trade[3];
 
-        if (trade[5]) {
+        if (trade[4]) {
           classname.push('buy');
         } else {
           classname.push('sell');
@@ -111,16 +111,15 @@
         }
 
         this.trades.unshift({
-          id: trade[1],
-          side: trade[5] ? 'BUY' : 'SELL',
-          size: trade[4],
+          side: trade[4] ? 'BUY' : 'SELL',
+          size: trade[3],
           exchange: trade[0],
-          price: formatPrice(trade[3]),
+          price: formatPrice(trade[2]),
           amount: amount,
           classname: classname.map(a => 'trades__item--' + a).join(' '),
           icon: icon,
-          date: this.ago(trade[2]),
-          timestamp: trade[2],
+          date: this.ago(trade[1]),
+          timestamp: trade[1],
           image: image
         });
       },

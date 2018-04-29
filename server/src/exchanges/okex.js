@@ -560,7 +560,6 @@ class Okex extends Exchange {
       }
 
       return [
-        this.id + trade[0],
         timestamp,
         +trade[1],
         +trade[2],

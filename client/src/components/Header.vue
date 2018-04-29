@@ -1,8 +1,13 @@
 <template>
   <header class="header">
     <div class="header__title"><span class="icon-currency"></span> <span v-html="title"></span></div>
-    <button type="button" v-on:click="retrieveChart" title="Load previous trades"><span class="icon-history"></span></button>
-    <button type="button" v-on:click="goLive" title="Stick view on the right"><span class="icon-play"></span></button>
+    <button type="button" v-on:click="retrieveChart" title="Load previous trades">
+      <svg class="loader" v-bind:class="{loading: fetchProgress > 0}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14">
+        <path :stroke-dashoffset="fetchProgress" d="M7,1a6.06,6.06,0,0,1,6,6,6.06,6.06,0,0,1-6,6A6.06,6.06,0,0,1,1,7,6.06,6.06,0,0,1,7,1Z"/>
+      </svg>
+      <span class="icon-history"></span>
+    </button>
+    <button type="button" title="Update viewbox as trades comes"><span class="icon-play" v-on:click="toggleFollowing" v-bind:class="{following: following}"></span></button>
     <button type="button" v-on:click="toggleSettings"><span class="icon-cog"></span></button>
   </header>
 </template>
@@ -15,13 +20,46 @@
     data() {
       return {
         title: 'SignificantTrades',
+        fetchProgress: 0,
+        following: true,
       }
     },
     created() {
-      socket.$on('price', price => {
-        this.title = formatPrice(price);
+      options.$on('following', state => this.following = state);
+
+      socket.$on('fetchProgress', progress => {
+        if (isNaN(progress)) {
+          return;
+        }
+
+        this.fetchProgress = (1 - progress) * 40;
+      })
+
+      socket.$on('price', (price, direction) => {
+        if (typeof price === 'number') {
+          this.title = formatPrice(price);
+
+          window.document.title = this.title.replace(/<\/?[^>]+(>|$)/g, '');
+        }
         
-        window.document.title = this.title.replace(/<\/?[^>]+(>|$)/g, '');
+        if (direction) {
+          let favicon = document.getElementById('favicon');
+
+          if (!favicon || favicon.getAttribute('direction') !== direction) {
+            if (favicon) {
+              document.head.removeChild(favicon);
+            }
+
+            favicon = document.createElement('link');
+            favicon.id = 'favicon';
+            favicon.rel = 'shortcut icon';
+            favicon.href = `static/${direction}.png`;
+
+            favicon.setAttribute('direction', direction);
+            
+            document.head.appendChild(favicon);
+          }
+        }
       });
     },
     methods: {
@@ -32,11 +70,14 @@
         const interval = parseInt(window.prompt(`How much data ? (minutes)`, 60));
 
         if (interval > 1) {
-          socket.fetch(interval);
+          socket.fetch(interval)
+            .then(data => {
+              this.fetchProgress = 0;
+            })
         }
       },
-      goLive() {
-        options.follow();
+      toggleFollowing() {
+        options.follow(!this.following);
       }
     }
   }
@@ -62,6 +103,7 @@
       color: white;
       padding: 6px 10px 5px;
       font-size: 20px;
+      position: relative;
 
       align-self: stretch;
       cursor: pointer;
@@ -71,9 +113,52 @@
         transition: all .5s $easeElastic;
       }
 
+      svg.loader {
+        width: 100%;
+        position: absolute;
+        transform: scale(0);
+        visibility: hidden;
+        top: 0;
+        left: 0;
+        padding: 9px;
+        width: calc(100% - 19px);
+        transition: transform 1s $easeOutExpo, visibility .2s linear 1s;
+
+        path {
+          fill: none;
+          stroke: white;
+          stroke-linecap: round;
+          stroke-width: 2px;
+          stroke-dasharray: calc(6.9 * 3.142 * 1.85);
+        }
+        
+        &.loading {
+          visibility: visible;
+          transition: transform .2s $easeElastic;
+          transform: scale(0.9);
+
+          + span {
+            opacity: .25;
+            transform: scale(1.25);
+          }
+        }
+      }
+
+      .icon-play {
+        opacity: .2;
+
+        &.following {
+          opacity: 1;
+          color: red;
+          clip-path: circle(5px);
+          transform: scale(2);
+        }
+      }
+
       &:hover,
       &:active {
-        .icon-play {          
+        .icon-play:not(.following) {  
+          opacity: 1;        
           transform: rotateZ(-7deg) scale(1.2) translateX(10%);
           text-shadow: 0 0 20px $blue, 0 0 2px white;
         }

@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import Axios from 'axios'
 
 import options from './options'
 
@@ -8,6 +9,7 @@ const emitter = new Vue({
       url: process.env.API_URL || 'ws://localhost:3000',
       trades: [],
       exchanges: [],
+      lastExchangesPrices: {},
       socket: null,
       connected: false,
       reconnectionDelay: 2000
@@ -28,6 +30,8 @@ const emitter = new Vue({
         this.connected = true;
 
         this.$emit('connected', event);
+        
+        this.$emit('price', '???', 'neutral')
 
         this.reconnectionDelay = 5000;
       }
@@ -46,7 +50,7 @@ const emitter = new Vue({
           */
 
           data = data
-            .sort((a, b) => a[2] - b[2]);
+            .sort((a, b) => a[1] - b[1]);
           
           this.trades = this.trades.concat(data);
 
@@ -62,9 +66,14 @@ const emitter = new Vue({
             case 'welcome':
               this.$emit('welcome', data);   
 
+              if (data.admin) {
+                this.$emit('admin');
+              }
+
               this.exchanges = data.exchanges
                 .filter(exchange => exchange.connected)
                 .map(exchange => exchange.id);
+
               this.$emit('exchanges', this.exchanges);
 
               this.$emit('pair', data.pair);
@@ -185,16 +194,45 @@ const emitter = new Vue({
 
       this.reconnectionDelay *= 1.25;
     },
-    fetch(interval) {
-      const component = this;
+    fetch(from, to = null, replace = false) {
+      if (!to) {
+        to = +new Date();
+        from = to - from * 1000 * 60;
+        replace = true;
+      }
 
-      fetch(this.http_url + '/history/' + interval)
-        .then(res => res.json())
-        .then(data => {
-          this.trades = data;
-
-          this.$emit('history');
+      return Axios.get(`${this.http_url}/history/${parseInt(from)}/${parseInt(to)}`, {
+          onDownloadProgress: e => this.$emit('fetchProgress', e.loaded / e.total)
         })
+        .then(response => {
+          const trades = response.data;
+          const count = this.trades.length;
+
+          if (replace || !this.trades || !this.trades.length) {
+            this.trades = trades;
+          } else {
+            const prepend = trades.filter(trade => trade[1] <= this.trades[0][1]);
+            const append = trades.filter(trade => trade[1] >= this.trades[this.trades.length - 1][1]);
+
+            if (prepend.length) {
+              this.trades = prepend.concat(this.trades);
+            }
+
+            if (append.length) {
+              this.trades = this.trades.concat(append);
+            }
+          }
+
+          if (count !== this.trades.length) {
+            this.$emit('history', replace);
+          }
+        })
+        .catch(err => err && this.$emit('alert', {
+          type: 'error',
+          title: `Unable to retrieve history`,
+          message: err.message,
+          id: `fetch_error`
+        }))
     }
   }
 });

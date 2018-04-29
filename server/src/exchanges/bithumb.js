@@ -100,7 +100,6 @@ class Bithumb extends Exchange {
 		
 		if (this.reference) {
 			output = data.filter(trade => trade.cont_no > this.reference).map(trade => [
-				trade.cont_no,
 				+new Date(trade.transaction_date),
 				+trade.price * 0.000942,
 				+trade.units_traded,

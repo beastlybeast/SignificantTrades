@@ -354,7 +354,6 @@ class Binance extends Exchange {
 
     if (trade && trade.t) {
       return [[
-        this.id + trade.t,
         trade.E,
         +trade.p,
         +trade.q,

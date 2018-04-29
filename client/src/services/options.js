@@ -6,8 +6,8 @@ const emitter = new Vue({
       groupBy: 100000,
       maxRows: 20,
       pair: 'BTCUSD',
-      averageLength: 3,
-      tickLength: '1%',
+      averageLength: 2,
+      tickLength: '1.5%',
       exchanges: [],
       debug: false
     }
@@ -36,8 +36,8 @@ const emitter = new Vue({
     toggle() {
       this.$emit('toggle');
     },
-    follow() {
-      this.$emit('follow');
+    follow(state) {
+      this.$emit('follow', state);
     },
     onChange(prop, current, old) {
       this.$emit('change', {

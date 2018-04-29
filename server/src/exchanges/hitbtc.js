@@ -698,7 +698,6 @@ class Huobi extends Exchange {
 
 		if (json.method === 'updateTrades' && json.params && json.params.data && json.params.data.length) {
 			return json.params.data.map(trade => [
-				trade.id,
 				+new Date(trade.timestamp),
 				+trade.price,
 				+trade.quantity,

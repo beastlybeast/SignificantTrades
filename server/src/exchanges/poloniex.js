@@ -156,7 +156,6 @@ class Poloniex extends Exchange {
 		
 		if (json[2] && json[2].length) {
 			return json[2].filter(result => result[0] === 't').map(trade => [
-				trade[1],
 				+new Date(trade[5] * 1000),
 				+trade[3],
 				+trade[4],

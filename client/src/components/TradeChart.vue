@@ -1,5 +1,5 @@
 <template>
-  <div class="chart-container" v-on:mousedown="startScroll">
+  <div class="chart-container" v-bind:class="{fetching: fetching}" v-on:mousedown="startScroll">
     <div class="chart-canvas"></div>
   </div>
 </template>
@@ -12,9 +12,10 @@
   export default {
     data() {
       return {
+        fetching: false,
         range: 1000 * 60 * 5,
         timeframe: 10000,
-        follow: true,
+        following: true,
         unfinishedTick: null,
         averages: {
           prices: [],
@@ -138,7 +139,7 @@
             name: 'PRICE',
             data: [],
             color: '#222',
-            dashStyle: 'ShortDash',
+            // dashStyle: 'ShortDash',
             animation: false,
             lineWidth: 2,
           },{
@@ -170,6 +171,12 @@
       }
     },
     created() {
+      Highcharts.setOptions({
+        time: {
+          timezoneOffset: new Date().getTimezoneOffset()
+        }
+      });
+
       socket.$on('pair', pair => {
         if (!this.chart) {
           return;
@@ -183,7 +190,7 @@
 
         this.range = 1000 * 60 * 5;
         this.timeframe = 10000;
-        this.follow = true;
+        this.canFollow(true);
 
         const timestamp = +new Date();
 
@@ -192,16 +199,23 @@
         this.chart.redraw();
       });
 
-      socket.$on('history', () => {
+      socket.$on('history', replace => {
         if (!this.chart || !socket.trades.length) {
           return;
         }
+        
+        if (replace) {
+          const min = socket.trades[0][1];
+          const max = socket.trades[socket.trades.length - 1][1];
 
-        this.range = socket.trades[socket.trades.length - 1][2] - socket.trades[0][2];
-
+          this.chart.xAxis[0].setExtremes(min, max, false);
+          this.range = max - min;
+          this.canFollow(true);
+        }
+        
         this.ajustTimeframe();
+        
         this.updateChart(this.getTicks(), true);
-        this.snapRight();
       });
 
       socket.$on('trades', trades => {
@@ -212,8 +226,12 @@
         this.updateChart(this.getTicks(trades));
       });
 
-      options.$on('follow', () => {
-        this.snapRight();
+      options.$on('follow', state => {
+        this.canFollow(state);
+        
+        if (state) {
+          this.follow(true);
+        }
       });
 
       setTimeout(() => {
@@ -237,7 +255,7 @@
       this.chart = Highcharts.chart(this.$el.querySelector('.chart-canvas'), this.options);
 
       if (socket.trades && socket.trades.length > 1) {
-        this.range = socket.trades[socket.trades.length - 1][2] - socket.trades[0][2];
+        this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
         this.ajustTimeframe();
         this.updateChart(this.getTicks(), true);
       }
@@ -268,7 +286,7 @@
           if (this.unfinishedTick) {
             tick = this.unfinishedTick;
           }
-          data = input.sort((a, b) => a[2] - b[2]);
+          data = input.sort((a, b) => a[1] - b[1]);
         } else {
           delete this.unfinishedTick;
           this.averages.prices.splice(0, this.averages.prices.length);
@@ -284,7 +302,7 @@
 
         for (let i=0; i<data.length; i++) {
 
-          if (!tick || data[i][2] - tick.timestamps[0] > this.timeframe) {
+          if (!tick || data[i][1] - tick.timestamps[0] > this.timeframe) {
             if (tick) {
               const points = this.tickToPoints(tick);
 
@@ -302,23 +320,23 @@
             }
 
             tick = this.unfinishedTick = {
-              timestamps: [data[i][2]],
-              prices: [data[i][3]],
-              sizes: [data[i][4]],
+              timestamps: [+data[i][1]],
+              prices: [+data[i][2]],
+              sizes: [+data[i][3]],
               buys: 0,
               sells: 0,
             };
 
           } else {
-            if (data[i][2] < tick.timestamps[0]) {
-              data[i][2] = tick.timestamps[0];
+            if (data[i][1] < tick.timestamps[0]) {
+              data[i][1] = tick.timestamps[0];
             }
-            tick.timestamps.push(data[i][2]);
-            tick.prices.push(data[i][3]);
-            tick.sizes.push(data[i][4]);
+            tick.timestamps.push(+data[i][1]);
+            tick.prices.push(+data[i][2]);
+            tick.sizes.push(+data[i][3]);
           }
 
-          tick[data[i][5] ? 'buys' : 'sells'] += (data[i][4] * data[i][3]);
+          tick[data[i][4] > 0 ? 'buys' : 'sells'] += (data[i][3] * data[i][2]);
         }
 
         return {
@@ -337,7 +355,13 @@
         let prices = [(tick.prices.map((price, index) => price * tick.sizes[index])).reduce((a, b) => a + b) / sizes[0]];
         let average;
 
-        socket.$emit('price', prices[0]);
+        let direction = 'neutral';
+
+        if (this.averages.prices.length > 1) {
+          direction = prices[0] > ((this.averages.prices[this.averages.prices.length - 1] + this.averages.prices[this.averages.prices.length - 2]) / 2) ? 'up' : 'down';
+        }
+
+        socket.$emit('price', prices[0], direction);
 
         if (options.averageLength > 0) {
           
@@ -391,12 +415,12 @@
           this.chart.redraw();
         }
 
-        if (this.follow && this.chart.series[0].xData.length) {
-          this.snapRight();
+        if (this.following && this.chart.series[0].xData.length) {
+          this.follow();
         }
       },
       doZoom(event) {
-        if (!this.chart.series[0].xData.length) {
+        if (this.fetching || !this.chart.series[0].xData.length) {
           return;
         }
 
@@ -404,14 +428,12 @@
         let axisMin = this.chart.xAxis[0].min;
         let axisMax = this.chart.xAxis[0].max;
 
-        const dataMin = this.chart.series[0].xData[0];
         const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
 
         const range = axisMax - axisMin;
 
         if (
           (event.deltaX || event.deltaZ || !event.deltaY)
-          || (event.deltaY > 0 && range >= (dataMax - dataMin))
         ) {
           return;
         }
@@ -419,19 +441,22 @@
         const delta = range * .1 * (event.deltaY > 0 ? 1 : -1);
         const deltaX = Math.min(this.chart.chartWidth / 1.5, Math.max(0, event.offsetX - this.chart.chartWidth / 3 / 2)) / (this.chart.chartWidth / 1.5);
 
-        axisMin = Math.max(dataMin, axisMin - delta * deltaX);
+        axisMin = axisMin - delta * deltaX;
         axisMax = Math.min(dataMax, axisMax + delta * (1 - deltaX));
 
         this.chart.xAxis[0].setExtremes(axisMin, axisMax);
 
-        this.follow = axisMax === dataMax;
+        this.canFollow(axisMax === dataMax);
 
         this.range = axisMax - axisMin;
-
-        clearInterval(this.doZoomTimeframeInterval);
         
-        this.doZoomTimeframeInterval = setTimeout(() => {
-          if (this.ajustTimeframe()) {
+        clearInterval(this.doZoomAfterTimeout);
+
+        this.doZoomAfterTimeout = setTimeout(() => {
+          if (!this.fetching && axisMin < this.chart.series[0].xData[0]) {
+            this.fetching = true;
+            socket.fetch(axisMin, this.chart.series[0].xData[0]).then().catch().then(() => this.fetching = false);
+          } else if (this.ajustTimeframe()) {
             this.updateChart(this.getTicks(), true);
           }
         }, 250);
@@ -440,7 +465,7 @@
         this.scrolling = event.pageX;
       },
       doScroll(event) {
-        if (isNaN(this.scrolling) || !this.chart.series[0].xData.length) {
+        if (this.fetching || isNaN(this.scrolling) || !this.chart.series[0].xData.length) {
           return;
         }
 
@@ -450,23 +475,19 @@
         let axisMin = this.chart.xAxis[0].min;
         let axisMax = this.chart.xAxis[0].max;
 
-        const dataMin = this.chart.series[0].xData[0];
-        const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
-
         axisMin += scale;
         axisMax += scale;
 
-        if (axisMin < dataMin) {
-          axisMin = dataMin;
-          axisMax = axisMin + range;
-        }
+        const dataMin = this.chart.series[0].xData[0];
+        const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
 
         if (axisMax > dataMax) {
           axisMax = dataMax;
           axisMin = axisMax - range;
         }
 
-        this.follow = axisMax === dataMax;
+
+        this.canFollow(axisMax === dataMax);
         this.range = axisMax - axisMin;
 
         this.chart.xAxis[0].setExtremes(axisMin, axisMax);
@@ -474,16 +495,29 @@
         this.scrolling = event.pageX;
       },
       stopScroll(event) {
+        if (this.scrolling && !this.fetching && this.chart.xAxis[0].min < this.chart.series[0].xData[0]) {
+          this.fetching = true;
+
+          socket.fetch(this.chart.xAxis[0].min, this.chart.series[0].xData[0]).then().catch().then(() => this.fetching = false);
+        }
+
         delete this.scrolling;
       },
-      snapRight() {
-        this.follow = true;
+      follow(redraw = false) {
+        this.following = true;
 
         const dataMin = this.chart.series[0].xData[0];
         const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
         const axisMin = Math.max(dataMin, dataMax - this.range);
 
-        this.chart.xAxis[0].setExtremes(axisMin, dataMax, false);
+        this.chart.xAxis[0].setExtremes(axisMin, dataMax, redraw);
+      },
+      canFollow(state) {
+        if (this.following !== state) {
+          options.$emit('following', state);
+
+          this.following = state;
+        }
       },
       getTickLength() {
         let value = parseFloat(options.tickLength);
@@ -525,6 +559,10 @@
   .chart-container {
     position: relative;
     width: calc(100% + 1px);
+
+    &.fetching {
+      opacity: .5;
+    }
 
     .highcharts-credits {
       visibility: hidden;

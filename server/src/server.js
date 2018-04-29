@@ -39,11 +39,15 @@ class Server {
 		});
 
 		this.wss.on('connection', (ws, req) =>  {
-			const ip = req.connection.remoteAddress;
-			console.log('[client] ' + ip + ' joined ' + req.url);
+			const ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+
+			ws.admin = this.isAdmin(ip);
+
+			console.log('[client] ' + ip + ' joined ' + req.url + (ws.admin ? ' [ADMIN]' : ''));
 
 			ws.send(JSON.stringify({
 				type: 'welcome',
+				admin: ws.admin,
 				pair: this.options.pair,
 				exchanges: this.exchanges.map((exchange) => {
 					return {
@@ -72,6 +76,10 @@ class Server {
 
 				switch (method) {
 					case 'pair':
+						if (!ws.admin) {
+							return;
+						}
+
 						this.options.pair = message.toUpperCase();
 
 						console.log(`[${ip}] switching pair`, this.options.pair);
@@ -156,42 +164,59 @@ class Server {
 			const path = url.parse(request.url).path;
 
 			const routes = [{
-				match: /^\/?history\/(\d+)\/?$/, 
-				response: (timeframe) => {
-					const now = +new Date();
-					const from = now - timeframe * 60 * 1000;
+				match: /^\/?history\/(\d+)\/(\d+)\/?$/, 
+				response: (from, to) => {
 					let date, name, path, chunk, output = [];
 
-					for (let i = from; i < now; i += 60 * 1000 * 60 * 24) {
+					if (from > to) {
+						response.writeHead(400);
+						response.end('Invalid interval');
+						return;
+					}
+
+					if (to - from > 1000 * 60 * 60 * 24 * 2) {
+						response.writeHead(400);
+						response.end('Interval must be <= than 2 days');
+						return;
+					}
+					let tries = 0;
+					for (let i = +from; i <= to; i += 60 * 1000 * 60 * 24) {
+						if (++tries > 5) {
+							process.end();
+							break;
+							return;
+						}
 						date = new Date(i);
 						name = this.options.pair + '_' + ('0' + date.getDate()).slice(-2) + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + date.getFullYear();
 						path = 'data/' + name + '.json';
 
 						try {
-							chunk = JSON.parse(fs.readFileSync(path, 'utf8'));
+							chunk = fs.readFileSync(path, 'utf8').trim().split("\n");
 							
-							if (i === from) {
+							if (chunk[0].split(' ')[1] >= from && chunk[chunk.length - 1].split(' ')[1] <= to) {
+								console.log(`[server/history] append ${path} (ms ${i}) to output`, chunk.length);
+
+								output = output.concat(chunk.map(row => row.split(' ')));
+							} else {
 								console.log(`[server/history] unpacking ${path} (ms ${i})`, chunk.length);
 
 								for (let j = 0; j < chunk.length; j++) {
-									if (chunk[j][2] < i) {
+									const trade = chunk[j].split(' ');
+
+									if (trade[1] <= from || trade[1] >= to) {
 										continue;
 									}
 
-									output.push(chunk[j]);
+									output.push(trade);
 								}
-							} else {
-								console.log(`[server/history] append ${path} (ms ${i}) to output`, chunk.length);
-
-								output = output.concat(chunk);
 							}
 						} catch (error) {
 							console.log(`[server/history] unable to get ${path} (ms ${i})`);
 						}
 					}
-
+					
 					for (let i = 0; i < this.chunk.length; i++) {
-						if (this.chunk[i][2] < from) {
+						if (this.chunk[i][1] <= from || this.chunk[i][1] >= to) {
 							continue;
 						}
 
@@ -218,7 +243,6 @@ class Server {
 		});
 
 		this.http.on('upgrade', (request, socket, head) => {
-			console.log('on upgrade', request.url);
 			this.wss.handleUpgrade(request, socket, head, ws => {
 				this.wss.emit('connection', ws, request);
 			});
@@ -234,7 +258,7 @@ class Server {
 
 		this.connected = true;
 		this.chunk = [];
-
+		
 		this.exchanges.forEach(exchange => {
 			exchange.connect(this.options.pair);
 		});
@@ -308,50 +332,57 @@ class Server {
 		})
 	}
 
+	isAdmin(ip) {
+		if (['localhost', '127.0.0.1', '::1'].indexOf(ip) !== -1) {
+			return true;
+		}
+
+		const file = fs.readFileSync('../admin.txt', 'utf8');
+
+		if (!file || !file.trim().length) {
+			return false;
+		}
+
+		return file.split("\n").indexOf(ip) !== -1;
+	}
+
 	backup(exit = false) {
-		const duration = this.options.backupInterval / 1000 + 's';
+		if (!this.chunk.length) {
+			return;
+		}
+			
+		console.log(`[server/backup] preparing to backup ${this.chunk.length} trades... (${this.options.backupInterval / 1000 + 's'} of data)`);
 
-		const date = new Date();
-		const name = this.options.pair + '_' + ('0' + date.getDate()).slice(-2) + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + date.getFullYear();
-		const path = 'data/' + name + '.json';
-		
-		fs.readFile(path, (err, data) => {
-			if (err) {
-				if (err.code === 'ENOENT') {
-					fs.writeFile(path, JSON.stringify(this.chunk), (err, data) => {
-						if (err) {
-							throw new Error(err);
-						}
-
-						console.log(`[server] backup ${duration} of data into new file "${path}" (${this.chunk.length} trades)`);
-
-						this.chunk.splice(0, this.chunk.length);
-
-						exit && process.exit();
-					});
-
-					return;
-				}
-
-				throw new Error(err);
+		const processDate = (date) => {
+			const nextDateTimestamp = +date + 1000 * 60 * 60 * 24;
+			const path = 'data/' + (this.options.pair + '_' + ('0' + date.getDate()).slice(-2) + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + date.getFullYear()) + '.json';
+			
+			const tradesOfTheDay = this.chunk.filter(trade => trade[2] < nextDateTimestamp);
+			
+			if (!tradesOfTheDay.length) {
+				return processDate(new Date(nextDateTimestamp));
 			}
 
-			let json = JSON.parse(data);
+			const spliceAtIndex = this.chunk.indexOf(tradesOfTheDay[tradesOfTheDay.length - 1]);
+			
+			console.log(`[server/backup] write ${tradesOfTheDay.length} trades into ${path}`);
 
-			json = json.concat(this.chunk);
-
-			fs.writeFile(path, JSON.stringify(json), (err, data) => {
+			fs.appendFile(path, tradesOfTheDay.map(trade => `${trade[0]} ${trade[1]} ${trade[2]} ${trade[3]} ${trade[4]}`).join("\n") + "\n", (err) => {
 				if (err) {
 					throw new Error(err);
 				}
 
-				console.log(`[server] backup ${duration} of data into "${path}" (${json.length - this.chunk.length} + ${this.chunk.length} trades)`);
+				this.chunk = this.chunk.splice(spliceAtIndex + 1);
 
-				this.chunk.splice(0, this.chunk.length);
-
-				exit && process.exit();
+				if (this.chunk.length) {
+					return processDate(new Date(nextDateTimestamp));
+				} else {
+					exit && process.exit();
+				}
 			});
-		});
+		};
+
+		processDate(new Date(new Date(this.chunk[0][1]).setHours(0, 0, 0, 0)));
 	}
 
 }

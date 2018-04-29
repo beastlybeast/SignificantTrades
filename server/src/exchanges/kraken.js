@@ -154,7 +154,6 @@ class Kraken extends Exchange {
 				for (let trade of response.result[this.pair]) {
 
 					output.push([
-						this.id + String(trade[2]).replace(/\D/, '') + trade[3] + trade[4], // id
 						trade[2] * 1000, // timestamp
 						+trade[0], // price
 						+trade[1], // volume

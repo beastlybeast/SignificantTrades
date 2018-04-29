@@ -4,9 +4,9 @@
       <a href="#" class="toggle-settings icon-times" v-on:click="hideSettings"></a>
       <div class="settings__wrapper" ref="settingsWrapper">
         <div class="settings__column">
-          <div class="form-group mb15" title="The current pair">
+          <div class="form-group mb15" title="The current pair" v-bind:class="{ restricted: restricted }">
             <label>Pair</label>
-            <input type="string" placeholder="BTCUSD" class="form-control" v-model="options.pair" @change="switchPair">
+            <input type="string" placeholder="BTCUSD" class="form-control" v-model="options.pair" @change="switchPair" :disabled="restricted">
           </div>
           <div class="form-group mb15" title="VWAP the price line over n ticks">
             <label>Average price</label>
@@ -67,6 +67,7 @@
         exchanges: [],
         options: options,
         opened: false,
+        restricted: true,
         height: 0,
         version: {
           number: process.env.VERSION,
@@ -75,6 +76,8 @@
       }
     },
     created() {
+      socket.$on('admin', () => this.restricted = false);
+
       socket.$on('exchanges', exchanges => {
         this.exchanges = exchanges;
 
@@ -173,6 +176,14 @@
       font-size: 12px;
       display: flex;
       flex-direction: column;
+
+      &.restricted {
+        opacity: .5;
+
+        &, input, label {
+          cursor: not-allowed;
+        }
+      }
 
       .form-control {
         padding: 10px 12px;

@@ -51,7 +51,6 @@ class Gdax extends Exchange {
 
       if (obj && obj.type === 'match') {
         this.emitData([[
-          this.id + obj.maker_order_id.substr(-12) + obj.taker_order_id.substr(-12),
           +new Date(obj.time),
           +obj.price,
           +obj.size,

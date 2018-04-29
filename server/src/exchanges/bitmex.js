@@ -53,7 +53,6 @@ class Bitmex extends Exchange {
 		if (json && json.data && json.data.length) {
 			return json.data.map(trade => {
 				return [
-					this.id + trade.trdMatchID,
 					+new Date(trade.timestamp),
 					trade.price,
 					trade.size / trade.price,

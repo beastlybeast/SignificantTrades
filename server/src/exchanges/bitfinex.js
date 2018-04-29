@@ -145,7 +145,6 @@ class Bitfinex extends Exchange {
     }
 
     return [[
-      this.id + json[2][0],
       +new Date(json[2][1]),
       +json[2][3],
       Math.abs(json[2][2]),

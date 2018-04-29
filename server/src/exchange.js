@@ -86,15 +86,15 @@ class Exchange extends EventEmitter {
 		const now = +new Date();
 
 		for (let trade of data) {
-			const id = trade[1] + '_' + trade[4];
+			const id = trade[0] + '_' + trade[3];
 
 			if (group[id]) {
+				group[id][1].push(trade[1]);
 				group[id][2].push(trade[2]);
-				group[id][3].push(trade[3]);
 			} else {
-				trade[1] = Math.min(now + 1000, trade[1]);
+				trade[0] = Math.min(now + 1000, trade[0]);
+				trade[1] = [trade[1]];
 				trade[2] = [trade[2]];
-				trade[3] = [trade[3]];
 				group[id] = trade;
 			}
 		}
@@ -102,13 +102,13 @@ class Exchange extends EventEmitter {
 		this.emit('data', {
 			exchange: this.id,
 			data: Object.keys(group).map(id => {
-				group[id][2] = (group[id][2].map((price, index) => price * group[id][3][index]).reduce((a, b) => a + b) / group[id][2].length) / (group[id][3].reduce((a, b) => a + b) / group[id][3].length);
-				group[id][3] = group[id][3].reduce((a, b) => a + b);
+				group[id][1] = (group[id][1].map((price, index) => price * group[id][2][index]).reduce((a, b) => a + b) / group[id][1].length) / (group[id][2].reduce((a, b) => a + b) / group[id][2].length);
+				group[id][2] = group[id][2].reduce((a, b) => a + b);
 
 				const firstDigitIndex = group[id][2].toFixed(8).match(/[1-9]/);
 
-				group[id][2] = +group[id][2].toFixed(Math.max(2, 6 - Math.min(0, 3 - (firstDigitIndex ? firstDigitIndex.index : 0)) - group[id][2].toFixed().length));
-				group[id][3] = +group[id][3].toFixed(Math.max(2, 7 - group[id][3].toFixed().length));
+				group[id][1] = +group[id][1].toFixed(Math.max(2, 6 - Math.min(0, 3 - (firstDigitIndex ? firstDigitIndex.index : 0)) - group[id][1].toFixed().length));
+				group[id][2] = +group[id][2].toFixed(Math.max(2, 7 - group[id][2].toFixed().length));
 
 				return group[id];
 			})

@@ -66,7 +66,6 @@ class Bitstamp extends Exchange {
 
 	format(trade) {
     return [[
-      this.id + trade.id,
       +new Date(trade.timestamp * 1000),
       trade.price,
       trade.amount,
