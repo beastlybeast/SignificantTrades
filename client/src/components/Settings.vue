@@ -3,33 +3,33 @@
     <div class="stack__wrapper" ref="settingsWrapper">
       <a href="#" class="stack__toggler icon-times" v-on:click="hideSettings"></a>
       <div class="settings__column">
-        <div class="form-group mb15" title="The current pair" v-bind:class="{ restricted: restricted }">
-          <label>Pair</label>
+        <div class="form-group mb15" v-bind:class="{ restricted: restricted }">
+          <label>Pair <span class="icon-info-circle" v-bind:title="help.pair" v-tippy></span></label>
           <input type="string" placeholder="BTCUSD" class="form-control" v-model="options.pair" @change="switchPair" :disabled="restricted">
         </div>
-        <div class="form-group mb15" title="VWAP the price line over n ticks">
-          <label>Average price</label>
+        <div class="form-group mb15">
+          <label>Average price <span class="icon-info-circle" v-bind:title="help.averageLength" v-tippy></span></label>
           <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.averageLength">
         </div>
       </div>
       <div class="settings__column">
-        <div class="form-group mb15" title="Stack rows on specific amount">
-          <label>Stack rows</label>
+        <div class="form-group mb15">
+          <label>Stack rows <span class="icon-info-circle" v-bind:title="help.groupBy" v-tippy></span></label>
           <input type="number" min="0" max="10000000" step="10000" class="form-control" v-model="options.groupBy">
         </div>
-        <div class="form-group mb15" title="Max rows the app has to render">
-          <label>Max rows</label>
+        <div class="form-group mb15">
+          <label>Max rows <span class="icon-info-circle" v-bind:title="help.maxRows" v-tippy></span></label>
           <input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
         </div>
       </div>
-      <div class="settings__column" title="Tick length factor/size (% of visible range or time in ms)">
+      <div class="settings__column">
         <div class="form-group mb15">
-          <label>Tick length</label>
-          <input type="string" placeholder="XX% or XXXXXms" class="form-control" v-model="options.tickLength">
+          <label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
+          <input type="string" placeholder="XX% or XXs" class="form-control" v-model="options.timeframe">
         </div>
       </div>
-      <div class="form-group mb15" title="Enable/disable exchanges (from list & chart)">
-        <label>Filter exchanges ({{ Math.min(options.exchanges.length, exchanges.length) }} selected)</label>
+      <div class="form-group mb15">
+        <label>Filter exchanges ({{ Math.min(options.exchanges.length, exchanges.length) }} selected) <span class="icon-info-circle" v-bind:title="help.exchanges" v-tippy></span></label>
         <div class="settings__exchanges">
           <a v-for="(exchange, index) in exchanges" v-bind:key="index"
             class="settings__exchanges__item"
@@ -42,7 +42,9 @@
       </div>
       <div class="settings__column flex-bottom">
         <div class="form-group">
-          <label v-if="version.number">v{{ version.number }} <sup class="version-date">{{ version.date }}</sup></label>
+          <a v-if="version.number" href="https://github.com/Tucsky/SignificantTrades" target="_blank" title="Wanna give this project a little star on github ?" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">
+            v{{ version.number }} <sup class="version-date">{{ version.date }}</sup>
+          </a>
         </div>
         <div class="form-group">
           <label class="label-checkbox flex-right">
@@ -67,6 +69,14 @@
         opened: false,
         restricted: true,
         height: 0,
+        help: {
+          pair: `The pair to aggregate from<br><small><i>special access required</i></small>`,
+          averageLength: `Smooth up the chart by averaging the price using <i>volume weighed average</i> formula across the exchanges.<br>Type the length of average (in ticks, 2 - 5 gives best results)`,
+          groupBy: `Minimum amount for a trade to show up in the list below`,
+          maxRows: `Max rows to render`,
+          timeframe: `Define how much trades we stack together in the chart, type a amount of seconds or % of the visible range<br>("1.5%" gives good results, 10s is the minimum)`,
+          exchanges: `Enable/disable exchanges<br>(exclude from list & chart)`
+        },
         version: {
           number: process.env.VERSION,
           date: process.env.BUILD_DATE
@@ -237,6 +247,20 @@
 
       > label {
         margin-bottom: 5px;
+
+        .icon-info-circle {
+          margin-left: 2px;
+          line-height: 0;
+          top: 1px;
+          position: relative;
+          opacity: .3;
+          transition: opacity .2s $easeOutExpo;
+          cursor: help;
+
+          &:hover {
+            opacity: 1;
+          }
+        }
 
         &:last-child {
           margin: 0;

@@ -115,3 +115,8 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-play); 
   }
 }
+.icon-info-circle {
+  &:before {
+    content: unicode($icon-info-circle); 
+  }
+}

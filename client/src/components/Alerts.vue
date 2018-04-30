@@ -37,6 +37,8 @@
 					alert.id = Math.random().toString(36).substring(7);
 				}
 
+				alert.timestamp = +new Date();
+
 				if (!alert.title) {
 					alert.title = alert.message;
 
@@ -48,6 +50,12 @@
 				}
 
 				this.alerts.push(alert);
+
+				if (alert.type !== 'error') {
+					setTimeout(() => {
+						this.dismiss(this.alerts.indexOf(alert));
+					}, 1000 * 30);
+				}
       });
     },
     methods: {

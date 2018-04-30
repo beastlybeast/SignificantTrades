@@ -51,11 +51,15 @@
         localStorage.setItem('options', JSON.stringify(options.$data));
       });
 
-      window.formatPrice = function(price) {
+      window.formatPrice = function(price, precision) {
         price = +price;
 
         if (isNaN(price) || !price) {
-          return '0.00';
+          return (0).toFixed(precision);
+        }
+
+        if (precision) {
+          return price.toFixed(precision);
         }
 
         if (price <= 0.0001) {
@@ -72,11 +76,22 @@
 
         return price.toFixed(6 - price.toFixed().length);
       }
+
+      window.formatAmount = function(amount, precision) {
+        if (amount >= 1000000) {
+          amount = (amount / 1000000).toFixed(1) + 'M';
+        } else if (amount >= 1000) {
+          amount = (amount / 1000).toFixed(1) + 'K';
+        } else {
+          amount = formatPrice(amount, precision);
+        }
+
+        return amount;
+      }
     },
     mounted() {
       socket.fetch(1)
         .then((response, err) => {
-          console.log(response, err);
           !err && socket.connect();
         });
     },
@@ -119,6 +134,12 @@
   .icon-currency {
     top: 1px;
     position: relative;
+  }
+
+  .tippy-tooltip {
+    &.blue-theme {
+      background-color: $blue;
+    }
   }
 
   #app {
@@ -209,16 +230,17 @@
         &:last-child {
           margin: 0;
         }
+      }
 
-        code {
-          background-color: rgba(black, .1);
-          font-weight: 400;
-          padding: 3px 4px;
-          line-height: 1;
-          display: inline-block;
-          position: relative;
-          top: -1px;
-        }
+      code {
+        background-color: rgba(black, .1);
+        font-weight: 400;
+        padding: 3px 4px;
+        line-height: 1;
+        display: inline-block;
+        position: relative;
+        top: -1px;
+        letter-spacing: -.5px;
       }
     }
 

@@ -6,13 +6,13 @@ import options from './options'
 const emitter = new Vue({
   data() {
     return {
-      url: process.env.API_URL || 'ws://localhost:3000',
+      url: process.env.API_URL || 'wss://btcusd.kevinrostagni.me',
       trades: [],
       exchanges: [],
       lastExchangesPrices: {},
       socket: null,
       connected: false,
-      reconnectionDelay: 2000
+      reconnectionDelay: 2000,
     }
   },
   created() {
@@ -204,7 +204,7 @@ const emitter = new Vue({
       const url = `${this.http_url}/history/${parseInt(from)}/${parseInt(to)}`;
 
       if (this.lastFetchUrl === url) {
-        return;
+        return new Promise((resolve, reject) => resolve());
       }
 
       this.lastFetchUrl = url;
@@ -247,9 +247,25 @@ const emitter = new Vue({
           });
 
           reject(err);
-        });
+        })
       });
-      
+    },
+    trim(timestamp) {
+      let index;
+
+      for (index = this.trades.length - 1; index >= 0; index--) {
+        if (this.trades[index][1] < timestamp) {
+          break;
+        }
+      }
+
+      if (index < 0) {
+        return;
+      }
+
+      this.trades.splice(0, ++index);
+
+      this.$emit('trim', timestamp);
     }
   }
 });

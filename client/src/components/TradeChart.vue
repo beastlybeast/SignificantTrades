@@ -2,32 +2,37 @@
   <div>
     <div class="chart__detail stack__container" v-bind:class="{open: isDetailOpen}" v-bind:style="{ maxHeight: detailHeight + 'px' }">
       <div class="stack__wrapper" ref="detailWrapper">
-        <a href="#" class="stack__toggler icon-times" v-on:click="isDetailOpen = false"></a>
+        <a href="#" class="stack__toggler icon-times" v-on:click="showTickDetail(false)"></a>
         <div v-if="detail">
           <div class="detail__header">
-            <p><code>{{+detail.from}}</code> ({{detail.length}} tick)</p>
+            <span class="icon-up" v-on:click="moveTickDetail(-1)"></span>
+            <code>{{detail.from}}</code>
+            <code>{{detail.to}}</code>
+            <span class="icon-up" v-on:click="moveTickDetail(1)"></span>
           </div>
           <div class="detail__exchanges__list">
             <div class="detail__exchange detail__exchanges_header" ref="detailExchangesHeader">
+              <div class="detail__exchange__name" v-on:click="handleTickDetailSort($event, 'name')">ABC</div>
               <div class="detail__exchange__price" v-on:click="handleTickDetailSort($event, 'price')">PRICE</div>
-              <div class="detail__exchange__buys" v-on:click="handleTickDetailSort($event, 'buys')">BUYS</div>
-              <div class="detail__exchange__sells" v-on:click="handleTickDetailSort($event, 'sells')">SELLS</div>
-              <div class="detail__exchange__size" v-on:click="handleTickDetailSort($event, 'size')">SIZE</div>
-              <div class="detail__exchange__count" v-on:click="handleTickDetailSort($event, 'count')">TRADES</div>
+              <div class="detail__exchange__buys" v-on:click="handleTickDetailSort($event, 'buys')">BUY</div>
+              <div class="detail__exchange__sells" v-on:click="handleTickDetailSort($event, 'sells')">SELL</div>
+              <div class="detail__exchange__size" v-on:click="handleTickDetailSort($event, 'size')">VOL</div>
+              <div class="detail__exchange__count" v-on:click="handleTickDetailSort($event, 'count')">HIT</div>
             </div>
             <div class="detail__exchange" v-for="exchange of detail.exchanges" v-bind:key="exchange.name">
               <div class="detail__exchange__name">{{exchange.name}}</div>
-              <div class="detail__exchange__price"><span v-if="exchange.price || exchange.priceChange"><span class="icon-currency"></span> {{exchange.price}} <sup v-if="exchange.priceChange" v-bind:class="{increase: exchange.priceChange > 0}">{{exchange.priceChange}} %</sup></span></div>
-              <div class="detail__exchange__buys"><span v-if="exchange.buys || exchange.buysChange">{{exchange.buys}} <span class="icon-commodity"></span> <sup v-if="exchange.buysChange" v-bind:class="{increase: exchange.buysChange > 0}">{{exchange.buysChange}} %</sup></span></div>
-              <div class="detail__exchange__sells"><span v-if="exchange.sells || exchange.sellsChange">{{exchange.sells}} <span class="icon-commodity"></span> <sup v-if="exchange.sellsChange" v-bind:class="{increase: exchange.sellsChange > 0}">{{exchange.sellsChange}} %</sup></span></div>
-              <div class="detail__exchange__size"><span v-if="exchange.size || exchange.sizeChange">{{exchange.size}} <span class="icon-commodity"></span> <sup v-if="exchange.sizeChange" v-bind:class="{increase: exchange.sizeChange > 0}">{{exchange.sizeChange}} %</sup></span></div>
-              <div class="detail__exchange__count"><span>{{exchange.count}} <sup v-if="exchange.countChange" v-bind:class="{increase: exchange.countChange > 0}">{{exchange.countChange}} %</sup></span></div>
+              <div class="detail__exchange__price"><span v-if="exchange.price || exchange.changes.price"><span class="icon-currency"></span> <span v-html="exchange._price"></span> <sup v-if="exchange.changes.price" v-bind:class="{increase: exchange.changes.price > 0}">{{(exchange.changes.price * 100).toFixed(2)}} %</sup></span></div>
+              <div class="detail__exchange__buys"><span v-if="exchange.buys || exchange.changes.buys">{{exchange._buys}} <span class="icon-commodity"></span> <sup v-if="exchange.changes.buys" v-bind:class="{increase: exchange.changes.buys > 0}">{{(exchange.changes.buys * 100).toFixed(2)}} %</sup></span></div>
+              <div class="detail__exchange__sells"><span v-if="exchange.sells || exchange.changes.sells">{{exchange._sells}} <span class="icon-commodity"></span> <sup v-if="exchange.changes.sells" v-bind:class="{increase: exchange.changes.sells > 0}">{{(exchange.changes.sells * 100).toFixed(2)}} %</sup></span></div>
+              <div class="detail__exchange__size"><span v-if="exchange.size || exchange.changes.size">{{exchange._size}} <span class="icon-commodity"></span> <sup v-if="exchange.changes.size" v-bind:class="{increase: exchange.changes.size > 0}">{{(exchange.changes.size * 100).toFixed(2)}} %</sup></span></div>
+              <div class="detail__exchange__count"><span>{{exchange.count}} <sup v-if="exchange.changes.count" v-bind:class="{increase: exchange.changes.count > 0}">{{(exchange.changes.count * 100).toFixed(2)}} %</sup></span></div>
             </div>
           </div>
         </div>
       </div>
     </div>
     <div class="chart__container" ref="chartContainer" v-bind:class="{fetching: fetching}" v-on:mousedown="startScroll">
+      <div class="chart__selection" v-bind:style="{left: selection.left, width: selection.width}"></div>
       <div class="chart__canvas"></div>
     </div>
   </div>
@@ -45,6 +50,7 @@
         range: 1000 * 60 * 5,
         timeframe: 10000,
         following: true,
+        shiftPressed: false,
         unfinishedTick: null,
         isDetailOpen: false,
         detailHeight: 0,
@@ -58,164 +64,40 @@
           sizes: [],
         },
         chart: null,
-        options: {
-          chart: {
-            type: 'spline',
-            animation: false,
-            height: '100px',
-            margin: [0, 0, 0, 0],
-            spacingTop: 0,
-            backgroundColor: 'transparent',
-          },
-          title: {
-            text: '',
-            floating: true,
-            margin: 0
-          },
-          subtitle: {
-            text: '',
-            style: {
-              display: 'none'
-            }
-          },
-          rangeSelector: {
-            enabled: false
-          },
-          legend: {
-            enabled: false
-          },
-          xAxis: {
-              categories: [],
-              gridLineColor: 'transparent',
-              title: {
-                enabled: false,
-                reserveSpace: false
-              },
-              labels: {
-                enabled: false,
-              },
-              lineWidth: 0,
-              tickWidth: 0,
-              minPadding: 0,
-              maxPadding: 0,
-          },
-          yAxis: [{
-              gridLineColor: 'rgba(0, 0, 0, .05)',
-              title: {
-                enabled: false,
-                reserveSpace: false
-              },
-              lineWidth: 0,
-              tickWidth: 0,
-              endOnTick: false,
-              minPadding: 0,
-              maxPadding: 0,
-              tickAmount: 8,
-          },{
-              gridLineColor: 'rgba(0, 0, 0, 0)',
-              startOnTick: false,
-          }],
-          exporting: {
-            enabled: false
-          },
-          tooltip: {
-            snap: 5,
-            animation: false,
-            backgroundColor: 'rgba(0, 0, 0, .7)',
-            borderWidth: 0,
-            padding: 4,
-            shadow: false,
-            hideDelay: 0,
-            formatter: function(e) {
-              return '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + this.series.name + ' ' + app.getAttribute('data-symbol') + formatPrice(this.y).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
-            },
-            style: {
-              color: 'white',
-              fontSize: 10,
-              lineHeight: 12
-            }
-          },
-          spacing:[0, 0, 0, 0],
-          plotOptions: {
-            series: {
-              pointPadding: 0,
-              groupPadding: 0,
-              animation: false,
-              stickyTracking: false,
-              point: {
-                events: {
-                  click: e => {
-                    e.point.select();
-
-                    this.showTickDetail(e.point);
-                  }
-                }
-              }
-            },
-            area: {
-              stacking: 'normal',
-            },
-            column: {
-              stacking: 'percent',
-              dataLabels: {
-                enabled: false,
-              }
-            },
-            spline: {
-              animation: false,
-              pointPlacement: 'on',
-              showInLegend: false,
-              marker: {
-                enabled: false
-              }
-            },
-            area: {
-              animation: false,
-              pointPlacement: 'on',
-              showInLegend: false,
-              marker: {
-                enabled: false
-              }
-            }
-          },
-          series: [{
-            yAxis: 1,
-            zIndex: 1,
-            name: 'PRICE',
-            data: [],
-            color: '#222',
-            // dashStyle: 'ShortDash',
-            animation: false,
-            lineWidth: 2,
-          },{
-            name: 'SELL',
-            stacking: 'area',
-            type: 'area',
-            data: [],
-            color: '#E57373',
-            fillColor: '#F44336',
-            animation: false,
-            marker: {
-              symbol: 'circle',
-              radius: 3,
-            }
-          },{
-            name: 'BUY',
-            stacking: 'area',
-            type: 'area',
-            data: [],
-            color: '#9CCC65',
-            fillColor: '#7CB342',
-            animation: false,
-            marker: {
-              symbol: 'circle',
-              radius: 3,
-            }
-          }]
-        }
+        selection: {
+          from: 0,
+          to: 0,
+          left: 0,
+          right: 0,
+        },
       }
     },
     created() {
+      this.timestamp = +new Date();
+      
+      this._trimInvisibleTradesInterval = setInterval(() => {
+        if (this.following && +new Date() - this.timestamp >= 1000 * 60 * 5) {
+          const min = this.chart.xAxis[0].min - this.timeframe;
+          socket.trim(min);
+          
+          for (let serie of this.chart.series) {
+            for (let point of serie.data) {
+              if (!point) {
+                continue;
+              }
+
+              if (point.x >= min) {
+                break;
+              }
+
+              point.remove(false);
+            }
+          }
+
+          this.chart.redraw();
+        }
+      }, 60 * 1000);
+
       Highcharts.setOptions({
         time: {
           timezoneOffset: new Date().getTimezoneOffset()
@@ -251,14 +133,14 @@
           return;
         }
         
-        if (replace) {
+        /*if (replace) {
           const min = +socket.trades[0][1];
           const max = +socket.trades[socket.trades.length - 1][1];
 
           this.chart.xAxis[0].setExtremes(min, max, false);
           this.range = max - min;
           this.canFollow(true);
-        }
+        }*/
         
         this.ajustTimeframe();
         
@@ -288,7 +170,7 @@
             case 'averageLength':
               this.updateChart(this.getTicks(), true);
             break;
-            case 'tickLength':
+            case 'timeframe':
               if (this.ajustTimeframe()) {
                 this.updateChart(this.getTicks(), true);
               }
@@ -298,8 +180,147 @@
       }, 1000);
     },
     mounted() {
-      this.options.series[0].name = options.pair;
-      this.chart = Highcharts.chart(this.$el.querySelector('.chart__canvas'), this.options);
+      this.chart = Highcharts.chart(this.$el.querySelector('.chart__canvas'), {
+        chart: {
+          type: 'spline',
+          animation: false,
+          height: '100px',
+          margin: [0, 0, 0, 0],
+          spacingTop: 0,
+          backgroundColor: 'transparent',
+        },
+        title: {
+          text: '',
+          floating: true,
+          margin: 0
+        },
+        subtitle: {
+          text: '',
+          style: {
+            display: 'none'
+          }
+        },
+        rangeSelector: {
+          enabled: false
+        },
+        legend: {
+          enabled: false
+        },
+        xAxis: {
+            categories: [],
+            gridLineColor: 'transparent',
+            title: {
+              enabled: false,
+              reserveSpace: false
+            },
+            labels: {
+              enabled: false,
+            },
+            lineWidth: 0,
+            tickWidth: 0,
+            minPadding: 0,
+            maxPadding: 0,
+        },
+        yAxis: [{
+            gridLineColor: 'rgba(0, 0, 0, .05)',
+            title: {
+              enabled: false,
+              reserveSpace: false
+            },
+            lineWidth: 0,
+            tickWidth: 0,
+            endOnTick: false,
+            minPadding: 0,
+            maxPadding: 0,
+            tickAmount: 8,
+        },{
+            gridLineColor: 'rgba(0, 0, 0, 0)',
+            startOnTick: false,
+        }],
+        exporting: {
+          enabled: false
+        },
+        tooltip: {
+          snap: 5,
+          animation: false,
+          backgroundColor: 'rgba(0, 0, 0, .7)',
+          borderWidth: 0,
+          padding: 4,
+          shadow: false,
+          hideDelay: 0,
+          formatter: function(e) {
+            return '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + this.series.name + ' ' + app.getAttribute('data-symbol') + formatPrice(this.y).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
+          },
+          style: {
+            color: 'white',
+            fontSize: 10,
+            lineHeight: 12
+          }
+        },
+        spacing:[0, 0, 0, 0],
+        plotOptions: {
+          series: {
+            pointPadding: 0,
+            groupPadding: 0,
+            stickyTracking: false,
+            marker: {
+              enabled: false
+            }
+          },
+          line: {
+          },
+          area: {
+            stacking: 'normal',
+          },
+          spline: {
+            animation: false,
+            pointPlacement: 'on',
+            showInLegend: false,
+          },
+          area: {
+            animation: false,
+            pointPlacement: 'on',
+            showInLegend: false,
+          }
+        },
+        series: [{
+          yAxis: 1,
+          zIndex: 1,
+          name: 'PRICE',
+          data: [],
+          color: '#222',
+          animation: false,
+          lineWidth: 2,
+          marker: {
+            symbol: 'circle',
+            radius: 3,
+          }
+        },{
+          name: 'SELL',
+          stacking: 'area',
+          type: 'area',
+          data: [],
+          color: '#E57373',
+          fillColor: '#F44336',
+          animation: false,
+          marker: {
+            symbol: 'circle',
+            radius: 3,
+          }
+        },{
+          name: 'BUY',
+          stacking: 'area',
+          type: 'area',
+          data: [],
+          color: '#9CCC65',
+          fillColor: '#7CB342',
+          animation: false,
+          marker: {
+            symbol: 'circle',
+            radius: 3,
+          }
+        }]
+      });
 
       if (socket.trades && socket.trades.length > 1) {
         this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
@@ -310,22 +331,43 @@
       this._doZoom = this.doZoom.bind(this);
       this._doScroll = this.doScroll.bind(this);
       this._stopScroll = this.stopScroll.bind(this);
+      this._shiftTracker = (e => {
+        this.shiftPressed = e.shiftKey;
+      }).bind(this);
 
       this.$refs.chartContainer.addEventListener('mousewheel', this._doZoom);
       window.addEventListener('mousemove', this._doScroll);
       window.addEventListener('mouseup', this._stopScroll);
+      window.addEventListener('keydown', this._shiftTracker);
+      window.addEventListener('keyup', this._shiftTracker);
+      window.addEventListener('blur', this._shiftTracker);
     },
     beforeDestroy() {
+      clearTimeout(this._flushDetailTimeout);
+      clearTimeout(this._zoomAfterTimeout);
+      clearInterval(this._trimInvisibleTradesInterval);
+
       this.$refs.chartContainer.removeEventListener('mousewheel', this._doZoom);
       window.removeEventListener('mousemove', this._doScroll);
       window.removeEventListener('mouseup', this._stopScroll);
-
-      clearInterval(this.redrawInterval);
+      window.removeEventListener('keydown', this._shiftTracker);
+      window.removeEventListener('keyup', this._shiftTracker);
+      window.removeEventListener('blur', this._shiftTracker);
     },
     methods: {
-      showTickDetail(point) {
-        const from = point.x;
-        const index = point.series.xData.indexOf(point.x);
+      showTickDetail(min, max) {
+        clearTimeout(this._flushDetailTimeout);
+
+        if (min === false) {
+          this.isDetailOpen = false;
+
+          this._flushDetailTimeout = setTimeout(() => this.detail = null, 1000);
+          this.updateTickDetailCursorPosition(true);
+
+          return;
+        }
+
+        const timeframe = max - min;
 
         const a = {
           trades: [],
@@ -338,13 +380,17 @@
         };
 
         for (let trade of socket.trades) {
+          if (options.exchanges.indexOf(trade[0]) === -1) {
+            continue;
+          }
+
           let control;
 
-          if (trade[1] >= point.x - this.timeframe && trade[1] < point.x) {
+          if (trade[1] >= min - timeframe && trade[1] < min) {
             control = a;
-          } else if (trade[1] >= point.x && trade[1] < point.x + this.timeframe) {
+          } else if (trade[1] >= min && trade[1] < min + timeframe) {
             control = b;
-          } else if (trade[1] >= point.x + this.timeframe) {
+          } else if (trade[1] >= min + timeframe) {
             break;
           } else {
             continue;
@@ -368,82 +414,68 @@
           control.exchanges[trade[0]][trade[4] > 0 ? 'buys' : 'sells'] += (+trade[3]);
         }
 
-        const exchanges = [];
+        let exchanges = {};
 
         for (let control of [a, b]) {
           for (let exchange in control.exchanges) {
             if (!exchanges[exchange]) {
               exchanges[exchange] = {
-                name: exchange
+                name: exchange,
+                changes: {}
               }
             }
             
             control.exchanges[exchange].price = (control.exchanges[exchange].prices.map((price, index) => price * control.exchanges[exchange].sizes[index])).reduce((a, b) => a + b) / (control.exchanges[exchange].buys + control.exchanges[exchange].sells);
-            
+
             if (exchanges[exchange].price) {
-              exchanges[exchange].priceChange = ((control.exchanges[exchange].price - exchanges[exchange].price) / exchanges[exchange].price * 100).toFixed(2);
+              if (exchanges[exchange].price.toFixed(2) > 0)
+                exchanges[exchange].changes.price = (control.exchanges[exchange].price - exchanges[exchange].price) / exchanges[exchange].price;
               
-              if (exchanges[exchange].priceChange == 0) {
-                delete exchanges[exchange].priceChange;
+              if (exchanges[exchange].size.toFixed(2) > 0)
+                exchanges[exchange].changes.size = ((control.exchanges[exchange].buys + control.exchanges[exchange].sells) - exchanges[exchange].size) / exchanges[exchange].size;
+              
+              if (exchanges[exchange].buys.toFixed(2) > 0)
+                exchanges[exchange].changes.buys = (control.exchanges[exchange].buys - exchanges[exchange].buys) / exchanges[exchange].buys;
+              
+              if (exchanges[exchange].sells.toFixed(2) > 0)
+                exchanges[exchange].changes.sells = (control.exchanges[exchange].sells - exchanges[exchange].sells) / exchanges[exchange].sells;
+              
+              if (exchanges[exchange].count.toFixed(2) > 0)
+                exchanges[exchange].changes.count = (control.exchanges[exchange].count - exchanges[exchange].count) / exchanges[exchange].count;
+            
+              for (let property in exchanges[exchange].changes) { 
+                if ((exchanges[exchange].changes[property] * 100).toFixed(2) == 0) {
+                  delete exchanges[exchange].changes[property];
+                }
               }
             }
-            exchanges[exchange].price = formatPrice(control.exchanges[exchange].price);
 
-            if (exchanges[exchange].buys) {
-              exchanges[exchange].buysChange = ((control.exchanges[exchange].buys - exchanges[exchange].buys) / exchanges[exchange].buys * 100).toFixed(2);
-              
-              if (exchanges[exchange].buysChange == 0) {
-                delete exchanges[exchange].buysChange;
-              }
-            }
-            exchanges[exchange].buys = +control.exchanges[exchange].buys.toFixed(2);
-
-            if (exchanges[exchange].sells) {
-              exchanges[exchange].sellsChange = ((control.exchanges[exchange].sells - exchanges[exchange].sells) / exchanges[exchange].sells * 100).toFixed(2);
-              
-              if (exchanges[exchange].sellsChange == 0) {
-                delete exchanges[exchange].sellsChange;
-              }
-            }
-            exchanges[exchange].sells = +control.exchanges[exchange].sells.toFixed(2);
-
-            if (exchanges[exchange].size) {
-              exchanges[exchange].sizeChange = (((control.exchanges[exchange].buys + control.exchanges[exchange].sells) - exchanges[exchange].size) / exchanges[exchange].size * 100).toFixed(2);
-              
-              if (exchanges[exchange].sizeChange == 0) {
-                delete exchanges[exchange].sizeChange;
-              }
-            }
-            exchanges[exchange].size = +(control.exchanges[exchange].buys + control.exchanges[exchange].sells).toFixed(2);
-
-            if (exchanges[exchange].count) {
-              exchanges[exchange].countChange = ((control.exchanges[exchange].count - exchanges[exchange].count) / exchanges[exchange].count * 100).toFixed(2);
-              
-              if (exchanges[exchange].countChange == 0) {
-                delete exchanges[exchange].countChange;
-              }
-            }
+            exchanges[exchange].price = control.exchanges[exchange].price;
+            exchanges[exchange].size = +(control.exchanges[exchange].buys + control.exchanges[exchange].sells);
+            exchanges[exchange].buys = +control.exchanges[exchange].buys;
+            exchanges[exchange].sells = +control.exchanges[exchange].sells;
             exchanges[exchange].count = control.exchanges[exchange].count;
           }
         }
 
-        let length = (this.timeframe / 1000).toFixed() + 's';
+        exchanges = Object.keys(exchanges).map(name => {
+          exchanges[name]._price = formatPrice(exchanges[name].price);
+          exchanges[name]._size = formatAmount(exchanges[name].size, 1);
+          exchanges[name]._buys = formatAmount(exchanges[name].buys, 1);
+          exchanges[name]._sells = formatAmount(exchanges[name].sells, 1);
 
-        if (this.timeframe > 1000 * 60) {
-          length = (this.timeframe / (1000 * 60)).toFixed(2) + 'min';
-        }
+          return exchanges[name];
+        });
 
         this.detail = {
-          from: new Date(point.x),
-          to: new Date(point.x + this.timeframe),
-          length: length,
-          price: point.series.chart.series[0].yData[index],
-          buys: point.series.chart.series[1].yData[index],
-          sells: point.series.chart.series[2].yData[index],
+          at: min,
+          from: Highcharts.dateFormat('%e. %b %H:%M:%S', min),
+          to: Highcharts.dateFormat('%e. %b %H:%M:%S', max),
+          timeframe: timeframe,
           trades: b.trades,
-          exchanges: Object.keys(exchanges).map(name => exchanges[name]).sort((a, b) => b.price - a.price),
+          exchanges: exchanges,
         }
-        
+
         this.sortTickDetail();
 
         this.detailHeight = this.$refs.detailWrapper.clientHeight;
@@ -454,6 +486,35 @@
             this.detailHeight = this.$refs.detailWrapper.clientHeight;
           }, 200);
         }
+      },
+      moveTickDetail(direction) {
+        if (!this.detail) {
+          return;
+        }
+
+        const minTimestamp = this.detail.at + (this.detail.timeframe * direction);
+        const selectionWidth = this.selection.to - this.selection.from;
+
+        this.selection.from += selectionWidth * direction;
+        this.selection.to += selectionWidth * direction;
+
+        this.updateTickDetailCursorPosition();
+        this.showTickDetail(minTimestamp, minTimestamp + this.detail.timeframe);
+        console.log(this.detail.timeframe, minTimestamp);
+      },
+      updateTickDetailCursorPosition(hide = false) {
+        if (hide) {
+          this.$set(this.selection, 'left', '0');
+          this.$set(this.selection, 'width', '0');
+
+          return;
+        }
+
+        const min = Math.min(this.selection.from, this.selection.to);
+        const max = Math.max(this.selection.from, this.selection.to);
+
+        this.$set(this.selection, 'left', min + 'px');
+        this.$set(this.selection, 'width', (max - min) + 'px');
       },
       handleTickDetailSort(event, property) {
         const direction = event.target.classList.contains('asc') ? 'desc' : 'asc';
@@ -473,7 +534,18 @@
       },
       sortTickDetail(property = this.detailSorting.property, direction = this.detailSorting.direction) {
         this.$set(this.detail, 'exchanges', this.detail.exchanges.sort((a, b) => {
-          return direction === 'asc' ? a[property] - b[property] : b[property] - a[property];
+          let _a = a[property], _b = b[property];
+
+          if (direction === 'desc') {
+            _a = b[property];
+            _b = a[property];
+          }
+
+          if (typeof _a === 'string') {
+            return _a > _b;
+          }
+
+          return _a - _b;
         }));
 
         this.detailSorting.property = property;
@@ -623,6 +695,8 @@
         }
       },
       doZoom(event) {
+        this.timestamp = +new Date();
+
         if (this.fetching || !this.chart.series[0].xData.length) {
           return;
         }
@@ -652,13 +726,18 @@
         this.canFollow(axisMax === dataMax);
 
         this.range = axisMax - axisMin;
-        
-        clearInterval(this.doZoomAfterTimeout);
 
-        this.doZoomAfterTimeout = setTimeout(() => {
+        this.updateTickDetailCursorPosition(true);
+        
+        clearTimeout(this._zoomAfterTimeout);
+
+        this._zoomAfterTimeout = setTimeout(() => {
           if (!this.fetching && axisMin < this.chart.series[0].xData[0]) {
             this.fetching = true;
-            socket.fetch(axisMin, this.chart.series[0].xData[0]).then().catch().then(() => this.fetching = false);
+            socket.fetch(axisMin, this.chart.series[0].xData[0])
+              .then()
+              .catch()
+              .then(() => this.fetching = false);
           } else if (this.ajustTimeframe()) {
             this.updateChart(this.getTicks(), true);
           }
@@ -666,11 +745,25 @@
       },
       startScroll(event) {
         this.scrolling = event.pageX;
+
+        if (this.shiftPressed) {
+          this.selection.from = event.pageX;
+        }
       },
       doScroll(event) {
         if (this.fetching || isNaN(this.scrolling) || !this.chart.series[0].xData.length) {
           return;
         }
+
+        if (this.shiftPressed) {
+          this.selection.to = event.pageX;
+
+          this.updateTickDetailCursorPosition();
+          
+          return;
+        }
+
+        this.timestamp = +new Date();
 
         const range = this.chart.xAxis[0].max - this.chart.xAxis[0].min;
         const scale = (range / this.chart.chartWidth) * (this.scrolling - event.pageX);
@@ -689,19 +782,37 @@
           axisMin = axisMax - range;
         }
 
-
         this.canFollow(axisMax === dataMax);
         this.range = axisMax - axisMin;
+
+        this.updateTickDetailCursorPosition(true);
 
         this.chart.xAxis[0].setExtremes(axisMin, axisMax);
 
         this.scrolling = event.pageX;
       },
       stopScroll(event) {
-        if (this.scrolling && !this.fetching && this.chart.xAxis[0].min < this.chart.series[0].xData[0]) {
-          this.fetching = true;
+        if (this.scrolling) {
+          if (this.shiftPressed) {
+            const viewbox = this.chart.xAxis[0].max - this.chart.xAxis[0].min;
 
-          socket.fetch(this.chart.xAxis[0].min, this.chart.series[0].xData[0]).then().catch().then(() => this.fetching = false);
+            const minPosition = Math.min(this.selection.from, this.selection.to);
+            const maxPosition = Math.max(this.selection.from, this.selection.to);
+            const minTimestamp = this.chart.xAxis[0].min + (minPosition / this.chart.chartWidth) * viewbox;
+            const maxTimestamp = minTimestamp + (maxPosition - minPosition) / this.chart.chartWidth * viewbox;
+
+            this.selection.from = minPosition;
+            this.selection.to = maxPosition;
+
+            this.showTickDetail(minTimestamp, maxTimestamp);
+          } else if (!this.fetching && this.chart.xAxis[0].min < this.chart.series[0].xData[0]) {
+            this.fetching = true;
+
+            socket.fetch(this.chart.xAxis[0].min, this.chart.series[0].xData[0])
+              .then()
+              .catch()
+              .then(() => this.fetching = false);
+          }
         }
 
         delete this.scrolling;
@@ -717,34 +828,35 @@
       },
       canFollow(state) {
         if (this.following !== state) {
+          this.timestamp = +new Date();
+
           options.$emit('following', state);
 
           this.following = state;
         }
       },
-      getTickLength() {
-        let value = parseFloat(options.tickLength);
-        let type = /\%$/.test(options.tickLength) ? 'percent' : 'length';
+      getTimeframe() {
+        let value = parseFloat(options.timeframe);
+        let type = /\%$/.test(options.timeframe) ? 'percent' : 'length';
         let output;
 
         if (!value) {
-          value = .1;
+          value = 1.5;
           type = 'percent';
         }
 
         if (type === 'percent') {
-          if (value >= .5)
-            value /= 100;
+          value /= 100;
 
           output = this.range * value;
         } else {
-          output = value;
+          output = value * 1000;
         }
 
         return parseInt(Math.max(10000, output));
       },
       ajustTimeframe() {
-        const timeframe = this.getTickLength();
+        const timeframe = this.getTimeframe();
 
         if (timeframe != this.timeframe) {
           this.timeframe = timeframe;
@@ -769,10 +881,23 @@
     }
 
     .detail__header {
-      padding: 20px 20px 0;
+      padding: 10px 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
 
-      p {
-        margin: 0;
+      .icon-up {
+        font-size: 16px;
+        padding: 10px;
+        cursor: pointer;
+
+        &:first-child {
+          transform: rotateZ(-90deg);
+        }
+
+        &:last-child {
+          transform: rotateZ(90deg);
+        }
       }
     }
 
@@ -798,6 +923,14 @@
         background: none !important;
         color: black !important;
         cursor: pointer;
+
+        .detail__exchange__name {
+          bottom: 7px;
+          top: auto;
+          font-weight: 400;
+          font-size: 9px;
+          letter-spacing: normal;
+        }
 
         > div {
           &:after {
@@ -876,6 +1009,15 @@
   .chart__container {
     position: relative;
     width: calc(100% + 1px);
+
+    .chart__selection {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background-color: rgba(black, .1);
+      z-index: 1;
+      pointer-events: none;
+    }
 
     &.fetching {
       opacity: .5;

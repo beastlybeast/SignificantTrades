@@ -1,13 +1,13 @@
 <template>
   <header class="header">
     <div class="header__title"><span class="icon-currency"></span> <span v-html="title"></span></div>
-    <button type="button" v-on:click="retrieveChart" title="Load previous trades">
+    <button type="button" v-on:click="retrieveChart" title="Load chart history" v-tippy="{placement: 'bottom'}">
       <svg class="loader" v-bind:class="{loading: fetchProgress > 0}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14">
         <path :stroke-dashoffset="fetchProgress" d="M7,1a6.06,6.06,0,0,1,6,6,6.06,6.06,0,0,1-6,6A6.06,6.06,0,0,1,1,7,6.06,6.06,0,0,1,7,1Z"/>
       </svg>
       <span class="icon-history"></span>
     </button>
-    <button type="button" title="Update viewbox as trades comes"><span class="icon-play" v-on:click="toggleFollowing" v-bind:class="{following: following}"></span></button>
+    <button type="button" title="Go live mode (stick right)" v-tippy="{placement: 'bottom'}"><span class="icon-play" v-on:click="toggleFollowing" v-bind:class="{following: following}"></span></button>
     <button type="button" v-on:click="toggleSettings"><span class="icon-cog"></span></button>
   </header>
 </template>

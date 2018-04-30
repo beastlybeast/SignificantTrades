@@ -205,7 +205,7 @@ class Server {
 								}
 							}
 						} catch (error) {
-							console.log(`[server/history] unable to get ${path} (ms ${i})`, error);
+							console.log(`[server/history] unable to get ${path} (ms ${i})`, error.message);
 						}
 					}
 					

@@ -100,15 +100,11 @@
           image = this.gifs[Math.floor(Math.random() * (this.gifs.length - 1))];
           classname.push('significant');
           classname.push('1m');
-          amount = (amount / 1000000).toFixed(1) + 'M';
         } else if (amount >= 100000) {
           classname.push('significant');
-          amount = (amount / 1000).toFixed(1) + 'K';
-        } else if (amount >= 1000) {
-          amount = (amount / 1000).toFixed(1) + 'K';
-        } else {
-          amount = formatPrice(amount);
         }
+
+        amount = formatAmount(amount);
 
         this.trades.unshift({
           id: Math.random().toString(36).substring(7),

@@ -1,7 +1,7 @@
 {
   "name": "significanttrades-client",
   "description": "better than 1m chart",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "homepage": "https://tucsky.github.io/SignificantTrades/",
   "author": "KEVIN ROSTAGNI <kevin.rostagni@seloger.com>",
   "license": "MIT",
@@ -13,6 +13,7 @@
   "dependencies": {
     "axios": "^0.18.0",
     "vue": "^2.5.11",
+    "vue-tippy": "^2.0.11",
     "vue2-highcharts": "^1.1.8"
   },
   "browserslist": [

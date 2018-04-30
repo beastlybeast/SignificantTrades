@@ -107,12 +107,17 @@ class Exchange extends EventEmitter {
 
 				const firstDigitIndex = group[id][2].toFixed(8).match(/[1-9]/);
 
-				group[id][1] = +group[id][1].toFixed(Math.max(2, 6 - Math.min(0, 3 - (firstDigitIndex ? firstDigitIndex.index : 0)) - group[id][1].toFixed().length));
-				group[id][2] = +group[id][2].toFixed(Math.max(2, 7 - group[id][2].toFixed().length));
+				group[id][1] = this.toFixed(group[id][1], 10);
+				group[id][2] = this.toFixed(group[id][2], 10);
 
 				return group[id];
 			})
 		});
+	}
+
+	toFixed(number, precision) {
+		var factor = Math.pow(10, precision);
+		return Math.ceil(number * factor) / factor;
 	}
 
 	emitError(error) {
