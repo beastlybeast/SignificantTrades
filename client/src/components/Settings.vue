@@ -47,9 +47,10 @@
           </a>
         </div>
         <div class="form-group">
-          <label class="label-checkbox flex-right">
-            <input type="checkbox" class="form-control" v-model="options.debug"> 
-            <span>Show debug</span>
+          <label class="checkbox-control flex-right">
+            <input type="checkbox" class="form-control" v-model="options.dark"> 
+            <span>Dark theme</span>
+            <div></div>
           </label>
         </div>
       </div>
@@ -166,60 +167,9 @@
         border-radius: 2px;
         border: 0;
         width: calc(100% - 24px);
-
-        &[type=checkbox] {
-          visibility: hidden;
-          position: relative;
-          -webkit-appearance: unset;
-          height: auto;
-          width: auto;
-          padding: 0;
-          margin: 0;
-          cursor: pointer;
-
-          &:before, &:after {
-            display: block;
-            visibility: visible;
-            padding: 5px;
-          }
-
-          &:before {
-            content: '';
-            width: 1em;
-            height: 1em;
-            border-radius: 2px;
-            background-color: rgba(white, .3);
-            transition: all .2s $easeOutExpo;
-          }
-
-          &:after {
-            content: unicode($icon-check);
-            font-family: 'icon';
-            line-height: 1em;
-            font-size: 1em;
-            position: absolute;
-            left: 0;
-            top: 0;
-            transform: translateX(-100%) skewX(-10deg);
-            opacity: 0;
-            transition: all .2s $easeOutExpo;
-            color: white;
-          }
-
-          &:checked {
-            &:after {
-              opacity: 1;
-              transform: none;
-            }
-
-            &:before {
-              background-color: $green;
-            }
-          }
-        }
       }
 
-      .label-checkbox {
+      .checkbox-control {
         display: flex;
         align-items: center;
         -webkit-touch-callout: none;
@@ -229,17 +179,57 @@
         -ms-user-select: none;
         user-select: none;
         cursor: pointer;
+        
+        input {
+          display: none;
 
-        input + span {
-          margin-left: 5px !important;
+          &:checked {
+            ~ div {
+              background-color: $green;
+
+              &:before {
+                opacity: 1;
+                transform: none;
+                transition: all .5s $easeOutExpo;
+              }
+            }
+          }
         }
 
-        span + input {
-          margin-left: 5px !important;
+        > div {
+          padding: .5em;
+          width: 1em;
+          height: 1em;
+          border-radius: 2px;
+          background-color: rgba(white, .3);
+          transition: all .2s $easeOutExpo;
+          position: relative;
 
-          &.form-control:after {
-            transform: translateX(100%) skewX(10deg);
+          &:before {
+            content: unicode($icon-check);
+            font-family: 'icon';
+            font-size: 1em;
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            transform: translateY(-50%) skewY(-20deg);
+            opacity: 0;
+            transition: all .2s $easeOutExpo;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
           }
+        }
+
+        div + span {
+          margin-left: 5px;
+        }
+
+        span + div {
+          margin-left: 5px;
         }
       }
 
@@ -284,9 +274,8 @@
     .settings__exchanges {
       .settings__exchanges__item {
         padding: 5px 8px;
-        background-color: black;
-        color: white;
-        opacity: .3;
+        background-color: rgba(white, .15);
+        color: rgba(white, .33);
         transition: all .2s $easeOutExpo;
         border-radius: 2px;
         margin-right: 4px;
@@ -295,7 +284,7 @@
 
         &.settings__exchanges__item--active {
           background-color: $green;
-          opacity: 1;
+          color: white;
         }
       }
     }

@@ -40,7 +40,7 @@
           const tid = trade[0] + trade[4]; 
 
           if (options.exchanges.indexOf(trade[0]) === -1) {
-            return;
+            continue;
           }
 
           if (options.groupBy) {
@@ -171,123 +171,123 @@
       display: flex;
       flex-flow: column nowrap;
     }
+  }
 
-    .trades__item {
-      display: flex;
-      flex-flow: row nowrap;
-      padding: 5px 7px;
-      background-position: center center;
-      background-size: cover;
-      background-blend-mode: overlay;
-      position: relative;
+  .trades__item {
+    display: flex;
+    flex-flow: row nowrap;
+    padding: 5px 7px;
+    background-position: center center;
+    background-size: cover;
+    background-blend-mode: overlay;
+    position: relative;
 
-      &.trades__item--empty {
-        justify-content: center;
-        padding: 20px;
-        font-size: 80%;
-      }
+    &.trades__item--empty {
+      justify-content: center;
+      padding: 20px;
+      font-size: 80%;
+    }
 
-      &.trades__item--sell {
-        background-color: lighten($red, 35%);
-        color: $red;
-
-        &.trades__item--significant {
-          background-color: $red;
-        }
-
-        .icon-side:before {
-          content: unicode($icon-down);
-        }
-      }
-
-      &.trades__item--buy {
-        background-color: lighten($green, 50%);
-        color: $green;
-
-        &.trades__item--significant {
-          background-color: $green;
-        }
-
-        .icon-side:before {
-          content: unicode($icon-up);
-        }
-      }
+    &.trades__item--sell {
+      background-color: lighten($red, 35%);
+      color: $red;
 
       &.trades__item--significant {
-        color: white;
+        background-color: $red;
       }
 
-      &.trades__item--1m {
-        padding: 8px 7px;
-
-        > div {
-          position: relative;
-        }
-
-        &:before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          bottom: 0;
-          right: 0;
-          background-color: rgba(black, .1);
-        }
+      .icon-side:before {
+        content: unicode($icon-down);
       }
+    }
+
+    &.trades__item--buy {
+      background-color: lighten($green, 50%);
+      color: $green;
+
+      &.trades__item--significant {
+        background-color: $green;
+      }
+
+      .icon-side:before {
+        content: unicode($icon-up);
+      }
+    }
+
+    &.trades__item--significant {
+      color: white;
+    }
+
+    &.trades__item--1m {
+      padding: 8px 7px;
 
       > div {
-        flex-grow: 1;
-        flex-basis: 0;
-        word-break: break-word;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
+        position: relative;
+      }
 
-        &.trades__item__side {
-          flex-grow: 0;
-          flex-basis: 20px;
-          font-size: 18px;
+      &:before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        background-color: rgba(black, .1);
+      }
+    }
+
+    > div {
+      flex-grow: 1;
+      flex-basis: 0;
+      word-break: break-word;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      &.trades__item__side {
+        flex-grow: 0;
+        flex-basis: 20px;
+        font-size: 18px;
+      }
+
+      &.trades__item__exchange {
+        flex-grow: .75;
+        min-width: 70px;
+      }
+
+      &.trades__item__amount {
+        position: relative;
+
+        > span {
+          max-width: 100%;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          position: absolute;
+          transition: all .1s ease-in-out;
+
+          &.trades__item__amount__coin {
+            transform: translateX(25%);
+            opacity: 0;
+          }
         }
 
-        &.trades__item__exchange {
-          flex-grow: .75;
-          min-width: 70px;
-        }
-
-        &.trades__item__amount {
-          position: relative;
-
-          > span {
-            max-width: 100%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            position: absolute;
-            transition: all .1s ease-in-out;
-
-            &.trades__item__amount__coin {
-              transform: translateX(25%);
-              opacity: 0;
-            }
+        &:hover {
+          > span.trades__item__amount__coin {
+            transform: none;
+            opacity: 1;
           }
 
-          &:hover {
-            > span.trades__item__amount__coin {
-              transform: none;
-              opacity: 1;
-            }
-
-            > span.trades__item__amount__fiat {
-              transform: translateX(-25%);
-              opacity: 0;
-            }
+          > span.trades__item__amount__fiat {
+            transform: translateX(-25%);
+            opacity: 0;
           }
         }
+      }
 
-        &.trades__item__date {
-          text-align: right;
-          flex-basis: 40px;
-          flex-grow: 0;
-        }
+      &.trades__item__date {
+        text-align: right;
+        flex-basis: 40px;
+        flex-grow: 0;
       }
     }
   }

@@ -9,7 +9,8 @@ const emitter = new Vue({
       averageLength: 2,
       timeframe: '1.5%',
       exchanges: [],
-      debug: false
+      debug: false,
+      dark: false,
     }
   },
   created() {
@@ -40,6 +41,10 @@ const emitter = new Vue({
       this.$emit('follow', state);
     },
     onChange(prop, current, old) {
+      if (prop === 'dark') {
+        return this.$emit('dark', current);
+      }
+
       this.$emit('change', {
         prop: prop,
         value: current

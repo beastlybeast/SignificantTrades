@@ -162,7 +162,7 @@
 
         &.following {
           opacity: 1;        
-          color: red;
+          color: $red;
           transform: rotateZ(-7deg) scale(1.2) translateX(10%);
           text-shadow: 0 0 20px $red, 0 0 2px $red;
         }

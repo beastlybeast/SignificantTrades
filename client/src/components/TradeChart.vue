@@ -180,6 +180,8 @@
         }
       });
 
+      options.$on('dark', state => this.toggleDark(state));
+
       setTimeout(() => {
         options.$on('change', data => {
           switch (data.prop) {
@@ -317,8 +319,8 @@
           stacking: 'area',
           type: 'area',
           data: [],
-          color: '#E57373',
-          fillColor: '#e53935',
+          color: '#f77a71',
+          fillColor: '#f55a4e',
           animation: false,
           marker: {
             symbol: 'circle',
@@ -330,17 +332,17 @@
           type: 'area',
           data: [],
           color: '#9CCC65',
-          fillColor: '#7CB342',
+          fillColor: '#7ca74e',
           animation: false,
           marker: {
             symbol: 'circle',
             radius: 3,
           }
-        }]
+        }],
       });
 
       if (window.location.hash.indexOf('twitch') !== -1) {
-        this.goTwitchMode();
+        window.document.body.classList.add('twitch');
       }
 
       if (socket.trades && socket.trades.length > 1) {
@@ -370,9 +372,7 @@
       window.addEventListener('blur', this._shiftTracker, false);
 
       this._onHashChange = (() => {
-        if (window.location.hash.indexOf('twitch') !== -1) {
-          this.goTwitchMode();
-        }
+        window.document.body.classList[window.location.hash.indexOf('twitch') !== -1 ? 'add' : 'remove']('twitch');
       }).bind(this);
 
       window.addEventListener('hashchange', this._onHashChange, false);
@@ -391,6 +391,23 @@
       window.removeEventListener('hashchange', this._onHashChange);
     },
     methods: {
+      toggleDark(state) {
+        window.document.body.classList[state ? 'add' : 'remove']('dark');
+
+        this.chart.series[0].update({
+          color: state ? '#fff' : '#222',
+          shadow: state ? {
+            color: 'rgba(255, 255, 255, .15)',
+            width: 15,
+            offsetX: 0,
+            offsetY: 0
+          } : false,
+        });
+
+        this.chart.yAxis[0].update({
+          gridLineColor: state ? 'rgba(255, 255, 255, .1)' : 'rgba(0, 0, 0, .05)'
+        });
+      },
       showTickDetail(min, max) {
         clearTimeout(this._flushDetailTimeout);
 
@@ -798,6 +815,10 @@
         }, 250);
       },
       startScroll(event) {
+        if (event.which === 3) {
+          return;
+        }
+
         this.scrolling = event.pageX;
 
         if (this.shiftPressed) {
@@ -922,14 +943,6 @@
 
         return false;
       },
-      goTwitchMode() {
-        this.chart.series[0].update({
-          color: '#fff',
-        });
-        this.chart.yAxis[0].update({
-          gridLineColor: 'rgba(255, 255, 255, .1)'
-        });
-      }
     }
   }
 </script>

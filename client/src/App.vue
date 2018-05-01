@@ -142,6 +142,47 @@
     }
   }
 
+  body.dark {
+    background-color: $dark;
+    color: white;
+
+    header.header {
+      background-color: lighten($dark, 10%);
+    }
+
+    .settings__container {
+      background-color: $dark;
+    }
+
+    .trades__item.trades__item--sell.trades__item--significant {
+      background-color: lighten($red, 10%);
+    }
+
+    .trades__item.trades__item--sell {
+      color: lighten($red, 20%);
+      background-color: rgba(darken($red, 10%), .2);
+      
+      &.trades__item--significant {
+        background-color: lighten($red, 5%);
+        color: rgba(white, .8);
+      }
+    }
+
+    .trades__item.trades__item--buy {
+      color: lighten($green, 25%);
+      background-color: rgba(lighten($green, 25%), .15);
+      
+      &.trades__item--significant {
+        background-color: $green;
+        color: rgba(white, .8);
+      }
+    }
+  }
+
+  body.twitch {
+    background: none !important;
+  }
+
   #app {
     width: 100%;
     overflow: hidden;
