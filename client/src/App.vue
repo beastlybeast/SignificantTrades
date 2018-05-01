@@ -154,6 +154,36 @@
       background-color: $dark;
     }
 
+    .stack__container {
+      .stack__wrapper code {
+        background-color: rgba(white, .1);
+      }
+
+      .stack__toggler {
+        color: white;
+      }
+    }
+
+    .chart__container .chart__selection {
+      background-color: rgba(white, .1);
+    }
+    
+    .chart__detail .detail__exchange {
+      background-color: rgba(white, .025);
+
+      &:nth-child(odd) {
+        background-color: rgba(white, .05);
+      }
+
+      .chart__detail .detail__exchange sup {
+        opacity: 1;
+
+        &.increase {
+          color: saturate($green, 25%);
+        }
+      }
+    }
+
     .trades__item.trades__item--sell.trades__item--significant {
       background-color: lighten($red, 10%);
     }
@@ -280,7 +310,6 @@
         line-height: 1;
         display: inline-block;
         position: relative;
-        top: -1px;
         letter-spacing: -.5px;
       }
     }

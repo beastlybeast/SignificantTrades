@@ -950,9 +950,7 @@
 <style lang="scss">
 	@import '../assets/sass/variables';
 
-  .chart__detail {
-    background-color: white;
-    
+  .chart__detail {    
     .stack__wrapper {
       padding: 0;
     }
@@ -1024,7 +1022,6 @@
 
       &.detail__exchanges_header {
         background: none !important;
-        color: black !important;
         cursor: pointer;
 
         .detail__exchange__name {
@@ -1055,15 +1052,6 @@
 
       &:nth-child(odd) {
         background-color: rgba(black, .02);
-      }
-
-      &:hover {
-        background-color: #222;
-        color: white;
-
-        sup {
-          opacity: 1;
-        }
       }
 
       sup {
