@@ -275,16 +275,32 @@
       .settings__exchanges__item {
         padding: 5px 8px;
         background-color: rgba(white, .15);
-        color: rgba(white, .33);
+        color: white;
         transition: all .2s $easeOutExpo;
         border-radius: 2px;
         margin-right: 4px;
         margin-bottom: 4px;
         display: inline-block;
+        position: relative;
+
+        &:before {
+          content: '';
+          position: absolute;
+          top: calc(50% - 0px);
+          height: 1px;
+          background-color: white;
+          transition: width 0.2s $easeElastic .2s;
+          left: 12%;
+          width: 76%;
+        }
 
         &.settings__exchanges__item--active {
           background-color: $green;
           color: white;
+
+          &:before {
+            width: 0%;
+          }
         }
       }
     }

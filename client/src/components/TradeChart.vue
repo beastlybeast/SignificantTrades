@@ -320,7 +320,7 @@
           type: 'area',
           data: [],
           color: '#f77a71',
-          fillColor: '#f55a4e',
+          fillColor: '#F44336',
           animation: false,
           marker: {
             symbol: 'circle',

@@ -193,7 +193,7 @@
       background-color: rgba(darken($red, 10%), .2);
       
       &.trades__item--significant {
-        background-color: lighten($red, 5%);
+        background-color: $red;
         color: rgba(white, .8);
       }
     }
