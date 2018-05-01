@@ -130,4 +130,9 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-bull); 
   }
 }
+.icon-external-link {
+  &:before {
+    content: unicode($icon-external-link); 
+  }
+}
 

@@ -1,13 +1,14 @@
 <template>
   <header class="header">
     <div class="header__title"><span class="icon-currency"></span> <span v-html="title"></span></div>
+    <button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}"><span class="icon-external-link"></span></button>
     <button type="button" v-on:click="retrieveChart" title="Load chart history" v-tippy="{placement: 'bottom'}">
       <svg class="loader" v-bind:class="{loading: fetchProgress > 0}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14">
         <path :stroke-dashoffset="fetchProgress" d="M7,1a6.06,6.06,0,0,1,6,6,6.06,6.06,0,0,1-6,6A6.06,6.06,0,0,1,1,7,6.06,6.06,0,0,1,7,1Z"/>
       </svg>
       <span class="icon-history"></span>
     </button>
-    <button type="button" title="Go live mode (stick right)" v-tippy="{placement: 'bottom'}"><span class="icon-play" v-on:click="toggleFollowing" v-bind:class="{following: following}"></span></button>
+    <button type="button" v-bind:title="following ? 'Stop live mode' : 'Go live mode'" v-tippy="{placement: 'bottom'}"><span class="icon-play" v-on:click="toggleFollowing" v-bind:class="{following: following}"></span></button>
     <button type="button" v-on:click="toggleSettings"><span class="icon-cog"></span></button>
   </header>
 </template>
@@ -22,6 +23,7 @@
         title: 'SignificantTrades',
         fetchProgress: 0,
         following: true,
+        isPopupMode: window.opener !== null
       }
     },
     created() {
@@ -82,6 +84,13 @@
       },
       toggleFollowing() {
         options.follow(!this.following);
+      },
+      togglePopup() {
+        window.open(window.location.href, 'Hey hey hey', 'toolbar=no,status=no,width=350,height=500');
+
+        setTimeout(() => {
+          window.close();
+        }, 500);
       }
     }
   }
@@ -152,15 +161,20 @@
         opacity: .2;
 
         &.following {
-          opacity: 1;
+          opacity: 1;        
           color: red;
-          clip-path: circle(5px);
-          transform: scale(2);
+          transform: rotateZ(-7deg) scale(1.2) translateX(10%);
+          text-shadow: 0 0 20px $red, 0 0 2px $red;
         }
       }
 
       &:hover,
       &:active {
+        .icon-external-link {          
+          transform: rotateZ(-7deg) scale(1.2) translate(5%, -5%);
+          text-shadow: 0 0 20px $yellow, 0 0 2px white;
+        }
+        
         .icon-play:not(.following) {  
           opacity: 1;        
           transform: rotateZ(-7deg) scale(1.2) translateX(10%);

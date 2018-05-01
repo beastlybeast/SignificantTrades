@@ -101,19 +101,15 @@
           const min = this.chart.xAxis[0].min - this.timeframe;
           socket.trim(min);
           
-          for (let serie of this.chart.series) {
-            for (let point of serie.data) {
+          this.chart.series.forEach(serie => {
+            serie.data.filter(a => a.x < min).forEach(point => {
               if (!point) {
-                continue;
-              }
-
-              if (point.x >= min) {
-                break;
+                return;
               }
 
               point.remove(false);
-            }
-          }
+            });
+          });
 
           this.chart.redraw();
         }

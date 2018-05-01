@@ -14,7 +14,7 @@
       </div>
       <div class="settings__column">
         <div class="form-group mb15">
-          <label>Stack rows <span class="icon-info-circle" v-bind:title="help.groupBy" v-tippy></span></label>
+          <label>Threshold <span class="icon-info-circle" v-bind:title="help.groupBy" v-tippy></span></label>
           <input type="number" min="0" max="10000000" step="10000" class="form-control" v-model="options.groupBy">
         </div>
         <div class="form-group mb15">
@@ -42,7 +42,7 @@
       </div>
       <div class="settings__column flex-bottom">
         <div class="form-group">
-          <a v-if="version.number" href="javascript:void" target="_blank" title="<a href='bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX?label=help%20me%20gamble%20on%20bitmex'><img class='donation' src='static/donate.svg'><span>3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX</span></a>" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">
+          <a v-if="version.number" href="javascript:void(0);" target="_blank" title="<a class='donation' href='bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX?label=help%20me%20gamble%20on%20bitmex'><div class='text-center'>Like the ticker ?<br>Consider donating :-)</div><img src='static/donate.svg'><div class='donation__address'>3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX</div></a>" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">
             <span>v{{ version.number }} <sup class="version-date">{{ version.date }}</sup></span>
           </a>
         </div>
@@ -72,7 +72,7 @@
         help: {
           pair: `The pair to aggregate from<br><small><i>special access required</i></small>`,
           averageLength: `Smooth up the chart by averaging the price using <i>volume weighed average</i> formula across the exchanges.<br>Type the length of average (in ticks, 2 - 5 gives best results)`,
-          groupBy: `Minimum amount for a trade to show up in the list below`,
+          groupBy: `Minimum amount a trade should have in order to show up on the list`,
           maxRows: `Max rows to render`,
           timeframe: `Define how much trades we stack together in the chart, type a amount of seconds or % of the visible range<br>("1.5%" gives good results, 10s is the minimum)`,
           exchanges: `Enable/disable exchanges<br>(exclude from list & chart)`
@@ -306,19 +306,28 @@
   }
 
   .donation {
-    width: 100%;
-    margin: 0px;
     display: block;
+    font-weight: 600;
+    letter-spacing: -.5px;
+    font-size: 14px;
+    font-family: monospace;
+    color: white;
+    text-shadow: 0 2px rgba(0, 0, 0, 0.2);
 
-    + span {
+    img {
+      width: 100%;
+      margin: 0px;
       display: block;
-      font-weight: 600;
+      transition: transform .2s $easeElastic;
+
+      &:active {
+        transform: scale(.9);
+      }
+    }
+
+    .donation__address {
       letter-spacing: -.5px;
       font-size: 10px;
-      margin-bottom: 2px;
-      font-family: monospace;
-      color: white;
-      text-shadow: 0 2px rgba(0, 0, 0, .2);
     }
   }
 </style>

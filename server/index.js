@@ -7,11 +7,7 @@ try {
 	json = require('./config');
 } catch (error) {}
 
-const config = Object.assign({
-	pair: 'BTCUSD',
-	port: 3000,
-	delay: 200,
-}, json || {});
+const config = Object.assign({}, json || {});
 
 if (!config.exchanges || !config.exchanges.length) {
 	config.exchanges = process.argv.slice(2);
@@ -29,9 +25,4 @@ for (let name of config.exchanges) {
 	config.exchanges[config.exchanges.indexOf(name)] = new exchange(config[name] || {});
 }
 
-new Server({
-	port: config.port,
-	delay: config.delay,
-	pair: config.pair,
-	exchanges: config.exchanges
-});
+new Server(config);

@@ -13,8 +13,9 @@ class Server {
 
 		this.options = Object.assign({
 			pair: 'BTCUSD',
-			port: 8080,
+			port: 3000,
 			delay: false,
+			origin: '*',
 			profilerInterval: 60000,
 			backupInterval: 60000 * 10,
 		}, options);
@@ -43,7 +44,7 @@ class Server {
 
 			ws.admin = this.isAdmin(ip);
 
-			console.log('[client] ' + ip + ' joined ' + req.url + (ws.admin ? ' [ADMIN]' : ''));
+			console.log(`[client] ${ip} joined ${req.url} (${this.wss.clients.size} connections)`);
 
 			ws.send(JSON.stringify({
 				type: 'welcome',
@@ -160,7 +161,9 @@ class Server {
 		this.profilerInterval = setInterval(this.profiler.bind(this), this.options.profilerInterval);
 		this.backupInterval = setInterval(this.backup.bind(this), this.options.backupInterval);		
 		
-		this.http = http.createServer((request, response) => {
+		this.http = http.createServer((request, response) => { 
+			response.setHeader('Access-Control-Allow-Origin', this.options.origin);
+
 			const path = url.parse(request.url).path;
 
 			const routes = [{
@@ -180,6 +183,8 @@ class Server {
 						return;
 					}
 
+					console.log(`[server/history] requesting ${to - from}ms of trades`);
+
 					for (let i = +from; i <= to; i += 60 * 1000 * 60 * 24) {
 						date = new Date(i);
 						path = 'data/' + (this.options.pair + '_' + date.getFullYear() + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2));
@@ -192,7 +197,7 @@ class Server {
 
 								output = output.concat(chunk.map(row => row.split(' ')));
 							} else {
-								console.log(`[server/history] unpacking ${path} (ms ${i})`, chunk.length);
+								console.log(`[server/history] unpacking ${path} (total ${chunk.length} trades)`);
 
 								for (let j = 0; j < chunk.length; j++) {
 									const trade = chunk[j].split(' ');
@@ -217,7 +222,6 @@ class Server {
 						output.push(this.chunk[i]);
 					}
 
-					response.setHeader('Access-Control-Allow-Origin', '*');
 					response.setHeader('Content-Type', 'application/json');
 					response.end(JSON.stringify(output));
 				}
@@ -237,6 +241,14 @@ class Server {
 		});
 
 		this.http.on('upgrade', (request, socket, head) => {
+			if (this.options.origin !== '*' && request.headers['origin'] !== this.options.origin) {
+				console.log(`[client] socket origin mismatch (${this.options.origin} !== ${request.headers['origin']})`)
+
+				socket.destroy();
+
+				return;
+			}
+
 			this.wss.handleUpgrade(request, socket, head, ws => {
 				this.wss.emit('connection', ws, request);
 			});
@@ -357,9 +369,10 @@ class Server {
 			const nextDateTimestamp = +date + 1000 * 60 * 60 * 24;
 			const path = 'data/' + (this.options.pair + '_' + date.getFullYear() + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2));
 			
-			const tradesOfTheDay = this.chunk.filter(trade => trade[2] < nextDateTimestamp);
+			const tradesOfTheDay = this.chunk.filter(trade => trade[1] < nextDateTimestamp);
 			
 			if (!tradesOfTheDay.length) {
+				console.log(`[server/backup] no trades that day, on to the next day (first timestamp: ${this.chunk[0][1]})`);
 				return processDate(new Date(nextDateTimestamp));
 			}
 
