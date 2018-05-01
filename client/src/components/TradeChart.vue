@@ -5,25 +5,45 @@
         <a href="#" class="stack__toggler icon-times" v-on:click="showTickDetail(false)"></a>
         <div v-if="detail">
           <div class="detail__header">
-            <span class="icon-up" v-on:click="moveTickDetail(-1)"></span>
-            <code>{{detail.from}}</code>
-            <code>{{detail.to}}</code>
-            <span class="icon-up" v-on:click="moveTickDetail(1)"></span>
+            <div class="detail__control">
+              <span class="icon-up" v-on:click="moveTickDetail(-1)"></span>
+              <code>{{detail.from}}</code>
+              <code>{{detail.to}}</code>
+              <span class="icon-up" v-on:click="moveTickDetail(1)"></span>
+            </div>
+            <div class="detail__total">
+              <div>
+                <span class="detail__total__label">buys</span>
+                <span class="detail__total__value">{{detail._buys}} <span class="icon-currency"></span></span>
+              </div>
+              <div>
+                <span class="detail__total__label">sells</span>
+                <span class="detail__total__value">{{detail._sells}} <span class="icon-currency"></span></span>
+              </div>
+              <div>
+                <span class="detail__total__label">size</span>
+                <span class="detail__total__value">{{detail._size}} <span class="icon-commodity"></span></span>
+              </div>
+              <div>
+                <span class="detail__total__label">trades</span>
+                <span class="detail__total__value">{{detail.count}}</span>
+              </div>
+            </div>
           </div>
           <div class="detail__exchanges__list">
             <div class="detail__exchange detail__exchanges_header" ref="detailExchangesHeader">
               <div class="detail__exchange__name" v-on:click="handleTickDetailSort($event, 'name')">ABC</div>
               <div class="detail__exchange__price" v-on:click="handleTickDetailSort($event, 'price')">PRICE</div>
-              <div class="detail__exchange__buys" v-on:click="handleTickDetailSort($event, 'buys')">BUY</div>
-              <div class="detail__exchange__sells" v-on:click="handleTickDetailSort($event, 'sells')">SELL</div>
+              <div class="detail__exchange__buys" v-on:click="handleTickDetailSort($event, 'buysPercentage')">BUY</div>
+              <div class="detail__exchange__sells" v-on:click="handleTickDetailSort($event, 'sellsPercentage')">SELL</div>
               <div class="detail__exchange__size" v-on:click="handleTickDetailSort($event, 'size')">VOL</div>
               <div class="detail__exchange__count" v-on:click="handleTickDetailSort($event, 'count')">HIT</div>
             </div>
             <div class="detail__exchange" v-for="exchange of detail.exchanges" v-bind:key="exchange.name">
-              <div class="detail__exchange__name">{{exchange.name}}</div>
+              <div class="detail__exchange__name">{{exchange.name}} <span v-bind:class="{'icon-bear': exchange.sellsPercentage > .75, 'icon-bull': exchange.buysPercentage >= .75}"></span></div>
               <div class="detail__exchange__price"><span v-if="exchange.price || exchange.changes.price"><span class="icon-currency"></span> <span v-html="exchange._price"></span> <sup v-if="exchange.changes.price" v-bind:class="{increase: exchange.changes.price > 0}">{{(exchange.changes.price * 100).toFixed(2)}} %</sup></span></div>
-              <div class="detail__exchange__buys"><span v-if="exchange.buys || exchange.changes.buys">{{exchange._buys}} <span class="icon-commodity"></span> <sup v-if="exchange.changes.buys" v-bind:class="{increase: exchange.changes.buys > 0}">{{(exchange.changes.buys * 100).toFixed(2)}} %</sup></span></div>
-              <div class="detail__exchange__sells"><span v-if="exchange.sells || exchange.changes.sells">{{exchange._sells}} <span class="icon-commodity"></span> <sup v-if="exchange.changes.sells" v-bind:class="{increase: exchange.changes.sells > 0}">{{(exchange.changes.sells * 100).toFixed(2)}} %</sup></span></div>
+              <div class="detail__exchange__buys"><span v-if="exchange.buys">{{exchange._buys}} <span class="icon-commodity"></span> <sup v-if="exchange.buysPercentage" class="constant">{{(exchange.buysPercentage * 100).toFixed(2)}} %</sup></span></div>
+              <div class="detail__exchange__sells"><span v-if="exchange.sells">{{exchange._sells}} <span class="icon-commodity"></span> <sup v-if="exchange.sellsPercentage" class="constant">{{(exchange.sellsPercentage * 100).toFixed(2)}} %</sup></span></div>
               <div class="detail__exchange__size"><span v-if="exchange.size || exchange.changes.size">{{exchange._size}} <span class="icon-commodity"></span> <sup v-if="exchange.changes.size" v-bind:class="{increase: exchange.changes.size > 0}">{{(exchange.changes.size * 100).toFixed(2)}} %</sup></span></div>
               <div class="detail__exchange__count"><span>{{exchange.count}} <sup v-if="exchange.changes.count" v-bind:class="{increase: exchange.changes.count > 0}">{{(exchange.changes.count * 100).toFixed(2)}} %</sup></span></div>
             </div>
@@ -47,15 +67,16 @@
     data() {
       return {
         fetching: false,
-        range: 1000 * 60 * 5,
+        range: 1000 * 60 * 10,
         timeframe: 10000,
         following: true,
         shiftPressed: false,
         unfinishedTick: null,
         isDetailOpen: false,
+        priceLineColor: '#222',
         detailHeight: 0,
         detailSorting: {
-          property: 'price',
+          property: 'size',
           direction: 'desc'
         },
         detail: null,
@@ -288,7 +309,7 @@
           zIndex: 1,
           name: 'PRICE',
           data: [],
-          color: '#222',
+          color: this.priceLineColor,
           animation: false,
           lineWidth: 2,
           marker: {
@@ -301,7 +322,7 @@
           type: 'area',
           data: [],
           color: '#E57373',
-          fillColor: '#F44336',
+          fillColor: '#e53935',
           animation: false,
           marker: {
             symbol: 'circle',
@@ -322,6 +343,10 @@
         }]
       });
 
+      if (window.location.hash.indexOf('twitch') !== -1) {
+        this.goTwitchMode();
+      }
+
       if (socket.trades && socket.trades.length > 1) {
         this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
         this.ajustTimeframe();
@@ -329,18 +354,32 @@
       }
 
       this._doZoom = this.doZoom.bind(this);
+      
+      this.$refs.chartContainer.addEventListener('mousewheel', this._doZoom);
+
       this._doScroll = this.doScroll.bind(this);
+
+      window.addEventListener('mousemove', this._doScroll, false);
+
       this._stopScroll = this.stopScroll.bind(this);
+
+      window.addEventListener('mouseup', this._stopScroll, false);
+
       this._shiftTracker = (e => {
         this.shiftPressed = e.shiftKey;
       }).bind(this);
 
-      this.$refs.chartContainer.addEventListener('mousewheel', this._doZoom);
-      window.addEventListener('mousemove', this._doScroll);
-      window.addEventListener('mouseup', this._stopScroll);
-      window.addEventListener('keydown', this._shiftTracker);
-      window.addEventListener('keyup', this._shiftTracker);
-      window.addEventListener('blur', this._shiftTracker);
+      window.addEventListener('keydown', this._shiftTracker, false);
+      window.addEventListener('keyup', this._shiftTracker, false);
+      window.addEventListener('blur', this._shiftTracker, false);
+
+      this._onHashChange = (() => {
+        if (window.location.hash.indexOf('twitch') !== -1) {
+          this.goTwitchMode();
+        }
+      }).bind(this);
+
+      window.addEventListener('hashchange', this._onHashChange, false);
     },
     beforeDestroy() {
       clearTimeout(this._flushDetailTimeout);
@@ -353,6 +392,7 @@
       window.removeEventListener('keydown', this._shiftTracker);
       window.removeEventListener('keyup', this._shiftTracker);
       window.removeEventListener('blur', this._shiftTracker);
+      window.removeEventListener('hashchange', this._onHashChange);
     },
     methods: {
       showTickDetail(min, max) {
@@ -427,18 +467,20 @@
             
             control.exchanges[exchange].price = (control.exchanges[exchange].prices.map((price, index) => price * control.exchanges[exchange].sizes[index])).reduce((a, b) => a + b) / (control.exchanges[exchange].buys + control.exchanges[exchange].sells);
 
+            const size = +(control.exchanges[exchange].buys + control.exchanges[exchange].sells);
+
             if (exchanges[exchange].price) {
               if (exchanges[exchange].price.toFixed(2) > 0)
                 exchanges[exchange].changes.price = (control.exchanges[exchange].price - exchanges[exchange].price) / exchanges[exchange].price;
               
               if (exchanges[exchange].size.toFixed(2) > 0)
-                exchanges[exchange].changes.size = ((control.exchanges[exchange].buys + control.exchanges[exchange].sells) - exchanges[exchange].size) / exchanges[exchange].size;
-              
+                exchanges[exchange].changes.size = (size - exchanges[exchange].size) / exchanges[exchange].size;
+
               if (exchanges[exchange].buys.toFixed(2) > 0)
                 exchanges[exchange].changes.buys = (control.exchanges[exchange].buys - exchanges[exchange].buys) / exchanges[exchange].buys;
-              
+
               if (exchanges[exchange].sells.toFixed(2) > 0)
-                exchanges[exchange].changes.sells = (control.exchanges[exchange].sells - exchanges[exchange].sells) / exchanges[exchange].sells;
+                exchanges[exchange].changes.sells = (control.exchanges[exchange].sells - exchanges[exchange].sells) / exchanges[exchange].buys;
               
               if (exchanges[exchange].count.toFixed(2) > 0)
                 exchanges[exchange].changes.count = (control.exchanges[exchange].count - exchanges[exchange].count) / exchanges[exchange].count;
@@ -451,23 +493,22 @@
             }
 
             exchanges[exchange].price = control.exchanges[exchange].price;
-            exchanges[exchange].size = +(control.exchanges[exchange].buys + control.exchanges[exchange].sells);
+            exchanges[exchange].size = size;
             exchanges[exchange].buys = +control.exchanges[exchange].buys;
+
+            exchanges[exchange].buysPercentage = control.exchanges[exchange].buys / exchanges[exchange].size;
             exchanges[exchange].sells = +control.exchanges[exchange].sells;
+
+            exchanges[exchange].sellsPercentage = control.exchanges[exchange].sells / exchanges[exchange].size;
             exchanges[exchange].count = control.exchanges[exchange].count;
           }
         }
 
-        exchanges = Object.keys(exchanges).map(name => {
-          exchanges[name]._price = formatPrice(exchanges[name].price);
-          exchanges[name]._size = formatAmount(exchanges[name].size, 1);
-          exchanges[name]._buys = formatAmount(exchanges[name].buys, 1);
-          exchanges[name]._sells = formatAmount(exchanges[name].sells, 1);
-
-          return exchanges[name];
-        });
-
         this.detail = {
+          buys: 0,
+          sells: 0,
+          size: 0,
+          count: 0,
           at: min,
           from: Highcharts.dateFormat('%e. %b %H:%M:%S', min),
           to: Highcharts.dateFormat('%e. %b %H:%M:%S', max),
@@ -475,6 +516,24 @@
           trades: b.trades,
           exchanges: exchanges,
         }
+
+        this.detail.exchanges = Object.keys(exchanges).map(name => {
+          exchanges[name]._price = formatPrice(exchanges[name].price);
+          exchanges[name]._size = formatAmount(exchanges[name].size, 1);
+          exchanges[name]._buys = formatAmount(exchanges[name].buys, 1);
+          exchanges[name]._sells = formatAmount(exchanges[name].sells, 1);
+
+          this.detail.buys += exchanges[name].buys * exchanges[name].price;
+          this.detail.sells += exchanges[name].sells * exchanges[name].price;
+          this.detail.size += (exchanges[name].buys + exchanges[name].sells);
+          this.detail.count += exchanges[name].count;
+
+          return exchanges[name];
+        })
+        
+        this.detail._buys = formatAmount(this.detail.buys);
+        this.detail._sells = formatAmount(this.detail.sells);
+        this.detail._size = formatAmount(this.detail.size);
 
         this.sortTickDetail();
 
@@ -500,7 +559,6 @@
 
         this.updateTickDetailCursorPosition();
         this.showTickDetail(minTimestamp, minTimestamp + this.detail.timeframe);
-        console.log(this.detail.timeframe, minTimestamp);
       },
       updateTickDetailCursorPosition(hide = false) {
         if (hide) {
@@ -805,6 +863,8 @@
             this.selection.to = maxPosition;
 
             this.showTickDetail(minTimestamp, maxTimestamp);
+
+            this.canFollow(false);
           } else if (!this.fetching && this.chart.xAxis[0].min < this.chart.series[0].xData[0]) {
             this.fetching = true;
 
@@ -865,6 +925,14 @@
         }
 
         return false;
+      },
+      goTwitchMode() {
+        this.chart.series[0].update({
+          color: '#fff',
+        });
+        this.chart.yAxis[0].update({
+          gridLineColor: 'rgba(255, 255, 255, .1)'
+        });
       }
     }
   }
@@ -882,9 +950,12 @@
 
     .detail__header {
       padding: 10px 10px 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+
+      > div {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
       .icon-up {
         font-size: 16px;
@@ -898,6 +969,29 @@
         &:last-child {
           transform: rotateZ(90deg);
         }
+      }
+    }
+
+    .detail__total > div {
+      display: flex;
+      flex-direction: column;
+      padding: 0 5px;
+
+      &:first-child {
+        padding-left: 0;
+      }
+
+      &:last-child {
+        padding-right: 0;
+      }
+
+      span.detail__total__label {
+        font-size: 10px;
+        opacity: .5;
+      }
+
+      span.detail__total__value {
+        font-weight: 600;
       }
     }
 
@@ -979,10 +1073,19 @@
             content: '+';
           }
         }
+
+        &.constant {
+          color: $blue;
+        }
       }
 
       span {
         position: relative;
+
+        &[class^="icon"] {
+          font-size: 90%;
+          top: 0px;
+        }
       }
 
       > div {
@@ -1002,6 +1105,14 @@
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 1px;
+      }
+
+      .icon-bull {
+        color: $red;
+      }
+
+      .icon-bear {
+        color: $blue;
       }
     }
   }

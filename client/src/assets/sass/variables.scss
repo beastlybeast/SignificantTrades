@@ -25,6 +25,8 @@ $icon-coin: \e90f;
 $icon-history: \e910;
 $icon-play: \e911;
 $icon-info-circle: \e912;
+$icon-bear: \e913;
+$icon-bull: \e914;
 
 @function unicode($str) {
   @return unquote("\"") + $str + unquote("\"");

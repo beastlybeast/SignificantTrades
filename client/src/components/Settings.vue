@@ -42,8 +42,8 @@
       </div>
       <div class="settings__column flex-bottom">
         <div class="form-group">
-          <a v-if="version.number" href="https://github.com/Tucsky/SignificantTrades" target="_blank" title="Wanna give this project a little star on github ?" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">
-            v{{ version.number }} <sup class="version-date">{{ version.date }}</sup>
+          <a v-if="version.number" href="javascript:void" target="_blank" title="<a href='bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX?label=help%20me%20gamble%20on%20bitmex'><img class='donation' src='static/donate.svg'><span>3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX</span></a>" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">
+            <span>v{{ version.number }} <sup class="version-date">{{ version.date }}</sup></span>
           </a>
         </div>
         <div class="form-group">
@@ -78,8 +78,8 @@
           exchanges: `Enable/disable exchanges<br>(exclude from list & chart)`
         },
         version: {
-          number: process.env.VERSION,
-          date: process.env.BUILD_DATE
+          number: process.env.VERSION || '0.0.0',
+          date: process.env.BUILD_DATE || 'today'
         }
       }
     },
@@ -88,8 +88,6 @@
 
       socket.$on('exchanges', exchanges => {
         this.exchanges = exchanges;
-
-        // options.exchanges = options.exchanges.filter(selected => this.exchanges.indexOf(selected) !== -1);
 
         if (!options.exchanges.length) {
           options.exchanges = this.exchanges.filter(exchange => ['bithumb', 'hitbtc'].indexOf(exchange) === -1);
@@ -304,6 +302,23 @@
 
     &.open {
       background-color: #222;
+    }
+  }
+
+  .donation {
+    width: 100%;
+    margin: 0px;
+    display: block;
+
+    + span {
+      display: block;
+      font-weight: 600;
+      letter-spacing: -.5px;
+      font-size: 10px;
+      margin-bottom: 2px;
+      font-family: monospace;
+      color: white;
+      text-shadow: 0 2px rgba(0, 0, 0, .2);
     }
   }
 </style>

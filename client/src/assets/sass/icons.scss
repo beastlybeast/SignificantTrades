@@ -120,3 +120,14 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-info-circle); 
   }
 }
+.icon-bear {
+  &:before {
+    content: unicode($icon-bear); 
+  }
+}
+.icon-bull {
+  &:before {
+    content: unicode($icon-bull); 
+  }
+}
+

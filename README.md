@@ -1,21 +1,57 @@
 A **heavily** modified version of [beastlybeast's SignificantTrades](https://github.com/beastlybeast/SignificantTrades) with multi exchanges / pairing support & chart visualizer.<br/>
 I did that mostly for fun and training, but combining many exchanges data together is kind of interesting to see. 
 
+# SignificantTrades [![Build Status](https://travis-ci.org/Tucsky/SignificantTrades.svg?branch=master)](https://travis-ci.org/Tucsky/SignificantTrades)
+Live trades visualizer.<br>
+Currently supporting Bitstamp, Kraken, Huobi, Hitbtc, Okex, Bitmex, Binance, Bitfinex, Gdax ([see server/src/exchanges/](server/src/exchanges))
+
 ![screenshot](https://i.imgur.com/j3iP8ds.gif)
 
-- The repo contains a server part to gather & format exchanges data and broadcast it to many clients through websocket communication. 
-- The client part is written in vue.js, show live trades in a list based on settings (short timeframe row stacking by amount) and allow to visualize session's buys/sells/price in a little chart (which tick from 10s to 1d depending on zoom, so mostly 10s). It also controls the server so it knows which pair to track.
+## How it works
+- The repo contains a server part to gather & format exchanges data and broadcast it to many clients through websocket (mostly) communication.
+- The client part is written in vue.js, show live trades in a list based on settings (short timeframe row stacking by amount) and allow to visualize session's buys/sells/price in a little chart (which tick from 10s to 1d depending on zoom, so mostly 10s). It also can control the server so it knows which pair to track.
 
-I did a separated server for monitoring purposes, altough adapting the server logic into the client shouldn't be too hard, the performance could get bad really fast!
+## What it do
+- Aggregate trades from exchanges on a specific pair (default BTCUSD)
+- Filter trades by amount (by stacking them up)
+- Show realtime BUY & SELL volume & average price on a chart
+- Load previous trade data on the chart
+- Range selection (`shift + clic` the chart)
 
-## How to use
-Clone the repo
+Check out [the demo](https://tucsky.github.io/SignificantTrades/)
+
+## How to install & run locally
+1. Clone the repo
 
 ```bash
 git clone https://github.com/Tucsky/SignificantTrades
 ```
 
-Have a look at the [server configuration](server/config.json.example) (rename config.json.example into config.json first)
+2. Install server dependencies & run it
+
+```bash
+cd server
+npm install
+node index
+```
+
+3. Install client dependencies then run
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+4. Open a browser window at localhost:8080
+
+...
+
+5. Profit !
+
+## Configuration
+
+All settings are optional and can be changed in the [server configuration file](server/config.json.example) (rename config.json.example into config.json as the real config file is untracked on github).
 
 ```js
 {
@@ -30,55 +66,13 @@ Have a look at the [server configuration](server/config.json.example) (rename co
 }
 ```
 
-Install server dependencies & run it
-
-```bash
-cd server
-npm install
-node index
-```
-
-Install client dependencies then run
-
-```bash
-cd client
-npm install
-npm run dev
-```
-
-...
-
-Profit !
-
-*TODO*
-- [x] Setup a little demo on github
-- [x] Improve client performances
-- [x] Inter-exchanges volume averaged price
-- [ ] Multiple channels monitoring at once (need storage server side)
+*Wanna contribute ?*<br>
+- [x] Publish a demo on github ([its up!](https://tucsky.github.io/SignificantTrades/))
+- [ ] Improve client performances (always room for improvements)
+- [ ] Inter-exchanges volume averaged price (kind of work but [can definetly be improved](https://i.imgur.com/J5lBuWr.gif)
 - [ ] Alerts & push notifications
+- [ ] Support more exchanges
+- [ ] Multiple channels monitoring at once
 
-# SignificantTrades
-Live trades visualizer.
-Currently supporting Bitstamp, Kraken, Huobi, Hitbtc, Okex, Bitmex, Binance, Bitfinex, Gdax ([see server/src/exchanges/](server/src/exchanges))
-
-## About
-Bitmex's Recent Trades pane has a terrible signal-to-noise ratio because of bot activity and the fact that market orders are not batched by order but by matched price, usually resulting in many lines for a single 50k order.
-
-This script uses Bitmex's public trades websocket and does a few things:
-
-1. It collapses all orders with the same timestamp into one line.
-2. It allows you to filter out orders less than a particular size.
-3. It highlights orders that exceed a certain size.
-
-The end result is a Recent Trades pane you can watch without getting a seizure, and which can be a useful tool to see when aggressive orders are coming in.
-
-## How To Use
-1. Open this link: https://beastlybeast.github.io/SignificantTrades/index.html
-2. Then type in the symbol name (e.g. XBTUSD), the minimum order threshold (e.g. 5000), and click submit.
-
-## Support Further Development
-I'm not a developer, I'm a trader, and I'm paying contractors to build and improve this tool. To contribute ideas or request bug fixes, please use the github issues feature. If you are a developer and would like to contribute code, feel free to do so via Github (or fork this repo). Please make sure to credit me if you do.
-
-Lastly, if you find this tool useful, please consider sending a donation to support further development. 
-
-BTC (segwit) address: bc1q32ncgq5aaffz6l5vxrvfejfwdm9jhqdc3qvk5x
+*Like whats been done here ?* Donate BTC (segwit)<br>
+[3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX](bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX)
