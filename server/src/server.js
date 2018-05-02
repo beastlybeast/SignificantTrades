@@ -378,6 +378,8 @@ class Server extends EventEmitter {
 			const nextDateTimestamp = +date + 1000 * 60 * 60 * 24;
 			const path = 'data/' + (this.options.pair + '_' + date.getFullYear() + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2));
 
+			console.log(`[server/backup] retrieve trades < ${nextDateTimestamp}`);
+
 			const tradesOfTheDay = this.chunk.filter(trade => trade[1] < nextDateTimestamp);
 
 			if (!tradesOfTheDay.length) {
@@ -397,6 +399,8 @@ class Server extends EventEmitter {
 				this.chunk = this.chunk.splice(spliceAtIndex + 1);
 
 				if (this.chunk.length) {
+					console.log(`[server/backup] next chunk start at ${this.chunk[0][1]}`);
+
 					return processDate(new Date(nextDateTimestamp));
 				} else {
 					exit && process.exit();
