@@ -47,7 +47,7 @@
         }
       }
 
-      window.addEventListener('beforeunload', () => {        
+      window.addEventListener('beforeunload', () => {
         localStorage.setItem('options', JSON.stringify(options.$data));
       });
 
@@ -167,7 +167,7 @@
     .chart__container .chart__selection {
       background-color: rgba(white, .1);
     }
-    
+
     .chart__detail .detail__exchange {
       background-color: rgba(white, .025);
 
@@ -175,7 +175,7 @@
         background-color: rgba(white, .05);
       }
 
-      .chart__detail .detail__exchange sup {
+      sup {
         opacity: 1;
 
         &.increase {
@@ -191,7 +191,7 @@
     .trades__item.trades__item--sell {
       color: lighten($red, 20%);
       background-color: rgba(darken($red, 10%), .2);
-      
+
       &.trades__item--significant {
         background-color: $red;
         color: rgba(white, .8);
@@ -201,7 +201,7 @@
     .trades__item.trades__item--buy {
       color: lighten($green, 25%);
       background-color: rgba(lighten($green, 25%), .15);
-      
+
       &.trades__item--significant {
         background-color: $green;
         color: rgba(white, .8);
@@ -226,7 +226,7 @@
     > .app-wrapper {
       transition: all .2s $easeOutExpo;
     }
-    
+
     .icon-commodity:before {
       content: unicode($icon-coin);
     }
@@ -270,7 +270,7 @@
     transform: none;
     pointer-events: none;
     overflow: hidden;
-    max-height: 1000px;    
+    max-height: 1000px;
     font-size: 12px;
 
     .stack__toggler {
@@ -296,7 +296,7 @@
       position: relative;
 
       p {
-        margin: 0 0 2px; 
+        margin: 0 0 2px;
 
         &:last-child {
           margin: 0;

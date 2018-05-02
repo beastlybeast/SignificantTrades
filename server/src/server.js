@@ -1,11 +1,14 @@
+const EventEmitter = require('events');
 const WebSocket = require('ws');
 const url = require('url');
 const fs = require('fs');
 const http = require('http');
 
-class Server {
+class Server extends EventEmitter {
 
 	constructor(options) {
+		super();
+
 		this.timestamps = {};
 		this.connected = false;
 		this.processingAction = false;
@@ -44,7 +47,9 @@ class Server {
 
 			ws.admin = this.isAdmin(ip);
 
-			console.log(`[client] ${ip} joined ${req.url} (${this.wss.clients.size} connections)`);
+			console.log(`[client] ${ip} joined ${req.url}`);
+
+			this.emit('connections', this.wss.clients.size);
 
 			ws.send(JSON.stringify({
 				type: 'welcome',
@@ -104,7 +109,11 @@ class Server {
 						console.log(`[${ip}] unrecognized method`, method);
 					break;
 				}
-			})
+			});
+
+			ws.on('close', event => {
+				setTimeout(() => this.emit('connections', this.wss.clients.size), 100);
+			});
 		});
 
 		this.exchanges.forEach(exchange => {
@@ -159,15 +168,15 @@ class Server {
 		});
 
 		this.profilerInterval = setInterval(this.profiler.bind(this), this.options.profilerInterval);
-		this.backupInterval = setInterval(this.backup.bind(this), this.options.backupInterval);		
-		
-		this.http = http.createServer((request, response) => { 
+		this.backupInterval = setInterval(this.backup.bind(this), this.options.backupInterval);
+
+		this.http = http.createServer((request, response) => {
 			response.setHeader('Access-Control-Allow-Origin', this.options.origin);
 
 			const path = url.parse(request.url).path;
 
 			const routes = [{
-				match: /^\/?history\/(\d+)\/(\d+)\/?$/, 
+				match: /^\/?history\/(\d+)\/(\d+)\/?$/,
 				response: (from, to) => {
 					let date, name, path, chunk, output = [];
 
@@ -191,7 +200,7 @@ class Server {
 
 						try {
 							chunk = fs.readFileSync(path, 'utf8').trim().split("\n");
-							
+
 							if (chunk[0].split(' ')[1] >= from && chunk[chunk.length - 1].split(' ')[1] <= to) {
 								console.log(`[server/history] append ${path} (ms ${i}) to output`, chunk.length);
 
@@ -213,7 +222,7 @@ class Server {
 							console.log(`[server/history] unable to get ${path} (ms ${i})`, error.message);
 						}
 					}
-					
+
 					for (let i = 0; i < this.chunk.length; i++) {
 						if (this.chunk[i][1] <= from || this.chunk[i][1] >= to) {
 							continue;
@@ -253,7 +262,7 @@ class Server {
 				this.wss.emit('connection', ws, request);
 			});
 		});
-		
+
 		this.http.listen(this.options.port, () => {
 			console.log('http server listening on port ' + this.options.port);
 		});
@@ -264,7 +273,7 @@ class Server {
 
 		this.connected = true;
 		this.chunk = [];
-		
+
 		this.exchanges.forEach(exchange => {
 			exchange.connect(this.options.pair);
 		});
@@ -342,7 +351,7 @@ class Server {
 		if (['localhost', '127.0.0.1', '::1'].indexOf(ip) !== -1) {
 			return true;
 		}
-		
+
 		const whitelistPath = '../admin.txt';
 
 		if (fs.existsSync(whitelistPath)) {
@@ -362,22 +371,22 @@ class Server {
 		if (!this.chunk.length) {
 			return;
 		}
-			
+
 		console.log(`[server/backup] preparing to backup ${this.chunk.length} trades... (${this.options.backupInterval / 1000 + 's'} of data)`);
 
 		const processDate = (date) => {
 			const nextDateTimestamp = +date + 1000 * 60 * 60 * 24;
 			const path = 'data/' + (this.options.pair + '_' + date.getFullYear() + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2));
-			
+
 			const tradesOfTheDay = this.chunk.filter(trade => trade[1] < nextDateTimestamp);
-			
+
 			if (!tradesOfTheDay.length) {
 				console.log(`[server/backup] no trades that day, on to the next day (first timestamp: ${this.chunk[0][1]})`);
 				return processDate(new Date(nextDateTimestamp));
 			}
 
 			const spliceAtIndex = this.chunk.indexOf(tradesOfTheDay[tradesOfTheDay.length - 1]);
-			
+
 			console.log(`[server/backup] write ${tradesOfTheDay.length} trades into ${path}`);
 
 			fs.appendFile(path, tradesOfTheDay.map(trade => `${trade[0]} ${trade[1]} ${trade[2]} ${trade[3]} ${trade[4]}`).join("\n") + "\n", (err) => {

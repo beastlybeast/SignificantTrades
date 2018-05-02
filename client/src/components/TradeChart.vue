@@ -13,16 +13,20 @@
             </div>
             <div class="detail__total">
               <div>
+                <span class="detail__total__label">side</span>
+                <span class="detail__total__value">+{{Math.abs(detail.side * 100).toFixed()}}% <span v-bind:class="{'icon-bull': detail.side > 0, 'icon-bear': detail.side < 0}"></span></span>
+              </div>
+              <div>
                 <span class="detail__total__label">buys</span>
-                <span class="detail__total__value">{{detail._buys}} <span class="icon-currency"></span></span>
+                <span class="detail__total__value">{{detail.buys}} <span class="icon-currency"></span></span>
               </div>
               <div>
                 <span class="detail__total__label">sells</span>
-                <span class="detail__total__value">{{detail._sells}} <span class="icon-currency"></span></span>
+                <span class="detail__total__value">{{detail.sells}} <span class="icon-currency"></span></span>
               </div>
               <div>
                 <span class="detail__total__label">size</span>
-                <span class="detail__total__value">{{detail._size}} <span class="icon-commodity"></span></span>
+                <span class="detail__total__value">{{detail.size}} <span class="icon-commodity"></span></span>
               </div>
               <div>
                 <span class="detail__total__label">trades</span>
@@ -95,12 +99,12 @@
     },
     created() {
       this.timestamp = +new Date();
-      
+
       this._trimInvisibleTradesInterval = setInterval(() => {
         if (this.following && +new Date() - this.timestamp >= 1000 * 60 * 5) {
           const min = this.chart.xAxis[0].min - this.timeframe;
           socket.trim(min);
-          
+
           this.chart.series.forEach(serie => {
             serie.data.filter(a => a.x < min).forEach(point => {
               if (!point) {
@@ -149,7 +153,7 @@
         if (!this.chart || !socket.trades.length) {
           return;
         }
-        
+
         /*if (replace) {
           const min = +socket.trades[0][1];
           const max = +socket.trades[socket.trades.length - 1][1];
@@ -158,9 +162,9 @@
           this.range = max - min;
           this.canFollow(true);
         }*/
-        
+
         this.ajustTimeframe();
-        
+
         this.updateChart(this.getTicks(), true);
       });
 
@@ -174,7 +178,7 @@
 
       options.$on('follow', state => {
         this.canFollow(state);
-        
+
         if (state) {
           this.follow(true);
         }
@@ -352,7 +356,7 @@
       }
 
       this._doZoom = this.doZoom.bind(this);
-      
+
       this.$refs.chartContainer.addEventListener('mousewheel', this._doZoom);
 
       this._doScroll = this.doScroll.bind(this);
@@ -425,11 +429,21 @@
         const a = {
           trades: [],
           exchanges: [],
+          buys: 0,
+          buys_amount: 0,
+          sells: 0,
+          sells_amount: 0,
+          count: 0,
         };
 
         const b = {
           trades: [],
           exchanges: [],
+          buys: 0,
+          buys_amount: 0,
+          sells: 0,
+          sells_amount: 0,
+          count: 0,
         };
 
         for (let trade of socket.trades) {
@@ -450,7 +464,7 @@
           }
 
           control.trades.push(trade);
-          
+
           if (!control.exchanges[trade[0]]) {
             control.exchanges[trade[0]] = {
               prices: [],
@@ -465,6 +479,10 @@
           control.exchanges[trade[0]].prices.push(+trade[2]);
           control.exchanges[trade[0]].sizes.push(+trade[3]);
           control.exchanges[trade[0]][trade[4] > 0 ? 'buys' : 'sells'] += (+trade[3]);
+
+          control.count++;
+          control[trade[4] > 0 ? 'buys' : 'sells'] += (+trade[3]);
+          control[(trade[4] > 0 ? 'buys' : 'sells') + '_amount'] += trade[2] * trade[3];
         }
 
         let exchanges = {};
@@ -477,7 +495,7 @@
                 changes: {}
               }
             }
-            
+
             control.exchanges[exchange].price = (control.exchanges[exchange].prices.map((price, index) => price * control.exchanges[exchange].sizes[index])).reduce((a, b) => a + b) / (control.exchanges[exchange].buys + control.exchanges[exchange].sells);
 
             const size = +(control.exchanges[exchange].buys + control.exchanges[exchange].sells);
@@ -485,20 +503,14 @@
             if (exchanges[exchange].price) {
               if (exchanges[exchange].price.toFixed(2) > 0)
                 exchanges[exchange].changes.price = (control.exchanges[exchange].price - exchanges[exchange].price) / exchanges[exchange].price;
-              
+
               if (exchanges[exchange].size.toFixed(2) > 0)
                 exchanges[exchange].changes.size = (size - exchanges[exchange].size) / exchanges[exchange].size;
 
-              if (exchanges[exchange].buys.toFixed(2) > 0)
-                exchanges[exchange].changes.buys = (control.exchanges[exchange].buys - exchanges[exchange].buys) / exchanges[exchange].buys;
-
-              if (exchanges[exchange].sells.toFixed(2) > 0)
-                exchanges[exchange].changes.sells = (control.exchanges[exchange].sells - exchanges[exchange].sells) / exchanges[exchange].buys;
-              
               if (exchanges[exchange].count.toFixed(2) > 0)
                 exchanges[exchange].changes.count = (control.exchanges[exchange].count - exchanges[exchange].count) / exchanges[exchange].count;
-            
-              for (let property in exchanges[exchange].changes) { 
+
+              for (let property in exchanges[exchange].changes) {
                 if ((exchanges[exchange].changes[property] * 100).toFixed(2) == 0) {
                   delete exchanges[exchange].changes[property];
                 }
@@ -518,10 +530,6 @@
         }
 
         this.detail = {
-          buys: 0,
-          sells: 0,
-          size: 0,
-          count: 0,
           at: min,
           from: Highcharts.dateFormat('%e. %b %H:%M:%S', min),
           to: Highcharts.dateFormat('%e. %b %H:%M:%S', max),
@@ -536,17 +544,16 @@
           exchanges[name]._buys = formatAmount(exchanges[name].buys, 1);
           exchanges[name]._sells = formatAmount(exchanges[name].sells, 1);
 
-          this.detail.buys += exchanges[name].buys * exchanges[name].price;
-          this.detail.sells += exchanges[name].sells * exchanges[name].price;
-          this.detail.size += (exchanges[name].buys + exchanges[name].sells);
-          this.detail.count += exchanges[name].count;
-
           return exchanges[name];
         })
-        
-        this.detail._buys = formatAmount(this.detail.buys);
-        this.detail._sells = formatAmount(this.detail.sells);
-        this.detail._size = formatAmount(this.detail.size);
+
+        this.detail.count = b.count;
+        this.detail.buys = formatAmount(b.buys_amount);
+        this.detail.sells = formatAmount(b.sells_amount);
+        this.detail.size = formatAmount(b.buys + b.sells);
+        this.detail.bull = (b.buys - a.buys) / a.buys;
+        this.detail.bear = (b.sells - a.sells) / a.sells;
+        this.detail.side = this.detail.bull - this.detail.bear;
 
         this.sortTickDetail();
 
@@ -710,14 +717,14 @@
         socket.$emit('price', prices[0], direction);
 
         if (options.averageLength > 0) {
-          
+
           /* get smoothed weighed average
           */
           prices = prices.concat(this.averages.prices.slice(options.averageLength * -1));
           sizes = sizes.concat(this.averages.sizes.slice(options.averageLength * -1));
 
           average = (prices.map((price, index) => price * sizes[index])).reduce((a, b) => a + b) / sizes.reduce((a, b) => a + b);
-        
+
         } else {
           average = prices[0];
         }
@@ -799,7 +806,7 @@
         this.range = axisMax - axisMin;
 
         this.updateTickDetailCursorPosition(true);
-        
+
         clearTimeout(this._zoomAfterTimeout);
 
         this._zoomAfterTimeout = setTimeout(() => {
@@ -834,7 +841,7 @@
           this.selection.to = event.pageX;
 
           this.updateTickDetailCursorPosition();
-          
+
           return;
         }
 
@@ -950,7 +957,7 @@
 <style lang="scss">
 	@import '../assets/sass/variables';
 
-  .chart__detail {    
+  .chart__detail {
     .stack__wrapper {
       padding: 0;
     }

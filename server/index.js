@@ -1,22 +1,38 @@
 const fs = require('fs');
+const probe = require('pmx').probe();
+
+/* Process related
+*/
+
+process.on('SIGINT', function() {
+	console.log('SIGINT');
+	process.exit();
+});
+
+console.log('PID: ', process.pid);
+
 const Server = require('./src/server');
 
-let json;
+/* Load custom server configuration
+*/
+
+let config;
 
 try {
-	json = require('./config');
-} catch (error) {}
+	config = require('./config');
+} catch (error) {
+	config = {};
+}
 
-const config = Object.assign({}, json || {});
+/* Load available exchanges
+*/
 
-if (!config.exchanges || !config.exchanges.length) {
+if (process.argv.length > 2) {
 	config.exchanges = process.argv.slice(2);
-
-	if (!config.exchanges.length) {
-		fs.readdirSync('./src/exchanges/').forEach(file => {
-			/\.js$/.test(file) && config.exchanges.push(file.replace(/\.js$/, ''));
-		})
-	}
+} else if (!config.exchanges.length) {
+	fs.readdirSync('./src/exchanges/').forEach(file => {
+		/\.js$/.test(file) && config.exchanges.push(file.replace(/\.js$/, ''));
+	})
 }
 
 for (let name of config.exchanges) {
@@ -25,4 +41,20 @@ for (let name of config.exchanges) {
 	config.exchanges[config.exchanges.indexOf(name)] = new exchange(config[name] || {});
 }
 
-new Server(config);
+/* Start server
+*/
+
+const server = new Server(config);
+
+/* Metrics
+*/
+
+if (process.env.pmx) {
+	const listeners = probe.metric({
+		name: 'Connections'
+	});
+
+	server.on('connections', n => {
+		listeners.update(n);
+	});
+}
