@@ -29,7 +29,9 @@ try {
 
 if (process.argv.length > 2) {
 	config.exchanges = process.argv.slice(2);
-} else if (!config.exchanges.length) {
+} else if (!config.exchanges || !config.exchanges.length) {
+	config.exchanges = [];
+
 	fs.readdirSync('./src/exchanges/').forEach(file => {
 		/\.js$/.test(file) && config.exchanges.push(file.replace(/\.js$/, ''));
 	})
@@ -55,6 +57,6 @@ if (process.env.pmx) {
 	});
 
 	server.on('connections', n => {
-		listeners.update(n);
+		listeners.set(n);
 	});
 }

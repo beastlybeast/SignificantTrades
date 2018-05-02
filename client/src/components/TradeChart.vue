@@ -347,6 +347,7 @@
 
       if (window.location.hash.indexOf('twitch') !== -1) {
         window.document.body.classList.add('twitch');
+        options.dark = true;
       }
 
       if (socket.trades && socket.trades.length > 1) {
@@ -376,7 +377,12 @@
       window.addEventListener('blur', this._shiftTracker, false);
 
       this._onHashChange = (() => {
-        window.document.body.classList[window.location.hash.indexOf('twitch') !== -1 ? 'add' : 'remove']('twitch');
+        if (window.location.hash.indexOf('twitch') !== -1) {
+          window.document.body.classList.add('twitch');
+          options.dark = true;
+        } else {
+          window.document.body.classList.remove('twitch');
+        }
       }).bind(this);
 
       window.addEventListener('hashchange', this._onHashChange, false);
