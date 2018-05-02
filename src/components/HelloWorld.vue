@@ -55,13 +55,13 @@ export default {
       msg: 'Welcome to Your Vue.js App',
       data: [],
       symbol: '',
-      minPrice: 0,
+      minPrice: 5000,
       socket: null,
     }
   },
 
   mounted () {
-
+    this.initWebSocketClient(this.symbol, this.minPrice)
   },
 
   methods: {
@@ -70,7 +70,6 @@ export default {
         return
       }
       this.data = []
-      this.initWebSocketClient(this.symbol, this.minPrice)
     },
 
     initWebSocketClient(symbol, price) {
@@ -97,7 +96,10 @@ export default {
         if (response && response.data && response.data.length) {
           response.data.forEach((item) => {
             if (item.size >= priceFilter) {
-              vm.data.push(item)
+              const data = vm.data.reverse()
+
+              data.push(item)
+              vm.data = data.reverse()
             }
           })
         }
