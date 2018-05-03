@@ -71,8 +71,9 @@
     data() {
       return {
         fetching: false,
-        range: 1000 * 60 * 10,
+        defaultRange: 1000 * 60 * 15,
         timeframe: 10000,
+        isTwitchMode: false,
         following: true,
         shiftPressed: false,
         unfinishedTick: null,
@@ -132,7 +133,7 @@
 
         this.chart.series[0].update({name: pair}, false);
 
-        this.range = 1000 * 60 * 5;
+        this.range = this.defaultRange;
         this.timeframe = 10000;
         this.canFollow(true);
 
@@ -153,15 +154,6 @@
         if (!this.chart || !socket.trades.length) {
           return;
         }
-
-        /*if (replace) {
-          const min = +socket.trades[0][1];
-          const max = +socket.trades[socket.trades.length - 1][1];
-
-          this.chart.xAxis[0].setExtremes(min, max, false);
-          this.range = max - min;
-          this.canFollow(true);
-        }*/
 
         this.ajustTimeframe();
 
@@ -346,8 +338,7 @@
       });
 
       if (window.location.hash.indexOf('twitch') !== -1) {
-        window.document.body.classList.add('twitch');
-        options.dark = true;
+        this.goTwitchMode(true);
       }
 
       if (socket.trades && socket.trades.length > 1) {
@@ -377,12 +368,7 @@
       window.addEventListener('blur', this._shiftTracker, false);
 
       this._onHashChange = (() => {
-        if (window.location.hash.indexOf('twitch') !== -1) {
-          window.document.body.classList.add('twitch');
-          options.dark = true;
-        } else {
-          window.document.body.classList.remove('twitch');
-        }
+        this.goTwitchMode(window.location.hash.indexOf('twitch') !== -1);
       }).bind(this);
 
       window.addEventListener('hashchange', this._onHashChange, false);
@@ -956,6 +942,16 @@
 
         return false;
       },
+      goTwitchMode(state) {
+        this.isTwitchMode = state;
+
+        if (state) {
+          window.document.body.classList.add('twitch');
+          options.dark = true;
+        } else {
+          window.document.body.classList.remove('twitch');
+        }
+      }
     }
   }
 </script>
