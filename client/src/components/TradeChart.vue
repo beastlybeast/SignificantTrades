@@ -100,6 +100,7 @@
     },
     created() {
       this.timestamp = +new Date();
+      this.range = parseInt(this.defaultRange);
 
       this._trimInvisibleTradesInterval = setInterval(() => {
         if (this.following && +new Date() - this.timestamp >= 1000 * 60 * 5) {
