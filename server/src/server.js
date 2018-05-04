@@ -32,7 +32,7 @@ class Server extends EventEmitter {
 			profilerInterval: 60000,
 
 			// do backup interval
-			backupInterval: 60000,
+			backupInterval: 60000 * 10,
 
 			// create backup file every X ms
 			backupTimeframe: 1000 * 60 * 60 * 24,

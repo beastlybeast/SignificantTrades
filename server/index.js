@@ -1,14 +1,6 @@
 const fs = require('fs');
 const probe = require('pmx').probe();
 
-/* Process related
-*/
-
-process.on('SIGINT', function() {
-	console.log('SIGINT');
-	process.exit();
-});
-
 console.log('PID: ', process.pid);
 
 const Server = require('./src/server');
@@ -60,3 +52,13 @@ if (process.env.pmx) {
 		listeners.set(n);
 	});
 }
+
+/* Backup server on SIGINT
+*/
+
+process.on('SIGINT', function() {
+	console.log('SIGINT');
+
+	server.backup();
+	process.exit();
+});
