@@ -85,10 +85,7 @@
           direction: 'desc'
         },
         detail: null,
-        averages: {
-          prices: [],
-          sizes: [],
-        },
+        averages: [],
         chart: null,
         selection: {
           from: 0,
@@ -155,6 +152,8 @@
         if (!this.chart || !socket.trades.length) {
           return;
         }
+
+        this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
 
         this.ajustTimeframe();
 
@@ -421,6 +420,7 @@
           at: min,
           from: Highcharts.dateFormat('%e. %b %H:%M:%S', min),
           to: Highcharts.dateFormat('%e. %b %H:%M:%S', max),
+          exchanges: []
         }
 
         const timeframe = max - min;
@@ -628,8 +628,7 @@
           data = input.sort((a, b) => a[1] - b[1]);
         } else {
           delete this.unfinishedTick;
-          this.averages.prices.splice(0, this.averages.prices.length);
-          this.averages.sizes.splice(0, this.averages.sizes.length);
+          this.averages.splice(0, this.averages.length);
           data = socket.trades.slice(0);
         }
 
@@ -641,16 +640,14 @@
 
         for (let i=0; i<data.length; i++) {
 
-          if (!tick || data[i][1] - tick.timestamps[0] > this.timeframe) {
+          if (!tick || data[i][1] - tick.timestamp > this.timeframe) {
             if (tick) {
               const points = this.tickToPoints(tick);
 
-              this.averages.prices.push(points.prices[1])
-              this.averages.sizes.push(tick.sizes.reduce((a, b) => a + b));
+              this.averages.push([points.prices[1], tick.size]);
 
-              if (this.averages.prices.length > options.averageLength) {
-                this.averages.prices = this.averages.prices.splice(options.averageLength * -1);
-                this.averages.sizes = this.averages.sizes.splice(options.averageLength * -1);
+              if (this.averages.length > options.averageLength) {
+                this.averages.splice(0, this.averages.length - options.averageLength);
               }
 
               buys.push(points.buys);
@@ -659,21 +656,18 @@
             }
 
             tick = this.unfinishedTick = {
-              timestamps: [+data[i][1]],
-              prices: [+data[i][2]],
-              sizes: [+data[i][3]],
+              timestamp: +data[i][1],
+              size: +data[i][3],
+              prices: {},
               buys: 0,
               sells: 0,
             };
 
           } else {
-            if (data[i][1] < tick.timestamps[0]) {
-              data[i][1] = tick.timestamps[0];
-            }
-            tick.timestamps.push(+data[i][1]);
-            tick.prices.push(+data[i][2]);
-            tick.sizes.push(+data[i][3]);
+            tick.size += +data[i][3];
           }
+
+          tick.prices[data[i][0]] = +data[i][2];
 
           tick[data[i][4] > 0 ? 'buys' : 'sells'] += (data[i][3] * data[i][2]);
         }
@@ -686,39 +680,40 @@
         };
       },
       tickToPoints(tick) {
-        const timestamp = tick.timestamps.sort((a, b) => a - b)[0];
+        /* average price over exchanges
+        */ 
+        const exchanges = Object.keys(tick.prices);
 
-        /* get tick weighed average
+        tick.close = exchanges.map(exchange => tick.prices[exchange]).reduce((a, b) => a + b) / exchanges.length;
+        tick.high = isNaN(tick.high) ? tick.close : Math.max(tick.high, tick.close);
+        tick.low = isNaN(tick.low) ? tick.close : Math.min(tick.low, tick.close);
+
+        /* get period typical price
         */
-        let sizes = [tick.sizes.reduce((a, b) => a + b)];
-        let prices = [(tick.prices.map((price, index) => price * tick.sizes[index])).reduce((a, b) => a + b) / sizes[0]];
-        let average;
+        const typical = (tick.high + tick.low + tick.close) / 3;
 
+        /* cumulate period typical price & volume
+        */
+        const cumulatives = this.averages.concat([[typical, tick.size]]);
+
+        /* get final vwap
+        */
+        const vwap = cumulatives.length === 1 ? typical : cumulatives.map(a => a[0] * a[1]).reduce((a, b) => a + b) / cumulatives.map(a => a[1]).reduce((a, b) => a + b);
+        
+        /* going up or down ?
+        */
         let direction = 'neutral';
 
-        if (this.averages.prices.length > 1) {
-          direction = prices[0] > ((this.averages.prices[this.averages.prices.length - 1] + this.averages.prices[this.averages.prices.length - 2]) / 2) ? 'up' : 'down';
+        if (cumulatives.length > 1) {
+          direction = vwap > cumulatives.map(a => a[0]).reduce((a, b) => a + b) / cumulatives.length ? 'up' : 'down';
         }
 
-        socket.$emit('price', prices[0], direction);
-
-        if (options.averageLength > 0) {
-
-          /* get smoothed weighed average
-          */
-          prices = prices.concat(this.averages.prices.slice(options.averageLength * -1));
-          sizes = sizes.concat(this.averages.sizes.slice(options.averageLength * -1));
-
-          average = (prices.map((price, index) => price * sizes[index])).reduce((a, b) => a + b) / sizes.reduce((a, b) => a + b);
-
-        } else {
-          average = prices[0];
-        }
+        socket.$emit('price', vwap, direction);
 
         return {
-          buys: [timestamp, tick.buys],
-          sells: [timestamp, tick.sells],
-          prices: [timestamp, average],
+          buys: [tick.timestamp, tick.buys],
+          sells: [tick.timestamp, tick.sells],
+          prices: [tick.timestamp, vwap],
         };
       },
       updateChart(ticks, replace = false) {

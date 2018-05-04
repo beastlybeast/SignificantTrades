@@ -411,8 +411,6 @@ class Server extends EventEmitter {
 				return processDate(new Date(nextDateTimestamp));
 			}
 
-			const spliceAtIndex = this.chunk.indexOf(tradesOfTheDay[tradesOfTheDay.length - 1]);
-
 			console.log(`[server/backup] write ${tradesOfTheDay.length} trades into ${path}`);
 
 			fs.appendFile(path, tradesOfTheDay.map(trade => `${trade[0]} ${trade[1]} ${trade[2]} ${trade[3]} ${trade[4]}`).join("\n") + "\n", (err) => {
@@ -420,10 +418,8 @@ class Server extends EventEmitter {
 					throw new Error(err);
 				}
 
-				this.chunk = this.chunk.splice(spliceAtIndex + 1);
-
 				if (this.chunk.length) {
-					console.log(`[server/backup] next chunk start at ${this.chunk[0][1]}`);
+					console.log(`[server/backup] next chunk start at ${this.chunk[0][1]}, next day at ${nextDateTimestamp}`);
 
 					return processDate(new Date(nextDateTimestamp));
 				} else {
