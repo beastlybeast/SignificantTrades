@@ -417,11 +417,16 @@
           return;
         }
 
+        this.detail = {
+          at: min,
+          from: Highcharts.dateFormat('%e. %b %H:%M:%S', min),
+          to: Highcharts.dateFormat('%e. %b %H:%M:%S', max),
+        }
+
         const timeframe = max - min;
 
         const a = {
-          trades: [],
-          exchanges: [],
+          exchanges: {},
           buys: 0,
           buys_amount: 0,
           sells: 0,
@@ -430,8 +435,7 @@
         };
 
         const b = {
-          trades: [],
-          exchanges: [],
+          exchanges: {},
           buys: 0,
           buys_amount: 0,
           sells: 0,
@@ -456,12 +460,10 @@
             continue;
           }
 
-          control.trades.push(trade);
-
           if (!control.exchanges[trade[0]]) {
             control.exchanges[trade[0]] = {
-              prices: [],
-              sizes: [],
+              low: 1e6,
+              high: 0,
               buys: 0,
               sells: 0,
               count: 0
@@ -469,8 +471,7 @@
           }
 
           control.exchanges[trade[0]].count++;
-          control.exchanges[trade[0]].prices.push(+trade[2]);
-          control.exchanges[trade[0]].sizes.push(+trade[3]);
+          control.exchanges[trade[0]].price = +trade[2];
           control.exchanges[trade[0]][trade[4] > 0 ? 'buys' : 'sells'] += (+trade[3]);
 
           control.count++;
@@ -489,11 +490,9 @@
               }
             }
 
-            control.exchanges[exchange].price = (control.exchanges[exchange].prices.map((price, index) => price * control.exchanges[exchange].sizes[index])).reduce((a, b) => a + b) / (control.exchanges[exchange].buys + control.exchanges[exchange].sells);
-
             const size = +(control.exchanges[exchange].buys + control.exchanges[exchange].sells);
 
-            if (exchanges[exchange].price) {
+            if (exchanges[exchange].size) {
               if (exchanges[exchange].price.toFixed(2) > 0)
                 exchanges[exchange].changes.price = (control.exchanges[exchange].price - exchanges[exchange].price) / exchanges[exchange].price;
 
@@ -522,14 +521,8 @@
           }
         }
 
-        this.detail = {
-          at: min,
-          from: Highcharts.dateFormat('%e. %b %H:%M:%S', min),
-          to: Highcharts.dateFormat('%e. %b %H:%M:%S', max),
-          timeframe: timeframe,
-          trades: b.trades,
-          exchanges: exchanges,
-        }
+        this.detail.timeframe = timeframe,
+        this.detail.exchanges = exchanges,
 
         this.detail.exchanges = Object.keys(exchanges).map(name => {
           exchanges[name]._price = formatPrice(exchanges[name].price);
@@ -812,7 +805,7 @@
           } else if (this.ajustTimeframe()) {
             this.updateChart(this.getTicks(), true);
           }
-        }, 250);
+        }, 500);
       },
       startScroll(event) {
         if (event.which === 3) {

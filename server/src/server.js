@@ -15,12 +15,28 @@ class Server extends EventEmitter {
 		this.chunk = [];
 
 		this.options = Object.assign({
+
+			// default pair we track
 			pair: 'BTCUSD',
+
+			// default server port
 			port: 3000,
-			delay: false,
+
+			// dont broadcast below ms interval
+			delay: 0,
+
+			// restrict origin
 			origin: '*',
+
+			// profile exchange status interval
 			profilerInterval: 60000,
-			backupInterval: 60000 * 10,
+
+			// do backup interval
+			backupInterval: 60000,
+
+			// create backup file every X ms
+			backupTimeframe: 1000 * 60 * 60 * 24,
+
 		}, options);
 
 		if (!this.options.exchanges || !this.options.exchanges.length) {
@@ -186,7 +202,7 @@ class Server extends EventEmitter {
 						return;
 					}
 
-					if (to - from > 1000 * 60 * 60 * 24 * 2) {
+					if (to - from > this.backupTimeframe * 2) {
 						response.writeHead(400);
 						response.end('Interval must be <= than 2 days');
 						return;
@@ -194,9 +210,9 @@ class Server extends EventEmitter {
 
 					console.log(`[server/history] requesting ${to - from}ms of trades`);
 
-					for (let i = +from; i <= to; i += 60 * 1000 * 60 * 24) {
+					for (let i = +from; i <= to; i += this.backupTimeframe) {
 						date = new Date(i);
-						path = 'data/' + (this.options.pair + '_' + date.getFullYear() + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2));
+						path = this.getBackupFilename(date);
 
 						try {
 							chunk = fs.readFileSync(path, 'utf8').trim().split("\n");
@@ -375,12 +391,20 @@ class Server extends EventEmitter {
 		console.log(`[server/backup] preparing to backup ${this.chunk.length} trades... (${this.options.backupInterval / 1000 + 's'} of data)`);
 
 		const processDate = (date) => {
-			const nextDateTimestamp = +date + 1000 * 60 * 60 * 24;
-			const path = 'data/' + (this.options.pair + '_' + date.getFullYear() + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2));
+			const nextDateTimestamp = +date + this.options.backupTimeframe;
+			const path = this.getBackupFilename(date);
 
 			console.log(`[server/backup] retrieve trades < ${nextDateTimestamp}`);
 
-			const tradesOfTheDay = this.chunk.filter(trade => trade[1] < nextDateTimestamp);
+			let tradesOfTheDay = [];
+
+			for (let i = 0; i < this.chunk.length; i++) {
+				if (this.chunk[i][1] < nextDateTimestamp) {
+					tradesOfTheDay.push(this.chunk[i]);
+					this.chunk.splice(i, 1);
+					i--;
+				}
+			}
 
 			if (!tradesOfTheDay.length) {
 				console.log(`[server/backup] no trades that day, on to the next day (first timestamp: ${this.chunk[0][1]})`);
@@ -409,6 +433,10 @@ class Server extends EventEmitter {
 		};
 
 		processDate(new Date(new Date(this.chunk[0][1]).setHours(0, 0, 0, 0)));
+	}
+
+	getBackupFilename(date) {
+		return 'data/' + (this.options.pair + '_' + date.getFullYear() + '-' + ('0' + (date.getMonth()+1)).slice(-2) + '-' + ('0' + date.getDate()).slice(-2));
 	}
 
 }
