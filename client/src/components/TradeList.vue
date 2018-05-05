@@ -43,7 +43,7 @@
             continue;
           }
 
-          if (options.groupBy) {
+          if (options.threshold) {
             if (this.ticks[tid]) {
               if (+new Date() - this.ticks[tid][2] > 5000) {
                 delete this.ticks[tid];
@@ -55,7 +55,7 @@
                 // sum volume
                 this.ticks[tid][3] += trade[3];
 
-                if (this.ticks[tid][2] * this.ticks[tid][3] >= options.groupBy) {
+                if (this.ticks[tid][2] * this.ticks[tid][3] >= options.threshold) {
                   this.appendTrade(this.ticks[tid]);
                   delete this.ticks[tid];
                 }
@@ -64,7 +64,7 @@
               }
             }
 
-            if (!this.ticks[tid] && trade[2] * trade[3] < options.groupBy) {
+            if (!this.ticks[tid] && trade[2] * trade[3] < options.threshold) {
               this.ticks[tid] = trade;
               continue;
             }
@@ -96,12 +96,22 @@
           classname.push('sell');
         }
 
-        if (amount >= 1000000) {
-          image = this.gifs[Math.floor(Math.random() * (this.gifs.length - 1))];
+        if (amount >= options.significantTradeThreshold) {
           classname.push('significant');
-          classname.push('1m');
-        } else if (amount >= 100000) {
-          classname.push('significant');
+        }
+
+        if (amount >= options.hugeTradeThreshold) {
+          if (this.gifs.huge && this.gifs.huge.length) {
+            image = this.gifs.huge[Math.floor(Math.random() * (this.gifs.huge.length - 1))];
+          }
+          classname.push('huge');
+        }
+        
+        if (amount >= options.whaleTradeThreshold) {
+          if (this.gifs.whale && this.gifs.whale.length) {
+            image = this.gifs.whale[Math.floor(Math.random() * (this.gifs.whale.length - 1))];
+          }
+          classname.push('whale');
         }
 
         amount = formatAmount(amount);
@@ -121,22 +131,38 @@
         });
       },
       getGifs(refresh) {
-        let storage = localStorage ? JSON.parse(localStorage.getItem('1mgifs')) : null;
+        [{
+          threshold: 'huge',
+          query: 'money',
+        },{
+          threshold: 'whale',
+          query: 'explosion'
+        }].forEach(animation => {
+          const storage = localStorage ? JSON.parse(localStorage.getItem(animation.threshold + '_gifs')) : null;
+          
+          if (!refresh && storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24) {
+            this.gifs[animation.threshold] = storage.data;
+          } else {
+            fetch('https://api.giphy.com/v1/gifs/search?q=' + animation.query + '&rating=r&limit=100&api_key=b5Y5CZcpj9spa0xEfskQxGGnhChYt3hi')
+              .then(res => res.json())
+              .then(res => {
+                if (!res.data || !res.data.length) {
+                  return;
+                }
 
-        if (!refresh && storage && +new Date() - storage.timestamp < 1000 * 60 * 60) {
-          this.gifs = storage.data;
-        } else {
-          fetch('https://api.giphy.com/v1/gifs/search?q=money&rating=r&limit=100&api_key=b5Y5CZcpj9spa0xEfskQxGGnhChYt3hi')
-            .then(res => res.json())
-            .then(res => {
-              if (!res.data || !res.data.length) {
-                return;
-              }
-              for (let item of res.data) {
-                this.gifs.push(item.images.original.url);
-              }
-            });
-        }
+                this.gifs[animation.threshold] = [];
+
+                for (let item of res.data) {
+                  this.gifs[animation.threshold].push(item.images.original.url);
+                }
+
+                localStorage.setItem(animation.threshold + '_gifs', JSON.stringify({
+                  timestamp: +new Date(),
+                  data: this.gifs[animation.threshold]
+                }))
+              });
+          }
+        });
       },
       ago(timestamp) {
         const seconds = Math.floor((new Date() - timestamp) / 1000);
@@ -218,7 +244,7 @@
       color: white;
     }
 
-    &.trades__item--1m {
+    &.trades__item--huge {
       padding: 8px 7px;
 
       > div {
@@ -234,6 +260,12 @@
         right: 0;
         background-color: rgba(black, .1);
       }
+    }
+
+    &.trades__item--whale {
+      padding: 10px 7px;
+      box-shadow: 0 0 20px rgba(red, .5);
+      z-index: 1;
     }
 
     > div {

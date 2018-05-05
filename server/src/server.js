@@ -196,13 +196,16 @@ class Server extends EventEmitter {
 				response: (from, to) => {
 					let date, name, path, chunk, output = [];
 
+					from = +from;
+					to = +to;
+
 					if (from > to) {
 						response.writeHead(400);
 						response.end('Invalid interval');
 						return;
 					}
 
-					if (to - from > this.backupTimeframe * 2) {
+					if (to - from > this.options.backupTimeframe * 2) {
 						response.writeHead(400);
 						response.end('Interval must be <= than 2 days');
 						return;
@@ -210,7 +213,7 @@ class Server extends EventEmitter {
 
 					console.log(`[server/history] requesting ${to - from}ms of trades`);
 
-					for (let i = +from; i <= to; i += this.backupTimeframe) {
+					for (let i = +new Date(new Date(+from).setHours(0, 0, 0, 0)); i <= to; i += this.options.backupTimeframe) {
 						date = new Date(i);
 						path = this.getBackupFilename(date);
 
@@ -418,7 +421,7 @@ class Server extends EventEmitter {
 					throw new Error(err);
 				}
 
-				if (this.chunk.length) {
+				if (this.chunk.length && this.chunk[0][1] >= nextDateTimestamp) {
 					console.log(`[server/backup] next chunk start at ${this.chunk[0][1]}, next day at ${nextDateTimestamp}`);
 
 					return processDate(new Date(nextDateTimestamp));

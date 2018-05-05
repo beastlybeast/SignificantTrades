@@ -182,7 +182,7 @@
         options.$on('change', data => {
           switch (data.prop) {
             case 'exchanges':
-            case 'averageLength':
+            case 'avgPeriods':
               this.updateChart(this.getTicks(), true);
             break;
             case 'timeframe':
@@ -646,8 +646,8 @@
 
               this.averages.push([points.prices[1], tick.size]);
 
-              if (this.averages.length > options.averageLength) {
-                this.averages.splice(0, this.averages.length - options.averageLength);
+              if (this.averages.length > options.avgPeriods) {
+                this.averages.splice(0, this.averages.length - options.avgPeriods);
               }
 
               buys.push(points.buys);
@@ -700,15 +700,15 @@
         */
         const vwap = cumulatives.length === 1 ? typical : cumulatives.map(a => a[0] * a[1]).reduce((a, b) => a + b) / cumulatives.map(a => a[1]).reduce((a, b) => a + b);
         
-        /* going up or down ?
+        /* determine tab lagging indicator
         */
         let direction = 'neutral';
 
-        if (cumulatives.length > 1) {
-          direction = vwap > cumulatives.map(a => a[0]).reduce((a, b) => a + b) / cumulatives.length ? 'up' : 'down';
+        if (this.chart.series[0].data.length > 1 && options.avgIndicatorPeriods) {
+          direction = vwap > this.chart.series[0].data.slice(options.avgIndicatorPeriods * -1).map(a => a.y).reduce((a, b) => a + b) / options.avgIndicatorPeriods ? 'up' : 'down';
         }
 
-        socket.$emit('price', vwap, direction);
+        socket.$emit('price', typical, direction);
 
         return {
           buys: [tick.timestamp, tick.buys],
@@ -749,7 +749,7 @@
           this.chart.redraw();
         }
 
-        if (this.following && this.chart.series[0].xData.length) {
+        if (!this._zoomAfterTimeout && this.following && this.chart.series[0].xData.length) {
           this.follow();
         }
       },
@@ -791,6 +791,8 @@
         clearTimeout(this._zoomAfterTimeout);
 
         this._zoomAfterTimeout = setTimeout(() => {
+          delete this._zoomAfterTimeout;
+
           if (!this.fetching && axisMin < this.chart.series[0].xData[0]) {
             this.fetching = true;
             socket.fetch(axisMin, this.chart.series[0].xData[0])

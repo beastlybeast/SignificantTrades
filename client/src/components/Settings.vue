@@ -3,32 +3,50 @@
     <div class="stack__wrapper" ref="settingsWrapper">
       <a href="#" class="stack__toggler icon-times" v-on:click="hideSettings"></a>
       <div class="settings__column">
-        <div class="form-group mb15" v-bind:class="{ restricted: restricted }">
+        <div class="form-group" v-bind:class="{ restricted: restricted }">
           <label>Pair <span class="icon-info-circle" v-bind:title="help.pair" v-tippy></span></label>
           <input type="string" placeholder="BTCUSD" class="form-control" v-model="options.pair" @change="switchPair" :disabled="restricted">
         </div>
-        <div class="form-group mb15">
-          <label>Average price <span class="icon-info-circle" v-bind:title="help.averageLength" v-tippy></span></label>
-          <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.averageLength">
-        </div>
-      </div>
-      <div class="settings__column">
-        <div class="form-group mb15">
-          <label>Threshold <span class="icon-info-circle" v-bind:title="help.groupBy" v-tippy></span></label>
-          <input type="number" min="0" max="10000000" step="10000" class="form-control" v-model="options.groupBy">
-        </div>
-        <div class="form-group mb15">
+        <div class="form-group">
           <label>Max rows <span class="icon-info-circle" v-bind:title="help.maxRows" v-tippy></span></label>
           <input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
         </div>
       </div>
       <div class="settings__column">
-        <div class="form-group mb15">
+        <div class="form-group">
+          <label>Threshold <span class="icon-info-circle" v-bind:title="help.threshold" v-tippy></span></label>
+          <input type="number" min="0" step="10000" class="form-control" v-model="options.threshold">
+        </div>
+        <div class="form-group">
           <label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
           <input type="string" placeholder="XX% or XXs" class="form-control" v-model="options.timeframe">
         </div>
       </div>
-      <div class="form-group mb15">
+      <div class="settings__column">
+        <div class="form-group">
+          <label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgPeriods" v-tippy></span></label>
+          <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.avgPeriods">
+        </div>
+        <div class="form-group">
+          <label>Avg. tab ↑↓ <span class="icon-info-circle" v-bind:title="help.avgIndicatorPeriods" v-tippy></span></label>
+          <input type="number" min="1" max="100" step="1" class="form-control" v-model="options.avgIndicatorPeriods">
+        </div>
+      </div>
+      <div class="settings__column settings__column--three">
+        <div class="form-group">
+          <label>Significant <span class="icon-info-circle" v-bind:title="help.significantTradeThreshold" v-tippy></span></label>
+          <input type="number" min="0" step="10000" class="form-control" v-model="options.significantTradeThreshold">
+        </div>
+        <div class="form-group">
+          <label>Huge <span class="icon-info-circle" v-bind:title="help.hugeTradeThreshold" v-tippy></span></label>
+          <input type="number" v-bind:min="options.significantTradeThreshold" step="10000" class="form-control" v-model="options.hugeTradeThreshold">
+        </div>
+        <div class="form-group">
+          <label>Whale <span class="icon-info-circle" v-bind:title="help.whaleTradeThreshold" v-tippy></span></label>
+          <input type="number" v-bind:min="options.hugeTradeThreshold" step="10000" class="form-control" v-model="options.whaleTradeThreshold">
+        </div>
+      </div>
+      <div class="form-group">
         <label>Filter exchanges ({{ Math.min(options.exchanges.length, exchanges.length) }} selected) <span class="icon-info-circle" v-bind:title="help.exchanges" v-tippy></span></label>
         <div class="settings__exchanges">
           <a v-for="(exchange, index) in exchanges" v-bind:key="index"
@@ -72,11 +90,15 @@
         height: 0,
         help: {
           pair: `The pair to aggregate from<br><small><i>special access required</i></small>`,
-          averageLength: `Smooth up the chart by averaging the price using <i>volume weighed average</i> formula across the exchanges.<br>Type the length of average (in ticks, 2 - 5 gives best results)`,
-          groupBy: `Minimum amount a trade should have in order to show up on the list`,
+          avgPeriods: `Periods used to average the price using <i>volume weighed average</i> formula across the exchanges.<br>(2 seems to the give best results)`,
+          avgIndicatorPeriods: `Periods used to average smooth up & down tab indicator`,
           maxRows: `Max rows to render`,
           timeframe: `Define how much trades we stack together in the chart, type a amount of seconds or % of the visible range<br>("1.5%" gives good results, 10s is the minimum)`,
-          exchanges: `Enable/disable exchanges<br>(exclude from list & chart)`
+          exchanges: `Enable/disable exchanges<br>(exclude from list & chart)`,
+          threshold: `Minimum amount a trade should have in order to show up on the list`,
+          significantTradeThreshold: `Minimum amount for a trade to be significant`,
+          hugeTradeThreshold: `Minimum amount for a trade to be considered as huge`,
+          whaleTradeThreshold: `Minimum amount for a trade to enter the suprime <i>whale</i> level`,
         },
         version: {
           number: process.env.VERSION || '0.0.0',
@@ -261,13 +283,22 @@
       flex-direction: row;
 
       > div {
-        margin-right: 16px;
+        margin-right: 8px;
+        margin-bottom: 8px;
         flex-grow: 1;
         flex-basis: 50%;
 
         &:last-child {
           margin-right: 0;
         }
+      }
+
+      &.settings__column--three > div {
+        flex-basis: 50%;
+      }
+
+      &:last-child .form-group {
+        margin-bottom: 0;
       }
     }
 

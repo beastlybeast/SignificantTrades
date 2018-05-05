@@ -3,14 +3,18 @@ import Vue from 'vue'
 const emitter = new Vue({
   data() {
     return {
-      groupBy: 100000,
+      threshold: 100000,
       maxRows: 20,
       pair: 'BTCUSD',
-      averageLength: 2,
+      avgPeriods: 2,
+      avgIndicatorPeriods: 5,
       timeframe: '1.5%',
       exchanges: [],
       debug: false,
       dark: false,
+      significantTradeThreshold: 100000,
+      hugeTradeThreshold: 1000000,
+      whaleTradeThreshold: 10000000,
     }
   },
   created() {

@@ -194,7 +194,7 @@
 
       &.trades__item--significant {
         background-color: $red;
-        color: rgba(white, .8);
+        color: white;
       }
     }
 
@@ -204,7 +204,7 @@
 
       &.trades__item--significant {
         background-color: $green;
-        color: rgba(white, .8);
+        color: white;
       }
     }
   }

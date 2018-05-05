@@ -59,6 +59,5 @@ if (process.env.pmx) {
 process.on('SIGINT', function() {
 	console.log('SIGINT');
 
-	server.backup();
-	process.exit();
+	server.backup(true);
 });
