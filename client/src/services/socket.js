@@ -194,11 +194,11 @@ const emitter = new Vue({
 
       this.reconnectionDelay *= 1.25;
     },
-    fetch(from, to = null, replace = false) {
+    fetch(from, to = null, willReplace = false, willUpdateRange = true) {
       if (!to) {
         to = +new Date();
         from = to - from * 1000 * 60;
-        replace = true;
+        willReplace = true;
       }
 
       const url = `${this.http_url}/history/${parseInt(from)}/${parseInt(to)}`;
@@ -217,7 +217,7 @@ const emitter = new Vue({
           const trades = response.data;
           const count = this.trades.length;
 
-          if (replace || !this.trades || !this.trades.length) {
+          if (willReplace || !this.trades || !this.trades.length) {
             this.trades = trades;
           } else {
             const prepend = trades.filter(trade => trade[1] <= this.trades[0][1]);
@@ -233,7 +233,7 @@ const emitter = new Vue({
           }
 
           if (count !== this.trades.length) {
-            this.$emit('history', replace);
+            this.$emit('history', willReplace, willUpdateRange);
           }
 
           resolve(trades);

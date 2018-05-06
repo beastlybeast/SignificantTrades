@@ -32,7 +32,7 @@
           <input type="number" min="1" max="100" step="1" class="form-control" v-model="options.avgIndicatorPeriods">
         </div>
       </div>
-      <div class="settings__column settings__column--three">
+      <div class="mt8 settings__column settings__column--three">
         <div class="form-group">
           <label>Significant <span class="icon-info-circle" v-bind:title="help.significantTradeThreshold" v-tippy></span></label>
           <input type="number" min="0" step="10000" class="form-control" v-model="options.significantTradeThreshold">
@@ -46,7 +46,7 @@
           <input type="number" v-bind:min="options.hugeTradeThreshold" step="10000" class="form-control" v-model="options.whaleTradeThreshold">
         </div>
       </div>
-      <div class="form-group">
+      <div class="mt8 mb8 form-group">
         <label>Filter exchanges ({{ Math.min(options.exchanges.length, exchanges.length) }} selected) <span class="icon-info-circle" v-bind:title="help.exchanges" v-tippy></span></label>
         <div class="settings__exchanges">
           <a v-for="(exchange, index) in exchanges" v-bind:key="index"
@@ -90,15 +90,15 @@
         height: 0,
         help: {
           pair: `The pair to aggregate from<br><small><i>special access required</i></small>`,
-          avgPeriods: `Periods used to average the price using <i>volume weighed average</i> formula across the exchanges.<br>(2 seems to the give best results)`,
+          avgPeriods: `Periods used to average the price using <i>volume weighed average</i> formula.<br>(2 seems to the give best results)`,
           avgIndicatorPeriods: `Periods used to average smooth up & down tab indicator`,
           maxRows: `Max rows to render`,
           timeframe: `Define how much trades we stack together in the chart, type a amount of seconds or % of the visible range<br>("1.5%" gives good results, 10s is the minimum)`,
           exchanges: `Enable/disable exchanges<br>(exclude from list & chart)`,
           threshold: `Minimum amount a trade should have in order to show up on the list`,
-          significantTradeThreshold: `Minimum amount for a trade to be significant`,
-          hugeTradeThreshold: `Minimum amount for a trade to be considered as huge`,
-          whaleTradeThreshold: `Minimum amount for a trade to enter the suprime <i>whale</i> level`,
+          significantTradeThreshold: `Minimum amount for a trade to be <u>significant</u>`,
+          hugeTradeThreshold: `Minimum amount for a trade to be considered as <i>huge</i>`,
+          whaleTradeThreshold: `Minimum amount for a trade to enter the supreme <b>whale</b> level`,
         },
         version: {
           number: process.env.VERSION || '0.0.0',
@@ -184,11 +184,12 @@
       }
 
       .form-control {
-        padding: 10px 12px;
+        padding: 8px 8px;
         background-color: white;
         border-radius: 2px;
         border: 0;
-        width: calc(100% - 24px);
+        width: calc(100% - 16px);
+        letter-spacing: -.5px;
       }
 
       .checkbox-control {
@@ -257,6 +258,7 @@
 
       > label {
         margin-bottom: 5px;
+        line-height: 1.3;
 
         .icon-info-circle {
           margin-left: 2px;

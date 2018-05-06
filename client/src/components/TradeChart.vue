@@ -148,12 +148,14 @@
         this.chart.redraw();
       });
 
-      socket.$on('history', replace => {
+      socket.$on('history', (willReplace, willUpdateRange) => {
         if (!this.chart || !socket.trades.length) {
           return;
         }
 
-        this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
+        if (willUpdateRange) {
+          this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
+        }
 
         this.ajustTimeframe();
 
@@ -279,7 +281,8 @@
             groupPadding: 0,
             stickyTracking: false,
             marker: {
-              enabled: false
+              enabled: false,
+              lineWidth: 2,
             }
           },
           line: {
@@ -616,18 +619,12 @@
         this.detailSorting.direction = direction;
       },
       getTicks(input) {
-        let tick, data;
-
-        let useLastTick = false;
-        let willUpdateLastTick = false;
+        let data;
 
         if (input) {
-          if (this.unfinishedTick) {
-            tick = this.unfinishedTick;
-          }
           data = input.sort((a, b) => a[1] - b[1]);
         } else {
-          delete this.unfinishedTick;
+          delete this.tick;
           this.averages.splice(0, this.averages.length);
           data = socket.trades.slice(0);
         }
@@ -638,42 +635,45 @@
         const buys = [];
         const prices = [];
 
-        for (let i=0; i<data.length; i++) {
+        for (let i = 0; i < data.length; i++) {
 
-          if (!tick || data[i][1] - tick.timestamp > this.timeframe) {
-            if (tick) {
-              const points = this.tickToPoints(tick);
+          if (!this.tick || data[i][1] - this.tick.timestamp > this.timeframe) {
+            if (this.tick) {
+              const point = this.tickToPoints(this.tick);
 
-              this.averages.push([points.prices[1], tick.size]);
+              buys.push(point.buys);
+              sells.push(point.sells);
+              prices.push(point.prices);
+
+              this.averages.push([point.prices[1], point.buys[1] + point.sells[1]]);
 
               if (this.averages.length > options.avgPeriods) {
                 this.averages.splice(0, this.averages.length - options.avgPeriods);
               }
-
-              buys.push(points.buys);
-              sells.push(points.sells);
-              prices.push(points.prices);
             }
 
-            tick = this.unfinishedTick = {
+            this.tick = {
               timestamp: +data[i][1],
-              size: +data[i][3],
-              prices: {},
+              exchanges: {},
               buys: 0,
-              sells: 0,
+              sells: 0
             };
 
-          } else {
-            tick.size += +data[i][3];
+          }
+          
+          if (!this.tick.exchanges[data[i][0]]) {
+            this.tick.exchanges[data[i][0]] = {
+              prices: 0,
+              size: 0
+            };
           }
 
-          tick.prices[data[i][0]] = +data[i][2];
-
-          tick[data[i][4] > 0 ? 'buys' : 'sells'] += (data[i][3] * data[i][2]);
+          this.tick.exchanges[data[i][0]].prices += (data[i][2] * data[i][3]);
+          this.tick.exchanges[data[i][0]].size += (+data[i][3]);
+          this.tick[data[i][4] > 0 ? 'buys' : 'sells'] += (data[i][3] * data[i][2]);
         }
 
         return {
-          useLastTick: this.unfinishedTick,
           sells: sells,
           buys: buys,
           prices: prices,
@@ -682,11 +682,19 @@
       tickToPoints(tick) {
         /* average price over exchanges
         */ 
-        const exchanges = Object.keys(tick.prices);
 
-        tick.close = exchanges.map(exchange => tick.prices[exchange]).reduce((a, b) => a + b) / exchanges.length;
-        tick.high = isNaN(tick.high) ? tick.close : Math.max(tick.high, tick.close);
-        tick.low = isNaN(tick.low) ? tick.close : Math.min(tick.low, tick.close);
+        const closes = [];
+
+        for (let exchange in tick.exchanges) {
+          let price = tick.exchanges[exchange].prices / tick.exchanges[exchange].size;
+
+          closes.push([price, tick.exchanges[exchange].size]);
+
+          tick.high = isNaN(tick.high) ? price : Math.max(tick.high, price);
+          tick.low = isNaN(tick.low) ? price : Math.min(tick.low, price);
+        }
+
+        tick.close = closes.map(a => a[0] * a[1]).reduce((a, b) => a + b) / closes.reduce((a, b) => (a[1] || a) + b[1]);
 
         /* get period typical price
         */
@@ -694,7 +702,7 @@
 
         /* cumulate period typical price & volume
         */
-        const cumulatives = this.averages.concat([[typical, tick.size]]);
+        const cumulatives = this.averages.concat([[typical, tick.buys + tick.sells]]);
 
         /* get final vwap
         */
@@ -721,33 +729,15 @@
           this.chart.series[0].setData(ticks.prices, false);
           this.chart.series[1].setData(ticks.sells, false);
           this.chart.series[2].setData(ticks.buys, false);
-
-          this.chart.redraw();
         } else {
           for (let i=0; i<ticks.prices.length; i++) {
             this.chart.series[0].addPoint(ticks.prices[i], false);
             this.chart.series[1].addPoint(ticks.sells[i], false);
             this.chart.series[2].addPoint(ticks.buys[i], false);
           }
-
-          this.chart.redraw();
         }
 
-        if (this.unfinishedTick) {
-          const points = this.tickToPoints(this.unfinishedTick);
-
-          if (this.chart.series[0].data.length && !replace) {
-            this.chart.series[0].data[this.chart.series[0].data.length - 1].update(points.prices, false)
-            this.chart.series[1].data[this.chart.series[1].data.length - 1].update(points.sells, false);
-            this.chart.series[2].data[this.chart.series[2].data.length - 1].update(points.buys, false);
-          } else {
-            this.chart.series[0].addPoint(points.prices, false);
-            this.chart.series[1].addPoint(points.sells, false);
-            this.chart.series[2].addPoint(points.buys, false);
-          }
-
-          this.chart.redraw();
-        }
+        this.chart.redraw();
 
         if (!this._zoomAfterTimeout && this.following && this.chart.series[0].xData.length) {
           this.follow();
