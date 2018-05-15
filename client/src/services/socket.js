@@ -211,7 +211,11 @@ const emitter = new Vue({
 
       return new Promise((resolve, reject) => {
         Axios.get(url, {
-          onDownloadProgress: e => this.$emit('fetchProgress', e.loaded / e.total)
+          onDownloadProgress: e => this.$emit('fetchProgress', {
+            loaded: e.loaded,
+            total: e.total,
+            progress: e.loaded / e.total
+          })
         })
         .then(response => {
           const trades = response.data;

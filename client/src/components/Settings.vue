@@ -2,6 +2,7 @@
   <div class="settings__container stack__container" v-bind:class="{ open: opened }" v-bind:style="{ maxHeight: height + 'px' }">
     <div class="stack__wrapper" ref="settingsWrapper">
       <a href="#" class="stack__toggler icon-times" v-on:click="hideSettings"></a>
+      <div class="settings__title">Basics</div>
       <div class="settings__column">
         <div class="form-group" v-bind:class="{ restricted: restricted }">
           <label>Pair <span class="icon-info-circle" v-bind:title="help.pair" v-tippy></span></label>
@@ -12,42 +13,34 @@
           <input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
         </div>
       </div>
+      <div class="mt8 settings__title">Chart</div>
       <div class="settings__column">
-        <div class="form-group">
-          <label>Threshold <span class="icon-info-circle" v-bind:title="help.threshold" v-tippy></span></label>
-          <input type="number" min="0" step="10000" class="form-control" v-model="options.threshold">
-        </div>
         <div class="form-group">
           <label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
           <input type="string" placeholder="XX% or XXs" class="form-control" v-model="options.timeframe">
         </div>
-      </div>
-      <div class="settings__column">
         <div class="form-group">
           <label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgPeriods" v-tippy></span></label>
           <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.avgPeriods">
         </div>
+      </div>
+      <div class="mt8 settings__title">Thresholds</div>
+      <div class="settings__thresholds">
         <div class="form-group">
-          <label>Avg. tab ↑↓ <span class="icon-info-circle" v-bind:title="help.avgIndicatorPeriods" v-tippy></span></label>
-          <input type="number" min="1" max="100" step="1" class="form-control" v-model="options.avgIndicatorPeriods">
+          <label>Trades < <i class="icon-currency"></i> <editable :content.sync="options.threshold"></editable> won't show up<span class="icon-info-circle" v-bind:title="help.threshold" v-tippy></span></label>
+        </div>
+        <div class="form-group">
+          <label>Trades > <i class="icon-currency"></i> <editable :content.sync="options.significantTradeThreshold"></editable> = <u>significant</u> <span class="icon-info-circle" v-bind:title="help.significantTradeThreshold" v-tippy></span></label>
+        </div>
+        <div class="form-group">
+          <label>Trades > <i class="icon-currency"></i> <editable :content.sync="options.hugeTradeThreshold"></editable> = <strong>huge</strong> <span class="icon-info-circle" v-bind:title="help.hugeTradeThreshold" v-tippy></span></label>
+        </div>
+        <div class="form-group">
+          <label>Trades > <i class="icon-currency"></i> <editable :content.sync="options.rareTradeThreshold"></editable> = <strong><i>rare</i></strong> <span class="icon-info-circle" v-bind:title="help.rareTradeThreshold" v-tippy></span></label>
         </div>
       </div>
-      <div class="mt8 settings__column settings__column--three">
-        <div class="form-group">
-          <label>Significant <span class="icon-info-circle" v-bind:title="help.significantTradeThreshold" v-tippy></span></label>
-          <input type="number" min="0" step="10000" class="form-control" v-model="options.significantTradeThreshold">
-        </div>
-        <div class="form-group">
-          <label>Huge <span class="icon-info-circle" v-bind:title="help.hugeTradeThreshold" v-tippy></span></label>
-          <input type="number" v-bind:min="options.significantTradeThreshold" step="10000" class="form-control" v-model="options.hugeTradeThreshold">
-        </div>
-        <div class="form-group">
-          <label>Whale <span class="icon-info-circle" v-bind:title="help.whaleTradeThreshold" v-tippy></span></label>
-          <input type="number" v-bind:min="options.hugeTradeThreshold" step="10000" class="form-control" v-model="options.whaleTradeThreshold">
-        </div>
-      </div>
-      <div class="mt8 mb8 form-group">
-        <label>Filter exchanges ({{ Math.min(options.exchanges.length, exchanges.length) }} selected) <span class="icon-info-circle" v-bind:title="help.exchanges" v-tippy></span></label>
+      <div class="mt8 settings__title">Exchanges</div>
+      <div class="mb8 form-group">
         <div class="settings__exchanges">
           <a v-for="(exchange, index) in exchanges" v-bind:key="index"
             class="settings__exchanges__item"
@@ -60,14 +53,14 @@
       </div>
       <div class="settings__column flex-bottom">
         <div class="form-group">
-          <a v-if="version.number" href="javascript:void(0);" target="_blank" title="<a class='donation' href='bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX?label=help%20me%20gamble%20on%20bitmex'><div class='text-center'>Like the ticker ?<br>Consider donating :-)</div><img src='static/donate.svg'><div class='donation__address'>3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX</div></a>" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">
-            <span>v{{ version.number }} <sup class="version-date">{{ version.date }}</sup></span>
+          <a v-if="version.number" href="javascript:void(0);" target="_blank">
+            <span title="<a class='donation' href='bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX?label=help%20me%20gamble%20on%20bitmex'><div class='text-center'>Like the ticker ?<br>Consider donating :-)</div><img src='static/donate.svg'><div class='donation__address'>3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX</div></a>" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">v{{ version.number }} <sup class="version-date">{{ version.date }}</sup></span>
           </a>
         </div>
         <div class="form-group">
-          <label class="checkbox-control flex-right">
-            <input type="checkbox" class="form-control" v-model="options.dark"> 
-            <span>Dark theme</span>
+          <label class="checkbox-control settings_luminosity flex-right" title="Switch luminosity" v-tippy>
+            <input type="checkbox" class="form-control" v-model="options.dark">
+            <span>{{ options.dark ? 'Day mode' : 'Night mode' }}</span>
             <div></div>
           </label>
         </div>
@@ -90,19 +83,18 @@
         height: 0,
         help: {
           pair: `The pair to aggregate from<br><small><i>special access required</i></small>`,
-          avgPeriods: `Periods used to average the price using <i>volume weighed average</i> formula.<br>(2 seems to the give best results)`,
-          avgIndicatorPeriods: `Periods used to average smooth up & down tab indicator`,
-          maxRows: `Max rows to render`,
+          avgPeriods: `Define how many periods are used to smooth down the chart`,
+          maxRows: `Numbers of trades to keep in the list`,
           timeframe: `Define how much trades we stack together in the chart, type a amount of seconds or % of the visible range<br>("1.5%" gives good results, 10s is the minimum)`,
           exchanges: `Enable/disable exchanges<br>(exclude from list & chart)`,
           threshold: `Minimum amount a trade should have in order to show up on the list`,
-          significantTradeThreshold: `Minimum amount for a trade to be <u>significant</u>`,
-          hugeTradeThreshold: `Minimum amount for a trade to be considered as <i>huge</i>`,
-          whaleTradeThreshold: `Minimum amount for a trade to enter the supreme <b>whale</b> level`,
+          significantTradeThreshold: `Highlight the trade in the list`,
+          hugeTradeThreshold: `Shows animation under it !`,
+          rareTradeThreshold: `Shows another animation !`,
         },
         version: {
-          number: process.env.VERSION || '0.0.0',
-          date: process.env.BUILD_DATE || 'today'
+          number: process.env.VERSION || 'DEV',
+          date: process.env.BUILD_DATE || 'now'
         }
       }
     },
@@ -202,7 +194,7 @@
         -ms-user-select: none;
         user-select: none;
         cursor: pointer;
-        
+
         input {
           display: none;
 
@@ -210,10 +202,18 @@
             ~ div {
               background-color: $green;
 
+              &:before, &:after {
+                transition: all .5s $easeOutExpo;
+              }
+
               &:before {
                 opacity: 1;
                 transform: none;
-                transition: all .5s $easeOutExpo;
+              }
+
+              &:after {
+                opacity: 0;
+                transform: translateY(50%) skewY(20deg);
               }
             }
           }
@@ -228,8 +228,7 @@
           transition: all .2s $easeOutExpo;
           position: relative;
 
-          &:before {
-            content: unicode($icon-check);
+          &:before, &:after {
             font-family: 'icon';
             font-size: 1em;
             position: absolute;
@@ -245,6 +244,15 @@
             align-items: center;
             justify-content: center;
           }
+
+          &:before {
+            content: unicode($icon-check);
+          }
+
+          &:after {
+            transform: none;
+            opacity: 1;
+          }
         }
 
         div + span {
@@ -253,6 +261,26 @@
 
         span + div {
           margin-left: 5px;
+        }
+
+        &.settings_luminosity {
+          input {
+            ~ div {
+              background-color: $blue;
+
+              &:before {
+                content: unicode($icon-day);
+              }
+
+              &:after {
+                content: unicode($icon-night);
+              }
+            }
+
+            &:checked ~ div {
+              background-color: $green;
+            }
+          }
         }
       }
 
@@ -301,6 +329,33 @@
 
       &:last-child .form-group {
         margin-bottom: 0;
+      }
+    }
+
+    .settings__title {
+      text-align: left;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      opacity: .5;
+    }
+
+    .settings__thresholds {
+      padding-bottom: 4px;
+
+      .form-group {
+        margin-bottom: 2px;
+      }
+
+      .icon-currency {
+        color: $green;
+      }
+
+      [contenteditable] {
+        display: inline-block;
+        cursor: text;
+        color: $green;
+        font-family: monospace;
       }
     }
 

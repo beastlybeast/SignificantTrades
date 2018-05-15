@@ -280,6 +280,7 @@
       font-size: 16px;
       opacity: .2;
       padding: 8px;
+      z-index: 1;
 
       &:hover {
         opacity: 1;

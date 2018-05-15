@@ -49,8 +49,6 @@ class Server extends EventEmitter {
 
 		this.listen();
 		this.connect();
-
-		process.on('SIGINT', this.backup.bind(this, [true]));
 	}
 
 	listen() {
@@ -264,7 +262,19 @@ class Server extends EventEmitter {
 
 			if (!response.finished) {
 				response.writeHead(404);
-				response.end('<a href="https://github.com/Tucsky/SignificantTrades">SignificantTrades</p>');
+				response.end(`
+					<!DOCTYPE html>
+					<html>
+						<head>
+							<title>SignificantTrades</title>
+						</head>
+						<body>
+							<strong>OHH YOU LIKE THE TICKER HMM ??!</strong><br>
+							<a target="_blank" href="https://github.com/Tucsky/SignificantTrades">SignificantTrades</a> | 
+							<a target="_blank" href="bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX">Donate</a>
+						</body>
+					</html>
+				`);
 			}
 		});
 

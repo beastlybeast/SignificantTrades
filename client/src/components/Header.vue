@@ -2,9 +2,9 @@
   <header class="header">
     <div class="header__title"><span class="icon-currency"></span> <span v-html="title"></span></div>
     <button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}"><span class="icon-external-link"></span></button>
-    <button type="button" v-on:click="retrieveChart" title="Load chart history" v-tippy="{placement: 'bottom'}">
-      <svg class="loader" v-bind:class="{loading: fetchProgress > 0}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14">
-        <path :stroke-dashoffset="fetchProgress" d="M7,1a6.06,6.06,0,0,1,6,6,6.06,6.06,0,0,1-6,6A6.06,6.06,0,0,1,1,7,6.06,6.06,0,0,1,7,1Z"/>
+    <button type="button" v-on:click="retrieveChart" v-bind:title="fetchLabel" v-tippy="{placement: 'bottom'}">
+      <svg class="loader" v-bind:class="{loading: dashoffset > 0}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14">
+        <path :stroke-dashoffset="dashoffset" d="M7,1a6.06,6.06,0,0,1,6,6,6.06,6.06,0,0,1-6,6A6.06,6.06,0,0,1,1,7,6.06,6.06,0,0,1,7,1Z"/>
       </svg>
       <span class="icon-history"></span>
     </button>
@@ -21,20 +21,24 @@
     data() {
       return {
         title: 'SignificantTrades',
-        fetchProgress: 0,
+        dashoffset: 0,
+        fetchLabel: 'Load chart history',
         following: true,
         isPopupMode: window.opener !== null
       }
     },
     created() {
+      this._fetchLabel = this.fetchLabel.substr();
+
       options.$on('following', state => this.following = state);
 
-      socket.$on('fetchProgress', progress => {
-        if (isNaN(progress)) {
+      socket.$on('fetchProgress', event => {
+        if (!event || isNaN(event.progress)) {
           return;
         }
 
-        this.fetchProgress = (1 - progress) * 40;
+        this.dashoffset = (1 - event.progress) * 40;
+        this.fetchLabel = !Math.floor(this.dashoffset) ? this._fetchLabel : this.sizeOf(event.loaded);
       })
 
       socket.$on('price', (price, direction) => {
@@ -69,7 +73,7 @@
         options.toggle();
       },
       retrieveChart() {
-        if (this.fetchProgress) {
+        if (this.dashoffset) {
           return;
         }
 
@@ -78,7 +82,8 @@
         if (interval > 1) {
           socket.fetch(interval)
             .then(data => {
-              this.fetchProgress = 0;
+              this.dashoffset = 0;
+              this.fetchLabel = this._fetchLabel;
             })
         }
       },
@@ -91,6 +96,16 @@
         setTimeout(() => {
           window.close();
         }, 500);
+      },
+      sizeOf(bytes) {
+        var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+
+        if (bytes == 0) 
+          return '0 Byte';
+
+        var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
+
+        return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
       }
     }
   }
@@ -129,12 +144,11 @@
       svg.loader {
         width: 100%;
         position: absolute;
-        transform: scale(0);
+        transform: scale(0) translate(-50%, -50%);
         visibility: hidden;
-        top: 0;
-        left: 0;
-        padding: 9px;
-        width: calc(100% - 19px);
+        top: 50%;
+        left: 50%;
+        width: 50%;
         transition: transform 1s $easeOutExpo, visibility .2s linear 1s;
 
         path {
@@ -148,7 +162,7 @@
         &.loading {
           visibility: visible;
           transition: transform .2s $easeElastic;
-          transform: scale(0.9);
+          transform: scale(1) translate(-50%, -50%);
 
           + span {
             opacity: .25;

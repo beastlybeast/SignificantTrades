@@ -135,4 +135,14 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-external-link); 
   }
 }
+.icon-night {
+  &:before {
+    content: unicode($icon-night); 
+  }
+}
+.icon-day {
+  &:before {
+    content: unicode($icon-day); 
+  }
+}
 

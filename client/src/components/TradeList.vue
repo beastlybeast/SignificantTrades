@@ -107,11 +107,11 @@
           classname.push('huge');
         }
         
-        if (amount >= options.whaleTradeThreshold) {
-          if (this.gifs.whale && this.gifs.whale.length) {
-            image = this.gifs.whale[Math.floor(Math.random() * (this.gifs.whale.length - 1))];
+        if (amount >= options.rareTradeThreshold) {
+          if (this.gifs.rare && this.gifs.rare.length) {
+            image = this.gifs.rare[Math.floor(Math.random() * (this.gifs.rare.length - 1))];
           }
-          classname.push('whale');
+          classname.push('rare');
         }
 
         amount = formatAmount(amount);
@@ -135,7 +135,7 @@
           threshold: 'huge',
           query: 'money',
         },{
-          threshold: 'whale',
+          threshold: 'rare',
           query: 'explosion'
         }].forEach(animation => {
           const storage = localStorage ? JSON.parse(localStorage.getItem(animation.threshold + '_gifs')) : null;
@@ -262,7 +262,7 @@
       }
     }
 
-    &.trades__item--whale {
+    &.trades__item--rare {
       padding: 10px 7px;
       box-shadow: 0 0 20px rgba(red, .5);
       z-index: 1;

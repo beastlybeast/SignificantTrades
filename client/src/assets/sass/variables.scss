@@ -29,6 +29,8 @@ $icon-info-circle: \e912;
 $icon-bear: \e913;
 $icon-bull: \e914;
 $icon-external-link: \e915;
+$icon-night: \e916;
+$icon-day: \e917;
 
 @function unicode($str) {
   @return unquote("\"") + $str + unquote("\"");

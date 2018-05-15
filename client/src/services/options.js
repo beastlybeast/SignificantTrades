@@ -7,14 +7,13 @@ const emitter = new Vue({
       maxRows: 20,
       pair: 'BTCUSD',
       avgPeriods: 2,
-      avgIndicatorPeriods: 5,
       timeframe: '1.5%',
       exchanges: [],
       debug: false,
       dark: false,
       significantTradeThreshold: 100000,
       hugeTradeThreshold: 1000000,
-      whaleTradeThreshold: 10000000,
+      rareTradeThreshold: 10000000,
     }
   },
   created() {
