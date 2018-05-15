@@ -713,7 +713,7 @@
           if (this.averages && options.avgPeriods > 0) {
             /* cumulate period typical price & volume
             */
-            const cumulatives = this.averages.concat([[truePrice, tick.buys + tick.size]]);
+            const cumulatives = this.averages.concat([[truePrice, tick.buys + tick.sells]]);
 
             /* get final vwap
             */
