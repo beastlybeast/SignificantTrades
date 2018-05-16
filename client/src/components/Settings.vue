@@ -21,7 +21,13 @@
         </div>
         <div class="form-group">
           <label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgPeriods" v-tippy></span></label>
-          <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.avgPeriods">
+          <div class="input-group">
+            <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.avgPeriods">
+            <label class="checkbox-control flex-right" title="Use weighed average" v-tippy>
+              <input type="checkbox" class="form-control" v-model="options.useWeighedAverage">
+              <div></div>
+            </label>
+          </div>
         </div>
       </div>
       <div class="mt8 settings__title">Thresholds</div>
@@ -83,9 +89,9 @@
         height: 0,
         help: {
           pair: `The pair to aggregate from<br><small><i>special access required</i></small>`,
-          avgPeriods: `Define how many periods are used to smooth down the chart`,
-          maxRows: `Numbers of trades to keep in the list`,
-          timeframe: `Define how much trades we stack together in the chart, type a amount of seconds or % of the visible range<br>("1.5%" gives good results, 10s is the minimum)`,
+          avgPeriods: `Define how many periods are used to smooth the chart<br><ol><li>Exchange prices are averaged <strong>within</strong> the tick first (using weighed average in that timeframe if enabled, if not then the close value is used)</li><li>If cumulated periods are > 1 then the price is averaged (using weighed or simple average)</li></ol>`,
+          maxRows: `Numbers of trades to keep visible`,
+          timeframe: `Define how much trades we stack together in the chart, type a amount of seconds or % of the visible range<br><ul><li>Type 1.5% for optimal result</li><li>Minimum is 5s whatever you enter</li></ul>`,
           exchanges: `Enable/disable exchanges<br>(exclude from list & chart)`,
           threshold: `Minimum amount a trade should have in order to show up on the list`,
           significantTradeThreshold: `Highlight the trade in the list`,
@@ -182,6 +188,27 @@
         border: 0;
         width: calc(100% - 16px);
         letter-spacing: -.5px;
+      }
+
+      .input-group {
+        display: flex;
+
+        > .form-control {
+          border-top-right-radius: 0;
+          border-bottom-right-radius: 0;
+        }
+
+        > .checkbox-control {
+          align-items: stretch;
+
+          > div {
+            height: 100%;
+            padding: 0 1.25em;
+            width: auto;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+          }
+        }
       }
 
       .checkbox-control {

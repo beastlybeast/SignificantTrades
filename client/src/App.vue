@@ -140,6 +140,21 @@
     &.blue-theme {
       background-color: $blue;
     }
+
+    ul, ol {
+      text-align:left;
+      font-size: 90%;
+      line-height: 1.2;
+      padding-left: 20px;
+
+      li {
+        margin-bottom: 5px;
+
+        &:last-child {
+          margin: 0;
+        }
+      }
+    }
   }
 
   body.dark {

@@ -154,6 +154,7 @@
         }
 
         if (willUpdateRange) {
+          this.canFollow(true);
           this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
         }
 
@@ -185,6 +186,7 @@
           switch (data.prop) {
             case 'exchanges':
             case 'avgPeriods':
+            case 'useWeighedAverage':
               this.appendTicksToChart(this.getTicks(), true);
             break;
             case 'timeframe':
@@ -670,6 +672,7 @@
           }
 
           this.tick.exchanges[data[i][0]].prices += (data[i][2] * data[i][3]);
+          this.tick.exchanges[data[i][0]].close = (+data[i][2]);
           this.tick.exchanges[data[i][0]].size += (+data[i][3]);
           this.tick.size += (+data[i][3]);
           this.tick[data[i][4] > 0 ? 'buys' : 'sells'] += (data[i][3] * data[i][2]);
@@ -682,7 +685,7 @@
         };
       },
       tickToPoint(tick, getPriceIndex = true) {
-        let truePrice = parseFloat(this.priceIndex);
+        let typical = parseFloat(this.priceIndex);
 
         if (getPriceIndex) {
           /* simple weight average price over exchanges
@@ -693,34 +696,44 @@
           for (let exchange in tick.exchanges) {
             let price = tick.exchanges[exchange].prices / tick.exchanges[exchange].size;
 
-            closes.push([price, tick.exchanges[exchange].size]);
+            if (options.useWeighedAverage) {
+              closes.push([price, tick.exchanges[exchange].size]);
+            } else {
+              closes.push([tick.exchanges[exchange].close, tick.exchanges[exchange].size]);
+            }
 
             tick.high = isNaN(tick.high) ? price : Math.max(tick.high, price);
             tick.low = isNaN(tick.low) ? price : Math.min(tick.low, price);
           }
 
-          tick.close = closes.map(a => a[0] * a[1]).reduce((a, b) => a + b) / tick.size;
+          if (options.useWeighedAverage) {
+            tick.close = closes.map(a => a[0] * a[1]).reduce((a, b) => a + b) / tick.size;
+          } else {
+            tick.close = closes.map(a => a[0]).reduce((a, b) => a + b) / closes.length;
+          }
 
           /* get period typical price
           */
-          truePrice = (tick.high + tick.low + tick.close) / 3;
+          typical = (tick.high + tick.low + tick.close) / 3;
+
+          /* average the price
+          */
+          const cumulatives = this.averages.concat([[typical, tick.buys + tick.sells]]);
+
+          if (this.averages && options.avgPeriods > 0 && cumulatives.length > 1) {
+            if (options.useWeighedAverage) {
+              this.priceIndex = cumulatives.map(a => a[0] * a[1]).reduce((a, b) => a + b) / cumulatives.map(a => a[1]).reduce((a, b) => a + b);
+            } else {
+              this.priceIndex = cumulatives.map(a => a[0]).reduce((a, b) => a + b) / cumulatives.length;
+            }
+          } else {
+            this.priceIndex = typical;
+          }
 
           /* determine tab lagging indicator
           */
           const lastPrices = this.chart.series[0].yData.slice(-5);
           let direction = lastPrices.length > 2 ? (this.priceIndex > lastPrices.reduce((a, b) => a + b) / lastPrices.length ? 'up' : 'down') : 'neutral';
-
-          if (this.averages && options.avgPeriods > 0) {
-            /* cumulate period typical price & volume
-            */
-            const cumulatives = this.averages.concat([[truePrice, tick.buys + tick.sells]]);
-
-            /* get final vwap
-            */
-            this.priceIndex = cumulatives.length === 1 ? truePrice : cumulatives.map(a => a[0] * a[1]).reduce((a, b) => a + b) / cumulatives.map(a => a[1]).reduce((a, b) => a + b);
-          } else {
-            this.priceIndex = truePrice;
-          }
 
           socket.$emit('price', this.priceIndex, direction);
         }
@@ -733,6 +746,8 @@
       },
       appendTicksToChart(ticks, replace = false) {
         const now = +new Date();
+        let chartNeedsRedraw = false;
+        let pointWasAdded = false;
 
         if (ticks.prices.length) {
           if (replace) {
@@ -741,7 +756,7 @@
             this.chart.series[2].setData(ticks.buys, false);
           } else {
             let i = 0;
-            
+
             if (this.lastTickTimestamp === ticks.prices[i][0]) {
               this.chart.series[0].data[this.chart.series[0].data.length - 1].update(ticks.prices[i], false)
               this.chart.series[1].data[this.chart.series[1].data.length - 1].update(ticks.sells[i], false);
@@ -754,11 +769,14 @@
               this.chart.series[0].addPoint(ticks.prices[i], false);
               this.chart.series[1].addPoint(ticks.sells[i], false);
               this.chart.series[2].addPoint(ticks.buys[i], false);
+
+              pointWasAdded = true;
             }
           }
 
           this.lastTickTimestamp = ticks.prices[ticks.prices.length - 1][0];
-          
+
+          chartNeedsRedraw = true;
         }
 
         if (this.tick && (!this.tick.updatedAt || now > this.tick.updatedAt + 1000)) {
@@ -769,6 +787,8 @@
             this.chart.series[1].addPoint(point.sells, false);
             this.chart.series[2].addPoint(point.buys, false);
 
+            pointWasAdded = true;
+
             this.lastTickTimestamp = point.price[0];
           } else {
             this.chart.series[0].data[this.chart.series[0].data.length - 1].update(point.price, false)
@@ -777,12 +797,16 @@
           }
 
           this.tick.updatedAt = now;
+
+          chartNeedsRedraw = true;
         }
 
-        this.chart.redraw();
+        if (chartNeedsRedraw) {
+          this.chart.redraw();
 
-        if (!this._zoomAfterTimeout && this.following && this.chart.series[0].xData.length) {
-          this.follow();
+          if (pointWasAdded && !this._zoomAfterTimeout && this.following && this.chart.series[0].xData.length) {
+            this.follow();
+          }
         }
       },
       doZoom(event, two = false) {
@@ -952,7 +976,7 @@
           output = value * 1000;
         }
 
-        return parseInt(Math.max(10000, output));
+        return parseInt(Math.max(5000, output));
       },
       ajustTimeframe() {
         const timeframe = this.getTimeframe();
