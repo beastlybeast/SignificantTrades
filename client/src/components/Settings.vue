@@ -188,6 +188,7 @@
         border: 0;
         width: calc(100% - 16px);
         letter-spacing: -.5px;
+        min-width: 0;
       }
 
       .input-group {
@@ -344,14 +345,11 @@
         margin-bottom: 8px;
         flex-grow: 1;
         flex-basis: 50%;
+        max-width: 50%;
 
         &:last-child {
           margin-right: 0;
         }
-      }
-
-      &.settings__column--three > div {
-        flex-basis: 50%;
       }
 
       &:last-child .form-group {
@@ -404,7 +402,7 @@
           top: calc(50% - 0px);
           height: 1px;
           background-color: white;
-          transition: width 0.2s $easeElastic .2s;
+          transition: width 0.2s $easeOutExpo .2s;
           left: 12%;
           width: 76%;
         }

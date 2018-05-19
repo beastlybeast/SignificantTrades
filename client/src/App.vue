@@ -93,7 +93,14 @@
       socket.fetch(1, null, true, false)
         .then((response, err) => {
           !err && socket.connect();
-        });
+        }).catch(error => {
+          socket.$emit('alert', {
+            type: 'error',
+            id: `fetch_error`,
+            title: `Sorry, can't reach the server.`,
+            message: `Please come back later.`,
+          });   
+        })
     },
     methods: {
       updatePairCurrency(pair) {
