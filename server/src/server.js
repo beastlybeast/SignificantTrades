@@ -267,11 +267,12 @@ class Server extends EventEmitter {
 					<html>
 						<head>
 							<title>SignificantTrades</title>
+							<meta name="robots" content="noindex">
 						</head>
 						<body>
-							<strong>OHH YOU LIKE THE TICKER HMM ??!</strong><br>
-							<a target="_blank" href="https://github.com/Tucsky/SignificantTrades">SignificantTrades</a> | 
-							<a target="_blank" href="bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX">Donate</a>
+							You seems lost, the actual app is located <a target="_blank" href="https://github.com/Tucsky/SignificantTrades">here</a>.<br>
+							You like it ? <a target="_blank" href="bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX">BTC for more :-)</a>.<br><br>
+							<small>24/7 aggregator for BTCUSD</small>
 						</body>
 					</html>
 				`);
