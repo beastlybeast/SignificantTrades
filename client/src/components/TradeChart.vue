@@ -118,6 +118,24 @@
         }
       }, 60 * 1000);
 
+      Highcharts.wrap(Highcharts.Series.prototype, 'drawGraph', function(proceed) {
+        var lineWidth;
+
+        proceed.call(this);
+
+        if (this.graph) {
+          lineWidth = this.graph.attr('stroke-width');
+          if (
+            /Chrome/.test(navigator.userAgent) &&
+              lineWidth >= 2 &&
+              lineWidth <= 6 &&
+              this.graph.attr('stroke-linecap') === 'round'
+          ) {
+            this.graph.attr('stroke-linecap', 'square');
+          }
+        }
+      });
+
       Highcharts.setOptions({
         time: {
           timezoneOffset: new Date().getTimezoneOffset()

@@ -1,7 +1,7 @@
 <template>
   <div class="trades">
     <ul v-if="trades.length">
-      <li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ 'background-image' : trade.image ? 'url(\'' + trade.image + '\')' : 'none' }">
+      <li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ 'background-image': trade.image, 'background-color': trade.hsl }">
         <div class="trades__item__side icon-side"></div>
         <div class="trades__item__exchange">{{ trade.exchange }}</div>
         <div class="trades__item__price"><span class="icon-currency"></span> <span v-html="trade.price"></span></div>
@@ -88,6 +88,7 @@
         let classname = [];
         let icon;
         let image;
+        let hsl;
         let amount = trade[2] * trade[3];
 
         if (trade[4]) {
@@ -98,6 +99,15 @@
 
         if (amount >= options.significantTradeThreshold) {
           classname.push('significant');
+
+          let ratio = Math.min(1, (amount - options.significantTradeThreshold) / (options.hugeTradeThreshold - options.significantTradeThreshold));
+          
+          if (trade[4]) {
+            hsl = `hsl(89, 36%, ${(35 + (ratio * 10)).toFixed(2)}%)`;
+          } else {
+            ratio = 1 - ratio;
+            hsl = `hsla(4, 90%, ${(35 + (ratio * 20)).toFixed(2)}%)`;
+          }
         }
 
         if (amount >= options.hugeTradeThreshold) {
@@ -116,8 +126,13 @@
 
         amount = formatAmount(amount);
 
+        if (image) {
+          image = 'url(\'' + image + '\')';
+        }
+
         this.trades.unshift({
           id: Math.random().toString(36).substring(7),
+          hsl: hsl,
           side: trade[4] ? 'BUY' : 'SELL',
           size: trade[3],
           exchange: trade[0],

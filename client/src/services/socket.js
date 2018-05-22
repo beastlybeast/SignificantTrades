@@ -192,7 +192,7 @@ const emitter = new Vue({
 
       this.reconnectionTimeout = setTimeout(this.connect.bind(this), this.reconnectionDelay);
 
-      this.reconnectionDelay *= 1.25;
+      this.reconnectionDelay *= 1.1;
     },
     fetch(from, to = null, willReplace = false, willUpdateRange = true) {
       if (!to) {
