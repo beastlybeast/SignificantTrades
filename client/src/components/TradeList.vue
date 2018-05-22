@@ -37,7 +37,7 @@
         for (let trade of trades) {
 
           // group by [exchange name + buy=1/sell=0] (ex bitmex1)
-          const tid = trade[0] + trade[4]; 
+          const tid = trade[0] + trade[4];
 
           if (options.exchanges.indexOf(trade[0]) === -1) {
             continue;
@@ -51,7 +51,7 @@
 
                 // average group prices
                 this.ticks[tid][2] = (this.ticks[tid][2] * this.ticks[tid][3] + trade[2] * trade[3]) / 2 / ((this.ticks[tid][3] + trade[3]) / 2);
-                
+
                 // sum volume
                 this.ticks[tid][3] += trade[3];
 
@@ -100,13 +100,15 @@
         if (amount >= options.significantTradeThreshold) {
           classname.push('significant');
 
-          let ratio = Math.min(1, (amount - options.significantTradeThreshold) / (options.hugeTradeThreshold - options.significantTradeThreshold));
-          
-          if (trade[4]) {
-            hsl = `hsl(89, 36%, ${(35 + (ratio * 10)).toFixed(2)}%)`;
-          } else {
-            ratio = 1 - ratio;
-            hsl = `hsla(4, 90%, ${(35 + (ratio * 20)).toFixed(2)}%)`;
+          if (options.useShades) {
+            let ratio = Math.min(1, (amount - options.significantTradeThreshold) / (options.hugeTradeThreshold - options.significantTradeThreshold));
+
+            if (trade[4]) {
+              hsl = `hsl(89, 36%, ${(35 + (ratio * 10)).toFixed(2)}%)`;
+            } else {
+              ratio = 1 - ratio;
+              hsl = `hsla(4, 90%, ${(35 + (ratio * 30)).toFixed(2)}%)`;
+            }
           }
         }
 
@@ -114,13 +116,17 @@
           if (this.gifs.huge && this.gifs.huge.length) {
             image = this.gifs.huge[Math.floor(Math.random() * (this.gifs.huge.length - 1))];
           }
+
           classname.push('huge');
+
+          hsl = null;
         }
-        
+
         if (amount >= options.rareTradeThreshold) {
           if (this.gifs.rare && this.gifs.rare.length) {
             image = this.gifs.rare[Math.floor(Math.random() * (this.gifs.rare.length - 1))];
           }
+
           classname.push('rare');
         }
 
@@ -154,7 +160,7 @@
           query: 'explosion'
         }].forEach(animation => {
           const storage = localStorage ? JSON.parse(localStorage.getItem(animation.threshold + '_gifs')) : null;
-          
+
           if (!refresh && storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24) {
             this.gifs[animation.threshold] = storage.data;
           } else {

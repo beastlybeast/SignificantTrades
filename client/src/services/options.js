@@ -11,10 +11,11 @@ const emitter = new Vue({
       timeframe: '1.5%',
       exchanges: [],
       debug: false,
-      dark: false,
+      dark: true,
       significantTradeThreshold: 100000,
       hugeTradeThreshold: 1000000,
       rareTradeThreshold: 10000000,
+      useShades: true
     }
   },
   created() {

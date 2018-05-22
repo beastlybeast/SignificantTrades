@@ -31,18 +31,18 @@
         </div>
       </div>
       <div class="mt8 settings__title">Thresholds</div>
-      <div class="settings__thresholds">
+      <div class="settings__thresholds settings__column">
         <div class="form-group">
           <label>Trades < <i class="icon-currency"></i> <editable :content.sync="options.threshold"></editable> won't show up<span class="icon-info-circle" v-bind:title="help.threshold" v-tippy></span></label>
-        </div>
-        <div class="form-group">
           <label>Trades > <i class="icon-currency"></i> <editable :content.sync="options.significantTradeThreshold"></editable> = <u>significant</u> <span class="icon-info-circle" v-bind:title="help.significantTradeThreshold" v-tippy></span></label>
-        </div>
-        <div class="form-group">
           <label>Trades > <i class="icon-currency"></i> <editable :content.sync="options.hugeTradeThreshold"></editable> = <strong>huge</strong> <span class="icon-info-circle" v-bind:title="help.hugeTradeThreshold" v-tippy></span></label>
+          <label>Trades > <i class="icon-currency"></i> <editable :content.sync="options.rareTradeThreshold"></editable> = <strong><i>rare</i></strong> <span class="icon-info-circle" v-bind:title="help.rareTradeThreshold" v-tippy></span></label>
         </div>
         <div class="form-group">
-          <label>Trades > <i class="icon-currency"></i> <editable :content.sync="options.rareTradeThreshold"></editable> = <strong><i>rare</i></strong> <span class="icon-info-circle" v-bind:title="help.rareTradeThreshold" v-tippy></span></label>
+          <label class="checkbox-control flex-right" title="Use shades of green/red<br><ul><li>higher sell = darker</li><li>higher buy = brighter</li></ul><small><i class='icon-warning'></i> Not suited for color blind users</small>" v-tippy>
+            <input type="checkbox" class="form-control" v-model="options.useShades">
+            <div></div>
+          </label>
         </div>
       </div>
       <div class="mt8 settings__title">Exchanges</div>
@@ -369,6 +369,22 @@
       padding-bottom: 4px;
 
       .form-group {
+        flex-basis: auto;
+        flex-grow: 0;
+        max-width: none;
+
+        &:first-child {
+          flex-grow: 1;
+        }
+
+        &:last-child {
+          padding: 0 10px;
+          justify-content: center;
+          display: flex;
+        }
+      }
+
+      .label {
         margin-bottom: 2px;
       }
 
