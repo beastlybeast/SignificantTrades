@@ -361,11 +361,11 @@
         }],
       });
 
-      options.dark && this.toggleDark(options.dark);
-
       if (window.location.hash.indexOf('twitch') !== -1) {
         this.goTwitchMode(true);
       }
+
+      options.dark && this.toggleDark(options.dark);
 
       if (socket.trades && socket.trades.length > 1) {
         this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
