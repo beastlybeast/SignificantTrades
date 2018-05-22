@@ -104,10 +104,9 @@
             let ratio = Math.min(1, (amount - options.significantTradeThreshold) / (options.hugeTradeThreshold - options.significantTradeThreshold));
 
             if (trade[4]) {
-              hsl = `hsl(89, 36%, ${(35 + (ratio * 20)).toFixed(2)}%)`;
+              hsl = `hsl(89, ${(36 + ((1 - ratio) * 10)).toFixed(2)}%, ${(35 + (ratio * 20)).toFixed(2)}%)`;
             } else {
-              ratio = 1 - ratio;
-              hsl = `hsla(4, 90%, ${(35 + (ratio * 30)).toFixed(2)}%)`;
+              hsl = `hsla(4, ${(70 + (ratio * 20)).toFixed(2)}%, ${(45 + ((1 - ratio) * 15)).toFixed(2)}%)`;
             }
           }
         }

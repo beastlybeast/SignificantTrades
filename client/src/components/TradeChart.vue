@@ -414,7 +414,6 @@
     },
     methods: {
       toggleDark(state) {
-        console.log('toggle dark', state);
         window.document.body.classList[state ? 'add' : 'remove']('dark');
 
         this.chart.series[0].update({
