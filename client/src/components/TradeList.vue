@@ -117,8 +117,6 @@
           }
 
           classname.push('huge');
-
-          hsl = null;
         }
 
         if (amount >= options.rareTradeThreshold) {
