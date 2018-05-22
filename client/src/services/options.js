@@ -46,10 +46,6 @@ const emitter = new Vue({
       this.$emit('follow', state);
     },
     onChange(prop, current, old) {
-      if (prop === 'dark') {
-        return this.$emit('dark', current);
-      }
-
       this.$emit('change', {
         prop: prop,
         value: current

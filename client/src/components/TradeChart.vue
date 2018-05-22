@@ -197,8 +197,6 @@
         }
       });
 
-      options.$on('dark', state => this.toggleDark(state));
-
       setTimeout(() => {
         options.$on('change', data => {
           switch (data.prop) {
@@ -211,6 +209,9 @@
               if (this.ajustTimeframe()) {
                 this.appendTicksToChart(this.getTicks(), true);
               }
+            break;
+            case 'dark':
+              this.toggleDark(data.value);
             break;
           }
         })
@@ -299,7 +300,7 @@
           series: {
             pointPadding: 0,
             groupPadding: 0,
-            stickyTracking: false,
+            stickyTracking: true,
             marker: {
               enabled: false,
               lineWidth: 2,
@@ -360,6 +361,8 @@
         }],
       });
 
+      options.dark && this.toggleDark(options.dark);
+
       if (window.location.hash.indexOf('twitch') !== -1) {
         this.goTwitchMode(true);
       }
@@ -411,6 +414,7 @@
     },
     methods: {
       toggleDark(state) {
+        console.log('toggle dark', state);
         window.document.body.classList[state ? 'add' : 'remove']('dark');
 
         this.chart.series[0].update({
@@ -974,6 +978,8 @@
           options.$emit('following', state);
 
           this.following = state;
+
+          state && this.updateTickDetailCursorPosition(true);
         }
       },
       getTimeframe() {
