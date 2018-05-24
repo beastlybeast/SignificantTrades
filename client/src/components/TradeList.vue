@@ -106,7 +106,7 @@
             if (trade[4]) {
               hsl = `hsl(89, ${(36 + ((1 - ratio) * 10)).toFixed(2)}%, ${(35 + (ratio * 20)).toFixed(2)}%)`;
             } else {
-              hsl = `hsla(4, ${(70 + (ratio * 20)).toFixed(2)}%, ${(45 + ((1 - ratio) * 15)).toFixed(2)}%)`;
+              hsl = `hsl(4, ${(70 + (ratio * 20)).toFixed(2)}%, ${(45 + ((1 - ratio) * 15)).toFixed(2)}%)`;
             }
           }
         }

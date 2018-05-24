@@ -206,10 +206,6 @@
       }
     }
 
-    .trades__item.trades__item--sell.trades__item--significant {
-      background-color: lighten($red, 10%);
-    }
-
     .trades__item.trades__item--sell {
       color: lighten($red, 20%);
       background-color: rgba(darken($red, 10%), .2);

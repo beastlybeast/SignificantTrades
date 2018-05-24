@@ -166,12 +166,12 @@
         this.chart.redraw();
       });
 
-      socket.$on('history', (willReplace, willUpdateRange) => {
+      socket.$on('history', (willReplace) => {
         if (!this.chart || !socket.trades.length) {
           return;
         }
 
-        if (willUpdateRange) {
+        if (willReplace) {
           this.canFollow(true);
           this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
         }
@@ -952,7 +952,7 @@
           } else if (!this.fetching && this.chart.xAxis[0].min < this.chart.series[0].xData[0]) {
             this.fetching = true;
 
-            socket.fetch(this.chart.xAxis[0].min, this.chart.series[0].xData[0])
+            socket.fetch(this.chart.xAxis[0].min, this.chart.series[0].xData[0], false , false)
               .then()
               .catch()
               .then(() => this.fetching = false);
