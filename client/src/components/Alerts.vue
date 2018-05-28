@@ -1,6 +1,6 @@
 <template>
 	<div class="alerts">
-		<div v-for="(alert, index) in alerts" class="alert" :key="alert.id" :class="'alert--' + alert.type" v-on:click="dismiss(index)">
+		<div v-for="(alert, index) in alerts" class="alert" :key="alert.id" :class="'alert--' + alert.type" v-on:click="alert.click ? alert.click(alert) && dismiss(index) : dismiss(index)">
 			<span class="alert__icon icon-"></span>
 			<div class="alert__title">{{ alert.title }}</div>
 			<div v-if="alert.message" class="alert__message">{{ alert.message }}</div>
@@ -101,7 +101,7 @@
 		}
 
 		&.alert--warning {
-			background-color: $yellow;
+			background-color: $orange;
 
 			.alert__icon:before {
 				content: unicode($icon-warning);

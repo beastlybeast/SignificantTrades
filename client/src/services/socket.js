@@ -6,7 +6,8 @@ import options from './options'
 const emitter = new Vue({
   data() {
     return {
-      url: process.env.API_URL || 'ws://localhost:3000',
+      url: process.env.API_URL || 'ws://176.31.163.155:1337',
+      delay: 0,
       trades: [],
       exchanges: [],
       lastExchangesPrices: {},
@@ -30,7 +31,7 @@ const emitter = new Vue({
         this.connected = true;
 
         this.$emit('connected', event);
-        
+
         this.$emit('price', '???', 'neutral')
 
         this.reconnectionDelay = 5000;
@@ -45,16 +46,22 @@ const emitter = new Vue({
 
         if (Array.isArray(data) && data.length) {
 
-          /* received message is trade data 
+          /* received message is trade data
               => filter, sort, store and transmit to components
           */
 
           data = data
             .sort((a, b) => a[1] - b[1]);
-          
+
+          if (this.delayed) {
+            for (let i=0; i<data.length; i++) {
+              data[i][1] -= this.delay;
+            }
+          }
+
           this.trades = this.trades.concat(data);
 
-          this.$emit('trades', data);    
+          this.$emit('trades', data);
 
         } else if (typeof data.type) {
 
@@ -64,7 +71,7 @@ const emitter = new Vue({
 
           switch (data.type) {
             case 'welcome':
-              this.$emit('welcome', data);   
+              this.$emit('welcome', data);
 
               if (data.admin) {
                 this.$emit('admin');
@@ -73,6 +80,9 @@ const emitter = new Vue({
               this.exchanges = data.exchanges
                 .filter(exchange => exchange.connected)
                 .map(exchange => exchange.id);
+
+              this.delay = data.timestamp ? data.timestamp - +new Date() : 0;
+              this.delayed = Math.abs(this.delay) > 2000;
 
               this.$emit('exchanges', this.exchanges);
 
@@ -83,16 +93,34 @@ const emitter = new Vue({
                 type: 'info',
                 title: `Tracking ${data.pair}`,
                 message: !this.exchanges.length ? 'No connected exchanges' : 'Through ' + this.exchanges.join(', ').toUpperCase()
-              });  
+              });
+
+              let dismissed = localStorage.getItem('inaccurate_clock_dismissed') || 0;
+
+              if (this.delayed && dismissed < 3) {
+                setTimeout(() => {
+                  this.$emit('alert', {
+                    id: `inaccurate_clock`,
+                    type: 'warning',
+                    title: `Fix your clock !`,
+                    message: `Your system clock is off by over ${Math.floor(this.delay / 1000)}s, innacurate clock can have an impact on how the data is displayed on your side.`,
+                    click: () => {
+                      localStorage.setItem('inaccurate_clock_dismissed', ++dismissed);
+
+                      return true;
+                    }
+                  });
+                })
+              }
             break;
             case 'pair':
-              this.$emit('pair', data.pair);  
+              this.$emit('pair', data.pair);
 
               this.$emit('alert', {
                 id: `pair`,
                 type: 'info',
                 title: `Now tracking ${data.pair}`,
-              });   
+              });
             break;
             case 'exchange_connected':
               if (options.debug) {
@@ -106,7 +134,7 @@ const emitter = new Vue({
                   message: `[${data.id}] connected`
                 });
               }
-              
+
               if (this.exchanges.indexOf(data.id) === -1)
                 this.exchanges.push(data.id);
 
@@ -122,9 +150,9 @@ const emitter = new Vue({
                   id: `${data.id}_status`,
                   type: 'error',
                   message: `[${data.id}] disconnected`
-                });   
+                });
               }
-              
+
               if (this.exchanges.indexOf(data.id) !== -1)
                 this.exchanges.splice(this.exchanges.indexOf(data.id), 1);
 
@@ -137,7 +165,7 @@ const emitter = new Vue({
                   title: `[${data.id}] an error occured`,
                   id: `${data.id}_status`,
                   message: data.message
-                });   
+                });
               }
             break;
           }
@@ -165,7 +193,7 @@ const emitter = new Vue({
           type: 'error',
           id: `server_status`,
           message: `Couldn't reach the server`,
-        });   
+        });
 
         this.$emit('error', err);
 
@@ -179,7 +207,7 @@ const emitter = new Vue({
           message: message
         }))
       }
-    },    
+    },
     disconnect() {
       this.socket && this.socket.close();
     },
@@ -220,6 +248,12 @@ const emitter = new Vue({
         .then(response => {
           const trades = response.data;
           const count = this.trades.length;
+
+          if (this.delayed) {
+            for (let i=0; i<trades.length; i++) {
+              trades[i][1] -= this.delay;
+            }
+          }
 
           if (willReplace || !this.trades || !this.trades.length) {
             this.trades = trades;

@@ -2,5 +2,5 @@
 	"port": 3000,
 	"delay": 200,
 	"pair": "BTCUSD",
-	"origin": "*",
+	"origin": "*"
 }

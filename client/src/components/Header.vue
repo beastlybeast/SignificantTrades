@@ -47,7 +47,7 @@
 
           window.document.title = this.title.replace(/<\/?[^>]+(>|$)/g, '');
         }
-        
+
         if (direction) {
           let favicon = document.getElementById('favicon');
 
@@ -62,7 +62,7 @@
             favicon.href = `static/${direction}.png`;
 
             favicon.setAttribute('direction', direction);
-            
+
             document.head.appendChild(favicon);
           }
         }
@@ -100,7 +100,7 @@
       sizeOf(bytes) {
         var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
 
-        if (bytes == 0) 
+        if (bytes == 0)
           return '0 Byte';
 
         var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
@@ -113,7 +113,7 @@
 
 <style lang="scss">
 	@import '../assets/sass/variables';
-  
+
   header.header {
     display: flex;
     background-color: #222;
@@ -158,7 +158,7 @@
           stroke-width: 2px;
           stroke-dasharray: calc(6.9 * 3.142 * 1.85);
         }
-        
+
         &.loading {
           visibility: visible;
           transition: transform .2s $easeElastic;
@@ -175,7 +175,7 @@
         opacity: .2;
 
         &.following {
-          opacity: 1;        
+          opacity: 1;
           color: $red;
           transform: rotateZ(-7deg) scale(1.2) translateX(10%);
           text-shadow: 0 0 20px $red, 0 0 2px $red;
@@ -184,18 +184,18 @@
 
       &:hover,
       &:active {
-        .icon-external-link {          
+        .icon-external-link {
           transform: rotateZ(-7deg) scale(1.2) translate(5%, -5%);
-          text-shadow: 0 0 20px $yellow, 0 0 2px white;
+          text-shadow: 0 0 20px $orange, 0 0 2px white;
         }
-        
-        .icon-play:not(.following) {  
-          opacity: 1;        
+
+        .icon-play:not(.following) {
+          opacity: 1;
           transform: rotateZ(-7deg) scale(1.2) translateX(10%);
           text-shadow: 0 0 20px $blue, 0 0 2px white;
         }
 
-        .icon-cog {          
+        .icon-cog {
           transform: rotateZ(180deg) scale(1.2);
           text-shadow: 0 0 20px $green, 0 0 2px white;
         }

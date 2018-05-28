@@ -803,7 +803,7 @@
         if (this.tick && (!this.tick.updatedAt || now > this.tick.updatedAt + 1000)) {
           const point = this.tickToPoint(this.tick);
 
-          if (this.tick.timestamp > this.lastTickTimestamp) {
+          if (!this.chart.series[0].data.length || this.tick.timestamp > this.lastTickTimestamp) {
             this.chart.series[0].addPoint(point.price, false);
             this.chart.series[1].addPoint(point.sells, false);
             this.chart.series[2].addPoint(point.buys, false);
