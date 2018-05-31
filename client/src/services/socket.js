@@ -6,7 +6,7 @@ import options from './options'
 const emitter = new Vue({
   data() {
     return {
-      url: process.env.API_URL || 'ws://176.31.163.155:1337',
+      url: process.env.API_URL || 'ws://localhost:3000',
       delay: 0,
       trades: [],
       exchanges: [],

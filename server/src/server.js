@@ -69,6 +69,7 @@ class Server extends EventEmitter {
 				type: 'welcome',
 				admin: ws.admin,
 				pair: this.options.pair,
+				timestamp: +new Date(),
 				exchanges: this.exchanges.map((exchange) => {
 					return {
 						id: exchange.id,
