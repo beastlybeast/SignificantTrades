@@ -365,12 +365,14 @@ class Server extends EventEmitter {
 
 			if (!this.timestamps[exchange.id]) {
 				console.log('[warning] no data sent from ' + exchange.id);
+				exchange.reconnect(this.options.pair);
+
 				return;
 			}
 
 			if (now - this.timestamps[exchange.id] > 1000 * 60 * 5) {
 				console.log('[warning] ' + exchange.id + ' hasn\'t sent any data since more than 5 minutes');
-				exchange.reconnect();
+				exchange.reconnect(this.options.pair);
 
 				delete this.timestamps[exchange.id];
 				return;

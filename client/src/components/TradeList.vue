@@ -208,6 +208,16 @@
 <style lang="scss">
 	@import '../assets/sass/variables';
 
+  @keyframes highlight {
+    0% {
+        opacity: .75;
+    }
+
+    100% {
+        opacity: 0;
+    }
+  }
+
   .trades {
     ul {
       margin: 0;
@@ -226,10 +236,27 @@
     background-blend-mode: overlay;
     position: relative;
 
+    &:after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      opacity: 0;
+      background-color: white;
+      animation: 5s $easeOutExpo highlight;
+      pointer-events: none;
+    }
+
     &.trades__item--empty {
       justify-content: center;
       padding: 20px;
       font-size: 80%;
+
+      &:after {
+        display: none;
+      }
     }
 
     &.trades__item--sell {
