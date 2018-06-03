@@ -9,8 +9,8 @@
 </template>
 
 <script>
-  import options from '../services/options';
-  import socket from '../services/socket';
+  import options from '../services/options'
+  import socket from '../services/socket'
 
   export default {
     data() {
@@ -96,7 +96,7 @@
 			background-color: $red;
 
 			.alert__icon:before {
-				content: unicode($icon-times);
+				content: unicode($icon-cross);
 			}
 		}
 

@@ -2,13 +2,15 @@
   <div>
     <div class="chart__detail stack__container" v-bind:class="{open: isDetailOpen}" v-bind:style="{ maxHeight: detailHeight + 'px' }">
       <div class="stack__wrapper" ref="detailWrapper">
-        <a href="#" class="stack__toggler icon-times" v-on:click="showTickDetail(false)"></a>
+        <a href="#" class="stack__toggler icon-cross" v-on:click="showTickDetail(false)"></a>
         <div v-if="detail">
           <div class="detail__header">
             <div class="detail__control">
               <span class="icon-up" v-on:click="moveTickDetail(-1)"></span>
-              <code>{{detail.from}}</code>
-              <code>{{detail.to}}</code>
+              <div>
+                <code>{{detail.from}}</code>
+                <code>{{detail.to}}</code>
+              </div>
               <span class="icon-up" v-on:click="moveTickDetail(1)"></span>
             </div>
             <div class="detail__total">
@@ -63,9 +65,9 @@
 </template>
 
 <script>
-  import Highcharts from 'highcharts';
-  import options from '../services/options';
-  import socket from '../services/socket';
+  import Highcharts from 'highcharts'
+  import options from '../services/options'
+  import socket from '../services/socket'
 
   export default {
     data() {
@@ -879,7 +881,7 @@
           } else if (this.ajustTimeframe()) {
             this.appendTicksToChart(this.getTicks(), true);
           }
-        }, 200);
+        }, 500);
       },
       startScroll(event) {
         if (event.which === 3) {
@@ -1042,6 +1044,16 @@
         display: flex;
         align-items: center;
         justify-content: center;
+      }
+
+      .detail__control {
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+
+        code {
+          display: block;
+          text-align: center;
+        }
       }
 
       .icon-up {

@@ -15,7 +15,10 @@ const emitter = new Vue({
       significantTradeThreshold: 100000,
       hugeTradeThreshold: 1000000,
       rareTradeThreshold: 10000000,
-      useShades: true
+      useShades: true,
+      useAudio: false,
+      audioVolume: 5,
+      settings: [],
     }
   },
   created() {

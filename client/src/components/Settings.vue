@@ -1,8 +1,8 @@
 <template>
   <div class="settings__container stack__container" v-bind:class="{ open: opened }" v-bind:style="{ maxHeight: height + 'px' }">
     <div class="stack__wrapper" ref="settingsWrapper">
-      <a href="#" class="stack__toggler icon-times" v-on:click="hideSettings"></a>
-      <div class="settings__title">Basics</div>
+      <a href="#" class="stack__toggler icon-cross" v-on:click="hideSettings"></a>
+      <div class="settings__title" v-on:click="toggleSection('basics')" v-bind:class="{closed: options.settings.indexOf('basics') > -1}">Basics <i class="icon-up"></i></div>
       <div class="settings__column">
         <div class="form-group" v-bind:class="{ restricted: restricted }">
           <label>Pair <span class="icon-info-circle" v-bind:title="help.pair" v-tippy></span></label>
@@ -13,7 +13,7 @@
           <input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
         </div>
       </div>
-      <div class="mt8 settings__title">Chart</div>
+      <div class="mt8 settings__title" v-on:click="toggleSection('chart')" v-bind:class="{closed: options.settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
       <div class="settings__column">
         <div class="form-group">
           <label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
@@ -30,23 +30,8 @@
           </div>
         </div>
       </div>
-      <div class="mt8 settings__title">Thresholds</div>
-      <div class="settings__thresholds settings__column">
-        <div class="form-group">
-          <label>Trades < <i class="icon-currency"></i> <editable :content.sync="options.threshold"></editable> won't show up<span class="icon-info-circle" v-bind:title="help.threshold" v-tippy></span></label>
-          <label>Trades > <i class="icon-currency"></i> <editable :content.sync="options.significantTradeThreshold"></editable> = <u>significant</u> <span class="icon-info-circle" v-bind:title="help.significantTradeThreshold" v-tippy></span></label>
-          <label>Trades > <i class="icon-currency"></i> <editable :content.sync="options.hugeTradeThreshold"></editable> = <strong>huge</strong> <span class="icon-info-circle" v-bind:title="help.hugeTradeThreshold" v-tippy></span></label>
-          <label>Trades > <i class="icon-currency"></i> <editable :content.sync="options.rareTradeThreshold"></editable> = <strong><i>rare</i></strong> <span class="icon-info-circle" v-bind:title="help.rareTradeThreshold" v-tippy></span></label>
-        </div>
-        <div class="form-group">
-          <label class="checkbox-control flex-right" title="Use shades of green/red<br><ul><li>higher sell = darker</li><li>higher buy = brighter</li></ul><small><i class='icon-warning'></i> Not suited for color blind users</small>" v-tippy>
-            <input type="checkbox" class="form-control" v-model="options.useShades">
-            <div></div>
-          </label>
-        </div>
-      </div>
-      <div class="mt8 settings__title">Exchanges</div>
-      <div class="mb8 form-group">
+      <div class="mt8 settings__title" v-on:click="toggleSection('exchanges')" v-bind:class="{closed: options.settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
+      <div class="form-group">
         <div class="settings__exchanges">
           <a v-for="(exchange, index) in exchanges" v-bind:key="index"
             class="settings__exchanges__item"
@@ -57,11 +42,44 @@
           </a>
         </div>
       </div>
-      <div class="settings__column flex-bottom">
+      <div class="mt8 settings__title" v-on:click="toggleSection('thresholds')" v-bind:class="{closed: options.settings.indexOf('thresholds') > -1}">Thresholds <i class="icon-up"></i></div>
+      <div class="settings__thresholds settings__column">
         <div class="form-group">
-          <a v-if="version.number" href="javascript:void(0);" target="_blank">
-            <span title="<a class='donation' href='bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX?label=help%20me%20gamble%20on%20bitmex'><div class='text-center'>Like the ticker ?<br>Consider donating :-)</div><img src='static/donate.svg'><div class='donation__address'>3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX</div></a>" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">v{{ version.number }} <sup class="version-date">{{ version.date }}</sup></span>
-          </a>
+          <label><span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content.sync="options.threshold"></editable> won't show up<span class="icon-info-circle" v-bind:title="help.threshold" v-tippy></span></label>
+          <label><span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content.sync="options.significantTradeThreshold"></editable> = <u>significant</u> <span class="icon-info-circle" v-bind:title="help.significantTradeThreshold" v-tippy></span></label>
+          <label><span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content.sync="options.hugeTradeThreshold"></editable> = <strong>huge</strong> <span class="icon-info-circle" v-bind:title="help.hugeTradeThreshold" v-tippy></span></label>
+          <label><span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content.sync="options.rareTradeThreshold"></editable> = <strong><i>rare</i></strong> <span class="icon-info-circle" v-bind:title="help.rareTradeThreshold" v-tippy></span></label>
+        </div>
+        <div class="form-group" title="Use shades of green/red<br><ul><li>higher sell = darker</li><li>higher buy = brighter</li></ul><small><i class='icon-warning'></i> Not suited for color blind users</small>" v-tippy>
+          <div class="shades" v-bind:class="{active: options.useShades}"></div>
+          <label class="checkbox-control flex-right">
+            <input type="checkbox" class="form-control" v-model="options.useShades">
+            <div></div>
+          </label>
+        </div>
+      </div>
+      <div class="mt8 settings__title" v-on:click="toggleSection('audio')" v-bind:class="{closed: options.settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
+      <div class="settings__audio settings__column">
+        <div class="form-group">
+          <label class="checkbox-control flex-right">
+            <input type="checkbox" class="form-control" v-model="options.useAudio">
+            <div></div>
+          </label>
+        </div>
+        <div class="form-group" v-bind:style="{opacity: options.useAudio ? 1 : .2}">
+          <label>Volume</label>
+          <input type="range" min="0" max="20" step=".1" v-model="options.audioVolume">
+        </div>
+      </div>
+      <div class="mt15 settings__column settings__footer flex-middle">
+        <div class="form-group">
+          <div v-if="version.number">
+            <span>v{{ version.number }} <sup class="version-date">{{ version.date }}</sup></span>
+            <i class="divider">|</i>
+            <a href="javascript:void(0);" v-on:click="reset()"> reset</a>
+            <i class="divider">|</i>
+            <a href="bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX" target="_blank" title="Bitcoin for more <3" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">donate</a>
+          </div>
         </div>
         <div class="form-group">
           <label class="checkbox-control settings_luminosity flex-right" title="Switch luminosity" v-tippy>
@@ -76,8 +94,8 @@
 </template>
 
 <script>
-  import options from '../services/options';
-  import socket from '../services/socket';
+  import options from '../services/options'
+  import socket from '../services/socket'
 
   export default {
     data() {
@@ -101,10 +119,13 @@
         version: {
           number: process.env.VERSION || 'DEV',
           date: process.env.BUILD_DATE || 'now'
-        }
+        },
+        autosaveHandler: this.save.bind(this),
       }
     },
     created() {
+      window.addEventListener('beforeunload', this.autosaveHandler);
+
       socket.$on('admin', () => this.restricted = false);
 
       socket.$on('exchanges', exchanges => {
@@ -113,10 +134,12 @@
         if (!options.exchanges.length) {
           options.exchanges = this.exchanges.filter(exchange => ['bithumb', 'hitbtc'].indexOf(exchange) === -1);
         }
+
+        setTimeout(() => this.refreshHeight(), 10);
       });
 
       this.onopen = () => {
-        this.height = this.$refs.settingsWrapper.clientHeight;
+        this.refreshHeight();
         this.opened = true;
       };
       this.onclose = () => this.opened = false;
@@ -139,13 +162,36 @@
       options.$off('toggle', this.ontoggle);
     },
     methods: {
+      refreshHeight() {
+        this.height = this.$refs.settingsWrapper.clientHeight;
+      },
       hideSettings() {
         options.hide();
       },
       switchPair(event) {
         socket.$emit('alert', 'clear');
-        socket.send('pair', this.options.pair);
+        socket.send('pair', options.pair);
       },
+      toggleSection(name) {
+        const index = options.settings.indexOf(name);
+
+        if (index === -1) {
+          options.settings.push(name);
+        } else {
+          options.settings.splice(index, 1);
+        }
+
+        setTimeout(() => this.refreshHeight(), 10);
+      },
+      save() {
+        localStorage.setItem('options', JSON.stringify(options.$data));
+      },
+      reset() {
+        window.removeEventListener('beforeunload', this.autosaveHandler);
+        window.localStorage && window.localStorage.clear();
+
+        window.location.reload(true);
+      }
     }
   }
 </script>
@@ -165,8 +211,56 @@
       color: white;
     }
 
-    .version-date {
-      opacity: .75;
+    .settings__footer {
+      a {
+        opacity: .5;
+
+        &:hover {
+          opacity: 1;
+        }
+      }
+
+      .form-group {
+        flex-basis: auto;
+        max-width: none;
+        flex-grow: 1;
+      }
+
+      .version-date {
+        opacity: .75;
+        line-height: 0;
+      }
+
+      .divider {
+        opacity: .2;
+        margin: 0 2px;
+      }
+
+      .donation {
+        display: block;
+        font-weight: 600;
+        letter-spacing: -.5px;
+        font-size: 14px;
+        font-family: monospace;
+        color: white;
+        text-shadow: 0 2px rgba(0, 0, 0, 0.2);
+
+        img {
+          width: 100%;
+          margin: 0px;
+          display: block;
+          transition: transform .2s $easeElastic;
+
+          &:active {
+            transform: scale(.9);
+          }
+        }
+
+        .donation__address {
+          letter-spacing: -.5px;
+          font-size: 10px;
+        }
+      }
     }
 
     .form-group {
@@ -363,10 +457,77 @@
       text-transform: uppercase;
       letter-spacing: .5px;
       opacity: .5;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+
+      &:hover {
+        opacity: 1;
+        cursor: pointer;
+      }
+
+      .icon-up {
+        transition: transform .2s $easeElastic;
+        display: inline-block;
+      }
+
+      &.closed {
+        .icon-up {
+          transform: rotateZ(180deg);
+        }
+
+        + div {
+          display: none;
+        }
+      }
+    }
+
+    .settings__audio {
+      align-items: center;
+
+      label {
+        margin: 0;
+      }
+
+      .form-group {
+        flex-basis: auto;
+        flex-grow: 1;
+        margin: 0;
+        max-width: none;
+
+        &:first-child {
+          flex-grow: 0;
+          margin: 0 1em 0 0;
+        }
+
+        &:last-child {
+          width: 100%;
+        }
+      }
     }
 
     .settings__thresholds {
       padding-bottom: 4px;
+
+      .shades {
+        width: 1.5em;
+        height: 1.5em;
+        margin-bottom: .8em;
+        border-radius: 50%;
+        background-color: $green;
+        box-shadow: 0 0 0 $green - 30%, 0 0 0 $green - 60%;
+        transition: all .4s $easeElastic;
+
+        &.active {
+          width: 1em;
+          height: 1em;
+          margin-bottom: 1.2em;
+          box-shadow: 0.4em 0.6em 0 $green - 30%, -0.4em 0.6em 0 $green - 60%;
+        }
+      }
 
       .form-group {
         flex-basis: auto;
@@ -380,12 +541,22 @@
         &:last-child {
           padding: 0 10px;
           justify-content: center;
+          align-items: center;
           display: flex;
         }
       }
 
       .label {
         margin-bottom: 2px;
+      }
+
+      span {
+        margin-right: 4px;
+        display: none;
+        
+        @media only screen and (min-width: 320px) {
+          display: inline-block;
+        }
       }
 
       .icon-currency {
@@ -436,32 +607,6 @@
 
     &.open {
       background-color: #222;
-    }
-  }
-
-  .donation {
-    display: block;
-    font-weight: 600;
-    letter-spacing: -.5px;
-    font-size: 14px;
-    font-family: monospace;
-    color: white;
-    text-shadow: 0 2px rgba(0, 0, 0, 0.2);
-
-    img {
-      width: 100%;
-      margin: 0px;
-      display: block;
-      transition: transform .2s $easeElastic;
-
-      &:active {
-        transform: scale(.9);
-      }
-    }
-
-    .donation__address {
-      letter-spacing: -.5px;
-      font-size: 10px;
     }
   }
 </style>

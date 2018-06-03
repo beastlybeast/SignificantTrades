@@ -11,13 +11,14 @@
 </template>
 
 <script>
+  import socket from './services/socket';
+  import options from './services/options';
+  
   import Alerts from './components/Alerts.vue';
   import Header from './components/Header.vue';
   import Settings from './components/Settings.vue';
   import TradeList from './components/TradeList.vue';
   import TradeChart from './components/TradeChart.vue';
-  import socket from './services/socket';
-  import options from './services/options';
 
   export default {
     components: {
@@ -46,10 +47,6 @@
           options[name] = settings[name];
         }
       }
-
-      window.addEventListener('beforeunload', () => {
-        localStorage.setItem('options', JSON.stringify(options.$data));
-      });
 
       window.formatPrice = function(price, precision) {
         price = +price;
@@ -295,7 +292,7 @@
       position: absolute;
       right: 0;
       top: 0;
-      font-size: 16px;
+      font-size: 18px;
       opacity: .2;
       padding: 8px;
       z-index: 1;

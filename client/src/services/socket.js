@@ -183,6 +183,8 @@ const emitter = new Vue({
           });
 
           this.$emit('disconnected');
+
+          clearInterval(this.refreshStatsInterval);
         }
 
         this.reconnect();

@@ -14,8 +14,8 @@
 </template>
 
 <script>
-  import options from '../services/options';
-  import socket from '../services/socket';
+  import options from '../services/options'
+  import socket from '../services/socket'
 
   export default {
     data() {
@@ -67,6 +67,8 @@
           }
         }
       });
+
+      setTimeout(() => this.created = true, 2000);
     },
     methods: {
       toggleSettings() {
@@ -123,6 +125,16 @@
     .header__title {
       width: 100%;
       padding: 10px;
+
+      sup {
+        line-height: 0;
+        opacity: .5;
+
+        span {
+          font-size: 80%;
+          margin-left: 2px;
+        }
+      }
     }
 
     button {
@@ -204,6 +216,27 @@
           transform: rotateZ(-360deg) scale(1.1);
           display: inline-block;
           text-shadow: 0 0 20px $red, 0 0 2px white;
+        }
+      }
+    }
+  }
+
+  .stats__container {
+
+    .stack__wrapper {
+      display: flex;
+
+      > div {
+        flex-grow: 1;
+        flex-basis: auto;
+        display: flex;
+        flex-direction: column;
+
+        > div:first-child {
+          margin-bottom: 5px;
+          text-transform: uppercase;
+          letter-spacing: .5px;
+          opacity: .5;
         }
       }
     }

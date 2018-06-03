@@ -19,8 +19,9 @@
 </template>
 
 <script>
-  import options from '../services/options';
-  import socket from '../services/socket';
+  import options from '../services/options'
+  import socket from '../services/socket'
+  import Sfx from '../vendor/sfx'
 
   export default {
     data () {
@@ -33,15 +34,22 @@
     created() {
       this.getGifs();
 
-      socket.$on('trades', trades => {
+      this.sfx = new Sfx();
+
+      socket.$on('trades', trades => {			
         for (let trade of trades) {
-
-          // group by [exchange name + buy=1/sell=0] (ex bitmex1)
-          const tid = trade[0] + trade[4];
-
           if (options.exchanges.indexOf(trade[0]) === -1) {
             continue;
           }
+
+          const size = trade[2] * trade[3];
+          
+          if (options.useAudio && size > options.threshold * .1) {
+            this.sfx.tradeToSong(size / options.significantTradeThreshold, trade[4]);
+          }
+
+          // group by [exchange name + buy=1/sell=0] (ex bitmex1)
+          const tid = trade[0] + trade[4];
 
           if (options.threshold) {
             if (this.ticks[tid]) {
@@ -50,7 +58,7 @@
               } else {
 
                 // average group prices
-                this.ticks[tid][2] = (this.ticks[tid][2] * this.ticks[tid][3] + trade[2] * trade[3]) / 2 / ((this.ticks[tid][3] + trade[3]) / 2);
+                this.ticks[tid][2] = (this.ticks[tid][2] * this.ticks[tid][3] + size) / 2 / ((this.ticks[tid][3] + trade[3]) / 2);
 
                 // sum volume
                 this.ticks[tid][3] += trade[3];
@@ -64,7 +72,7 @@
               }
             }
 
-            if (!this.ticks[tid] && trade[2] * trade[3] < options.threshold) {
+            if (!this.ticks[tid] && size < options.threshold) {
               this.ticks[tid] = trade;
               continue;
             }
@@ -106,7 +114,7 @@
             if (trade[4]) {
               hsl = `hsl(89, ${(36 + ((1 - ratio) * 10)).toFixed(2)}%, ${(35 + (ratio * 20)).toFixed(2)}%)`;
             } else {
-              hsl = `hsl(4, ${(70 + (ratio * 20)).toFixed(2)}%, ${(45 + ((1 - ratio) * 15)).toFixed(2)}%)`;
+              hsl = `hsl(4, ${(70 + (ratio * 30)).toFixed(2)}%, ${(45 + ((1 - ratio) * 15)).toFixed(2)}%)`;
             }
           }
         }
@@ -115,6 +123,8 @@
           if (this.gifs.huge && this.gifs.huge.length) {
             image = this.gifs.huge[Math.floor(Math.random() * (this.gifs.huge.length - 1))];
           }
+
+          hsl = null;
 
           classname.push('huge');
         }

@@ -1,4 +1,4 @@
-$green: desaturate(#7CB342, 10%);
+$green: #43A047;
 $red: #F44336;
 $blue: #2196F3;
 $orange: #fbc02d;
@@ -16,7 +16,6 @@ $icon-euro: \e905;
 $icon-info: \e906;
 $icon-monero: \e907;
 $icon-pound: \e908;
-$icon-times: \e909;
 $icon-up: \e90a;
 $icon-warning: \e90b;
 $icon-yen: \e90c;
@@ -31,6 +30,7 @@ $icon-bull: \e914;
 $icon-external-link: \e915;
 $icon-night: \e916;
 $icon-day: \e917;
+$icon-cross: \e918;
 
 @function unicode($str) {
   @return unquote("\"") + $str + unquote("\"");
