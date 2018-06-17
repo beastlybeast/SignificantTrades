@@ -620,7 +620,7 @@
           if (data[i][5]) {
             switch (+data[i][5]) {
               case 1:
-                options.showPlotsLiquidations && labels.push(this.createPoint(data[i], `${formatAmount(data[i][2] * data[i][3])}${app.getAttribute('data-symbol')} liquidated <b>${data[i][4] == 1 ? 'SHORT' : 'LONG'}</b>`, '#3f51b5'));
+                options.showPlotsLiquidations && labels.push(this.createPoint(data[i], `${formatAmount(data[i][2] * data[i][3], 1)}${app.getAttribute('data-symbol')} liquidated <b>${data[i][4] == 1 ? 'SHORT' : 'LONG'}</b>`, '#3f51b5'));
               break;
             }
 
