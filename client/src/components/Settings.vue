@@ -14,36 +14,38 @@
         </div>
       </div>
       <div class="mt8 settings__title" v-on:click="toggleSection('chart')" v-bind:class="{closed: options.settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
-      <div class="settings__column">
-        <div class="form-group">
-          <label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
-          <input type="string" placeholder="XX% or XXs" class="form-control" v-model="options.timeframe">
+      <div>
+        <div class="settings__column">
+          <div class="form-group">
+            <label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
+            <input type="string" placeholder="XX% or XXs" class="form-control" v-model="options.timeframe">
+          </div>
+          <div class="form-group">
+            <label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgPeriods" v-tippy></span></label>
+            <div class="input-group">
+              <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.avgPeriods">
+              <label class="checkbox-control flex-right" title="Use weighed average" v-tippy>
+                <input type="checkbox" class="form-control" v-model="options.useWeighedAverage">
+                <div></div>
+              </label>
+            </div>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgPeriods" v-tippy></span></label>
-          <div class="input-group">
-            <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.avgPeriods">
-            <label class="checkbox-control flex-right" title="Use weighed average" v-tippy>
-              <input type="checkbox" class="form-control" v-model="options.useWeighedAverage">
+        <div class="settings__plots settings__column">
+          <div class="form-group">
+            <label class="checkbox-control flex-right" v-tippy title="Shows significants orders on the chart">
+              <input type="checkbox" class="form-control" v-model="options.showPlotsSignificants">
+              <span>Show {{options.hugeTradeThreshold}}+</span>
               <div></div>
             </label>
           </div>
-        </div>
-      </div>
-      <div class="settings__plots settings__column">
-        <div class="form-group">
-          <label class="checkbox-control flex-right" v-tippy title="Shows significants orders on the chart">
-            <input type="checkbox" class="form-control" v-model="options.showPlotsSignificants">
-            <span>Show {{options.hugeTradeThreshold}}+</span>
-            <div></div>
-          </label>
-        </div>
-        <div class="form-group">
-          <label class="checkbox-control flex-right" v-tippy title="Shows liquidations on the chart">
-            <input type="checkbox" class="form-control" v-model="options.showPlotsLiquidations">
-            <span>Show liquidations</span>
-            <div></div>
-          </label>
+          <div class="form-group">
+            <label class="checkbox-control flex-right" v-tippy title="Shows liquidations on the chart">
+              <input type="checkbox" class="form-control" v-model="options.showPlotsLiquidations">
+              <span>Show liquidations</span>
+              <div></div>
+            </label>
+          </div>
         </div>
       </div>
       <div class="mt8 settings__title" v-on:click="toggleSection('exchanges')" v-bind:class="{closed: options.settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
