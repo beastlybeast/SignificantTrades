@@ -31,8 +31,6 @@ class Sfx {
 
 		this.output.connect(filter);
 		filter.connect(this.context.destination);
-
-		window.play = this.tradeToSong.bind(this);
 	}
 
 	tradeToSong(factor, side) {

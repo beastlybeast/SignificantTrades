@@ -37,8 +37,6 @@ const emitter = new Vue({
         this.reconnectionDelay = 5000;
       }
 
-      window.trade = (trade) => this.$emit('trades', [trade]);
-
       this.socket.onmessage = event => {
         let data = JSON.parse(event.data);
 
