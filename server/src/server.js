@@ -29,7 +29,7 @@ class Server extends EventEmitter {
 			origin: '*',
 
 			// profile exchange status interval
-			profilerInterval: 60000,
+			profilerInterval: 60000 * 3,
 
 			// do backup interval
 			backupInterval: 60000 * 10,
@@ -365,16 +365,18 @@ class Server extends EventEmitter {
 
 			if (!this.timestamps[exchange.id]) {
 				console.log('[warning] no data sent from ' + exchange.id);
-				exchange.reconnect(this.options.pair);
+				exchange.disconnect() && exchange.reconnect(this.options.pair);
 
 				return;
 			}
 
 			if (now - this.timestamps[exchange.id] > 1000 * 60 * 5) {
 				console.log('[warning] ' + exchange.id + ' hasn\'t sent any data since more than 5 minutes');
-				exchange.reconnect(this.options.pair);
-
+				
 				delete this.timestamps[exchange.id];
+				
+				exchange.disconnect() && exchange.reconnect(this.options.pair);
+				
 				return;
 			}
 		})
@@ -430,7 +432,7 @@ class Server extends EventEmitter {
 
 			console.log(`[server/backup] write ${tradesOfTheDay.length} trades into ${path}`);
 
-			fs.appendFile(path, tradesOfTheDay.map(trade => `${trade[0]} ${trade[1]} ${trade[2]} ${trade[3]} ${trade[4]}`).join("\n") + "\n", (err) => {
+			fs.appendFile(path, tradesOfTheDay.map(trade => trade.join(' ')).join("\n") + "\n", (err) => {
 				if (err) {
 					throw new Error(err);
 				}

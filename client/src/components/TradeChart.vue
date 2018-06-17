@@ -99,26 +99,20 @@
     },
     created() {
       this.timestamp = +new Date();
+
       this.range = parseInt(this.defaultRange);
+    },
+    mounted() {
+      this._trimInvisibleTradesInterval = setInterval(this.trimChart, 60 * 1000);
 
-      this._trimInvisibleTradesInterval = setInterval(() => {
-        if (this.following && +new Date() - this.timestamp >= 1000 * 60 * 5) {
-          const min = this.chart.xAxis[0].min - this.timeframe;
-          socket.trim(min);
-
-          this.chart.series.forEach(serie => {
-            serie.data.filter(a => a.x < min).forEach(point => {
-              if (!point) {
-                return;
-              }
-
-              point.remove(false);
-            });
-          });
-
-          this.chart.redraw();
+      Highcharts.error = (code) => {
+        if (code === 15) {
+          clearTimeout(Highcharts.redrawTimeout);
+          Highcharts.redrawTimeout = setTimeout(() => {
+            this.appendTicksToChart(this.getTicks());
+          }, 100);
         }
-      }, 60 * 1000);
+      };
 
       Highcharts.wrap(Highcharts.Series.prototype, 'drawGraph', function(proceed) {
         var lineWidth;
@@ -137,90 +131,26 @@
           }
         }
       });
-
+      
       Highcharts.setOptions({
         time: {
           timezoneOffset: new Date().getTimezoneOffset()
         }
       });
 
-      socket.$on('pair', (pair, initialize) => {
-        if (!this.chart) {
-          return;
-        }
+      socket.$on('pair', this.onPair);
 
-        this.chart.series[0].update({name: pair}, false);
+      socket.$on('history', this.onFetch);
 
-        this.range = this.defaultRange;
-        this.timeframe = 10000;
-        this.canFollow(true);
+      socket.$on('trades', this.onTrades);
 
-        const timestamp = +new Date();
-
-        if (!initialize) {
-          for (let serie of this.chart.series) {
-            serie.setData([], false);
-          }
-
-          this.chart.xAxis[0].setExtremes(timestamp - this.timeframe, timestamp, false);
-        }
-
-        this.chart.redraw();
-      });
-
-      socket.$on('history', (willReplace) => {
-        if (!this.chart || !socket.trades.length) {
-          return;
-        }
-
-        if (willReplace) {
-          this.canFollow(true);
-          this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
-        }
-
-        this.ajustTimeframe();
-
-        this.appendTicksToChart(this.getTicks(), true);
-      });
-
-      socket.$on('trades', trades => {
-        if (!this.chart) {
-          return;
-        }
-
-        this.appendTicksToChart(this.getTicks(trades));
-      });
-
-      options.$on('follow', state => {
-        this.canFollow(state);
-
-        if (state) {
-          this.follow(true);
-        }
-      });
+      options.$on('follow', this.onFollow);
 
       setTimeout(() => {
-        options.$on('change', data => {
-          switch (data.prop) {
-            case 'exchanges':
-            case 'avgPeriods':
-            case 'useWeighedAverage':
-              this.appendTicksToChart(this.getTicks(), true);
-            break;
-            case 'timeframe':
-              if (this.ajustTimeframe()) {
-                this.appendTicksToChart(this.getTicks(), true);
-              }
-            break;
-            case 'dark':
-              this.toggleDark(data.value);
-            break;
-          }
-        })
+        options.$on('change', this.onSettings);
       }, 1000);
-    },
-    mounted() {
-      this.chart = Highcharts.chart(this.$el.querySelector('.chart__canvas'), {
+
+      this.chart = window.chart = Highcharts.chart(this.$el.querySelector('.chart__canvas'), {
         chart: {
           type: 'spline',
           animation: false,
@@ -289,7 +219,7 @@
           shadow: false,
           hideDelay: 0,
           formatter: function(e) {
-            return '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + this.series.name + ' ' + app.getAttribute('data-symbol') + formatPrice(this.y).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
+            return this.point.name ? this.point.name : '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + this.series.name + ' ' + app.getAttribute('data-symbol') + formatPrice(this.y).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
           },
           style: {
             color: 'white',
@@ -307,8 +237,6 @@
               enabled: false,
               lineWidth: 2,
             }
-          },
-          line: {
           },
           area: {
             stacking: 'normal',
@@ -360,6 +288,22 @@
             symbol: 'circle',
             radius: 3,
           }
+        },{
+          type: 'scatter',
+          yAxis: 1,
+          data: [],
+          marker: {
+            enabled: true,
+            lineWidth: 2,
+            lineColor: 'white',
+            states: {
+              hover: {
+                fillColor: 'white',
+                lineColor: 'rgba(255, 255, 255, .2)',
+                lineWidth: 10,
+              }
+            }
+          }
         }],
       });
 
@@ -402,6 +346,12 @@
       window.addEventListener('hashchange', this._onHashChange, false);
     },
     beforeDestroy() {
+      socket.$off('trades', this.onTrades);
+      socket.$off('history', this.onFetch);
+      socket.$off('pair', this.onPair);
+      options.$off('change', this.onSettings);
+      options.$off('follow', this.onFollow);
+      
       clearTimeout(this._flushDetailTimeout);
       clearTimeout(this._zoomAfterTimeout);
       clearInterval(this._trimInvisibleTradesInterval);
@@ -415,23 +365,544 @@
       window.removeEventListener('hashchange', this._onHashChange);
     },
     methods: {
-      toggleDark(state) {
-        window.document.body.classList[state ? 'add' : 'remove']('dark');
 
-        this.chart.series[0].update({
-          color: state ? '#fff' : '#222',
-          shadow: state ? {
-            color: 'rgba(255, 255, 255, .15)',
-            width: 15,
-            offsetX: 0,
-            offsetY: 0
-          } : false,
-        });
+      //                        _ _               
+      //   /\  /\__ _ _ __   __| | | ___ _ __ ___ 
+      //  / /_/ / _` | '_ \ / _` | |/ _ \ '__/ __|
+      // / __  / (_| | | | | (_| | |  __/ |  \__ \
+      // \/ /_/ \__,_|_| |_|\__,_|_|\___|_|  |___/
+      // 
 
-        this.chart.yAxis[0].update({
-          gridLineColor: state ? 'rgba(255, 255, 255, .1)' : 'rgba(0, 0, 0, .05)'
-        });
+      onPair(pair, initialize) {
+        if (!this.chart) {
+          return;
+        }
+
+        this.chart.series[0].update({name: pair}, false);
+
+        this.range = this.defaultRange;
+        this.timeframe = 10000;
+        this.toggleFollow(true);
+
+        const timestamp = +new Date();
+
+        if (!initialize) {
+          for (let serie of this.chart.series) {
+            serie.setData([], false);
+          }
+
+          this.chart.xAxis[0].setExtremes(timestamp - this.timeframe, timestamp, false);
+        }
+
+        this.chart.redraw();
       },
+
+      onFetch(willReplace) {
+        if (!this.chart || !socket.trades.length) {
+          return;
+        }
+
+        if (willReplace) {
+          this.toggleFollow(true);
+          this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
+        }
+
+        this.ajustTimeframe();
+
+        this.appendTicksToChart(this.getTicks(), true);
+      },
+
+      onTrades(trades) {
+        if (!this.chart) {
+          return;
+        }
+
+        this.appendTicksToChart(this.getTicks(trades));
+      },
+
+      onFollow(state) {
+        this.toggleFollow(state);
+
+        if (state) {
+          this.snapToRight(true);
+        }
+      },
+
+      onSettings(data) {
+        switch (data.prop) {
+          case 'exchanges':
+          case 'avgPeriods':
+          case 'useWeighedAverage':
+          case 'showPlotsSignificants':
+          case 'showPlotsLiquidations':
+            this.appendTicksToChart(this.getTicks(), true);
+          break;
+          case 'timeframe':
+            if (this.ajustTimeframe()) {
+              this.appendTicksToChart(this.getTicks(), true);
+            }
+          break;
+          case 'dark':
+            this.toggleDark(data.value);
+          break;
+        }
+      },
+
+      //   _____       _                      _   _       _ _         
+      //   \_   \_ __ | |_ ___ _ __ __ _  ___| |_(_)_   _(_) |_ _   _ 
+      //    / /\/ '_ \| __/ _ \ '__/ _` |/ __| __| \ \ / / | __| | | |
+      // /\/ /_ | | | | ||  __/ | | (_| | (__| |_| |\ V /| | |_| |_| |
+      // \____/ |_| |_|\__\___|_|  \__,_|\___|\__|_| \_/ |_|\__|\__, |
+      //                                                        |___/ 
+
+      doZoom(event, two = false) {
+        this.timestamp = +new Date();
+
+        if (this.fetching || !this.chart.series[0].xData.length) {
+          return;
+        }
+
+        event.preventDefault();
+        let axisMin = this.chart.xAxis[0].min;
+        let axisMax = this.chart.xAxis[0].max;
+
+        const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
+
+        const range = axisMax - axisMin;
+
+        if (
+          (event.deltaX || event.deltaZ || !event.deltaY)
+        ) {
+          return;
+        }
+
+        const delta = range * .1 * (event.deltaY > 0 ? 1 : -1);
+        const deltaX = Math.min(this.chart.chartWidth / 1.5, Math.max(0, event.offsetX - this.chart.chartWidth / 3 / 2)) / (this.chart.chartWidth / 1.5);
+
+        axisMin = axisMin - delta * deltaX;
+        axisMax = Math.min(dataMax, axisMax + delta * (1 - deltaX));
+
+        this.chart.xAxis[0].setExtremes(axisMin, axisMax);
+
+        this.toggleFollow(axisMax === dataMax);
+
+        this.range = axisMax - axisMin;
+
+        this.updateTickDetailCursorPosition(true);
+
+        clearTimeout(this._zoomAfterTimeout);
+
+        this._zoomAfterTimeout = setTimeout(() => {
+          delete this._zoomAfterTimeout;
+
+          if (!this.fetching && axisMin < this.chart.series[0].xData[0]) {
+            this.fetching = true;
+            socket.fetch(axisMin, this.chart.series[0].xData[0])
+              .then()
+              .catch()
+              .then(() => this.fetching = false);
+          } else if (this.ajustTimeframe()) {
+            this.appendTicksToChart(this.getTicks(), true);
+          }
+        }, 500);
+      },
+
+      startScroll(event) {
+        if (event.which === 3) {
+          return;
+        }
+
+        this.scrolling = event.pageX;
+
+        if (this.shiftPressed) {
+          this.selection.from = event.pageX;
+        }
+      },
+
+      doScroll(event) {
+        if (this.fetching || isNaN(this.scrolling) || !this.chart.series[0].xData.length) {
+          return;
+        }
+
+        if (this.shiftPressed) {
+          this.selection.to = event.pageX;
+
+          this.updateTickDetailCursorPosition();
+
+          return;
+        }
+
+        this.timestamp = +new Date();
+
+        const range = this.chart.xAxis[0].max - this.chart.xAxis[0].min;
+        const scale = (range / this.chart.chartWidth) * (this.scrolling - event.pageX);
+
+        let axisMin = this.chart.xAxis[0].min;
+        let axisMax = this.chart.xAxis[0].max;
+
+        axisMin += scale;
+        axisMax += scale;
+
+        const dataMin = this.chart.series[0].xData[0];
+        const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
+
+        if (axisMax > dataMax) {
+          axisMax = dataMax;
+          axisMin = axisMax - range;
+        }
+
+        this.toggleFollow(axisMax === dataMax);
+        this.range = axisMax - axisMin;
+
+        this.updateTickDetailCursorPosition(true);
+
+        this.chart.xAxis[0].setExtremes(axisMin, axisMax);
+
+        this.scrolling = event.pageX;
+      },
+
+      stopScroll(event) {
+        if (this.scrolling) {
+          if (this.shiftPressed) {
+            const viewbox = this.chart.xAxis[0].max - this.chart.xAxis[0].min;
+
+            const minPosition = Math.min(this.selection.from, this.selection.to);
+            const maxPosition = Math.max(this.selection.from, this.selection.to);
+            const minTimestamp = this.chart.xAxis[0].min + (minPosition / this.chart.chartWidth) * viewbox;
+            const maxTimestamp = minTimestamp + (maxPosition - minPosition) / this.chart.chartWidth * viewbox;
+
+            this.selection.from = minPosition;
+            this.selection.to = maxPosition;
+
+            this.showTickDetail(minTimestamp, maxTimestamp);
+
+            this.toggleFollow(false);
+          } else if (!this.fetching && this.chart.xAxis[0].min < this.chart.series[0].xData[0]) {
+            this.fetching = true;
+
+            socket.fetch(this.chart.xAxis[0].min, this.chart.series[0].xData[0], false , false)
+              .then()
+              .catch()
+              .then(() => this.fetching = false);
+          }
+        }
+
+        delete this.scrolling;
+      },
+
+      //  _____ _      _             
+      // /__   (_) ___| | _____ _ __ 
+      //   / /\/ |/ __| |/ / _ \ '__|
+      //  / /  | | (__|   <  __/ |   
+      //  \/   |_|\___|_|\_\___|_|   
+      // 
+
+      getTicks(input) {
+        var id = btoa(Math.random()).substring(0,12);
+        let data;
+
+        if (input) {
+          data = input.sort((a, b) => a[1] - b[1]);
+        } else {
+          delete this.tick;
+          this.averages.splice(0, this.averages.length);
+          data = socket.trades.slice(0);
+        }
+
+        data = data.filter(a => options.exchanges.indexOf(a[0]) !== -1);
+
+        const sells = [];
+        const buys = [];
+        const prices = [];
+        const labels = [];
+
+        for (let i = 0; i < data.length; i++) {
+          if (data[i][5]) {
+            switch (+data[i][5]) {
+              case 1:
+                options.showPlotsLiquidations && labels.push(this.createPoint(data[i], `${formatAmount(data[i][2] * data[i][3])}${app.getAttribute('data-symbol')} liquidated <b>${data[i][4] == 1 ? 'SHORT' : 'LONG'}</b>`, '#3f51b5'));
+              break;
+            }
+
+            continue;
+          }
+
+          if (!this.tick || data[i][1] - this.tick.timestamp > this.timeframe) {
+            if (this.tick) {
+              const point = this.tickToPoint(this.tick);
+
+              buys.push(point.buys);
+              sells.push(point.sells);
+              prices.push(point.price);
+
+              this.averages.push([point.price[1], point.buys[1] + point.sells[1]]);
+
+              if (this.averages.length > options.avgPeriods) {
+                this.averages.splice(0, this.averages.length - options.avgPeriods);
+              }
+            }
+
+            this.tick = {
+              timestamp: +data[i][1],
+              exchanges: {},
+              buys: 0,
+              sells: 0,
+              size: 0
+            };
+
+          }
+
+          if (!this.tick.exchanges[data[i][0]]) {
+            this.tick.exchanges[data[i][0]] = {
+              prices: 0,
+              size: 0
+            };
+          }
+
+          this.tick.exchanges[data[i][0]].prices += (data[i][2] * data[i][3]);
+          this.tick.exchanges[data[i][0]].close = (+data[i][2]);
+          this.tick.exchanges[data[i][0]].size += (+data[i][3]);
+          this.tick.size += (+data[i][3]);
+          this.tick[data[i][4] > 0 ? 'buys' : 'sells'] += (data[i][3] * data[i][2]);
+          
+          if (options.showPlotsSignificants && data[i][3] * data[i][2] >= options.hugeTradeThreshold) {
+            labels.push(this.createPoint(data[i]));
+          }
+        }
+
+        return {
+          sells: sells,
+          buys: buys,
+          prices: prices,
+          labels: labels,
+          id: id
+        };
+      },
+
+      tickToPoint(tick, getPriceIndex = true) {
+        let typical = parseFloat(this.priceIndex);
+
+        if (getPriceIndex) {
+          /* simple weight average price over exchanges
+          */
+
+          const closes = [];
+
+          for (let exchange in tick.exchanges) {
+            let price = tick.exchanges[exchange].prices / tick.exchanges[exchange].size;
+
+            if (options.useWeighedAverage) {
+              closes.push([price, tick.exchanges[exchange].size]);
+            } else {
+              closes.push([tick.exchanges[exchange].close, tick.exchanges[exchange].size]);
+            }
+
+            tick.high = isNaN(tick.high) ? price : Math.max(tick.high, price);
+            tick.low = isNaN(tick.low) ? price : Math.min(tick.low, price);
+          }
+
+          if (options.useWeighedAverage) {
+            tick.close = closes.map(a => a[0] * a[1]).reduce((a, b) => a + b) / tick.size;
+          } else {
+            tick.close = closes.map(a => a[0]).reduce((a, b) => a + b) / closes.length;
+          }
+
+          /* get period typical price
+          */
+          typical = (tick.high + tick.low + tick.close) / 3;
+
+          /* average the price
+          */
+          const cumulatives = this.averages.concat([[typical, tick.buys + tick.sells]]);
+
+          if (this.averages && options.avgPeriods > 0 && cumulatives.length > 1) {
+            if (options.useWeighedAverage) {
+              this.priceIndex = cumulatives.map(a => a[0] * a[1]).reduce((a, b) => a + b) / cumulatives.map(a => a[1]).reduce((a, b) => a + b);
+            } else {
+              this.priceIndex = cumulatives.map(a => a[0]).reduce((a, b) => a + b) / cumulatives.length;
+            }
+          } else {
+            this.priceIndex = typical;
+          }
+
+          /* determine tab lagging indicator
+          */
+          const lastPrices = this.chart.series[0].yData.slice(-5);
+          let direction = lastPrices.length > 2 ? (this.priceIndex > lastPrices.reduce((a, b) => a + b) / lastPrices.length ? 'up' : 'down') : 'neutral';
+
+          socket.$emit('price', this.priceIndex, direction);
+        }
+
+        return {
+          buys: [tick.timestamp, tick.buys],
+          sells: [tick.timestamp, tick.sells],
+          price: [tick.timestamp, this.priceIndex],
+        };
+      },
+
+      createPoint(trade, label = null, color = null) {
+        label = label || `${trade[4] == 1 ? 'Buy' : 'Sell'} ${formatAmount(trade[2] * trade[3])}${app.getAttribute('data-symbol')} @ ${app.getAttribute('data-symbol')}${formatPrice(trade[2]).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')}`;
+        let fill = color || (trade[4] == 1 ? '#7ca74e' : '#F44336');
+
+        return {
+          x: +trade[1], 
+          y: +trade[2], 
+          marker: {
+            radius: Math.max(4, Math.sqrt(Math.log(1 + (trade[2] * trade[3]) / options.hugeTradeThreshold)) * 6),
+            symbol: trade[5] ? 'circle' : (trade[4] == 1 ? 'triangle' : 'triangle-down'),
+            fillColor: fill
+          }, 
+          name: label,
+        };
+      },
+      
+      appendTicksToChart(ticks, replace = false) {
+        var id = btoa(Math.random()).substring(0,12);
+
+        const now = +new Date();
+
+        let chartNeedsRedraw = false;
+        let pointWasAdded = false;
+        let i = 0;
+
+        if (ticks.prices.length) {
+          if (replace) {
+            this.chart.series[0].setData(ticks.prices, false);
+            this.chart.series[1].setData(ticks.sells, false);
+            this.chart.series[2].setData(ticks.buys, false);
+            this.chart.series[3].setData(ticks.labels, false);
+
+            this.chart.redraw();
+          } else {
+
+            if (this.lastTickTimestamp === ticks.prices[i][0]) {
+              this.chart.series[0].data[this.chart.series[0].data.length - 1].update(ticks.prices[i], false)
+              this.chart.series[1].data[this.chart.series[1].data.length - 1].update(ticks.sells[i], false);
+              this.chart.series[2].data[this.chart.series[2].data.length - 1].update(ticks.buys[i], false);
+
+              i++;
+            }
+
+            for (; i < ticks.prices.length; i++) {
+              this.chart.series[0].addPoint(ticks.prices[i], false);
+              this.chart.series[1].addPoint(ticks.sells[i], false);
+              this.chart.series[2].addPoint(ticks.buys[i], false);
+
+              pointWasAdded = true;
+            }
+          }
+
+          this.lastTickTimestamp = ticks.prices[ticks.prices.length - 1][0];
+
+          chartNeedsRedraw = true;
+        }
+
+        if (ticks.labels.length && !replace) {
+          for (i=0; i<ticks.labels.length; i++) {
+            this.chart.series[3].addPoint(ticks.labels[i], false);
+          }
+        }
+
+        if (this.tick && (!this.tick.updatedAt || now > this.tick.updatedAt + 1000)) {
+          const point = this.tickToPoint(this.tick);
+
+          if (!this.chart.series[0].data.length || this.tick.timestamp > this.lastTickTimestamp) {
+            this.chart.series[0].addPoint(point.price, false);
+            this.chart.series[1].addPoint(point.sells, false);
+            this.chart.series[2].addPoint(point.buys, false);
+
+            pointWasAdded = true;
+
+            this.lastTickTimestamp = point.price[0];
+          } else {
+            this.chart.series[0].data[this.chart.series[0].data.length - 1].update(point.price, false)
+            this.chart.series[1].data[this.chart.series[1].data.length - 1].update(point.sells, false);
+            this.chart.series[2].data[this.chart.series[2].data.length - 1].update(point.buys, false);
+          }
+
+          this.tick.updatedAt = now;
+
+          chartNeedsRedraw = true;
+        }
+
+        if (chartNeedsRedraw) {
+          this.chart.redraw();
+
+          if (pointWasAdded && !this._zoomAfterTimeout && this.following && this.chart.series[0].xData.length) {
+            this.snapToRight();
+          }
+        }
+      },
+      
+      getTimeframe() {
+        let value = parseFloat(options.timeframe);
+        let type = /\%$/.test(options.timeframe) ? 'percent' : 'length';
+        let output;
+
+        if (!value) {
+          value = 1.5;
+          type = 'percent';
+        }
+
+        if (type === 'percent') {
+          value /= 100;
+
+          output = this.range * value;
+        } else {
+          output = value * 1000;
+        }
+
+        return parseInt(Math.max(5000, output));
+      },
+
+      ajustTimeframe() {
+        const timeframe = this.getTimeframe();
+
+        if (timeframe != this.timeframe) {
+          this.timeframe = timeframe;
+
+          return true;
+        }
+
+        return false;
+      },
+      
+      trimChart() {
+        if (this.following && +new Date() - this.timestamp >= 1000 * 60 * 5) {
+          const min = this.chart.xAxis[0].min - this.timeframe;
+          socket.trim(min);
+
+          this.chart.series.forEach(serie => {
+            serie.data.filter(a => a.x < min).forEach(point => {
+              if (!point) {
+                return;
+              }
+
+              point.remove(false);
+            });
+          });
+
+          this.chart.redraw();
+        }
+      },
+
+      snapToRight(redraw = false) {
+        this.following = true;
+
+        const dataMin = this.chart.series[0].xData[0];
+        const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
+        const axisMin = Math.max(dataMin, dataMax - this.range);
+
+        this.chart.xAxis[0].setExtremes(axisMin, dataMax, redraw);
+      },
+      
+      //    __            _                     
+      //   /__\_  ___ __ | | ___  _ __ ___ _ __ 
+      //  /_\ \ \/ / '_ \| |/ _ \| '__/ _ \ '__|
+      // //__  >  <| |_) | | (_) | | |  __/ |   
+      // \__/ /_/\_\ .__/|_|\___/|_|  \___|_|   
+      //           |_|                          
+
       showTickDetail(min, max) {
         clearTimeout(this._flushDetailTimeout);
 
@@ -580,6 +1051,7 @@
           }, 200);
         }
       },
+
       moveTickDetail(direction) {
         if (!this.detail) {
           return;
@@ -594,6 +1066,7 @@
         this.updateTickDetailCursorPosition();
         this.showTickDetail(minTimestamp, minTimestamp + this.detail.timeframe);
       },
+
       updateTickDetailCursorPosition(hide = false) {
         if (hide) {
           this.$set(this.selection, 'left', '0');
@@ -608,6 +1081,7 @@
         this.$set(this.selection, 'left', min + 'px');
         this.$set(this.selection, 'width', (max - min) + 'px');
       },
+
       handleTickDetailSort(event, property) {
         const direction = event.target.classList.contains('asc') ? 'desc' : 'asc';
 
@@ -624,6 +1098,7 @@
 
         event.target.classList.add(direction);
       },
+
       sortTickDetail(property = this.detailSorting.property, direction = this.detailSorting.direction) {
         this.$set(this.detail, 'exchanges', this.detail.exchanges.sort((a, b) => {
           let _a = a[property], _b = b[property];
@@ -643,336 +1118,15 @@
         this.detailSorting.property = property;
         this.detailSorting.direction = direction;
       },
-      getTicks(input) {
-        let data;
 
-        if (input) {
-          data = input.sort((a, b) => a[1] - b[1]);
-        } else {
-          delete this.tick;
-          this.averages.splice(0, this.averages.length);
-          data = socket.trades.slice(0);
-        }
-
-        data = data.filter(a => options.exchanges.indexOf(a[0]) !== -1);
-
-        const sells = [];
-        const buys = [];
-        const prices = [];
-
-        for (let i = 0; i < data.length; i++) {
-
-          if (!this.tick || data[i][1] - this.tick.timestamp > this.timeframe) {
-            if (this.tick) {
-              const point = this.tickToPoint(this.tick);
-
-              buys.push(point.buys);
-              sells.push(point.sells);
-              prices.push(point.price);
-
-              this.averages.push([point.price[1], point.buys[1] + point.sells[1]]);
-
-              if (this.averages.length > options.avgPeriods) {
-                this.averages.splice(0, this.averages.length - options.avgPeriods);
-              }
-            }
-
-            this.tick = {
-              timestamp: +data[i][1],
-              exchanges: {},
-              buys: 0,
-              sells: 0,
-              size: 0
-            };
-
-          }
-
-          if (!this.tick.exchanges[data[i][0]]) {
-            this.tick.exchanges[data[i][0]] = {
-              prices: 0,
-              size: 0
-            };
-          }
-
-          this.tick.exchanges[data[i][0]].prices += (data[i][2] * data[i][3]);
-          this.tick.exchanges[data[i][0]].close = (+data[i][2]);
-          this.tick.exchanges[data[i][0]].size += (+data[i][3]);
-          this.tick.size += (+data[i][3]);
-          this.tick[data[i][4] > 0 ? 'buys' : 'sells'] += (data[i][3] * data[i][2]);
-        }
-
-        return {
-          sells: sells,
-          buys: buys,
-          prices: prices,
-        };
-      },
-      tickToPoint(tick, getPriceIndex = true) {
-        let typical = parseFloat(this.priceIndex);
-
-        if (getPriceIndex) {
-          /* simple weight average price over exchanges
-          */
-
-          const closes = [];
-
-          for (let exchange in tick.exchanges) {
-            let price = tick.exchanges[exchange].prices / tick.exchanges[exchange].size;
-
-            if (options.useWeighedAverage) {
-              closes.push([price, tick.exchanges[exchange].size]);
-            } else {
-              closes.push([tick.exchanges[exchange].close, tick.exchanges[exchange].size]);
-            }
-
-            tick.high = isNaN(tick.high) ? price : Math.max(tick.high, price);
-            tick.low = isNaN(tick.low) ? price : Math.min(tick.low, price);
-          }
-
-          if (options.useWeighedAverage) {
-            tick.close = closes.map(a => a[0] * a[1]).reduce((a, b) => a + b) / tick.size;
-          } else {
-            tick.close = closes.map(a => a[0]).reduce((a, b) => a + b) / closes.length;
-          }
-
-          /* get period typical price
-          */
-          typical = (tick.high + tick.low + tick.close) / 3;
-
-          /* average the price
-          */
-          const cumulatives = this.averages.concat([[typical, tick.buys + tick.sells]]);
-
-          if (this.averages && options.avgPeriods > 0 && cumulatives.length > 1) {
-            if (options.useWeighedAverage) {
-              this.priceIndex = cumulatives.map(a => a[0] * a[1]).reduce((a, b) => a + b) / cumulatives.map(a => a[1]).reduce((a, b) => a + b);
-            } else {
-              this.priceIndex = cumulatives.map(a => a[0]).reduce((a, b) => a + b) / cumulatives.length;
-            }
-          } else {
-            this.priceIndex = typical;
-          }
-
-          /* determine tab lagging indicator
-          */
-          const lastPrices = this.chart.series[0].yData.slice(-5);
-          let direction = lastPrices.length > 2 ? (this.priceIndex > lastPrices.reduce((a, b) => a + b) / lastPrices.length ? 'up' : 'down') : 'neutral';
-
-          socket.$emit('price', this.priceIndex, direction);
-        }
-
-        return {
-          buys: [tick.timestamp, tick.buys],
-          sells: [tick.timestamp, tick.sells],
-          price: [tick.timestamp, this.priceIndex],
-        };
-      },
-      appendTicksToChart(ticks, replace = false) {
-        const now = +new Date();
-        let chartNeedsRedraw = false;
-        let pointWasAdded = false;
-
-        if (ticks.prices.length) {
-          if (replace) {
-            this.chart.series[0].setData(ticks.prices, false);
-            this.chart.series[1].setData(ticks.sells, false);
-            this.chart.series[2].setData(ticks.buys, false);
-          } else {
-            let i = 0;
-
-            if (this.lastTickTimestamp === ticks.prices[i][0]) {
-              this.chart.series[0].data[this.chart.series[0].data.length - 1].update(ticks.prices[i], false)
-              this.chart.series[1].data[this.chart.series[1].data.length - 1].update(ticks.sells[i], false);
-              this.chart.series[2].data[this.chart.series[2].data.length - 1].update(ticks.buys[i], false);
-
-              i++;
-            }
-
-            for (; i < ticks.prices.length; i++) {
-              this.chart.series[0].addPoint(ticks.prices[i], false);
-              this.chart.series[1].addPoint(ticks.sells[i], false);
-              this.chart.series[2].addPoint(ticks.buys[i], false);
-
-              pointWasAdded = true;
-            }
-          }
-
-          this.lastTickTimestamp = ticks.prices[ticks.prices.length - 1][0];
-
-          chartNeedsRedraw = true;
-        }
-
-        if (this.tick && (!this.tick.updatedAt || now > this.tick.updatedAt + 1000)) {
-          const point = this.tickToPoint(this.tick);
-
-          if (!this.chart.series[0].data.length || this.tick.timestamp > this.lastTickTimestamp) {
-            this.chart.series[0].addPoint(point.price, false);
-            this.chart.series[1].addPoint(point.sells, false);
-            this.chart.series[2].addPoint(point.buys, false);
-
-            pointWasAdded = true;
-
-            this.lastTickTimestamp = point.price[0];
-          } else {
-            this.chart.series[0].data[this.chart.series[0].data.length - 1].update(point.price, false)
-            this.chart.series[1].data[this.chart.series[1].data.length - 1].update(point.sells, false);
-            this.chart.series[2].data[this.chart.series[2].data.length - 1].update(point.buys, false);
-          }
-
-          this.tick.updatedAt = now;
-
-          chartNeedsRedraw = true;
-        }
-
-        if (chartNeedsRedraw) {
-          this.chart.redraw();
-
-          if (pointWasAdded && !this._zoomAfterTimeout && this.following && this.chart.series[0].xData.length) {
-            this.follow();
-          }
-        }
-      },
-      doZoom(event, two = false) {
-        this.timestamp = +new Date();
-
-        if (this.fetching || !this.chart.series[0].xData.length) {
-          return;
-        }
-
-        event.preventDefault();
-        let axisMin = this.chart.xAxis[0].min;
-        let axisMax = this.chart.xAxis[0].max;
-
-        const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
-
-        const range = axisMax - axisMin;
-
-        if (
-          (event.deltaX || event.deltaZ || !event.deltaY)
-        ) {
-          return;
-        }
-
-        const delta = range * .1 * (event.deltaY > 0 ? 1 : -1);
-        const deltaX = Math.min(this.chart.chartWidth / 1.5, Math.max(0, event.offsetX - this.chart.chartWidth / 3 / 2)) / (this.chart.chartWidth / 1.5);
-
-        axisMin = axisMin - delta * deltaX;
-        axisMax = Math.min(dataMax, axisMax + delta * (1 - deltaX));
-
-        this.chart.xAxis[0].setExtremes(axisMin, axisMax);
-
-        this.canFollow(axisMax === dataMax);
-
-        this.range = axisMax - axisMin;
-
-        this.updateTickDetailCursorPosition(true);
-
-        clearTimeout(this._zoomAfterTimeout);
-
-        this._zoomAfterTimeout = setTimeout(() => {
-          delete this._zoomAfterTimeout;
-
-          if (!this.fetching && axisMin < this.chart.series[0].xData[0]) {
-            this.fetching = true;
-            socket.fetch(axisMin, this.chart.series[0].xData[0])
-              .then()
-              .catch()
-              .then(() => this.fetching = false);
-          } else if (this.ajustTimeframe()) {
-            this.appendTicksToChart(this.getTicks(), true);
-          }
-        }, 500);
-      },
-      startScroll(event) {
-        if (event.which === 3) {
-          return;
-        }
-
-        this.scrolling = event.pageX;
-
-        if (this.shiftPressed) {
-          this.selection.from = event.pageX;
-        }
-      },
-      doScroll(event) {
-        if (this.fetching || isNaN(this.scrolling) || !this.chart.series[0].xData.length) {
-          return;
-        }
-
-        if (this.shiftPressed) {
-          this.selection.to = event.pageX;
-
-          this.updateTickDetailCursorPosition();
-
-          return;
-        }
-
-        this.timestamp = +new Date();
-
-        const range = this.chart.xAxis[0].max - this.chart.xAxis[0].min;
-        const scale = (range / this.chart.chartWidth) * (this.scrolling - event.pageX);
-
-        let axisMin = this.chart.xAxis[0].min;
-        let axisMax = this.chart.xAxis[0].max;
-
-        axisMin += scale;
-        axisMax += scale;
-
-        const dataMin = this.chart.series[0].xData[0];
-        const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
-
-        if (axisMax > dataMax) {
-          axisMax = dataMax;
-          axisMin = axisMax - range;
-        }
-
-        this.canFollow(axisMax === dataMax);
-        this.range = axisMax - axisMin;
-
-        this.updateTickDetailCursorPosition(true);
-
-        this.chart.xAxis[0].setExtremes(axisMin, axisMax);
-
-        this.scrolling = event.pageX;
-      },
-      stopScroll(event) {
-        if (this.scrolling) {
-          if (this.shiftPressed) {
-            const viewbox = this.chart.xAxis[0].max - this.chart.xAxis[0].min;
-
-            const minPosition = Math.min(this.selection.from, this.selection.to);
-            const maxPosition = Math.max(this.selection.from, this.selection.to);
-            const minTimestamp = this.chart.xAxis[0].min + (minPosition / this.chart.chartWidth) * viewbox;
-            const maxTimestamp = minTimestamp + (maxPosition - minPosition) / this.chart.chartWidth * viewbox;
-
-            this.selection.from = minPosition;
-            this.selection.to = maxPosition;
-
-            this.showTickDetail(minTimestamp, maxTimestamp);
-
-            this.canFollow(false);
-          } else if (!this.fetching && this.chart.xAxis[0].min < this.chart.series[0].xData[0]) {
-            this.fetching = true;
-
-            socket.fetch(this.chart.xAxis[0].min, this.chart.series[0].xData[0], false , false)
-              .then()
-              .catch()
-              .then(() => this.fetching = false);
-          }
-        }
-
-        delete this.scrolling;
-      },
-      follow(redraw = false) {
-        this.following = true;
-
-        const dataMin = this.chart.series[0].xData[0];
-        const dataMax = this.chart.series[0].xData[this.chart.series[0].xData.length - 1];
-        const axisMin = Math.max(dataMin, dataMax - this.range);
-
-        this.chart.xAxis[0].setExtremes(axisMin, dataMax, redraw);
-      },
-      canFollow(state) {
+      //         _          
+      //   /\/\ (_)___  ___ 
+      //  /    \| / __|/ __|
+      // / /\/\ \ \__ \ (__ 
+      // \/    \/_|___/\___|
+      //
+
+      toggleFollow(state) {
         if (this.following !== state) {
           this.timestamp = +new Date();
 
@@ -983,37 +1137,34 @@
           state && this.updateTickDetailCursorPosition(true);
         }
       },
-      getTimeframe() {
-        let value = parseFloat(options.timeframe);
-        let type = /\%$/.test(options.timeframe) ? 'percent' : 'length';
-        let output;
 
-        if (!value) {
-          value = 1.5;
-          type = 'percent';
-        }
+      toggleDark(state) {
+        window.document.body.classList[state ? 'add' : 'remove']('dark');
 
-        if (type === 'percent') {
-          value /= 100;
+        this.chart.series[0].update({
+          color: state ? '#fff' : '#222',
+          shadow: state ? {
+            color: 'rgba(255, 255, 255, .15)',
+            width: 15,
+            offsetX: 0,
+            offsetY: 0
+          } : false,
+        });
 
-          output = this.range * value;
-        } else {
-          output = value * 1000;
-        }
+        this.chart.series[3].update({
+          shadow: state ? {
+            color: 'rgba(255, 255, 255, .15)',
+            width: 15,
+            offsetX: 0,
+            offsetY: 0
+          } : false,
+        });
 
-        return parseInt(Math.max(5000, output));
+        this.chart.yAxis[0].update({
+          gridLineColor: state ? 'rgba(255, 255, 255, .1)' : 'rgba(0, 0, 0, .05)'
+        });
       },
-      ajustTimeframe() {
-        const timeframe = this.getTimeframe();
 
-        if (timeframe != this.timeframe) {
-          this.timeframe = timeframe;
-
-          return true;
-        }
-
-        return false;
-      },
       goTwitchMode(state) {
         this.isTwitchMode = state;
 
@@ -1024,7 +1175,7 @@
         } else {
           window.document.body.classList.remove('twitch');
         }
-      }
+      },
     }
   }
 </script>

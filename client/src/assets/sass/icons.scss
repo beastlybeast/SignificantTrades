@@ -145,4 +145,9 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-day); 
   }
 }
+.icon-expand {
+  &:before {
+    content: unicode($icon-expand); 
+  }
+}
 

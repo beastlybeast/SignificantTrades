@@ -13,6 +13,8 @@ let config;
 try {
 	config = require('./config');
 } catch (error) {
+	throw new Error(`Unable to parse configuration file\n\n${error.message}`);
+
 	config = {};
 }
 

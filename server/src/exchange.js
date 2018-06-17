@@ -88,7 +88,7 @@ class Exchange extends EventEmitter {
 		for (let trade of data) {
 			const id = trade[0] + '_' + trade[3];
 
-			if (group[id]) {
+			if (group[id] && !group[id][4]) {
 				group[id][1].push(trade[1]);
 				group[id][2].push(trade[2]);
 			} else {
@@ -102,6 +102,8 @@ class Exchange extends EventEmitter {
 		this.emit('data', {
 			exchange: this.id,
 			data: Object.keys(group).map(id => {
+				const stacked = group[id][2].map(a => a);
+
 				group[id][1] = (group[id][1].map((price, index) => price * group[id][2][index]).reduce((a, b) => a + b) / group[id][1].length) / (group[id][2].reduce((a, b) => a + b) / group[id][2].length);
 				group[id][2] = group[id][2].reduce((a, b) => a + b);
 

@@ -204,8 +204,8 @@
     }
 
     .trades__item.trades__item--sell {
-      color: lighten($red, 20%);
-      background-color: rgba(darken($red, 10%), .2);
+      color: $red;
+      background-color: rgba($red, .1);
 
       &.trades__item--significant {
         background-color: $red;
@@ -214,8 +214,8 @@
     }
 
     .trades__item.trades__item--buy {
-      color: lighten($green, 25%);
-      background-color: rgba(lighten($green, 25%), .15);
+      color: $green;
+      background-color: rgba($green, .1);
 
       &.trades__item--significant {
         background-color: $green;

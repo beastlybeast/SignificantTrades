@@ -19,7 +19,7 @@ class Bitmex extends Exchange {
 
 		this.options = Object.assign({
 			url: () => {
-				return 'wss://www.bitmex.com/realtime?subscribe=trade:' + this.pair
+				return `wss://www.bitmex.com/realtime?subscribe=trade:${this.pair},liquidation:${this.pair}`
 			},
 		}, this.options);
 	}
@@ -51,15 +51,26 @@ class Bitmex extends Exchange {
 		const json = JSON.parse(event);
 
 		if (json && json.data && json.data.length) {
-			return json.data.map(trade => {
-				return [
-					+new Date(trade.timestamp),
-					trade.price,
-					trade.size / trade.price,
-					trade.side === 'Buy' ? 1 : 0,
-					trade.tickDirection.indexOf('Zero') === 0 ? 1 : 0
-				];
-			})
+			if (json.table === 'liquidation' && json.action === 'insert') {
+				return json.data.map(trade => {
+					return [
+						+new Date(),
+						trade.price,
+						trade.leavesQty / trade.price,
+						trade.side === 'Buy' ? 1 : 0,
+						1
+					]
+				});
+			} else if (json.table === 'trade' && json.action === 'insert') {
+				return json.data.map(trade => {					
+					return [
+						+new Date(trade.timestamp),
+						trade.price,
+						trade.size / trade.price,
+						trade.side === 'Buy' ? 1 : 0
+					]
+				});
+			}
 		}
 
 		return false;

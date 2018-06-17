@@ -158,7 +158,6 @@ class Kraken extends Exchange {
 						+trade[0], // price
 						+trade[1], // volume
 						trade[3] === 'b' ? 1 : 0, // is buy
-						trade[4] === 'l' ? 1 : 0, // is limit
 					]);
 				}
 

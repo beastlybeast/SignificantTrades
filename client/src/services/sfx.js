@@ -1,14 +1,15 @@
 import Tuna from 'tunajs'
 import options from '../services/options'
 
-const SIDE_BUY = 1;
-const SIDE_SELL = 0;
-
 class Sfx {
 	
 	constructor() {
 		this.timestamp = +new Date();
 
+		this.connect();
+	}
+
+	connect() {
 		this.context = new (window.AudioContext || window.webkitAudioContext);
 		
 		var tuna = new Tuna(this.context);
@@ -30,6 +31,8 @@ class Sfx {
 
 		this.output.connect(filter);
 		filter.connect(this.context.destination);
+
+		window.play = this.tradeToSong.bind(this);
 	}
 
 	tradeToSong(factor, side) {
@@ -37,15 +40,13 @@ class Sfx {
 		const osc = [];
 
 		setTimeout(() => {
-			const smallTradesCompressor = options.audioVolume > 10 ? 5 : 10;
-
 			if (side) {
 				if (factor >= 10) {
 					[659.26, 830.6, 987.76, 1318.52].forEach((f, i, a) => setTimeout(() => this.play(f, .05 + Math.sqrt(factor) / 10, .1 + factor * .1), i * 80));
 				} else if (factor >= 1) {
 					[659.26, 830.6].forEach((f, i) => setTimeout(() => this.play(f, .05 + Math.sqrt(factor) / 10, .1 + factor * .1), i * 80));
 				} else {
-					this.play(659.26, Math.sqrt(factor) / smallTradesCompressor, .1 + Math.sqrt(factor) / 10);
+					this.play(659.26, Math.sqrt(factor) / 10, .1 + Math.sqrt(factor) / 10);
 				}
 			} else {
 				if (factor >= 10) {
@@ -53,7 +54,7 @@ class Sfx {
 				} else if (factor >= 1) {					
 					[493.88, 392].forEach((f, i) => setTimeout(() => this.play(f, .05 + Math.sqrt(factor) / 10, .1 + factor * .1), i * 80));
 				} else {
-					this.play(493.88, Math.sqrt(factor) / smallTradesCompressor, .1 + Math.sqrt(factor) / 10);
+					this.play(493.88, Math.sqrt(factor) / 10, .1 + Math.sqrt(factor) / 10);
 				}
 			}
 		}, this.timestamp - now);
@@ -61,31 +62,41 @@ class Sfx {
 		this.timestamp = Math.max(this.timestamp, now) + 80;
 	}
 	
-	play(frequency, value = .5, length = .1, output = 'output') {
+	play(frequency, value = .5, length = .1, type = 'triangle') {
+		if (this.context.state !== 'running') {
+			return;
+		}
+
 		const time = this.context.currentTime;
 		const oscillator = this.context.createOscillator();
 		const gain = this.context.createGain();
 
 		oscillator.frequency.value = frequency;
-		oscillator.type = 'triangle';
+		oscillator.type = type;
 
 		oscillator.onended = () => {
 			oscillator.disconnect();
 		}				
 
-		gain.connect(this[output]);
+		gain.connect(this.output);
 		oscillator.connect(gain);
 
-		value *= options.audioVolume;
+		gain.gain.value = Math.max(.04, Math.min(2, value)) * options.audioVolume;
 
-		gain.gain.value = Math.min(2, value * .2);
 		gain.gain.setValueAtTime(gain.gain.value, time)
 		gain.gain.exponentialRampToValueAtTime(0.01, time + length);
 
 		oscillator.start(time);
 		oscillator.stop(time + length);
 	}
-}
 
+	liquidation() {
+		[329.63, 329.63].forEach((f, i, a) => setTimeout(() => this.play(f, .5, .25, 'sine'), i * 80));
+	}
+
+	disconnect() {
+		this.context && this.context.state === 'running' && this.context.close();
+	}
+}
 
 export default Sfx;

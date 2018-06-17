@@ -31,6 +31,7 @@ $icon-external-link: \e915;
 $icon-night: \e916;
 $icon-day: \e917;
 $icon-cross: \e918;
+$icon-expand: \e909;
 
 @function unicode($str) {
   @return unquote("\"") + $str + unquote("\"");

@@ -37,6 +37,8 @@ const emitter = new Vue({
         this.reconnectionDelay = 5000;
       }
 
+      window.trade = (trade) => this.$emit('trades', [trade]);
+
       this.socket.onmessage = event => {
         let data = JSON.parse(event.data);
 
@@ -92,26 +94,10 @@ const emitter = new Vue({
                 id: `server_status`,
                 type: 'info',
                 title: `Tracking ${data.pair}`,
-                message: !this.exchanges.length ? 'No connected exchanges' : 'Through ' + this.exchanges.join(', ').toUpperCase()
+                message: !this.exchanges.length ? 'No connected exchanges' : 'On ' + this.exchanges.join(', ').toUpperCase()
               });
 
               let dismissed = localStorage.getItem('inaccurate_clock_dismissed') || 0;
-
-              if (this.delayed && dismissed < 3) {
-                setTimeout(() => {
-                  this.$emit('alert', {
-                    id: `inaccurate_clock`,
-                    type: 'warning',
-                    title: `Fix your clock !`,
-                    message: `Your system clock is off by over ${Math.floor(this.delay / 1000)}s, innacurate clock can have an impact on how the data is displayed on your side.`,
-                    click: () => {
-                      localStorage.setItem('inaccurate_clock_dismissed', ++dismissed);
-
-                      return true;
-                    }
-                  });
-                })
-              }
             break;
             case 'pair':
               this.$emit('pair', data.pair);

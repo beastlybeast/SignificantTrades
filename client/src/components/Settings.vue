@@ -30,6 +30,22 @@
           </div>
         </div>
       </div>
+      <div class="settings__plots settings__column">
+        <div class="form-group">
+          <label class="checkbox-control flex-right" v-tippy title="Shows significants orders on the chart">
+            <input type="checkbox" class="form-control" v-model="options.showPlotsSignificants">
+            <span>Show {{options.hugeTradeThreshold}}+</span>
+            <div></div>
+          </label>
+        </div>
+        <div class="form-group">
+          <label class="checkbox-control flex-right" v-tippy title="Shows liquidations on the chart">
+            <input type="checkbox" class="form-control" v-model="options.showPlotsLiquidations">
+            <span>Show liquidations</span>
+            <div></div>
+          </label>
+        </div>
+      </div>
       <div class="mt8 settings__title" v-on:click="toggleSection('exchanges')" v-bind:class="{closed: options.settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
       <div class="form-group">
         <div class="settings__exchanges">
@@ -59,16 +75,21 @@
         </div>
       </div>
       <div class="mt8 settings__title" v-on:click="toggleSection('audio')" v-bind:class="{closed: options.settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
-      <div class="settings__audio settings__column">
+      <div class="settings__audio settings__column" v-bind:class="{active: options.useAudio}">
         <div class="form-group">
-          <label class="checkbox-control flex-right">
+          <label class="checkbox-control flex-right" v-tippy title="Enable audio">
             <input type="checkbox" class="form-control" v-model="options.useAudio">
             <div></div>
           </label>
         </div>
-        <div class="form-group" v-bind:style="{opacity: options.useAudio ? 1 : .2}">
-          <label>Volume</label>
-          <input type="range" min="0" max="20" step=".1" v-model="options.audioVolume">
+        <div class="form-group">
+          <label class="checkbox-control flex-right" v-tippy title="Include insignificants">
+            <input type="checkbox" class="form-control" v-model="options.audioIncludeAll">
+            <div class="icon-expand"></div>
+          </label>
+        </div>
+        <div class="form-group">
+          <input type="range" min="0" max="5" step=".1" v-model="options.audioVolume">
         </div>
       </div>
       <div class="mt15 settings__column settings__footer flex-middle">
@@ -367,7 +388,7 @@
             justify-content: center;
           }
 
-          &:before {
+          &:not([class^="icon-"]):before {
             content: unicode($icon-check);
           }
 
@@ -485,6 +506,20 @@
       }
     }
 
+    .settings__plots {
+      .checkbox-control {
+        flex-direction: column;
+        padding: 10px 0;
+
+        > span {
+          margin-bottom: 5px;
+          width: 100%;
+          text-align: center;
+          line-height: 1.5;
+        }
+      }
+    }
+
     .settings__audio {
       align-items: center;
 
@@ -492,19 +527,31 @@
         margin: 0;
       }
 
+      input[type="range"] {
+        width: 100%;
+        margin: 0;
+      }
+
       .form-group {
         flex-basis: auto;
-        flex-grow: 1;
-        margin: 0;
+        flex-grow: 0;
+        margin: 0 1em 0 0;
         max-width: none;
+        opacity: .2;
 
         &:first-child {
-          flex-grow: 0;
-          margin: 0 1em 0 0;
+          opacity: 1;
         }
 
         &:last-child {
+          flex-grow: 1;
           width: 100%;
+        }
+      }
+
+      &.active {
+        .form-group {
+          opacity: 1;
         }
       }
     }

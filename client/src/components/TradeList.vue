@@ -21,7 +21,7 @@
 <script>
   import options from '../services/options'
   import socket from '../services/socket'
-  import Sfx from '../vendor/sfx'
+  import Sfx from '../services/sfx'
 
   export default {
     data () {
@@ -33,19 +33,59 @@
     },
     created() {
       this.getGifs();
+    },
+    mounted() {
+      if (options.useAudio) {
+        this.sfx = new Sfx();
+      }
 
-      this.sfx = new Sfx();
+      socket.$on('trades', this.onTrades);
 
-      socket.$on('trades', trades => {			
+      setTimeout(() => {
+        options.$on('change', this.onSettings);
+      }, 1000);
+
+      this.timeAgoInterval = setInterval(() => {
+        for (let element of this.$el.querySelectorAll('[timestamp]')) {
+          element.innerHTML = this.ago(element.getAttribute('timestamp'));
+        }
+      }, 1000);
+    },
+    beforeDestroy() {
+      socket.$off('trades', this.onTrades);
+      options.$off('change', this.onSettings);
+
+      clearInterval(this.timeAgoInterval);
+
+      this.sfx && this.sfx.disconnect();
+    },
+    methods: {
+      onSettings(data) {
+        switch (data.prop) {
+          case 'useAudio':
+            if (data.value) {
+              this.sfx = new Sfx();
+            } else {
+              this.sfx && this.sfx.disconnect() && delete this.sfx;
+            }
+          break;
+        }
+      },
+      onTrades(trades) {
         for (let trade of trades) {
+          if (trade[5] === 1) {
+            this.sfx && this.sfx.liquidation();
+            continue;
+          }
+
           if (options.exchanges.indexOf(trade[0]) === -1) {
             continue;
           }
 
           const size = trade[2] * trade[3];
           
-          if (options.useAudio && size > options.threshold * .1) {
-            this.sfx.tradeToSong(size / options.significantTradeThreshold, trade[4]);
+          if (options.useAudio && ((options.audioIncludeAll && size > options.threshold * .1) || size > options.significantTradeThreshold)) {
+            this.sfx && this.sfx.tradeToSong(size / options.significantTradeThreshold, trade[4]);
           }
 
           // group by [exchange name + buy=1/sell=0] (ex bitmex1)
@@ -64,7 +104,7 @@
                 this.ticks[tid][3] += trade[3];
 
                 if (this.ticks[tid][2] * this.ticks[tid][3] >= options.threshold) {
-                  this.appendTrade(this.ticks[tid]);
+                  this.appendRow(this.ticks[tid]);
                   delete this.ticks[tid];
                 }
 
@@ -78,21 +118,12 @@
             }
           }
 
-          this.appendTrade(trade);
+          this.appendRow(trade);
         }
 
         this.trades.splice(+options.maxRows || 20, this.trades.length);
-      });
-    },
-    mounted() {
-      this.timeAgoInterval = setInterval(() => {
-        for (let element of this.$el.querySelectorAll('[timestamp]')) {
-          element.innerHTML = this.ago(element.getAttribute('timestamp'));
-        }
-      }, 1000);
-    },
-    methods: {
-      appendTrade(trade) {
+      },
+      appendRow(trade) {
         let classname = [];
         let icon;
         let image;
