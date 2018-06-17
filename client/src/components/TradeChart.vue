@@ -748,7 +748,7 @@
           x: +trade[1], 
           y: +trade[2], 
           marker: {
-            radius: Math.max(4, Math.sqrt(Math.log(1 + (trade[2] * trade[3]) / options.hugeTradeThreshold)) * 6),
+            radius: Math.max(5, Math.log(1 + (trade[2] * trade[3]) / (options.hugeTradeThreshold - options.threshold)) * 6),
             symbol: trade[5] ? 'circle' : (trade[4] == 1 ? 'triangle' : 'triangle-down'),
             fillColor: fill
           }, 
@@ -799,7 +799,7 @@
 
         if (ticks.labels.length && !replace) {
           for (i=0; i<ticks.labels.length; i++) {
-            this.chart.series[3].addPoint(ticks.labels[i], false);
+            this.chart.series[3].addPoint(ticks.labels[i]);
           }
         }
 

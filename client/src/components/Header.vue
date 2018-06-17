@@ -8,7 +8,7 @@
       </svg>
       <span class="icon-history"></span>
     </button>
-    <button type="button" v-bind:title="following ? 'Stop live mode' : 'Go live mode'" v-tippy="{placement: 'bottom'}"><span class="icon-play" v-on:click="toggleFollow" v-bind:class="{following: following}"></span></button>
+    <button type="button" v-on:click="toggleFollow" v-bind:title="following ? 'Stop live mode' : 'Go live mode'" v-tippy="{placement: 'bottom'}"><span class="icon-play" v-bind:class="{following: following}"></span></button>
     <button type="button" v-on:click="toggleSettings"><span class="icon-cog"></span></button>
   </header>
 </template>
@@ -90,6 +90,7 @@
         }
       },
       toggleFollow() {
+        console.log(!this.following);
         options.follow(!this.following);
       },
       togglePopup() {

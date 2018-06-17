@@ -51,13 +51,14 @@
       <div class="mt8 settings__title" v-on:click="toggleSection('exchanges')" v-bind:class="{closed: options.settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
       <div class="form-group">
         <div class="settings__exchanges">
-          <a v-for="(exchange, index) in exchanges" v-bind:key="index"
+          <a v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index"
             class="settings__exchanges__item"
             href="#"
             v-on:click="options.toggleExchange(exchange)"
             v-bind:class="{'settings__exchanges__item--active': options.exchanges.indexOf(exchange) !== -1}">
             {{ exchange }}
           </a>
+          <div v-if="!exchanges.length" class="mb8">You are not connected to any exchanges</div>
         </div>
       </div>
       <div class="mt8 settings__title" v-on:click="toggleSection('thresholds')" v-bind:class="{closed: options.settings.indexOf('thresholds') > -1}">Thresholds <i class="icon-up"></i></div>
@@ -68,7 +69,7 @@
           <label><span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content.sync="options.hugeTradeThreshold"></editable> = <strong>huge</strong> <span class="icon-info-circle" v-bind:title="help.hugeTradeThreshold" v-tippy></span></label>
           <label><span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content.sync="options.rareTradeThreshold"></editable> = <strong><i>rare</i></strong> <span class="icon-info-circle" v-bind:title="help.rareTradeThreshold" v-tippy></span></label>
         </div>
-        <div class="form-group" title="Use shades of green/red<br><ul><li>higher sell = darker</li><li>higher buy = brighter</li></ul><small><i class='icon-warning'></i> Not suited for color blind users</small>" v-tippy>
+        <div class="form-group" title="Use dynamic shades of green/red to highlight the amount of each significant+ trades" v-tippy>
           <div class="shades" v-bind:class="{active: options.useShades}"></div>
           <label class="checkbox-control flex-right">
             <input type="checkbox" class="form-control" v-model="options.useShades">
@@ -511,7 +512,7 @@
     .settings__plots {
       .checkbox-control {
         flex-direction: column;
-        padding: 10px 0;
+        padding: 4px 0 10px;
 
         > span {
           margin-bottom: 5px;
