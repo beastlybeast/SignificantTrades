@@ -46,10 +46,6 @@
         this.sfx = new Sfx();
       }
 
-      window.liquidated = () => {
-        this.sfx && this.sfx.liquidation();
-      }
-
       socket.$on('trades', this.onTrades);
 
       setTimeout(() => {
@@ -94,7 +90,7 @@
             this.sfx && this.sfx.liquidation();
 
             if (size >= options.threshold) {
-              this.appendRow(trade, ['liquidation'], `${app.getAttribute('data-symbol')}${formatAmount(size, 1)} liquidated <strong>${trade[4] ? 'SHORT' : 'LONG'}</strong> @ ${formatPrice(trade[2])}`);
+              this.appendRow(trade, ['liquidation'], `${app.getAttribute('data-symbol')}<strong>${formatAmount(size, 1)}</strong> liquidated <strong>${trade[4] ? 'SHORT' : 'LONG'}</strong> @ ${app.getAttribute('data-symbol')}${formatPrice(trade[2])}`);
             }
             continue;
           }
@@ -386,6 +382,11 @@
         flex-grow: 0;
         flex-basis: 20px;
         font-size: 18px;
+        line-height: 1.06;
+
+        + .trades__item__message {
+          margin-left: 7px;
+        }
       }
 
       &.trades__item__exchange {
@@ -434,6 +435,12 @@
         text-align: right;
         flex-basis: 40px;
         flex-grow: 0;
+      }
+
+      &.trades__item__message {
+        flex-grow: 2;
+        text-align: center;
+        font-size: 90%;
       }
     }
   }

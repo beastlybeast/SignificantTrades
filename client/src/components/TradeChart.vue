@@ -611,7 +611,7 @@
           if (data[i][5]) {
             switch (+data[i][5]) {
               case 1:
-                options.showPlotsLiquidations && labels.push(this.createPoint(data[i], `${formatAmount(data[i][2] * data[i][3], 1)}${app.getAttribute('data-symbol')} liquidated <b>${data[i][4] == 1 ? 'SHORT' : 'LONG'}</b>`, '#3f51b5'));
+                options.showPlotsLiquidations && labels.push(this.createPoint(data[i], `${formatAmount(data[i][2] * data[i][3], 1)}${app.getAttribute('data-symbol')} liquidated <b>${data[i][4] == 1 ? 'SHORT' : 'LONG'}</b>`, '#E91E63'));
               break;
             }
 
@@ -738,7 +738,7 @@
           y: +trade[2],
           marker: {
             radius: Math.max(5, Math.log(1 + (trade[2] * trade[3]) / (options.hugeTradeThreshold - options.threshold)) * 6),
-            symbol: trade[5] ? 'circle' : (trade[4] == 1 ? 'triangle' : 'triangle-down'),
+            symbol: trade[5] ? 'diamond' : (trade[4] == 1 ? 'triangle' : 'triangle-down'),
             fillColor: fill
           },
           name: label,
