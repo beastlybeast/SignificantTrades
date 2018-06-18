@@ -2,16 +2,16 @@ import Tuna from 'tunajs'
 import options from '../services/options'
 
 class Sfx {
-	
+
 	constructor() {
 		this.timestamp = +new Date();
-
+		window.play=this.tradeToSong.bind(this);
 		this.connect();
 	}
 
 	connect() {
 		this.context = new (window.AudioContext || window.webkitAudioContext);
-		
+
 		var tuna = new Tuna(this.context);
 
 		this.output = new tuna.PingPongDelay({
@@ -49,7 +49,7 @@ class Sfx {
 			} else {
 				if (factor >= 10) {
 					[493.88, 369.99, 293.66, 246.94].forEach((f, i, a) => setTimeout(() => this.play(f, .05 + Math.sqrt(factor) / 10, i > 2 ? .1 + factor * .1 : .2), i > 2 ? 80 * 3 : i * 80));
-				} else if (factor >= 1) {					
+				} else if (factor >= 1) {
 					[493.88, 392].forEach((f, i) => setTimeout(() => this.play(f, .05 + Math.sqrt(factor) / 10, .1 + factor * .1), i * 80));
 				} else {
 					this.play(493.88, Math.sqrt(factor) / 10, .1 + Math.sqrt(factor) / 10);
@@ -59,7 +59,7 @@ class Sfx {
 
 		this.timestamp = Math.max(this.timestamp, now) + 80;
 	}
-	
+
 	play(frequency, value = .5, length = .1, type = 'triangle') {
 		if (this.context.state !== 'running') {
 			return;
@@ -74,15 +74,16 @@ class Sfx {
 
 		oscillator.onended = () => {
 			oscillator.disconnect();
-		}				
+		}
 
 		gain.connect(this.output);
 		oscillator.connect(gain);
+		length *= 1.1;
 
 		gain.gain.value = Math.max(.04, Math.min(2, value)) * options.audioVolume;
 
 		gain.gain.setValueAtTime(gain.gain.value, time)
-		gain.gain.exponentialRampToValueAtTime(0.01, time + length);
+		gain.gain.exponentialRampToValueAtTime(0.001, time + length);
 
 		oscillator.start(time);
 		oscillator.stop(time + length);

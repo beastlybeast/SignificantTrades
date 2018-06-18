@@ -105,15 +105,6 @@
     mounted() {
       this._trimInvisibleTradesInterval = setInterval(this.trimChart, 60 * 1000);
 
-      Highcharts.error = (code) => {
-        if (code === 15) {
-          clearTimeout(Highcharts.redrawTimeout);
-          Highcharts.redrawTimeout = setTimeout(() => {
-            this.appendTicksToChart(this.getTicks());
-          }, 100);
-        }
-      };
-
       Highcharts.wrap(Highcharts.Series.prototype, 'drawGraph', function(proceed) {
         var lineWidth;
 
@@ -131,7 +122,7 @@
           }
         }
       });
-      
+
       Highcharts.setOptions({
         time: {
           timezoneOffset: new Date().getTimezoneOffset()
@@ -351,7 +342,7 @@
       socket.$off('pair', this.onPair);
       options.$off('change', this.onSettings);
       options.$off('follow', this.onFollow);
-      
+
       clearTimeout(this._flushDetailTimeout);
       clearTimeout(this._zoomAfterTimeout);
       clearInterval(this._trimInvisibleTradesInterval);
@@ -366,12 +357,12 @@
     },
     methods: {
 
-      //                        _ _               
-      //   /\  /\__ _ _ __   __| | | ___ _ __ ___ 
+      //                        _ _
+      //   /\  /\__ _ _ __   __| | | ___ _ __ ___
       //  / /_/ / _` | '_ \ / _` | |/ _ \ '__/ __|
       // / __  / (_| | | | | (_| | |  __/ |  \__ \
       // \/ /_/ \__,_|_| |_|\__,_|_|\___|_|  |___/
-      // 
+      //
 
       onPair(pair, initialize) {
         if (!this.chart) {
@@ -448,12 +439,12 @@
         }
       },
 
-      //   _____       _                      _   _       _ _         
-      //   \_   \_ __ | |_ ___ _ __ __ _  ___| |_(_)_   _(_) |_ _   _ 
+      //   _____       _                      _   _       _ _
+      //   \_   \_ __ | |_ ___ _ __ __ _  ___| |_(_)_   _(_) |_ _   _
       //    / /\/ '_ \| __/ _ \ '__/ _` |/ __| __| \ \ / / | __| | | |
       // /\/ /_ | | | | ||  __/ | | (_| | (__| |_| |\ V /| | |_| |_| |
       // \____/ |_| |_|\__\___|_|  \__,_|\___|\__|_| \_/ |_|\__|\__, |
-      //                                                        |___/ 
+      //                                                        |___/
 
       doZoom(event, two = false) {
         this.timestamp = +new Date();
@@ -590,12 +581,12 @@
         delete this.scrolling;
       },
 
-      //  _____ _      _             
-      // /__   (_) ___| | _____ _ __ 
+      //  _____ _      _
+      // /__   (_) ___| | _____ _ __
       //   / /\/ |/ __| |/ / _ \ '__|
-      //  / /  | | (__|   <  __/ |   
-      //  \/   |_|\___|_|\_\___|_|   
-      // 
+      //  / /  | | (__|   <  __/ |
+      //  \/   |_|\___|_|\_\___|_|
+      //
 
       getTicks(input) {
         var id = btoa(Math.random()).substring(0,12);
@@ -649,7 +640,6 @@
               sells: 0,
               size: 0
             };
-
           }
 
           if (!this.tick.exchanges[data[i][0]]) {
@@ -664,7 +654,7 @@
           this.tick.exchanges[data[i][0]].size += (+data[i][3]);
           this.tick.size += (+data[i][3]);
           this.tick[data[i][4] > 0 ? 'buys' : 'sells'] += (data[i][3] * data[i][2]);
-          
+
           if (options.showPlotsSignificants && data[i][3] * data[i][2] >= options.hugeTradeThreshold) {
             labels.push(this.createPoint(data[i]));
           }
@@ -675,7 +665,6 @@
           buys: buys,
           prices: prices,
           labels: labels,
-          id: id
         };
       },
 
@@ -745,20 +734,18 @@
         let fill = color || (trade[4] == 1 ? '#7ca74e' : '#F44336');
 
         return {
-          x: +trade[1], 
-          y: +trade[2], 
+          x: +trade[1],
+          y: +trade[2],
           marker: {
             radius: Math.max(5, Math.log(1 + (trade[2] * trade[3]) / (options.hugeTradeThreshold - options.threshold)) * 6),
             symbol: trade[5] ? 'circle' : (trade[4] == 1 ? 'triangle' : 'triangle-down'),
             fillColor: fill
-          }, 
+          },
           name: label,
         };
       },
-      
-      appendTicksToChart(ticks, replace = false) {
-        var id = btoa(Math.random()).substring(0,12);
 
+      appendTicksToChart(ticks, replace = false) {
         const now = +new Date();
 
         let chartNeedsRedraw = false;
@@ -767,12 +754,15 @@
 
         if (ticks.prices.length) {
           if (replace) {
+            const min = this.chart.xAxis[0].min;
+            const max = this.chart.xAxis[0].max;
+            this.chart.xAxis[0].setExtremes(null, null, false);
             this.chart.series[0].setData(ticks.prices, false);
             this.chart.series[1].setData(ticks.sells, false);
             this.chart.series[2].setData(ticks.buys, false);
             this.chart.series[3].setData(ticks.labels, false);
-
             this.chart.redraw();
+            this.chart.xAxis[0].setExtremes(min, max, false);
           } else {
 
             if (this.lastTickTimestamp === ticks.prices[i][0]) {
@@ -833,7 +823,7 @@
           }
         }
       },
-      
+
       getTimeframe() {
         let value = parseFloat(options.timeframe);
         let type = /\%$/.test(options.timeframe) ? 'percent' : 'length';
@@ -866,7 +856,7 @@
 
         return false;
       },
-      
+
       trimChart() {
         if (this.following && +new Date() - this.timestamp >= 1000 * 60 * 5) {
           const min = this.chart.xAxis[0].min - this.timeframe;
@@ -895,13 +885,13 @@
 
         this.chart.xAxis[0].setExtremes(axisMin, dataMax, redraw);
       },
-      
-      //    __            _                     
-      //   /__\_  ___ __ | | ___  _ __ ___ _ __ 
+
+      //    __            _
+      //   /__\_  ___ __ | | ___  _ __ ___ _ __
       //  /_\ \ \/ / '_ \| |/ _ \| '__/ _ \ '__|
-      // //__  >  <| |_) | | (_) | | |  __/ |   
-      // \__/ /_/\_\ .__/|_|\___/|_|  \___|_|   
-      //           |_|                          
+      // //__  >  <| |_) | | (_) | | |  __/ |
+      // \__/ /_/\_\ .__/|_|\___/|_|  \___|_|
+      //           |_|
 
       showTickDetail(min, max) {
         clearTimeout(this._flushDetailTimeout);
@@ -1119,10 +1109,10 @@
         this.detailSorting.direction = direction;
       },
 
-      //         _          
-      //   /\/\ (_)___  ___ 
+      //         _
+      //   /\/\ (_)___  ___
       //  /    \| / __|/ __|
-      // / /\/\ \ \__ \ (__ 
+      // / /\/\ \ \__ \ (__
       // \/    \/_|___/\___|
       //
 
