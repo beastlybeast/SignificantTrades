@@ -11,6 +11,10 @@ const Server = require('./src/server');
 let config;
 
 try {
+	if (!fs.existsSync('./config.json') && fs.existsSync('./config.json.example')) {
+		fs.copyFileSync('./config.json.example', './config.json');
+	}
+
 	config = require('./config');
 } catch (error) {
 	throw new Error(`Unable to parse configuration file\n\n${error.message}`);

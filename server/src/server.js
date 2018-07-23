@@ -3,6 +3,7 @@ const WebSocket = require('ws');
 const url = require('url');
 const fs = require('fs');
 const http = require('http');
+const axios = require('axios');
 
 class Server extends EventEmitter {
 
@@ -188,7 +189,15 @@ class Server extends EventEmitter {
 		this.http = http.createServer((request, response) => {
 			response.setHeader('Access-Control-Allow-Origin', this.options.origin);
 
-			const path = url.parse(request.url).path;
+			let ip = request.headers['x-forwarded-for'] || request.connection.remoteAddress;
+
+			if (ip.indexOf('::ffff:') === 0) {
+				ip = ip.substr('::ffff:'.length, ip.length);
+			}
+
+			const path = url.parse(request.url).path;			
+			
+			let helloworld = true;
 
 			const routes = [{
 				match: /^\/?history\/(\d+)\/(\d+)\/?$/,
@@ -252,6 +261,45 @@ class Server extends EventEmitter {
 					response.setHeader('Content-Type', 'application/json');
 					response.end(JSON.stringify(output));
 				}
+			},
+			{
+				match: /^\/?cors\/(.*)\/?$/,
+				response: (arg) => {
+					const location = url.parse(arg);
+
+					console.log(`[server/cors] ${ip} fetching ${location.host} -> ${location.pathname}`);
+
+					if ([
+						'api.kraken.com',
+						'api.binance.com',
+						'api.bitfinex.com',
+						'api.gdax.com',
+						'api.pro.coinbase.com',
+						'api.prime.coinbase.com',
+						'www.bitstamp.net',
+						'api.hitbtc.com',
+						'poloniex.com',
+						'www.okex.com',
+						'api.huobi.pro',
+						'www.bitmex.com',
+						'api.coinex.com',
+					].indexOf(location.hostname) === -1) {
+						console.log(`[server/cors] unknown host ${location.hostname}`);
+					} else {
+						helloworld = false;
+
+						axios.get(arg, {transformResponse: undefined})
+							.then(_response => {
+								response.writeHead(200);
+								response.end(_response.data);
+							})
+							.catch(error => {
+								console.log(error);
+								response.writeHead(500);
+								response.end();
+							})
+					}
+				}
 			}];
 
 			for (let route of routes) {
@@ -261,7 +309,7 @@ class Server extends EventEmitter {
 				}
 			}
 
-			if (!response.finished) {
+			if (!response.finished && helloworld) {
 				response.writeHead(404);
 				response.end(`
 					<!DOCTYPE html>
