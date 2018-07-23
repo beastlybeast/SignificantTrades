@@ -80,10 +80,6 @@
       },
       onTrades(trades) {
         for (let trade of trades) {
-          if (options.exchanges.indexOf(trade[0]) === -1) {
-            continue;
-          }
-
           const size = trade[2] * trade[3];
 
           if (trade[5] === 1) {
@@ -282,12 +278,20 @@
   .trades__item {
     display: flex;
     flex-flow: row nowrap;
-    padding: 5px 7px;
+    padding: .4em .6em;
     background-position: center center;
     background-size: cover;
     background-blend-mode: overlay;
     position: relative;
     align-items: center;
+
+    @media only screen and (min-width: 480px) {
+      font-size: 1.5em;
+    }
+
+    @media only screen and (min-width: 768px) {
+      font-size: 2em;
+    }
 
     &:after {
       content: '';
@@ -380,18 +384,18 @@
 
       &.trades__item__side {
         flex-grow: 0;
-        flex-basis: 20px;
-        font-size: 18px;
+        flex-basis: 1em;
+        font-size: 1em;
         line-height: 1.06;
 
         + .trades__item__message {
-          margin-left: 7px;
+          margin-left: .5em;
         }
       }
 
       &.trades__item__exchange {
         flex-grow: .75;
-        min-width: 70px;
+        min-width: 4.5em;
 
         small {
           opacity: .8;
@@ -433,7 +437,7 @@
 
       &.trades__item__date {
         text-align: right;
-        flex-basis: 40px;
+        flex-basis: 4em;
         flex-grow: 0;
       }
 

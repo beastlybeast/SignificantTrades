@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="chart__detail stack__container" v-bind:class="{open: isDetailOpen}" v-bind:style="{ maxHeight: detailHeight + 'px' }">
+    <div v-if="isDetailOpen" class="chart__detail stack__container">
       <div class="stack__wrapper" ref="detailWrapper">
         <a href="#" class="stack__toggler icon-cross" v-on:click="showTickDetail(false)"></a>
         <div v-if="detail">
@@ -99,11 +99,11 @@
     },
     created() {
       this.timestamp = +new Date();
-
-      this.range = parseInt(this.defaultRange);
     },
     mounted() {
-      this._trimInvisibleTradesInterval = setInterval(this.trimChart, 60 * 1000);
+      if (options.wipeCache) {
+        this._trimInvisibleTradesInterval = setInterval(this.trimChart, 60 * options.wipeCacheDuration * 1000);
+      }
 
       Highcharts.wrap(Highcharts.Series.prototype, 'drawGraph', function(proceed) {
         var lineWidth;
@@ -129,9 +129,9 @@
         }
       });
 
-      socket.$on('pair', this.onPair);
+      socket.$on('connecting', this.onConnecting);
 
-      socket.$on('history', this.onFetch);
+      socket.$on('historical', this.onFetch);
 
       socket.$on('trades', this.onTrades);
 
@@ -304,11 +304,17 @@
 
       options.dark && this.toggleDark(options.dark);
 
+      this.onResize();
+
       if (socket.trades && socket.trades.length > 1) {
         this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
         this.ajustTimeframe();
         this.appendTicksToChart(this.getTicks(), true);
       }
+
+      this._onResize = this.onResize.bind(this);
+
+      window.addEventListener('resize', this._onResize)
 
       this._doZoom = this.doZoom.bind(this);
 
@@ -338,8 +344,8 @@
     },
     beforeDestroy() {
       socket.$off('trades', this.onTrades);
-      socket.$off('history', this.onFetch);
-      socket.$off('pair', this.onPair);
+      socket.$off('historical', this.onFetch);
+      socket.$off('connecting', this.onConnecting);
       options.$off('change', this.onSettings);
       options.$off('follow', this.onFollow);
 
@@ -348,6 +354,8 @@
       clearInterval(this._trimInvisibleTradesInterval);
 
       this.$refs.chartContainer.removeEventListener('wheel', this._doZoom);
+
+      window.removeEventListener('resize', this._onResize)
       window.removeEventListener('mousemove', this._doScroll);
       window.removeEventListener('mouseup', this._stopScroll);
       window.removeEventListener('keydown', this._shiftTracker);
@@ -364,7 +372,7 @@
       // \/ /_/ \__,_|_| |_|\__,_|_|\___|_|  |___/
       //
 
-      onPair(pair, initialize) {
+      onConnecting(pair) {
         if (!this.chart) {
           return;
         }
@@ -377,13 +385,11 @@
 
         const timestamp = +new Date();
 
-        if (!initialize) {
-          for (let serie of this.chart.series) {
-            serie.setData([], false);
-          }
-
-          this.chart.xAxis[0].setExtremes(timestamp - this.timeframe, timestamp, false);
+        for (let serie of this.chart.series) {
+          serie.setData([], false);
         }
+
+        this.chart.xAxis[0].setExtremes(timestamp - this.timeframe, timestamp, false);
 
         this.chart.redraw();
       },
@@ -395,7 +401,11 @@
 
         if (willReplace) {
           this.toggleFollow(true);
+
           this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
+
+          this.chart.xAxis[0].min = +new Date() - this.range;
+          this.chart.xAxis[0].max = +new Date();
         }
 
         this.ajustTimeframe();
@@ -421,7 +431,7 @@
 
       onSettings(data) {
         switch (data.prop) {
-          case 'exchanges':
+          case 'filters':
           case 'avgPeriods':
           case 'useWeighedAverage':
           case 'showPlotsSignificants':
@@ -436,7 +446,38 @@
           case 'dark':
             this.toggleDark(data.value);
           break;
+          case 'wipeCache':
+          case 'wipeCacheDuration':
+            clearInterval(this._trimInvisibleTradesInterval);
+            
+            if (options.wipeCache) {
+              this._trimInvisibleTradesInterval = setInterval(this.trimChart, 60 * options.wipeCacheDuration * 1000);
+            }
+          break;
         }
+      },
+
+      onResize(e) {
+        if (e) {
+          clearTimeout(this._onResizeTimeout);
+
+          this._onResizeTimeout = setTimeout(this._onResize, 500);
+
+          return;
+        }
+
+        if (!this.chart) {
+          return;
+        }
+
+        var w = window,
+            d = document,
+            e = d.documentElement,
+            g = d.getElementsByTagName('body')[0],
+            w = w.innerWidth || e.clientWidth || g.clientWidth,
+            h = w.innerHeight|| e.clientHeight|| g.clientHeight;
+
+        this.chart.setSize(w, Math.min(w / 3, Math.max(100, h / 3)), false);
       },
 
       //   _____       _                      _   _       _ _
@@ -487,11 +528,15 @@
           delete this._zoomAfterTimeout;
 
           if (!this.fetching && axisMin < this.chart.series[0].xData[0]) {
-            this.fetching = true;
-            socket.fetch(axisMin, this.chart.series[0].xData[0])
-              .then()
-              .catch()
-              .then(() => this.fetching = false);
+
+            if (/btcusd/i.test(options.pair)) {
+              this.fetching = true;
+              socket.fetchHistoricalData(axisMin, this.chart.series[0].xData[0])
+                .then()
+                .catch(() => this.fetching = false)
+                .then(() => this.fetching = false);
+            }
+
           } else if (this.ajustTimeframe()) {
             this.appendTicksToChart(this.getTicks(), true);
           }
@@ -569,12 +614,16 @@
 
             this.toggleFollow(false);
           } else if (!this.fetching && this.chart.xAxis[0].min < this.chart.series[0].xData[0]) {
-            this.fetching = true;
 
-            socket.fetch(this.chart.xAxis[0].min, this.chart.series[0].xData[0], false , false)
-              .then()
-              .catch()
-              .then(() => this.fetching = false);
+            if (/btcusd/i.test(options.pair)) {
+              this.fetching = true;
+
+              socket.fetchHistoricalData(this.chart.xAxis[0].min, this.chart.series[0].xData[0], false , false)
+                .then()
+                .catch()
+                .then(() => this.fetching = false);
+            }
+
           }
         }
 
@@ -600,7 +649,7 @@
           data = socket.trades.slice(0);
         }
 
-        data = data.filter(a => options.exchanges.indexOf(a[0]) !== -1);
+        data = data.filter(a => options.filters.indexOf(a[0]) === -1);
 
         const sells = [];
         const buys = [];
@@ -632,7 +681,7 @@
                 this.averages.splice(0, this.averages.length - options.avgPeriods);
               }
             }
-
+            console.log('new tick', new Date(+data[i][1]));
             this.tick = {
               timestamp: +data[i][1],
               exchanges: {},
@@ -785,6 +834,13 @@
           this.lastTickTimestamp = ticks.prices[ticks.prices.length - 1][0];
 
           chartNeedsRedraw = true;
+        } else if (replace) {
+          this.chart.series[0].setData([], false);
+          this.chart.series[1].setData([], false);
+          this.chart.series[2].setData([], false);
+          this.chart.series[3].setData([], false);
+
+          chartNeedsRedraw = true;
         }
 
         if (ticks.labels.length && !replace) {
@@ -860,7 +916,7 @@
       trimChart() {
         if (this.following && +new Date() - this.timestamp >= 1000 * 60 * 5) {
           const min = this.chart.xAxis[0].min - this.timeframe;
-          socket.trim(min);
+          socket.trimTradesData(min);
 
           this.chart.series.forEach(serie => {
             serie.data.filter(a => a.x < min).forEach(point => {
@@ -933,7 +989,7 @@
         };
 
         for (let trade of socket.trades) {
-          if (options.exchanges.indexOf(trade[0]) === -1) {
+          if (options.disabled.indexOf(trade[0]) !== -1 || options.filters.indexOf(trade[0]) !== -1) {
             continue;
           }
 
@@ -1032,14 +1088,7 @@
 
         this.sortTickDetail();
 
-        this.detailHeight = this.$refs.detailWrapper.clientHeight;
         this.isDetailOpen = true;
-
-        if (!this.detailHeight) {
-          setTimeout(() => {
-            this.detailHeight = this.$refs.detailWrapper.clientHeight;
-          }, 200);
-        }
       },
 
       moveTickDetail(direction) {

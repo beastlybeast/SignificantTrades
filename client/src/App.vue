@@ -1,9 +1,9 @@
 <template>
   <div id="app" :data-currency="currency" :data-commodity="commodity" :data-symbol="symbol" :data-pair="pair">
-    <Settings/>
+    <Settings v-if="showSettings" @close="showSettings = false"/>
     <div class="app-wrapper">
       <Alerts/>
-      <Header/>
+      <Header @settings="showSettings = !showSettings"/>
       <TradeChart/>
       <TradeList/>
     </div>
@@ -31,12 +31,15 @@
         currency: 'dollar',
         commodity: 'bitcoin',
         symbol: '$',
+
+        showSettings: false,
+        showStatistics: false,
       }
     },
     created() {
       const settings = JSON.parse(localStorage.getItem('options'));
 
-      socket.$on('pair', pair => {
+      socket.$on('connecting', pair => {
         this.pair = options.pair = pair;
 
         this.updatePairCurrency(this.pair);
@@ -87,17 +90,7 @@
       }
     },
     mounted() {
-      socket.fetch(1, null, true, false)
-        .then((response, err) => {
-          !err && socket.connect();
-        }).catch(error => {
-          socket.$emit('alert', {
-            type: 'error',
-            id: `fetch_error`,
-            title: `Sorry, can't reach the server.`,
-            message: `Please come back later.`,
-          });   
-        })
+      socket.initialize()
     },
     methods: {
       updatePairCurrency(pair) {
@@ -204,7 +197,7 @@
     }
 
     .trades__item.trades__item--sell {
-      color: $red;
+      color: lighten($red, 15%);
       background-color: rgba($red, .1);
 
       &.trades__item--significant {
@@ -233,14 +226,6 @@
     overflow: hidden;
     position: relative;
     min-height: 250px;
-
-    @media only screen and (min-width: 768px) {
-      width: 320px;
-    }
-
-    > .app-wrapper {
-      transition: all .2s $easeOutExpo;
-    }
 
     .icon-commodity:before {
       content: unicode($icon-coin);
@@ -280,10 +265,7 @@
   }
 
   .stack__container {
-    transition: all .8s $easeOutExpo .2s, visibility .1s linear 1.5s;
-    visibility: hidden;
     transform: none;
-    pointer-events: none;
     overflow: hidden;
     max-height: 1000px;
     font-size: 12px;
@@ -306,9 +288,6 @@
       padding: 8px 10px;
       max-height: 100%;
       overflow: auto;
-      transform: scale(1.2);
-      opacity: 0;
-      transition: all .4s $easeOutExpo;
       position: relative;
 
       p {
@@ -328,23 +307,6 @@
         position: relative;
         letter-spacing: -.5px;
       }
-    }
-
-    &.open {
-      transition: all .3s $easeOutExpo;
-      visibility: visible;
-      transform: none;
-      pointer-events: auto;
-
-      .stack__wrapper {
-        transition: all .3s $easeOutExpo .2s;
-        transform: none;
-        opacity: 1;
-      }
-    }
-
-    &:not(.open) {
-      max-height: 0 !important;
     }
   }
 </style>

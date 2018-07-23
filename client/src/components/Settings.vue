@@ -1,64 +1,16 @@
 <template>
-  <div class="settings__container stack__container" v-bind:class="{ open: opened }" v-bind:style="{ maxHeight: height + 'px' }">
+  <div class="settings__container stack__container" v-on:click="$event.target === $el && $emit('close')">
     <div class="stack__wrapper" ref="settingsWrapper">
-      <a href="#" class="stack__toggler icon-cross" v-on:click="hideSettings"></a>
+      <a href="#" class="stack__toggler icon-cross" v-on:click="$emit('close')"></a>
       <div class="settings__title" v-on:click="toggleSection('basics')" v-bind:class="{closed: options.settings.indexOf('basics') > -1}">Basics <i class="icon-up"></i></div>
       <div class="settings__column">
-        <div class="form-group" v-bind:class="{ restricted: restricted }">
+        <div class="form-group">
           <label>Pair <span class="icon-info-circle" v-bind:title="help.pair" v-tippy></span></label>
-          <input type="string" placeholder="BTCUSD" class="form-control" v-model="options.pair" @change="switchPair" :disabled="restricted">
+          <input type="string" placeholder="BTCUSD" class="form-control" v-model="options.pair" @change="switchPair">
         </div>
         <div class="form-group">
           <label>Max rows <span class="icon-info-circle" v-bind:title="help.maxRows" v-tippy></span></label>
           <input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
-        </div>
-      </div>
-      <div class="mt8 settings__title" v-on:click="toggleSection('chart')" v-bind:class="{closed: options.settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
-      <div>
-        <div class="settings__column">
-          <div class="form-group">
-            <label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
-            <input type="string" placeholder="XX% or XXs" class="form-control" v-model="options.timeframe">
-          </div>
-          <div class="form-group">
-            <label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgPeriods" v-tippy></span></label>
-            <div class="input-group">
-              <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.avgPeriods">
-              <label class="checkbox-control flex-right" title="Use weighed average" v-tippy>
-                <input type="checkbox" class="form-control" v-model="options.useWeighedAverage">
-                <div></div>
-              </label>
-            </div>
-          </div>
-        </div>
-        <div class="settings__plots settings__column">
-          <div class="form-group">
-            <label class="checkbox-control flex-right" v-tippy title="Shows significants orders on the chart">
-              <input type="checkbox" class="form-control" v-model="options.showPlotsSignificants">
-              <span>Show {{options.hugeTradeThreshold}}+</span>
-              <div></div>
-            </label>
-          </div>
-          <div class="form-group">
-            <label class="checkbox-control flex-right" v-tippy title="Shows liquidations on the chart">
-              <input type="checkbox" class="form-control" v-model="options.showPlotsLiquidations">
-              <span>Show liquidations</span>
-              <div></div>
-            </label>
-          </div>
-        </div>
-      </div>
-      <div class="mt8 settings__title" v-on:click="toggleSection('exchanges')" v-bind:class="{closed: options.settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
-      <div class="form-group">
-        <div class="settings__exchanges">
-          <a v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index"
-            class="settings__exchanges__item"
-            href="#"
-            v-on:click="options.toggleExchange(exchange)"
-            v-bind:class="{'settings__exchanges__item--active': options.exchanges.indexOf(exchange) !== -1}">
-            {{ exchange }}
-          </a>
-          <div v-if="!exchanges.length" class="mb8">You are not connected to any exchanges</div>
         </div>
       </div>
       <div class="mt8 settings__title" v-on:click="toggleSection('thresholds')" v-bind:class="{closed: options.settings.indexOf('thresholds') > -1}">Thresholds <i class="icon-up"></i></div>
@@ -95,6 +47,68 @@
           <input type="range" min="0" max="5" step=".1" v-model="options.audioVolume">
         </div>
       </div>
+      <div class="mt8 settings__title" v-on:click="toggleSection('chart')" v-bind:class="{closed: options.settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
+      <div>
+        <div class="settings__column">
+          <div class="form-group">
+            <label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
+            <input type="string" placeholder="XX% or XXs" class="form-control" v-model="options.timeframe">
+          </div>
+          <div class="form-group">
+            <label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgPeriods" v-tippy></span></label>
+            <div class="input-group">
+              <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.avgPeriods">
+              <label class="checkbox-control flex-right" title="Use weighed average" v-tippy>
+                <input type="checkbox" class="form-control" v-model="options.useWeighedAverage">
+                <div></div>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="settings__chart">
+          <div class="form-group mb8">
+            <label class="checkbox-control flex-left" v-tippy title="Shows significants orders on the chart">
+              <input type="checkbox" class="form-control" v-model="options.showPlotsSignificants">
+              <div></div>
+              <span>Highlight {{options.hugeTradeThreshold}}+</span>
+            </label>
+          </div>
+          <div class="form-group mb8">
+            <label class="checkbox-control flex-left" v-tippy title="Shows liquidations on the chart">
+              <input type="checkbox" class="form-control" v-model="options.showPlotsLiquidations">
+              <div></div>
+              <span>Highlight liquidations</span>
+            </label>
+          </div>
+          <div class="form-group mb8">
+            <label class="checkbox-control flex-left" v-tippy title="Wipe invisible data after a while to free memory and speed up the app">
+              <input type="checkbox" class="form-control" v-model="options.wipeCache">
+              <div></div>
+              <span>Wipe invisible data <span v-if="options.wipeCache" v-on:click.stop.prevent>after <editable :content.sync="options.wipeCacheDuration"></editable> minutes</span></span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="mt8 settings__title" v-on:click="toggleSection('exchanges')" v-bind:class="{closed: options.settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
+      <div class="form-group">
+        <div class="settings__exchanges">
+          <a v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index"
+            class="settings__exchanges__item"
+            href="#"
+            v-on:click="options.toggleExchange(exchange)"
+            v-bind:class="{
+              'settings__exchanges__item--active': connected.indexOf(exchange) !== -1 && options.disabled.indexOf(exchange) === -1,
+              'settings__exchanges__item--loading': connected.indexOf(exchange) === -1 && options.disabled.indexOf(exchange) === -1,
+              'settings__exchanges__item--error': fails[exchange] > 0,
+              'settings__exchanges__item--invisible': filters.indexOf(exchange) !== -1,
+            }">
+            <span>{{ exchange }}</span>
+            <i class="icon-visibility" v-on:click.stop="options.toggleFilter(exchange)"></i>
+            <i class="icon-warning"></i>
+          </a>
+          <div v-if="!exchanges.length" class="mb8">You are not connected to any exchanges</div>
+        </div>
+      </div>
       <div class="mt15 settings__column settings__footer flex-middle">
         <div class="form-group">
           <div v-if="version.number">
@@ -125,16 +139,17 @@
     data() {
       return {
         exchanges: [],
+        connected: [],
+        filters: [],
+        fails: [],
         options: options,
-        opened: false,
-        restricted: true,
-        height: 0,
         help: {
           pair: `The pair to aggregate from<br><small><i>special access required</i></small>`,
           avgPeriods: `Define how many periods are used to smooth the chart<br><ol><li>Exchange prices are averaged <strong>within</strong> the tick first (using weighed average in that timeframe if enabled, if not then the close value is used)</li><li>If cumulated periods are > 1 then the price is averaged (using weighed or simple average) using the number of periods you choosed right there (2 by default)</li></ol>`,
           maxRows: `Numbers of trades to keep visible`,
           timeframe: `Define how much trades we stack together in the chart, type a amount of seconds or % of the visible range<br><ul><li>Type 1.5% for optimal result</li><li>Minimum is 5s whatever you enter</li></ul>`,
           exchanges: `Enable/disable exchanges<br>(exclude from list & chart)`,
+          cacheDuration: `Trim invisible chart data after N minutes (to free memory)`,
           threshold: `Minimum amount a trade should have in order to show up on the list`,
           significantTradeThreshold: `Highlight the trade in the list`,
           hugeTradeThreshold: `Shows animation under it !`,
@@ -150,51 +165,38 @@
     created() {
       window.addEventListener('beforeunload', this.autosaveHandler);
 
-      socket.$on('admin', () => this.restricted = false);
-
-      socket.$on('exchanges', exchanges => {
-        this.exchanges = exchanges;
-
-        if (!options.exchanges.length) {
-          options.exchanges = this.exchanges.filter(exchange => ['bithumb', 'hitbtc'].indexOf(exchange) === -1);
-        }
-
-        setTimeout(() => this.refreshHeight(), 10);
-      });
-
-      this.onopen = () => {
-        this.refreshHeight();
-        this.opened = true;
-      };
-      this.onclose = () => this.opened = false;
-      this.ontoggle = () => {
-        if (this.opened) {
-          this.onclose();
-        } else {
-          this.onopen();
-        }
-      };
+      this.exchanges = socket.exchanges;
+      this.connected = socket.connected;
+      this.fails = socket.fails;
+      this.disabled = options.disabled;
+      this.filters = options.filters;
     },
     mounted() {
-      options.$on('open', this.onopen);
-      options.$on('close', this.onclose);
-      options.$on('toggle', this.ontoggle);
+      socket.$on('fails', this.onFails);
+      socket.$on('connected', this.onConnected);
     },
     beforeDestroy() {
-      options.$off('open', this.onopen);
-      options.$off('close', this.onclose);
-      options.$off('toggle', this.ontoggle);
+      socket.$off('fails', this.onFails);
+      socket.$off('connected', this.onConnected);
     },
     methods: {
-      refreshHeight() {
-        this.height = this.$refs.settingsWrapper.clientHeight;
+      onConnected(connected) {
+        this.connected = connected;
       },
-      hideSettings() {
-        options.hide();
+      onFails(fails, exchange) {
+        this.fails[exchange] = fails[exchange];
       },
       switchPair(event) {
         socket.$emit('alert', 'clear');
-        socket.send('pair', options.pair);
+        if (options.pair) {
+          options.pair = options.pair.toUpperCase();
+
+          socket.disconnectExchanges();
+
+          setTimeout(() => {
+            socket.connectExchanges();
+          }, 500);
+        }
       },
       toggleSection(name) {
         const index = options.settings.indexOf(name);
@@ -204,8 +206,6 @@
         } else {
           options.settings.splice(index, 1);
         }
-
-        setTimeout(() => this.refreshHeight(), 10);
       },
       save() {
         localStorage.setItem('options', JSON.stringify(options.$data));
@@ -226,6 +226,31 @@
   .settings__container {
     background-color: #222;
     color: white;
+
+    @media screen and (min-width: 500px) {
+      position: fixed;
+      z-index: 1;
+      height: 100%;
+      width: 320px;
+      overflow: auto;  
+
+      &:before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.22);
+        z-index: -1;
+      }
+
+      .stack__wrapper {
+        background-color: inherit;
+        height: calc(100% + 20px);
+        overflow: visible;
+      }
+    }
 
     .stack__wrapper {
       padding: 20px;
@@ -290,14 +315,6 @@
     .form-group {
       display: flex;
       flex-direction: column;
-
-      &.restricted {
-        opacity: .5;
-
-        &, input, label {
-          cursor: not-allowed;
-        }
-      }
 
       .form-control {
         padding: 8px 8px;
@@ -454,6 +471,12 @@
       }
     }
 
+    [contenteditable] {
+      display: inline-block;
+      cursor: text;
+      font-family: monospace;
+    }
+
     .settings__column {
       display: flex;
       flex-direction: row;
@@ -509,22 +532,14 @@
       }
     }
 
-    .settings__plots {
+    .settings__chart {
       .checkbox-control {
-        flex-direction: column;
-        padding: 4px 0 10px;
-
-        > span {
-          margin-bottom: 5px;
-          width: 100%;
-          text-align: center;
-          line-height: 1.5;
-        }
       }
     }
 
     .settings__audio {
       align-items: center;
+      padding-bottom: 8px;
 
       label {
         margin: 0;
@@ -560,8 +575,6 @@
     }
 
     .settings__thresholds {
-      padding-bottom: 4px;
-
       .shades {
         width: 1.5em;
         height: 1.5em;
@@ -614,42 +627,153 @@
       }
 
       [contenteditable] {
-        display: inline-block;
-        cursor: text;
         color: $green;
-        font-family: monospace;
       }
     }
 
     .settings__exchanges {
+      display: flex;
+      flex-wrap: wrap;
+
       .settings__exchanges__item {
-        padding: 5px 8px;
         background-color: rgba(white, .15);
         color: white;
         transition: all .2s $easeOutExpo;
         border-radius: 2px;
         margin-right: 4px;
         margin-bottom: 4px;
-        display: inline-block;
+        display: flex;
         position: relative;
 
         &:before {
           content: '';
-          position: absolute;
-          top: calc(50% - 0px);
-          height: 1px;
-          background-color: white;
-          transition: width 0.2s $easeOutExpo .2s;
-          left: 12%;
-          width: 76%;
+          width: 0px;
+          height: 0px;
+          
+          background-color: #fff;
+          border-radius: 50%;
+          animation: sk-scaleout 1.0s infinite ease-in-out;
+          transition: all .2s $easeElastic, visibility .2s linear .2s;
+          left: 3px;
+          display: block;
+          align-self: center;
+          position: relative;
+          
+          opacity: 0;
+          visibility: hidden;
+
+          @keyframes sk-scaleout {
+            0% { 
+              -webkit-transform: scale(0);
+              transform: scale(0);
+            } 100% {
+              -webkit-transform: scale(1.0);
+              transform: scale(1.0);
+              opacity: 0;
+            }
+          }
+        }
+
+        > * {
+          padding: 5px 8px;
+        }
+
+        .icon-warning {
+          display: none;
+        }
+
+        .icon-visibility {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all .2s $easeOutExpo .2s, background-color 0s linear;
+          width: 0px;
+          padding-left: 0px;
+          padding-right: 0px;
+
+          &:hover {
+            background-color: rgba(white, .2);
+          }
+
+          &:before {
+            transform: scale(.5);
+            opacity: 0;
+            content: unicode($icon-visible);
+            transition: all .2s $easeElastic, color .2s $easeOutExpo;
+          }
+        }
+
+        span {
+          position: relative;
+          
+          &:before {
+            content: '';
+            position: absolute;
+            top: calc(50% - 0px);
+            height: 1px;
+            background-color: white;
+            transition: width 0.2s $easeOutExpo .2s;
+            left: 12%;
+            width: 76%;
+          }
+        }
+
+        &.settings__exchanges__item--loading {
+          background-color: $pink;
+
+          &:before {
+            transition: all .2s $easeElastic;
+            visibility: visible;
+            opacity: 1;
+            width: 16px;
+            height: 16px;
+          }
         }
 
         &.settings__exchanges__item--active {
           background-color: $green;
           color: white;
 
-          &:before {
+          span:before {
             width: 0%;
+          }
+
+          .icon-visibility {
+            width: 12px;
+            padding-left: 8px;
+            padding-right: 8px;
+
+            &:before {
+              opacity: 1;
+              transform: scale(1.2);
+              transition: all .2s $easeElastic .4s, color .2s $easeOutExpo;
+            }
+          }
+
+          &.settings__exchanges__item--invisible {
+            .icon-visibility:before {
+              transform: scale(1.2) rotateY(180deg);
+            }
+          }
+        }
+
+        &.settings__exchanges__item--invisible {
+          opacity: .8;
+
+          .icon-visibility:before {
+            content: unicode($icon-invisible);
+          }
+        }
+
+        &.settings__exchanges__item--error {
+          background-color: $red;
+
+          .icon-warning {
+            display: block;
+          }
+
+          .icon-visibility:before {
+            content: unicode($icon-invisible);
           }
         }
       }

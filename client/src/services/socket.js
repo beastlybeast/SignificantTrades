@@ -1,54 +1,58 @@
 import Vue from 'vue'
 import Axios from 'axios'
 
+import Kraken from '../exchanges/kraken'
+import Bitmex from '../exchanges/bitmex'
+import Coinex from '../exchanges/coinex'
+import Huobi from '../exchanges/huobi'
+import Binance from '../exchanges/binance'
+import Bitfinex from '../exchanges/bitfinex'
+import Bitstamp from '../exchanges/bitstamp'
+import Gdax from '../exchanges/gdax'
+import Hitbtc from '../exchanges/hitbtc'
+import Okex from '../exchanges/okex'
+import Poloniex from '../exchanges/poloniex'
+
 import options from './options'
+
+const exchanges = [
+  new Kraken(), 
+  /*new Bitmex(),
+  new Coinex(),*/
+  new Binance(),
+  new Gdax(),
+  //new Bitfinex(),
+  //new Huobi(),
+  /*new Bitstamp(),
+  new Hitbtc(),
+  new Okex(),
+  new Poloniex(),*/
+];
 
 const emitter = new Vue({
   data() {
     return {
-      url: process.env.API_URL || 'ws://localhost:3000',
       delay: 0,
       trades: [],
       exchanges: [],
-      lastExchangesPrices: {},
-      socket: null,
-      connected: false,
-      reconnectionDelay: 2000,
+      connected: [],
+      fails: {},
+      timestamps: {},
     }
-  },
-  created() {
-    this.http_url = this.url.replace(/^ws(s?)\:\/\//, 'http$1://');
-  },
+  },  
   methods: {
-    connect() {
-      if (this.socket && this.socket.readyState === 1) {
-        return;
-      }
+    initialize() {
+      this.exchanges = exchanges.map(exchange => exchange.id);
 
-      this.socket = new WebSocket(this.url);
+      console.log(`[sockets] initializing ${this.exchanges.length} exchange(s)`);
 
-      this.socket.onopen = event => {
-        this.connected = true;
+      exchanges.forEach(exchange => {
+        exchange.on('live_trades', data => {
+          if (!data || !data.length) {
+            return;
+          }
 
-        this.$emit('connected', event);
-
-        this.$emit('price', '???', 'neutral')
-
-        this.reconnectionDelay = 5000;
-      }
-
-      this.socket.onmessage = event => {
-        let data = JSON.parse(event.data);
-
-        if (!data) {
-          throw new Error('Unable to read socket message');
-        }
-
-        if (Array.isArray(data) && data.length) {
-
-          /* received message is trade data
-              => filter, sort, store and transmit to components
-          */
+          this.timestamps[exchange.id] = +new Date();
 
           data = data
             .sort((a, b) => a[1] - b[1]);
@@ -61,154 +65,116 @@ const emitter = new Vue({
 
           this.trades = this.trades.concat(data);
 
-          this.$emit('trades', data);
+          const filtered = data.filter(a => options.filters.indexOf(a[0]) === -1);
 
-        } else if (typeof data.type) {
-
-          /* received message is something else
-              => event, alerts, updates..
-          */
-
-          switch (data.type) {
-            case 'welcome':
-              this.$emit('welcome', data);
-
-              if (data.admin) {
-                this.$emit('admin');
-              }
-
-              this.exchanges = data.exchanges
-                .filter(exchange => exchange.connected)
-                .map(exchange => exchange.id);
-
-              this.delay = data.timestamp ? data.timestamp - +new Date() : 0;
-              this.delayed = Math.abs(this.delay) > 2000;
-
-              this.$emit('exchanges', this.exchanges);
-
-              this.$emit('pair', data.pair, true);
-
-              this.$emit('alert', {
-                id: `server_status`,
-                type: 'info',
-                title: `Tracking ${data.pair}`,
-                message: !this.exchanges.length ? 'No connected exchanges' : 'On ' + this.exchanges.join(', ').toUpperCase()
-              });
-
-              let dismissed = localStorage.getItem('inaccurate_clock_dismissed') || 0;
-            break;
-            case 'pair':
-              this.$emit('pair', data.pair);
-
-              this.$emit('alert', {
-                id: `pair`,
-                type: 'info',
-                title: `Now tracking ${data.pair}`,
-              });
-            break;
-            case 'exchange_connected':
-              if (options.debug) {
-                this.$emit('alert', {
-                  data: {
-                    type: 'connected',
-                    exchange: data.id,
-                  },
-                  id: `${data.id}_status`,
-                  type: 'success',
-                  message: `[${data.id}] connected`
-                });
-              }
-
-              if (this.exchanges.indexOf(data.id) === -1)
-                this.exchanges.push(data.id);
-
-              this.$emit('exchanges', this.exchanges);
-            break;
-            case 'exchange_disconnected':
-              if (options.debug) {
-                this.$emit('alert', {
-                  data: {
-                    type: 'disconnected',
-                    exchange: data.id,
-                  },
-                  id: `${data.id}_status`,
-                  type: 'error',
-                  message: `[${data.id}] disconnected`
-                });
-              }
-
-              if (this.exchanges.indexOf(data.id) !== -1)
-                this.exchanges.splice(this.exchanges.indexOf(data.id), 1);
-
-              this.$emit('exchanges', this.exchanges);
-            break;
-            case 'exchange_error':
-              if (options.debug) {
-                this.$emit('alert', {
-                  type: 'error',
-                  title: `[${data.id}] an error occured`,
-                  id: `${data.id}_status`,
-                  message: data.message
-                });
-              }
-            break;
-          }
-        }
-      }
-
-      this.socket.onclose = () => {
-        if (this.connected) {
-          this.connected = false;
-
-          this.$emit('alert', {
-            type: 'error',
-            message: `Connection lost`,
-            id: `server_status`,
-          });
-
-          this.$emit('disconnected');
-
-          clearInterval(this.refreshStatsInterval);
-        }
-
-        this.reconnect();
-      }
-
-      this.socket.onerror = err => {
-        this.$emit('alert', {
-          type: 'error',
-          id: `server_status`,
-          message: `Couldn't reach the server`,
+          this.$emit('trades', filtered);
         });
 
-        this.$emit('error', err);
+        exchange.on('open', event => {
+          const index = this.connected.indexOf(exchange.id);
+          index === -1 && this.connected.push(exchange.id);
 
-        this.reconnect();
-      }
+          this.fails[exchange.id] = 0;
+
+          this.$emit('connected', this.connected);
+        });
+
+        exchange.on('error', event => {
+          
+        });
+
+        exchange.on('close', event => {
+          const index = this.connected.indexOf(exchange.id);
+          index >= 0 && this.connected.splice(index, 1);
+
+          this.$emit('connected', this.connected);
+
+          if (exchange.shouldBeConnected && options.disabled.indexOf(exchange) === -1) {
+            exchange.reconnect(options.pair);
+          }
+        });
+
+        exchange.on('error', event => {
+          if (!this.fails[exchange.id]) {
+            this.fails[exchange.id] = 0;
+          }
+
+          this.fails[exchange.id]++;
+
+          this.$emit('fails', this.fails, exchange.id);
+        });
+      });
+
+      this.connect();
     },
-    send(method, message) {
-      if (this.socket && this.socket.readyState === 1) {
-        this.socket.send(JSON.stringify({
-          method: method,
-          message: message
-        }))
+    connect(pair = null) {
+      this.disconnect();
+
+      if (pair) {
+        options.pair = pair;
       }
+
+      this.trades = [];
+
+      this.$emit('connecting', options.pair);
+      
+      Promise.all(exchanges.map(exchange => exchange.validatePair(options.pair))).then(() => {
+        const validExchanges = exchanges.filter(exchange => exchange.valid && options.disabled.indexOf(exchange.id) === -1);
+
+        return Promise.all(validExchanges.map(exchange => exchange.fetchRecentsTrades()))
+          .then(data => {
+            console.log('then?', data);
+            for (let trades of data) {
+              if (trades && trades.length) {
+                this.trades = this.trades
+                  .concat(trades)
+                  .sort((a, b) => a[1] - b[1]);
+              }
+            }
+
+            this.$emit('historical', true);
+
+            validExchanges.forEach(exchange => exchange.connect());
+
+            this.$emit('alert', {
+              id: `server_status`,
+              type: 'info',
+              title: `Tracking ${options.pair}`,
+              message: !validExchanges.length ? 'No connected exchanges' : 'On ' + validExchanges.map(exchange => exchange.id).join(', ').toUpperCase()
+            });
+          });
+      });
     },
     disconnect() {
-      this.socket && this.socket.close();
+      exchanges.forEach(exchange => exchange.disconnect());
     },
-    reconnect() {
-      if (this.socket && this.socket.readyState === 1) {
+    trimTradesData(timestamp) {
+      let index;
+
+      for (index = this.trades.length - 1; index >= 0; index--) {
+        if (this.trades[index][1] < timestamp) {
+          break;
+        }
+      }
+
+      if (index < 0) {
         return;
       }
 
-      clearTimeout(this.reconnectionTimeout);
+      this.trades.splice(0, ++index);
 
-      this.reconnectionTimeout = setTimeout(this.connect.bind(this), this.reconnectionDelay);
-
-      this.reconnectionDelay *= 1.1;
+      this.$emit('trim', timestamp);
     },
-    fetch(from, to = null, willReplace = false) {
+    getExchangeById(id) {
+      for (let exchange of exchanges) {
+        if (exchange.id === id) {
+          return exchange;
+        }
+      }
+
+      return null;
+    },
+    fetchHistoricalData(from, to = null, willReplace = false) {
       if (!to) {
         to = +new Date();
         from = to - from * 1000 * 60;
@@ -257,7 +223,7 @@ const emitter = new Vue({
           }
 
           if (count !== this.trades.length) {
-            this.$emit('history', willReplace);
+            this.$emit('historical', willReplace);
           }
 
           resolve(trades);
@@ -273,23 +239,6 @@ const emitter = new Vue({
           reject(err);
         })
       });
-    },
-    trim(timestamp) {
-      let index;
-
-      for (index = this.trades.length - 1; index >= 0; index--) {
-        if (this.trades[index][1] < timestamp) {
-          break;
-        }
-      }
-
-      if (index < 0) {
-        return;
-      }
-
-      this.trades.splice(0, ++index);
-
-      this.$emit('trim', timestamp);
     }
   }
 });

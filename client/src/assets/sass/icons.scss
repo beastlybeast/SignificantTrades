@@ -150,4 +150,29 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-expand); 
   }
 }
+.icon-balance {
+  &:before {
+    content: unicode($icon-balance); 
+  }
+}
+.icon-magic {
+  &:before {
+    content: unicode($icon-magic); 
+  }
+}
+.icon-numbers {
+  &:before {
+    content: unicode($icon-numbers); 
+  }
+}
+.icon-invisible {
+  &:before {
+    content: unicode($icon-invisible); 
+  }
+}
+.icon-visible {
+  &:before {
+    content: unicode($icon-visible); 
+  }
+}
 

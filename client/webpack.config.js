@@ -85,21 +85,23 @@ module.exports = {
   },
   devtool: '#eval-source-map'
 }
+var date = new Date();
+
+module.exports.plugins = (module.exports.plugins || []).concat([
+  new webpack.DefinePlugin({
+    'process.env': {
+      NODE_ENV: JSON.stringify(process.env.NODE_ENV),
+      VERSION: JSON.stringify(require("./package.json").version),
+      BUILD_DATE: JSON.stringify(date.getDate() + ' ' + date.toLocaleString('en-US', {month: 'short'}).toLowerCase()),
+      PROXY_URL: JSON.stringify(process.env.PROXY_URL || null)
+    }
+  })
+]);
 
 if (process.env.NODE_ENV === 'production') {
-  var date = new Date();
-
   module.exports.devtool = '#source-map'
   // http://vue-loader.vuejs.org/en/workflow/production.html
   module.exports.plugins = (module.exports.plugins || []).concat([
-    new webpack.DefinePlugin({
-      'process.env': {
-        NODE_ENV: JSON.stringify('production'),
-        VERSION: JSON.stringify(require("./package.json").version),
-        BUILD_DATE: JSON.stringify(date.getDate() + ' ' + date.toLocaleString('en-US', {month: 'short'}).toLowerCase()),
-        API_URL: JSON.stringify(process.env.API_URL || null)
-      }
-    }),
     new webpack.optimize.UglifyJsPlugin({
       sourceMap: true,
       compress: {

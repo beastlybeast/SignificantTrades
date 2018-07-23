@@ -2,14 +2,14 @@
   <header class="header">
     <div class="header__title"><span class="icon-currency"></span> <span v-html="title"></span></div>
     <button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}"><span class="icon-external-link"></span></button>
-    <button type="button" v-on:click="retrieveChart" v-bind:title="fetchLabel" v-tippy="{placement: 'bottom'}">
+    <!-- <button type="button" v-on:click="retrieveChart" v-bind:title="fetchLabel" v-tippy="{placement: 'bottom'}">
       <svg class="loader" v-bind:class="{loading: dashoffset > 0}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14">
         <path :stroke-dashoffset="dashoffset" d="M7,1a6.06,6.06,0,0,1,6,6,6.06,6.06,0,0,1-6,6A6.06,6.06,0,0,1,1,7,6.06,6.06,0,0,1,7,1Z"/>
       </svg>
       <span class="icon-history"></span>
-    </button>
+    </button> -->
     <button type="button" v-on:click="toggleFollow" v-bind:title="following ? 'Stop live mode' : 'Go live mode'" v-tippy="{placement: 'bottom'}"><span class="icon-play" v-bind:class="{following: following}"></span></button>
-    <button type="button" v-on:click="toggleSettings"><span class="icon-cog"></span></button>
+    <button type="button" v-on:click="$emit('settings')"><span class="icon-cog"></span></button>
   </header>
 </template>
 
@@ -71,9 +71,6 @@
       setTimeout(() => this.created = true, 2000);
     },
     methods: {
-      toggleSettings() {
-        options.toggle();
-      },
       retrieveChart() {
         if (this.dashoffset) {
           return;
@@ -82,7 +79,7 @@
         const interval = parseInt(window.prompt(`Load last "x" minutes`, 60));
 
         if (interval > 1) {
-          socket.fetch(interval)
+          socket.fetchHistoricalData(interval)
             .then(data => {
               this.dashoffset = 0;
               this.fetchLabel = this._fetchLabel;
@@ -217,27 +214,6 @@
           transform: rotateZ(-360deg) scale(1.1);
           display: inline-block;
           text-shadow: 0 0 20px $red, 0 0 2px white;
-        }
-      }
-    }
-  }
-
-  .stats__container {
-
-    .stack__wrapper {
-      display: flex;
-
-      > div {
-        flex-grow: 1;
-        flex-basis: auto;
-        display: flex;
-        flex-direction: column;
-
-        > div:first-child {
-          margin-bottom: 5px;
-          text-transform: uppercase;
-          letter-spacing: .5px;
-          opacity: .5;
         }
       }
     }
