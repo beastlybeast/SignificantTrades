@@ -103,7 +103,7 @@
               'settings__exchanges__item--invisible': filters.indexOf(exchange) !== -1,
             }">
             <span>{{ exchange }}</span>
-            <i class="icon-visibility" v-on:click.stop="options.toggleFilter(exchange)"></i>
+            <i class="icon-visibility" v-on:click.stop.prevent="options.toggleFilter(exchange)"></i>
             <i class="icon-warning"></i>
           </a>
           <div v-if="!exchanges.length" class="mb8">You are not connected to any exchanges</div>

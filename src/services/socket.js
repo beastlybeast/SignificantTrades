@@ -17,16 +17,16 @@ import options from './options'
 
 const exchanges = [
   new Kraken(), 
-  /*new Bitmex(),
-  new Coinex(),*/
+  new Bitmex(),
+  new Coinex(),
   new Binance(),
   new Gdax(),
-  //new Bitfinex(),
-  //new Huobi(),
-  /*new Bitstamp(),
+  new Bitfinex(),
+  new Huobi(),
+  new Bitstamp(),
   new Hitbtc(),
   new Okex(),
-  new Poloniex(),*/
+  new Poloniex(),
 ];
 
 const emitter = new Vue({
@@ -181,7 +181,7 @@ const emitter = new Vue({
         willReplace = true;
       }
 
-      const url = `${this.http_url}/history/${parseInt(from)}/${parseInt(to)}`;
+      const url = `${process.env.API_URL ? process.env.API_URL : ''}/history/${parseInt(from)}/${parseInt(to)}`;
 
       if (this.lastFetchUrl === url) {
         return new Promise((resolve, reject) => resolve());

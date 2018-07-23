@@ -7,7 +7,8 @@
   "license": "MIT",
   "private": true,
   "config": {
-    "PROXY_URL": "http://176.31.163.155:1337/cors/"
+    "PROXY_URL": "http://176.31.163.155:1337/cors/",
+    "API_URL": "https://btcusd.kevinrostagni.codes"
   },
   "scripts": {
     "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot --host 0.0.0.0",

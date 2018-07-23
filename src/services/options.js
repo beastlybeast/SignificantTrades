@@ -12,7 +12,7 @@ const emitter = new Vue({
       timeframe: '1.5%',
       wipeCache: true,
       wipeCacheDuration: 15,
-      disabled: ['bithumb', 'hitbtc'],
+      disabled: ['bithumb', 'hitbtc', 'kraken'],
       filters: [],
       debug: false,
       dark: true,

@@ -24,7 +24,7 @@ class Okex extends Exchange {
     this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)));
 
     this.api.onopen = event => {
-      this.api.send(JSON.stringify({event:'addChannel', channel:'ok_sub_spot_' + this.mapping[pair] + '_deals'}));
+      this.api.send(JSON.stringify({event:'addChannel', channel:'ok_sub_spot_' + this.pair + '_deals'}));
 
       this.keepalive = setInterval(() => {
         this.api.send(JSON.stringify({event: 'ping'}));

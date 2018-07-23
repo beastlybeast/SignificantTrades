@@ -48,7 +48,7 @@ class Exchange extends EventEmitter {
 			} else {
 				this._pair = this.mapping[name];
 			}
-		} else if (this.pairs && this.pairs.indexOf(name)) {
+		} else if (this.pairs && this.pairs.indexOf(name) !== -1) {
 			this._pair = name;
 		} else {
 			this._pair = null;
@@ -203,11 +203,11 @@ class Exchange extends EventEmitter {
 	}
 
 	fetchRecentsTrades() {
-		console.log(`[${this.id}] fetching recents trades...`)
-
-		if (!this.recents) {
+		if (true || !this.recents) {
 			return Promise.resolve();
 		}
+
+		console.log(`[${this.id}] fetching recents trades...`)
 
 		return new Promise((resolve, reject) => {
 			fetch(`${process.env.PROXY_URL ? process.env.PROXY_URL : ''}${typeof this.recents === 'function' ? this.recents(this.pair) : this.recents}`)
