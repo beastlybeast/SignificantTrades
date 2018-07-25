@@ -26,12 +26,14 @@ class Huobi extends Exchange {
 	}
 
 	connect() {
-    if (!super.connect())  
+    if (!super.connect())
       return;
 
     this.api = new WebSocket(this.getUrl());
 
-		this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)));
+    this.api.binaryType = "arraybuffer";
+
+		this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(event.data));
 
 		this.api.onopen = event => {
       this.api.send(JSON.stringify({
@@ -48,7 +50,7 @@ class Huobi extends Exchange {
 	}
 
 	disconnect() {
-    if (!super.disconnect())  
+    if (!super.disconnect())
       return;
 
     if (this.api && this.api.readyState < 2) {

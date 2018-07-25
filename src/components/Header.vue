@@ -76,7 +76,7 @@
           return;
         }
 
-        const interval = parseInt(window.prompt(`Load last "x" minutes`, 60));
+        const interval = parseInt(window.prompt(`Fetch last 𝑥 minutes`, 60));
 
         if (interval > 1) {
           socket.fetchHistoricalData(interval)

@@ -1,5 +1,4 @@
 import EventEmitter from '../helpers/eventemitter'
-import Axios from 'axios';
 
 class Exchange extends EventEmitter {
 
@@ -7,7 +6,6 @@ class Exchange extends EventEmitter {
 		super();
 
 		this.id = this.constructor.name.toLowerCase();
-		console.info('new exchange', this.id);
 
 		this.connected = false;
 		this.valid = false;

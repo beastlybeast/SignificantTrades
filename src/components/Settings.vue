@@ -99,7 +99,8 @@
             v-bind:class="{
               'settings__exchanges__item--active': connected.indexOf(exchange) !== -1 && options.disabled.indexOf(exchange) === -1,
               'settings__exchanges__item--loading': connected.indexOf(exchange) === -1 && options.disabled.indexOf(exchange) === -1,
-              'settings__exchanges__item--error': fails[exchange] > 0,
+              'settings__exchanges__item--error': options.disabled.indexOf(exchange) !== -1 && fails[exchange] > 0,
+              'settings__exchanges__item--unmatched': unmatched.indexOf(exchange) !== -1,
               'settings__exchanges__item--invisible': filters.indexOf(exchange) !== -1,
             }">
             <span>{{ exchange }}</span>
@@ -142,6 +143,7 @@
         connected: [],
         filters: [],
         fails: [],
+        unmatched: [],
         options: options,
         help: {
           pair: `The pair to aggregate from<br><small><i>special access required</i></small>`,
@@ -165,26 +167,25 @@
     created() {
       window.addEventListener('beforeunload', this.autosaveHandler);
 
-      this.exchanges = socket.exchanges;
       this.connected = socket.connected;
-      this.fails = socket.fails;
+      this.errors = socket.errors;
+      this.matchs = socket.matchs;
       this.disabled = options.disabled;
       this.filters = options.filters;
+      this.exchanges = socket.exchanges;
     },
     mounted() {
-      socket.$on('fails', this.onFails);
+      socket.$on('exchange_match', this.onExchangeFailed);
+      socket.$on('exchange_error', this.onExchangeFailed);
       socket.$on('connected', this.onConnected);
     },
     beforeDestroy() {
-      socket.$off('fails', this.onFails);
+      socket.$off('exchange_error', this.onExchangeFailed);
       socket.$off('connected', this.onConnected);
     },
     methods: {
-      onConnected(connected) {
-        this.connected = connected;
-      },
-      onFails(fails, exchange) {
-        this.fails[exchange] = fails[exchange];
+      onExchangeFailed(exchange, count) {
+        this.fails[exchange] = count;
       },
       switchPair(event) {
         socket.$emit('alert', 'clear');
@@ -232,7 +233,7 @@
       z-index: 1;
       height: 100%;
       width: 320px;
-      overflow: auto;  
+      overflow: auto;
 
       &:before {
         content: '';
@@ -616,7 +617,7 @@
       span {
         margin-right: 4px;
         display: none;
-        
+
         @media only screen and (min-width: 320px) {
           display: inline-block;
         }
@@ -649,7 +650,7 @@
           content: '';
           width: 0px;
           height: 0px;
-          
+
           background-color: #fff;
           border-radius: 50%;
           animation: sk-scaleout 1.0s infinite ease-in-out;
@@ -658,12 +659,12 @@
           display: block;
           align-self: center;
           position: relative;
-          
+
           opacity: 0;
           visibility: hidden;
 
           @keyframes sk-scaleout {
-            0% { 
+            0% {
               -webkit-transform: scale(0);
               transform: scale(0);
             } 100% {
@@ -705,7 +706,7 @@
 
         span {
           position: relative;
-          
+
           &:before {
             content: '';
             position: absolute;
