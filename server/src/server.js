@@ -452,6 +452,8 @@ class Server extends EventEmitter {
 
 	backup(exit = false) {
 		if (!this.chunk.length) {
+			exit && process.exit();
+			
 			return;
 		}
 

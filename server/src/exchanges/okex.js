@@ -8,7 +8,19 @@ class Okex extends Exchange {
 
     this.id = 'okex';
 
-    this.mapping = {
+    this.type = 'spot';
+
+    this.mapping = pair => {
+      if (this.pairs[pair]) {
+        this.type = /(1WEEK|2WEEKS|QUARTER)$/.test(pair) ? 'future' : 'spot';
+
+        return this.pairs[pair].toLowerCase();
+      }
+      
+      return false;
+    }
+
+    this.pairs = {
       LTCBTC: 'ltc_btc',
       ETHBTC: 'eth_btc',
       ETCBTC: 'etc_btc',
@@ -494,10 +506,18 @@ class Okex extends Exchange {
       ZENETH: 'zen_eth',
       ZIPETH: 'zip_eth',
       ZRXETH: 'zrx_eth'
-    }
+    };
+
+    ['BTC', 'LTC', 'ETH', 'ETC', 'BCH', 'XRP', 'EOS', 'BTG'].forEach(coin => {
+      this.pairs[coin + '1WEEK'] = coin + '_trade_this_week';
+      this.pairs[coin + '2WEEKS'] = coin + '_trade_next_week';
+      this.pairs[coin + 'QUARTER'] = coin + '_trade_quarter';
+    });
 
 		this.options = Object.assign({
-      url: 'wss://real.okex.com:10441/websocket'
+      url: (pair) => {
+        return this.type === 'future' ? 'wss://real.okex.com:10440/websocket/okexapi' : 'wss://real.okex.com:10441/websocket'
+      }
 		}, this.options);
 	}
 
@@ -510,7 +530,9 @@ class Okex extends Exchange {
     this.api.on('message', event => this.emitData(this.format(event)));
 
     this.api.on('open', event => {
-      this.api.send(JSON.stringify({event:'addChannel', channel:'ok_sub_spot_' + this.mapping[pair] + '_deals'}));
+      const channel = this.type === 'future' ? 'ok_sub_futureusd_' + this.pair : 'ok_sub_spot_' + this.pair + '_deals';
+
+      this.api.send(JSON.stringify({event: 'addChannel', channel: channel}));
 
       this.keepalive = setInterval(() => {
         this.api.send(JSON.stringify({event: 'ping'}));
@@ -546,6 +568,7 @@ class Okex extends Exchange {
     const initial = typeof this.reference === 'undefined';
 
     if (!json || !json[0] || json[0].channel === 'addChannel') {
+      console.log(event);
       return;
     }
 
@@ -571,6 +594,12 @@ class Okex extends Exchange {
       return output;
     }
 	}
+
+  pad(num, size) {
+    var s = num+"";
+    while (s.length < size) s = "0" + s;
+    return s;
+  }
 
 }
 

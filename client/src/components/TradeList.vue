@@ -47,6 +47,7 @@
       }
 
       socket.$on('trades', this.onTrades);
+      socket.$on('pair', this.onPair);
 
       setTimeout(() => {
         options.$on('change', this.onSettings);
@@ -59,6 +60,7 @@
       }, 1000);
     },
     beforeDestroy() {
+      socket.$off('pair', this.onPair);
       socket.$off('trades', this.onTrades);
       options.$off('change', this.onSettings);
 
@@ -77,6 +79,9 @@
             }
           break;
         }
+      },
+      onPair(pair) {
+        this.trades.splice(0, this.trades.length);
       },
       onTrades(trades) {
         for (let trade of trades) {
