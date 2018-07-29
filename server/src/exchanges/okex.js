@@ -568,7 +568,6 @@ class Okex extends Exchange {
     const initial = typeof this.reference === 'undefined';
 
     if (!json || !json[0] || json[0].channel === 'addChannel') {
-      console.log(event);
       return;
     }
 
