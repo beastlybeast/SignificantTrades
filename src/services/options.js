@@ -5,6 +5,7 @@ const emitter = new Vue({
   data() {
     return {
       threshold: 100000,
+      thresholds: {},
       maxRows: 20,
       pair: 'BTCUSD',
       avgPeriods: 2,

@@ -7,9 +7,11 @@ class Huobi extends Exchange {
 
     this.id = 'hitbtc';
 
-		this.products = 'https://api.hitbtc.com/api/2/public/symbol';
-		this.recents = () => `https://api.hitbtc.com/api/2/public/trades/${this.pair}?sort=DESC&limit=500`;
-
+    this.endpoints = {
+      PRODUCTS: 'https://api.hitbtc.com/api/2/public/symbol',
+      TRADES: () => `https://api.hitbtc.com/api/2/public/trades/${this.pair}?sort=DESC&limit=500`
+    }
+		
 		this.options = Object.assign({
 			url: 'wss://api.hitbtc.com/api/2/ws',
 		}, this.options);
@@ -65,7 +67,7 @@ class Huobi extends Exchange {
 		}
 	}
 
-	formatRecentsTrades(response) {
+	/* formatRecentsTrades(response) {
 		if (response && response.length) {
 			return response.map(trade => [
 				this.id,
@@ -75,7 +77,7 @@ class Huobi extends Exchange {
 				trade.side === 'buy' ? 1 : 0
 			]);
 		}
-	}
+	} */
 
 	formatProducts(data) {
 		return data.map(a => a.id);

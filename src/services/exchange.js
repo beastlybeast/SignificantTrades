@@ -22,11 +22,8 @@ class Exchange extends EventEmitter {
 			if (storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24) {
 				console.info(`[${this.id}] reading stored products`);
 
-				if (Array.isArray(storage.data)) {
-					this.pairs = storage.data;
-				} else {
-					this.mapping = storage.data;
-				}
+				this.pairs = storage.data;
+
 			} else {
 				console.info(`[${this.id}] products data expired`);
 			}
@@ -36,17 +33,20 @@ class Exchange extends EventEmitter {
 	}
 
 	get hasProducts() {
-		return !(((!this.pairs || !Array.isArray(this.pairs))) && (!this.mapping || typeof this.mapping !== 'object'));
+		return this.pairs && ((Array.isArray(this.pairs) && this.pairs.length) || (typeof this.pairs === 'object' && Object.keys(this.pairs).length));
 	}
 
 	set pair(name) {
-		if (this.mapping) {
-			if (typeof this.mapping === 'function') {
-				this._pair = this.mapping(name);
-			} else {
-				this._pair = this.mapping[name];
-			}
-		} else if (this.pairs && this.pairs.indexOf(name) !== -1) {
+		if (!this.pairs) {
+			this._pair = null;
+			return;
+		}
+
+		if (this.matchPairName && typeof this.matchPairName === 'function') {
+			this._pair = this.matchPairName(name);
+		} else if (typeof this.pairs === 'object') {
+			this._pair = this.pairs[name] || null;
+		} else if (Array.isArray(this.pairs) && this.pairs.indexOf(name) !== -1) {
 			this._pair = name;
 		} else {
 			this._pair = null;
@@ -171,9 +171,9 @@ class Exchange extends EventEmitter {
 		return data;
 	}
 
-	formatRecentsTrades(data) {
+	/* formatRecentsTrades(data) {
 		return data;
-	}
+	} */
 
 	formatProducts(data) {
 		return data;
@@ -192,80 +192,104 @@ class Exchange extends EventEmitter {
 
 			this.emit('error', new Error(`Unknown pair ${pair}`));
 
+			this.emit('match', null);
+
 			return Promise.resolve();
 		}
 
 		this.valid = true;
 
+		this.emit('match', this.pair);
+
 		return Promise.resolve();
 	}
 
-	fetchRecentsTrades() {
-		if (true || !this.recents) {
+	/* fetchRecentsTrades() {
+		if (!this.endpoints || !this.endpoints.TRADES) {
+			this.pairs = [];
+
 			return Promise.resolve();
 		}
 
-		console.log(`[${this.id}] fetching recents trades...`)
+		let urls = typeof this.endpoints.TRADES === 'function' ? this.endpoints.TRADES(this.pair) : this.endpoints.TRADES
+
+		if (!Array.isArray(urls)) {
+			urls = [urls];
+		}
+
+		console.log(`[${this.id}] fetching recent trades...`, urls)
 
 		return new Promise((resolve, reject) => {
-			fetch(`${process.env.PROXY_URL ? process.env.PROXY_URL : ''}${typeof this.recents === 'function' ? this.recents(this.pair) : this.recents}`)
+			return Promise.all(urls.map(action => {
+				action = action.split('|');
+
+				let method = action.length > 1 ? action.shift() : 'GET';
+				let url = action[0];
+
+				return fetch(`${process.env.PROXY_URL ? process.env.PROXY_URL : ''}${url}`, {method: method})
 				.then(response => response.json())
-				.then(data => {
-					console.log(`[${this.id}] received API recents trades => format trades`);
+				.catch(response => [])
+			})).then(data => {
+				console.log(`[${this.id}] received API recents trades => format trades`);
 
-					const formated = this.formatRecentsTrades(data);
+				if (data.length === 1) {
+					data = data[0];
+				}
 
-					if (!formated || !formated.length) {
-						return resolve();
-					}
+				const trades = this.formatRecentsTrades(data);
 
-					return resolve(formated);
-				})
-				.catch(error => {
-					console.error(`[${this.id}] unable to fetch products`, error);
+				if (!trades || !trades.length) {
+					return resolve();
+				}
 
-					resolve();
-				})
+				return resolve(trades);
+			});
 		});
-	}
+	} */
 
 	fetchProducts() {
-		console.log(`[${this.id}] fetching products...`)
+		if (!this.endpoints || !this.endpoints.PRODUCTS) {
+			this.pairs = [];
+
+			return Promise.resolve();
+		}
+
+		let urls = typeof this.endpoints.PRODUCTS === 'function' ? this.products(this.pair) : this.endpoints.PRODUCTS
+
+		if (!Array.isArray(urls)) {
+			urls = [urls];
+		}
+
+		console.log(`[${this.id}] fetching products...`, urls)
 
 		return new Promise((resolve, reject) => {
-			fetch(`${process.env.PROXY_URL ? process.env.PROXY_URL : ''}${typeof this.products === 'function' ? this.products(this.pair) : this.products}`)
+			return Promise.all(urls.map(action => {
+				action = action.split('|');
+
+				let method = action.length > 1 ? action.shift() : 'GET';
+				let url = action[0];
+
+				return fetch(`${process.env.PROXY_URL ? process.env.PROXY_URL : ''}${url}`, {method: method})
 				.then(response => response.json())
-				.then(data => {
-					console.log(`[${this.id}] received API products response => format products`);
+				.catch(response => [])
+			})).then(data => {
+				console.log(`[${this.id}] received API products response => format products`);
 
-					const formated = this.formatProducts(data);
+				if (data.length === 1) {
+					data = data[0];
+				}
 
-					if (!formated) {
-						return resolve();
-					}
+				this.pairs = this.formatProducts(data) || [];
 
-					if (Array.isArray(formated)) {
-						this.pairs = formated;
-					} else {
-						this.mapping = formated;
-					}
+				console.log(`[${this.id}] storing products`, this.pairs);
 
-					console.log(`[${this.id}] storing products`, formated);
+				localStorage.setItem(this.id, JSON.stringify({
+					timestamp: +new Date(),
+					data: this.pairs
+				}));
 
-					localStorage.setItem(this.id, JSON.stringify({
-						timestamp: +new Date(),
-						data: formated
-					}));
-
-					resolve(formated);
-				})
-				.catch(error => {
-					console.error(`[${this.id}] unable to fetch products`, error);
-
-					this.pairs = [];
-
-					resolve();
-				});
+				resolve(this.pairs);
+			});
 		});
 	}
 

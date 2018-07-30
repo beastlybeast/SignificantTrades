@@ -7,22 +7,12 @@ class Bitfinex extends Exchange {
 
     this.id = 'bitfinex';
 
-    this.products = 'https://api.bitfinex.com/v1/symbols';
-    this.recents = () => `https://api.bitfinex.com/v2/trades/t${this.pair}/hist?limit=1000`;
-    this.infos = () => `https://api.bitfinex.com/v2/ticker/t${this.pair}`;
-/*
-  BID, 
-  BID_SIZE, 
-  ASK, 
-  ASK_SIZE, 
-  DAILY_CHANGE, 
-  DAILY_CHANGE_PERC, 
-  LAST_PRICE, 
-  VOLUME, 
-  HIGH, 
-  LOW
-*/
-    this.mapping = pair => {
+    this.endpoints = {
+      PRODUCTS: 'https://api.bitfinex.com/v1/symbols',
+      TRADES: () => `https://api.bitfinex.com/v2/trades/t${this.pair}/hist?limit=1000`
+    }
+
+    this.matchPairName = pair => {
       if (this.pairs.indexOf(pair) !== -1) {
         return pair;
       } 
@@ -81,7 +71,7 @@ class Bitfinex extends Exchange {
     ]];
 	}
 
-	formatRecentsTrades(response) {
+	/* formatRecentsTrades(response) {
     if (!response || !response.length) {
       return;
     }
@@ -93,7 +83,7 @@ class Bitfinex extends Exchange {
       Math.abs(trade[2]),
       trade[2] > 0 ? 1 : 0,
     ]);
-	}
+	} */
 
   formatProducts(data) {
     return data.map(a => a.toUpperCase());

@@ -286,11 +286,11 @@
     align-items: center;
 
     @media only screen and (min-width: 480px) {
-      font-size: 1.5em;
+      font-size: 1.25em;
     }
 
     @media only screen and (min-width: 768px) {
-      font-size: 2em;
+      font-size: 1.5em;
     }
 
     &:after {
@@ -351,7 +351,7 @@
     }
 
     &.trades__item--huge {
-      padding: 8px 7px;
+      padding: .6em .6em;
 
       > div {
         position: relative;
@@ -369,7 +369,6 @@
     }
 
     &.trades__item--rare {
-      padding: 10px 7px;
       box-shadow: 0 0 20px rgba(red, .5);
       z-index: 1;
     }

@@ -1183,7 +1183,7 @@
         this.chart.series[0].update({
           color: state ? '#fff' : '#222',
           shadow: state ? {
-            color: 'rgba(255, 255, 255, .15)',
+            color: 'rgba(255, 255, 255, .1)',
             width: 15,
             offsetX: 0,
             offsetY: 0
@@ -1192,7 +1192,7 @@
 
         this.chart.series[3].update({
           shadow: state ? {
-            color: 'rgba(255, 255, 255, .15)',
+            color: 'rgba(255, 255, 255, .1)',
             width: 15,
             offsetX: 0,
             offsetY: 0

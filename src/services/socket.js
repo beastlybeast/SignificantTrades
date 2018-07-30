@@ -17,16 +17,16 @@ import options from './options'
 
 const exchanges = [
   // new Kraken(), <- disabled til Kraken release ws api
-  new Bitmex(),
+  /*new Bitmex(),
   new Coinex(),
   new Binance(),
   new Gdax(),
   new Bitfinex(),
   new Huobi(),
   new Bitstamp(),
-  new Hitbtc(),
+  new Hitbtc(),*/
   new Okex(),
-  new Poloniex(),
+  //new Poloniex(),
 ];
 
 const emitter = new Vue({
@@ -36,7 +36,7 @@ const emitter = new Vue({
       trades: [],
       exchanges: [],
       connected: [],
-      unmatched: [],
+      matchs: {},
       errors: {},
       timestamps: {},
       API_URL: null,
@@ -84,19 +84,19 @@ const emitter = new Vue({
         });
 
         exchange.on('open', event => {
+          console.log(`[socket.exchange.on.open] ${exchange.id} opened`);
+
           const index = this.connected.indexOf(exchange.id);
           index === -1 && this.connected.push(exchange.id);
 
           this.errors[exchange.id] = 0;
 
-          if (this.unmatched.indexOf(exchange.id) !== -1) {
-            this.unmatched.splice(this.unmatched.indexOf(exchange.id), 1);
-          }
-
           this.$emit('connected', this.connected);
         });
 
         exchange.on('close', event => {
+          console.log(`[socket.exchange.on.close] ${exchange.id} closed`);
+
           const index = this.connected.indexOf(exchange.id);
           index >= 0 && this.connected.splice(index, 1);
 
@@ -107,25 +107,29 @@ const emitter = new Vue({
           }
         });
 
+        exchange.on('match', pair => {
+          console.log(`[socket.exchange.on.match] ${exchange.id} matched ${pair}`);
+
+          this.matchs[exchange.id] = pair;
+        });
+
         exchange.on('error', event => {
+          console.log(`[socket.exchange.on.error] ${exchange.id} reported an error`);
+
           if (!this.errors[exchange.id]) {
             this.errors[exchange.id] = 0;
           }
 
           this.errors[exchange.id]++;
 
-          if (!exchange.valid && this.unmatched.indexOf(exchange.id) === -1) {
-            this.unmatched.push(exchange.id);
-          }
-
           this.$emit('exchange_error', exchange.id, this.errors[exchange.id]);
         });
       });
 
-      this.connect();
+      this.connectExchanges();
     },
-    connect(pair = null) {
-      this.disconnect();
+    connectExchanges(pair = null) {
+      this.disconnectExchanges();
 
       if (pair) {
         options.pair = pair;
@@ -156,7 +160,7 @@ const emitter = new Vue({
         })
       });
     },
-    disconnect() {
+    disconnectExchanges() {
       console.log(`[socket.connect] disconnect exchanges asynchronously`);
 
       exchanges.forEach(exchange => exchange.disconnect());

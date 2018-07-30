@@ -7,10 +7,12 @@ class Binance extends Exchange {
 
     this.id = 'binance';
 
-    this.products = 'https://api.binance.com/api/v1/ticker/allPrices';
-    this.recents = () => `https://api.binance.com/api/v1/trades?symbol=${this.pair.toUpperCase()}`;
+    this.endpoints = {
+      PRODUCTS: 'https://api.binance.com/api/v1/ticker/allPrices',
+      TRADES: () => `https://api.binance.com/api/v1/trades?symbol=${this.pair.toUpperCase()}`
+    }
 
-    this.mapping = pair => {
+    this.matchPairName = pair => {
       pair = pair.replace(/USD$/, 'USDT');
 
       if (this.pairs.indexOf(pair) !== -1) {
@@ -65,7 +67,7 @@ class Binance extends Exchange {
 		return false;
 	}
 
-  formatRecentsTrades(data) {
+  /* formatRecentsTrades(data) {
     return data.map(trade => [
       this.id,
       trade.time,
@@ -73,7 +75,7 @@ class Binance extends Exchange {
       trade.qty,
       !trade.isBuyerMaker ? 1 : 0
     ])
-  }
+  } */
 
   formatProducts(data) {
     return data.map(a => a.symbol)

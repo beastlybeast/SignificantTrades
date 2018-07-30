@@ -6,12 +6,35 @@ class Okex extends Exchange {
 		super(options);
 
     this.id = 'okex';
+		
+    this.endpoints = {
+      PRODUCTS: [
+        'https://www.okex.com/api/v1/tickers.do',
+        'POST|https://www.okex.com/v2/futures/pc/market/futuresCoin.do',
+      ],
+			TRADES: () => `https://www.okex.com/api/v1/trades.do?symbol=${this.pair}`
+    }
 
-    this.products = 'https://www.okex.com/api/v1/tickers.do';
-    this.recents = () => `https://www.okex.com/api/v1/trades.do?symbol=${this.pair}`;
+    this.matchPairName = pair => {
+      if (this.pairs.spots[pair]) {
+        this.type = 'spot';
+        return this.pairs.spots[pair];
+      } else if (this.pairs.futures[pair]) {
+        this.type = 'futures';
+        return this.pairs.futures[pair];
+      }
+
+      return false;
+    }
 
 		this.options = Object.assign({
-      url: 'wss://real.okex.com:10441/websocket'
+      url: () => {
+        if (this.type === 'futures') {
+          return 'wss://real.okex.com:10440/websocket/okexapi';
+        } else {
+          return 'wss://real.okex.com:10441/websocket';
+        }
+      }
 		}, this.options);
 	}
 
@@ -24,7 +47,12 @@ class Okex extends Exchange {
     this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)));
 
     this.api.onopen = event => {
-      this.api.send(JSON.stringify({event:'addChannel', channel:'ok_sub_spot_' + this.pair + '_deals'}));
+      const channel = this.type === 'futures' ? 'ok_sub_futureusd_' + this.pair : 'ok_sub_spot_' + this.pair + '_deals';
+
+      this.api.send(JSON.stringify({
+        event: 'addChannel',
+        channel: channel
+      }));
 
       this.keepalive = setInterval(() => {
         this.api.send(JSON.stringify({event: 'ping'}));
@@ -63,7 +91,7 @@ class Okex extends Exchange {
     }
 
     const base = new Date();
-    base.setTime(base.getTime() + ((8 + base.getTimezoneOffset() / 60)*60*60*1000));
+    base.setTime(base.getTime() + ((8 + base.getTimezoneOffset() / 60)* 60 * 60 * 1000));
 
     const output = json[0].data.map((trade, index, array) => {
       const timestamp = +new Date(`${base.getFullYear()}-${base.getMonth() + 1}-${base.getDate()} ${trade[3]}+08:00`);
@@ -86,7 +114,7 @@ class Okex extends Exchange {
     }
 	}
 
-  formatRecentsTrades(response) {
+  /* formatRecentsTrades(response) {
     if (response && response.length) {
       return response.map(trade => [
         this.id,
@@ -96,16 +124,33 @@ class Okex extends Exchange {
         trade.type === 'buy' ? 1 : 0,
       ]);
     }
-  }
+  } */
 
   formatProducts(response) {
-    let output = {};
+    const output = {
+      futures: {},
+      spots: {}
+    };
+    
+    const futuresContractsTypes = [
+      'this_week',
+      'next_week',
+      'quarter'
+    ];
 
-    if (response && response.tickers && response.tickers.length) {
-      response.tickers.forEach(product => {
-        output[product.symbol.split('_').join('').replace(/usdt$/, 'USD').toUpperCase()] = product.symbol;
-      });
-    }
+    response.forEach(data => {
+      if (data && data.tickers && data.tickers.length) {
+        data.tickers.forEach(product => {
+          output.spots[product.symbol.split('_').join('').replace(/usdt$/, 'USD').toUpperCase()] = product.symbol;
+        });
+      } else if (data && data.msg === 'success' && data.data) {
+        data.data.forEach(product => {
+          product.contracts.forEach((contract, index) => {
+            output.futures[contract.desc] = product.symbolDesc.toLowerCase() + '_trade_' + futuresContractsTypes[index];
+          });
+        });
+      }
+    });
 
     return output;
   }

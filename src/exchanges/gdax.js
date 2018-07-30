@@ -7,10 +7,12 @@ class Gdax extends Exchange {
 
     this.id = 'gdax';
 
-    this.products = 'https://api.pro.coinbase.com/products';
-    this.recents = () => `https://api.pro.coinbase.com/products/${this.pair}/trades`;
+    this.endpoints = {
+      PRODUCTS: 'https://api.pro.coinbase.com/products',
+      TRADES: () => `https://api.pro.coinbase.com/products/${this.pair}/trades`
+    }
 
-    this.mapping = pair => {
+    this.matchPairName = pair => {
       pair = pair.substr(0, 3) + '-' + pair.substr(3, pair.length);
 
       if (this.pairs.indexOf(pair) !== -1) {
@@ -74,7 +76,7 @@ class Gdax extends Exchange {
     return data.map(a => a.id);
   }
 
-  formatRecentsTrades(response) {
+  /* formatRecentsTrades(response) {
     if (response && response.length) {
       return response.map(trade => [
         this.id,
@@ -84,7 +86,7 @@ class Gdax extends Exchange {
         trade.side === 'buy' ? 0 : 1,
       ])
     }
-  }
+  } */
 
 }
 

@@ -92,21 +92,32 @@
       <div class="mt8 settings__title" v-on:click="toggleSection('exchanges')" v-bind:class="{closed: options.settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
       <div class="form-group">
         <div class="settings__exchanges">
-          <a v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index"
+          <div v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index"
             class="settings__exchanges__item"
-            href="#"
-            v-on:click="options.toggleExchange(exchange)"
             v-bind:class="{
-              'settings__exchanges__item--active': connected.indexOf(exchange) !== -1 && options.disabled.indexOf(exchange) === -1,
-              'settings__exchanges__item--loading': connected.indexOf(exchange) === -1 && options.disabled.indexOf(exchange) === -1,
+              'settings__exchanges__item--active': connected.indexOf(exchange) !== -1,
+              'settings__exchanges__item--enabled': options.disabled.indexOf(exchange) === -1,
+              'settings__exchanges__item--loading': matchs[exchange] && connected.indexOf(exchange) === -1 && options.disabled.indexOf(exchange) === -1,
               'settings__exchanges__item--error': options.disabled.indexOf(exchange) !== -1 && fails[exchange] > 0,
-              'settings__exchanges__item--unmatched': unmatched.indexOf(exchange) !== -1,
+              'settings__exchanges__item--unmatched': !matchs[exchange],
               'settings__exchanges__item--invisible': filters.indexOf(exchange) !== -1,
+              'settings__exchanges__item--expanded': expanded.indexOf(exchange) !== -1
             }">
-            <span>{{ exchange }}</span>
-            <i class="icon-visibility" v-on:click.stop.prevent="options.toggleFilter(exchange)"></i>
+            <div class="settings__exchanges__item__header" v-on:click="options.toggleExchange(exchange)">
+              <div class="settings__exchanges__item__name">{{ exchange }}</div>
             <i class="icon-warning"></i>
-          </a>
+              <div class="settings__exchanges__item__controls">
+                <button class="settings__exchanges__item__visibility" v-on:click.stop.prevent="options.toggleFilter(exchange)"><i class="icon-invisible"></i></button>
+                <button class="settings__exchanges__item__more" v-on:click.stop.prevent="toggleExpander(exchange)"><i class="icon-down"></i></button>
+              </div>
+            </div>
+            <div class="settings__exchanges__item__detail" v-if="expanded.indexOf(exchange) !== -1">
+              <div class="form-group">
+                <label>Threshold ajustements <span v-if="options.thresholds[exchange] !== 1">(<i class="icon-currency"></i> {{ formatAmount(options.thresholds[exchange] * options.threshold) }} )</span></label>
+                <input type="range" min="0" max="2" step="0.01" v-bind:value="options.thresholds[exchange]" v-on:change="ajustThreshold(exchange, $event.target.value)">
+              </div>
+            </div>
+          </div>
           <div v-if="!exchanges.length" class="mb8">You are not connected to any exchanges</div>
         </div>
       </div>
@@ -143,7 +154,8 @@
         connected: [],
         filters: [],
         fails: [],
-        unmatched: [],
+        matchs: [],
+        expanded: [],
         options: options,
         help: {
           pair: `The pair to aggregate from<br><small><i>special access required</i></small>`,
@@ -175,13 +187,13 @@
       this.exchanges = socket.exchanges;
     },
     mounted() {
-      socket.$on('exchange_match', this.onExchangeFailed);
       socket.$on('exchange_error', this.onExchangeFailed);
-      socket.$on('connected', this.onConnected);
     },
     beforeDestroy() {
       socket.$off('exchange_error', this.onExchangeFailed);
-      socket.$off('connected', this.onConnected);
+    },
+    computed: {
+      formatAmount: () => window.formatAmount,
     },
     methods: {
       onExchangeFailed(exchange, count) {
@@ -208,6 +220,22 @@
           options.settings.splice(index, 1);
         }
       },
+      ajustThreshold(exchange, value) {
+        this.$set(options.thresholds, exchange, value);
+      },
+      toggleExpander(exchange) {
+        const index = this.expanded.indexOf(exchange);
+
+        if (index === -1) {
+          if (typeof options.thresholds[exchange] === 'undefined') {
+            options.thresholds[exchange] = 1;
+          }
+
+          this.expanded.push(exchange);
+        } else {
+          this.expanded.splice(index, 1);
+        }
+      },
       save() {
         localStorage.setItem('options', JSON.stringify(options.$data));
       },
@@ -230,7 +258,7 @@
 
     @media screen and (min-width: 500px) {
       position: fixed;
-      z-index: 1;
+      z-index: 2;
       height: 100%;
       width: 320px;
       overflow: auto;
@@ -476,6 +504,7 @@
       display: inline-block;
       cursor: text;
       font-family: monospace;
+      color: $green;
     }
 
     .settings__column {
@@ -500,6 +529,8 @@
     }
 
     .settings__title {
+      width: 100%;
+      display: inline-block;
       text-align: left;
       margin-bottom: 5px;
       text-transform: uppercase;
@@ -593,7 +624,7 @@
         }
       }
 
-      .form-group {
+      > div {
         flex-basis: auto;
         flex-grow: 0;
         max-width: none;
@@ -626,86 +657,86 @@
       .icon-currency {
         color: $green;
       }
-
-      [contenteditable] {
-        color: $green;
-      }
     }
 
     .settings__exchanges {
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
 
       .settings__exchanges__item {
         background-color: rgba(white, .15);
         color: white;
         transition: all .2s $easeOutExpo;
         border-radius: 2px;
-        margin-right: 4px;
         margin-bottom: 4px;
-        display: flex;
-        position: relative;
+        overflow: hidden;
 
-        &:before {
-          content: '';
-          width: 0px;
-          height: 0px;
+        &.settings__exchanges__item--loading {
+          background-color: $blue;
 
-          background-color: #fff;
-          border-radius: 50%;
-          animation: sk-scaleout 1.0s infinite ease-in-out;
-          transition: all .2s $easeElastic, visibility .2s linear .2s;
-          left: 3px;
+          .settings__exchanges__item__header:before {
+            transition: all .2s $easeElastic;
           display: block;
-          align-self: center;
-          position: relative;
+            opacity: 1;
+            width: 16px;
+            height: 16px;
+          }
+        }
 
-          opacity: 0;
-          visibility: hidden;
+        &.settings__exchanges__item--enabled {
+          .settings__exchanges__item__name:before {
+            width: 0%;
+          }
+        }
 
-          @keyframes sk-scaleout {
-            0% {
-              -webkit-transform: scale(0);
-              transform: scale(0);
-            } 100% {
-              -webkit-transform: scale(1.0);
-              transform: scale(1.0);
-              opacity: 0;
+        &.settings__exchanges__item--active {
+          background-color: $green;
+          color: white;
+
+          .settings__exchanges__item__visibility {
+            display: block;
+          }
+
+          &.settings__exchanges__item--invisible {
+            .icon-visibility:before {
+              transform: scale(1.2) rotateY(180deg);
             }
           }
         }
 
-        > * {
-          padding: 5px 8px;
+        &.settings__exchanges__item--invisible {
+          opacity: .8;
+
+          .icon-invisible:before {
+            content: unicode($icon-visible);
+          }
         }
+
+        &.settings__exchanges__item--error {
+          background-color: $red;
 
         .icon-warning {
-          display: none;
-        }
-
-        .icon-visibility {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          transition: all .2s $easeOutExpo .2s, background-color 0s linear;
-          width: 0px;
-          padding-left: 0px;
-          padding-right: 0px;
-
-          &:hover {
-            background-color: rgba(white, .2);
-          }
-
-          &:before {
-            transform: scale(.5);
-            opacity: 0;
-            content: unicode($icon-visible);
-            transition: all .2s $easeElastic, color .2s $easeOutExpo;
+            display: block;
+            margin-left: 5px;
           }
         }
 
-        span {
+        &.settings__exchanges__item--unmatched {
+          background-color: #555;
+
+          color: rgba(white, .75);
+          }
+
+        &.settings__exchanges__item--expanded {
+          .settings__exchanges__item__more i:before {
+            content: unicode($icon-up);
+          }
+          }
+        }
+
+      .settings__exchanges__item__name {
           position: relative;
+        padding: 5px;
 
           &:before {
             content: '';
@@ -719,64 +750,70 @@
           }
         }
 
-        &.settings__exchanges__item--loading {
-          background-color: $pink;
+      .settings__exchanges__item__header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: relative;
+        cursor: pointer;
 
           &:before {
-            transition: all .2s $easeElastic;
-            visibility: visible;
-            opacity: 1;
-            width: 16px;
-            height: 16px;
+          content: '';
+          width: 0px;
+          height: 0px;
+
+          background-color: #fff;
+          border-radius: 50%;
+          animation: sk-scaleout 1.0s infinite ease-in-out;
+          transition: all .2s $easeElastic, visibility .2s linear .2s;
+          left: 3px;
+          display: none;
+          align-self: center;
+          position: relative;
+
+          opacity: 0;
+
+          @keyframes sk-scaleout {
+            0% {
+              -webkit-transform: scale(0);
+              transform: scale(0);
+            } 100% {
+              -webkit-transform: scale(1.0);
+              transform: scale(1.0);
+              opacity: 0;
+            }
+          }
+            }
+
+        .icon-warning {
+          display: none;
           }
         }
 
-        &.settings__exchanges__item--active {
-          background-color: $green;
+      .settings__exchanges__item__controls {
+        display: flex;
+        margin-left: auto;
+        align-self: stretch;
+
+        .settings__exchanges__item__visibility {
+          display: none;
+        }
+
+        button {
+          border: 0;
+          background: none;
+          cursor: pointer;
           color: white;
 
-          span:before {
-            width: 0%;
+          &:hover {
+            background-color: rgba(white, .1);
           }
-
-          .icon-visibility {
-            width: 12px;
-            padding-left: 8px;
-            padding-right: 8px;
-
-            &:before {
-              opacity: 1;
-              transform: scale(1.2);
-              transition: all .2s $easeElastic .4s, color .2s $easeOutExpo;
-            }
-          }
-
-          &.settings__exchanges__item--invisible {
-            .icon-visibility:before {
-              transform: scale(1.2) rotateY(180deg);
-            }
           }
         }
 
-        &.settings__exchanges__item--invisible {
-          opacity: .8;
-
-          .icon-visibility:before {
-            content: unicode($icon-invisible);
-          }
-        }
-
-        &.settings__exchanges__item--error {
-          background-color: $red;
-
-          .icon-warning {
-            display: block;
-          }
-
-          .icon-visibility:before {
-            content: unicode($icon-invisible);
-          }
-        }
+      .settings__exchanges__item__detail {
+        padding: 10px;
+        background-color: rgba(black, .2);
       }
     }
 

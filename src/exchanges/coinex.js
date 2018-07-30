@@ -7,10 +7,12 @@ class Coinex extends Exchange {
 
 		this.id = 'coinex';
 
-		this.products = 'https://api.coinex.com/v1/market/list';
-		this.recents = () => `https://api.coinex.com/v1/market/deals?market=${this.pair}`;
+    this.endpoints = {
+      PRODUCTS: 'https://api.coinex.com/v1/market/list',
+      TRADES: () => `https://api.coinex.com/v1/market/deals?market=${this.pair}`
+    }
 
-    this.mapping = pair => {
+    this.matchPairName = pair => {
       pair = pair.replace(/USD$/, 'USDT');
 
       if (this.pairs.indexOf(pair) !== -1) {
@@ -82,7 +84,7 @@ class Coinex extends Exchange {
 		return false;
 	}
 
-	formatRecentsTrades(response) {
+	/* formatRecentsTrades(response) {
 		if (response && response.data && response.data.length) {
 			return response.data.map(trade => [
 				this.id,
@@ -92,7 +94,7 @@ class Coinex extends Exchange {
 				trade.type === 'buy' ? 1 : 0
 			])
 		}
-	}
+	} */
 
   formatProducts(response) {
 		if (!response || !response.data || !response.data.length) {

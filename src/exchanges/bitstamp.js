@@ -8,10 +8,12 @@ class Bitstamp extends Exchange {
 
 		this.id = 'bitstamp';
 
-    this.products = 'https://www.bitstamp.net/api/v2/trading-pairs-info/';
-    this.recents = () => `https://www.bitstamp.net/api/v2/transactions/${this.pair}/`
+    this.endpoints = {
+      PRODUCTS: 'https://www.bitstamp.net/api/v2/trading-pairs-info',
+      TRADES: () => `https://www.bitstamp.net/api/v2/transactions/${this.pair}`
+    }
 
-		this.mapping = pair => {
+		this.matchPairName = pair => {
       if (this.pairs.indexOf(pair) !== -1) {
         return pair.toLowerCase();
       }
@@ -59,7 +61,7 @@ class Bitstamp extends Exchange {
     ]];
 	}
 
-  formatRecentsTrades(response) {
+  /* formatRecentsTrades(response) {
     if (response && response.length) {
       return response.map(trade => [
         this.id,
@@ -69,7 +71,7 @@ class Bitstamp extends Exchange {
         trade.type === '1' ? 1 : 0
       ]);
     }
-  }
+  } */
 
   formatProducts(data) {
     return data.map(a => a.name.replace('/', ''));

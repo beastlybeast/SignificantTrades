@@ -6,9 +6,14 @@ class Poloniex extends Exchange {
 		super(options);
 
     this.id = 'poloniex';
-
-		this.products = 'https://poloniex.com/public?command=returnTicker';
-		this.recents = () => `https://poloniex.com/public?command=returnTradeHistory&currencyPair=${this.pair}&start=${(+new Date() / 1000) - 60 * 15}&end=${+new Date() / 1000}`
+		
+    this.endpoints = {
+      PRODUCTS: [
+        'https://poloniex.com/public?command=returnTicker',
+        'POST|https://www.okex.com/v2/futures/pc/market/futuresCoin.do',
+      ],
+			TRADES: () => () => `https://poloniex.com/public?command=returnTradeHistory&currencyPair=${this.pair}&start=${(+new Date() / 1000) - 60 * 15}&end=${+new Date() / 1000}`
+    }
 
 		this.options = Object.assign({
 			url: 'wss://api2.poloniex.com',
@@ -73,7 +78,7 @@ class Poloniex extends Exchange {
 		return output;
 	}
 
-	formatRecentsTrades(response) {
+	/* formatRecentsTrades(response) {
 		if (response && response.length) {
 			return response.map(trade => [
 				this.id,
@@ -83,7 +88,7 @@ class Poloniex extends Exchange {
 				trade.type === 'buy' ? 1 : 0,
 			]);
 		}
-	}
+	} */
 
 }
 

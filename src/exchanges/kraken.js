@@ -8,8 +8,10 @@ class Kraken extends Exchange {
 
 		this.id = 'kraken';
 		
-		this.products = 'https://api.kraken.com/0/public/AssetPairs';
-		this.recents = () => `https://api.kraken.com/0/public/Trades?pair=${this.pair}`;
+    this.endpoints = {
+      PRODUCTS: 'https://api.kraken.com/0/public/AssetPairs',
+			TRADES: () => `https://api.kraken.com/0/public/Trades?pair=${this.pair}`
+    }
 
 		this.options = Object.assign({
 			url: 'https://api.kraken.com/0/public/Trades',
@@ -111,7 +113,7 @@ class Kraken extends Exchange {
 		}
 	}
 
-	formatRecentsTrades(response) {
+	/* formatRecentsTrades(response) {
 		if (response && response.result && response.result && response.result[this.pair] && response.result[this.pair].length) {
 			return response.result[this.pair].map(trade => [
 				this.id,
@@ -121,7 +123,7 @@ class Kraken extends Exchange {
 				trade[3] === 'b' ? 1 : 0,
 			])
 		}
-	}
+	} */
 
 	formatProducts(data) {
 		const output = {};

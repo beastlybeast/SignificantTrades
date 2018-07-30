@@ -7,8 +7,10 @@ class Bitmex extends Exchange {
 
 		this.id = 'bitmex';
 
-		this.products = 'https://www.bitmex.com/api/v1/instrument/active';
-		this.recents = () => `https://www.bitmex.com/api/v1/trade?symbol=${this.pair}&reverse=true&count=500`;
+    this.endpoints = {
+      PRODUCTS: 'https://www.bitmex.com/api/v1/instrument/active',
+      TRADES: () => `https://www.bitmex.com/api/v1/trade?symbol=${this.pair}&reverse=true&count=500`
+    }
 
 		this.options = Object.assign({
 			url: () => {
@@ -63,7 +65,7 @@ class Bitmex extends Exchange {
 		return false;
 	}
 
-	formatRecentsTrades(response) {
+	/* formatRecentsTrades(response) {
 		if (response && response.length) {
 			return response.reverse().map(trade => [
 				this.id,
@@ -73,7 +75,7 @@ class Bitmex extends Exchange {
 				trade.side === 'Buy' ? 1 : 0
 			])
 		}
-	}
+	} */
 
   formatProducts(data) {
 		const output = {};

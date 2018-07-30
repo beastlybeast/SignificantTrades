@@ -8,9 +8,11 @@ class Huobi extends Exchange {
 
     this.id = 'huobi';
 
-    this.products = 'http://api.huobi.pro/v1/common/symbols';
+    this.endpoints = {
+      PRODUCTS: 'http://api.huobi.pro/v1/common/symbols',
+    }
 
-    this.mapping = pair => {
+    this.matchPairName = pair => {
       pair = pair.replace(/USD$/, 'USDT');
 
       if (this.pairs.indexOf(pair) !== -1) {
@@ -80,7 +82,7 @@ class Huobi extends Exchange {
 	}
 
   formatProducts(response) {
-    return Object.keys(response.data).map(a => (response.data[a]['base-currency'] + response.data[a]['quote-currency']).toUpperCase())
+    return Object.keys(response.data).map(a => (response.data[a]['base-currency'] + response.data[a]['quote-currency']).toUpperCase());
   }
 
 }
