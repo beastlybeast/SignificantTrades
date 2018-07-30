@@ -8,11 +8,11 @@ class Okex extends Exchange {
 
     this.id = 'okex';
 
-    this.type = 'spot';
+    this.type = 'spots';
 
     this.mapping = pair => {
       if (this.pairs[pair]) {
-        this.type = /(1WEEK|2WEEKS|QUARTER)$/.test(pair) ? 'future' : 'spot';
+        this.type = /(1WEEK|2WEEKS|QUARTER)$/.test(pair) ? 'futures' : 'spots';
 
         return this.pairs[pair].toLowerCase();
       }
@@ -516,7 +516,7 @@ class Okex extends Exchange {
 
 		this.options = Object.assign({
       url: (pair) => {
-        return this.type === 'future' ? 'wss://real.okex.com:10440/websocket/okexapi' : 'wss://real.okex.com:10441/websocket'
+        return this.type === 'futures' ? 'wss://real.okex.com:10440/websocket/okexapi' : 'wss://real.okex.com:10441/websocket'
       }
 		}, this.options);
 	}
@@ -530,7 +530,7 @@ class Okex extends Exchange {
     this.api.on('message', event => this.emitData(this.format(event)));
 
     this.api.on('open', event => {
-      const channel = this.type === 'future' ? 'ok_sub_futureusd_' + this.pair : 'ok_sub_spot_' + this.pair + '_deals';
+      const channel = this.type === 'futures' ? 'ok_sub_futureusd_' + this.pair : 'ok_sub_spot_' + this.pair + '_deals';
 
       this.api.send(JSON.stringify({event: 'addChannel', channel: channel}));
 
