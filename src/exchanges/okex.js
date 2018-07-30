@@ -104,7 +104,7 @@ class Okex extends Exchange {
         this.id,
         timestamp,
         +trade[1],
-        +trade[2],
+        this.type === 'futures' ? trade[2] / trade[1] * 100 : +trade[2],
         trade[4] === 'bid' ? 1 : 0
       ];
     })
