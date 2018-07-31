@@ -82,17 +82,19 @@
         for (let trade of trades) {
           const size = trade[2] * trade[3];
 
+          const multiplier = typeof options.thresholds[trade[0]] === 'string' ? +options.thresholds[trade[0]] : 1;
+
           if (trade[5] === 1) {
             this.sfx && this.sfx.liquidation();
 
-            if (size >= options.threshold) {
+            if (size >= threshold) {
               this.appendRow(trade, ['liquidation'], `${app.getAttribute('data-symbol')}<strong>${formatAmount(size, 1)}</strong> liquidated <strong>${trade[4] ? 'SHORT' : 'LONG'}</strong> @ ${app.getAttribute('data-symbol')}${formatPrice(trade[2])}`);
             }
             continue;
           }
           
-          if (options.useAudio && ((options.audioIncludeAll && size > options.threshold * .1) || size > options.significantTradeThreshold)) {
-            this.sfx && this.sfx.tradeToSong(size / options.significantTradeThreshold, trade[4]);
+          if (options.useAudio && ((options.audioIncludeAll && size > options.threshold * Math.max(.1, multiplier) * .1) || size > options.significantTradeThreshold * Math.max(.1, multiplier))) {
+            this.sfx && this.sfx.tradeToSong(size / (options.significantTradeThreshold * multiplier), trade[4]);
           }
 
           // group by [exchange name + buy=1/sell=0] (ex bitmex1)
@@ -110,7 +112,7 @@
                 // sum volume
                 this.ticks[tid][3] += trade[3];
 
-                if (this.ticks[tid][2] * this.ticks[tid][3] >= options.threshold) {
+                if (this.ticks[tid][2] * this.ticks[tid][3] >= options.threshold * multiplier) {
                   this.appendRow(this.ticks[tid]);
                   delete this.ticks[tid];
                 }
@@ -119,7 +121,7 @@
               }
             }
 
-            if (!this.ticks[tid] && size < options.threshold) {
+            if (!this.ticks[tid] && size < options.threshold * multiplier) {
               this.ticks[tid] = trade;
               continue;
             }
@@ -136,17 +138,19 @@
         let hsl;
         let amount = trade[2] * trade[3];
 
+        const multiplier = typeof options.thresholds[trade[0]] === 'string' ? +options.thresholds[trade[0]] : 1;
+
         if (trade[4]) {
           classname.push('buy');
         } else {
           classname.push('sell');
         }
 
-        if (amount >= options.significantTradeThreshold) {
+        if (amount >= options.significantTradeThreshold * multiplier) {
           classname.push('significant');
 
           if (options.useShades) {
-            let ratio = Math.min(1, (amount - options.significantTradeThreshold) / (options.hugeTradeThreshold - options.significantTradeThreshold));
+            let ratio = Math.min(1, (amount - options.significantTradeThreshold * multiplier) / (options.hugeTradeThreshold * multiplier - options.significantTradeThreshold * multiplier));
 
             if (trade[4]) {
               hsl = `hsl(89, ${(36 + ((1 - ratio) * 10)).toFixed(2)}%, ${(35 + (ratio * 20)).toFixed(2)}%)`;
@@ -156,7 +160,7 @@
           }
         }
 
-        if (amount >= options.hugeTradeThreshold) {
+        if (amount >= options.hugeTradeThreshold * multiplier) {
           if (this.gifs.huge && this.gifs.huge.length) {
             image = this.gifs.huge[Math.floor(Math.random() * (this.gifs.huge.length - 1))];
           }
@@ -166,7 +170,7 @@
           classname.push('huge');
         }
 
-        if (amount >= options.rareTradeThreshold) {
+        if (amount >= options.rareTradeThreshold * multiplier) {
           if (this.gifs.rare && this.gifs.rare.length) {
             image = this.gifs.rare[Math.floor(Math.random() * (this.gifs.rare.length - 1))];
           }
@@ -289,7 +293,7 @@
       font-size: 1.25em;
     }
 
-    @media only screen and (min-width: 768px) {
+    @media only screen and (min-width: 1024px) {
       font-size: 1.5em;
     }
 

@@ -105,7 +105,7 @@
             }">
             <div class="settings__exchanges__item__header" v-on:click="options.toggleExchange(exchange)">
               <div class="settings__exchanges__item__name">{{ exchange }}</div>
-            <i class="icon-warning"></i>
+              <i class="icon-warning"></i>
               <div class="settings__exchanges__item__controls">
                 <button class="settings__exchanges__item__visibility" v-on:click.stop.prevent="options.toggleFilter(exchange)"><i class="icon-invisible"></i></button>
                 <button class="settings__exchanges__item__more" v-on:click.stop.prevent="toggleExpander(exchange)"><i class="icon-down"></i></button>
@@ -113,8 +113,8 @@
             </div>
             <div class="settings__exchanges__item__detail" v-if="expanded.indexOf(exchange) !== -1">
               <div class="form-group">
-                <label>Threshold ajustements <span v-if="options.thresholds[exchange] !== 1">(<i class="icon-currency"></i> {{ formatAmount(options.thresholds[exchange] * options.threshold) }} )</span></label>
-                <input type="range" min="0" max="2" step="0.01" v-bind:value="options.thresholds[exchange]" v-on:change="ajustThreshold(exchange, $event.target.value)">
+                <label>Threshold <span v-if="options.thresholds[exchange] !== 1">({{ (options.thresholds[exchange] * 100).toFixed(2) }}%)</span></label>
+                <input type="range" min="0" max="2" step="0.01" v-model="options.thresholds[exchange]">
               </div>
             </div>
           </div>
@@ -500,6 +500,49 @@
       }
     }
 
+    input[type="range"] {
+      -webkit-appearance: none;  /* Override default CSS styles */
+      appearance: none;
+      height: 24px; /* Specified height */
+      background: rgba(black, .5); /* Grey background */
+      outline: none; /* Remove outline */
+      opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
+      -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+      transition: opacity .2s;
+
+      &::-webkit-slider-thumb {
+        -webkit-appearance: none; /* Override default look */
+        appearance: none;
+        width: 8px; /* Set a specific slider handle width */
+        height: 24px; /* Slider handle height */
+        background: $green + 20%; /* Green background */
+        cursor: pointer; /* Cursor on hover */
+      }
+
+      &::-moz-range-thumb {
+        width: 8px; /* Set a specific slider handle width */
+        height: 24px; /* Slider handle height */
+        background: $green + 20%; /* Green background */
+        cursor: pointer; /* Cursor on hover */
+      }
+
+      &:hover {
+        opacity: 1; /* Fully shown on mouse-over */
+
+        &::-webkit-slider-thumb {
+          transform: scale(1.1);
+          color: white;
+          box-shadow: 0 0 2px rgba(white, .2), 0 0 20px rgba(white, .5);
+        }
+
+        &::-moz-slider-thumb {
+          transform: scale(1.1);
+          color: white;
+          box-shadow: 0 0 2px rgba(white, .2), 0 0 20px rgba(white, .5);
+        }
+      }
+    }
+
     [contenteditable] {
       display: inline-block;
       cursor: text;
@@ -561,11 +604,6 @@
         + div {
           display: none;
         }
-      }
-    }
-
-    .settings__chart {
-      .checkbox-control {
       }
     }
 
@@ -676,7 +714,7 @@
 
           .settings__exchanges__item__header:before {
             transition: all .2s $easeElastic;
-          display: block;
+            display: block;
             opacity: 1;
             width: 16px;
             height: 16px;
@@ -694,7 +732,7 @@
           color: white;
 
           .settings__exchanges__item__visibility {
-            display: block;
+            display: flex;
           }
 
           &.settings__exchanges__item--invisible {
@@ -735,8 +773,8 @@
         }
 
       .settings__exchanges__item__name {
-          position: relative;
-        padding: 5px;
+        position: relative;
+        padding: 8px;
 
           &:before {
             content: '';
@@ -757,7 +795,7 @@
         position: relative;
         cursor: pointer;
 
-          &:before {
+        &:before {
           content: '';
           width: 0px;
           height: 0px;
@@ -804,16 +842,18 @@
           background: none;
           cursor: pointer;
           color: white;
+          font-size: 18px;
+          display: flex;
 
           &:hover {
             background-color: rgba(white, .1);
           }
-          }
         }
+      }
 
       .settings__exchanges__item__detail {
         padding: 10px;
-        background-color: rgba(black, .2);
+        background-color: rgba(black, .25);
       }
     }
 

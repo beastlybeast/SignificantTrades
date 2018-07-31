@@ -17,16 +17,16 @@ import options from './options'
 
 const exchanges = [
   // new Kraken(), <- disabled til Kraken release ws api
-  /*new Bitmex(),
-  new Coinex(),
-  new Binance(),
-  new Gdax(),
+  new Bitmex(),
   new Bitfinex(),
-  new Huobi(),
-  new Bitstamp(),
-  new Hitbtc(),*/
-  new Okex(),
-  //new Poloniex(),
+  // new Coinex(),
+  // new Binance(),
+  // new Gdax(),
+  // new Huobi(),
+  // new Bitstamp(),
+  // new Hitbtc(),
+  // new Okex(),
+  // new Poloniex(),
 ];
 
 const emitter = new Vue({
