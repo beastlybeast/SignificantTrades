@@ -114,7 +114,7 @@
             <div class="settings__exchanges__item__detail" v-if="expanded.indexOf(exchange) !== -1">
               <div class="form-group">
                 <label>Threshold <span v-if="options.thresholds[exchange] !== 1">({{ (options.thresholds[exchange] * 100).toFixed() }}%)</span></label>
-                <input type="range" min="0" max="2" step="0.01" v-on:change="ajustThreshold(exchange, $event.target.value)">
+                <input type="range" min="0" max="2" step="0.01" v-bind:value="options.thresholds[exchange]" v-on:change="ajustThreshold(exchange, $event.target.value)">
               </div>
             </div>
           </div>
