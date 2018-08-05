@@ -37,8 +37,8 @@ const emitter = new Vue({
 
     const subdomain = window.location.hostname.match(/^([\d\w]+)\..*\./i);
 
-    if (subdomain && subdomain[0]) {
-      this.pair = subdomain.toUpperCase();
+    if (subdomain && subdomain.length > 2) {
+      this.pair = subdomain[1].toUpperCase();
     }
   },
   methods: {
