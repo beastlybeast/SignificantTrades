@@ -105,6 +105,9 @@ if (process.env.NODE_ENV === 'production') {
   module.exports.plugins = (module.exports.plugins || []).concat([
     new webpack.optimize.UglifyJsPlugin({
       sourceMap: false,
+      mangle: {
+        keep_fnames: true
+      },
       compress: {
         warnings: false
       }
