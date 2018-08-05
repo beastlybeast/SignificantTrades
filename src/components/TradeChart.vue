@@ -210,7 +210,7 @@
           shadow: false,
           hideDelay: 0,
           formatter: function(e) {
-            return this.point.name ? this.point.name : '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + this.series.name + ' ' + app.getAttribute('data-symbol') + formatPrice(this.y).replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
+            return this.point.name ? this.point.name : '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + this.series.name + ' ' + app.getAttribute('data-symbol') + formatPrice(this.y).toString().replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
           },
           style: {
             color: 'white',
@@ -381,7 +381,7 @@
         this.chart.series[0].update({name: pair}, false);
 
         this.range = this.defaultRange;
-        this.timeframe = 10000;
+        this.averages = [];
         this.toggleFollow(true);
 
         const timestamp = +new Date();

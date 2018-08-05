@@ -20,6 +20,44 @@
   import TradeList from './components/TradeList.vue';
   import TradeChart from './components/TradeChart.vue';
 
+  window.formatPrice = function(price, precision) {
+    price = +price;
+
+    if (isNaN(price) || !price) {
+      return (0).toFixed(precision);
+    }
+
+    if (precision) {
+      return price.toFixed(precision);
+    }
+
+    if (price <= 0.0001) {
+      return (price * 100000000).toFixed() + ' <small>sats</small>';
+    } else if (price >= 1000) {
+      return +price.toFixed(2);
+    }
+
+    const firstDigitIndex = price.toString().match(/[1-9]/);
+
+    if (firstDigitIndex) {
+      return +price.toFixed(Math.max(8 - price.toFixed().length, firstDigitIndex.index + 1));
+    }
+
+    return +price.toFixed(8 - price.toFixed().length);
+  }
+
+  window.formatAmount = function(amount, precision) {
+    if (amount >= 1000000) {
+      amount = (amount / 1000000).toFixed(1) + 'M';
+    } else if (amount >= 1000) {
+      amount = (amount / 1000).toFixed(1) + 'K';
+    } else {
+      amount = formatPrice(amount, precision);
+    }
+
+    return amount;
+  }
+
   export default {
     components: {
       Alerts, Header, Settings, TradeList, TradeChart
@@ -37,7 +75,7 @@
       }
     },
     created() {
-      const settings = JSON.parse(localStorage.getItem('options'));
+      const settings = JSON.parse(localStorage.getItem('options')) || {};
 
       socket.$on('pairing', pair => {
         this.pair = options.pair = pair;
@@ -45,48 +83,27 @@
         this.updatePairCurrency(this.pair);
       });
 
-      if (settings && typeof settings === 'object') {
-        for (let name of Object.keys(settings)) {
-          options[name] = settings[name];
-        }
+      const query = window.location.search.substring(1);
+
+      if (query.length) {
+        query.split('&').forEach(segment => {
+          const param = segment.split('=');
+
+          if (param[0] === 'threshold' && param[1].indexOf('%') !== -1) {
+            const factor = (parseFloat(param[1]) || 1) / 100;
+            
+            settings['threshold'] = +formatAmount(options.threshold * factor);
+            settings['significantTradeThreshold'] = +formatAmount(options.significantTradeThreshold * factor);
+            settings['hugeTradeThreshold'] = +formatAmount(options.hugeTradeThreshold * factor);
+            settings['rareTradeThreshold'] = +formatAmount(options.rareTradeThreshold * factor);
+          } else if (typeof options[param[0]] !== 'undefined') {
+            settings[param[0]] = param[1];
+          }
+        });
       }
 
-      window.formatPrice = function(price, precision) {
-        price = +price;
-
-        if (isNaN(price) || !price) {
-          return (0).toFixed(precision);
-        }
-
-        if (precision) {
-          return price.toFixed(precision);
-        }
-
-        if (price <= 0.0001) {
-          return (price * 100000000).toFixed() + ' <small>sats</small>';
-        } else if (price >= 1000) {
-          return price.toFixed(2);
-        }
-
-        const firstDigitIndex = price.toString().match(/[1-9]/);
-
-        if (firstDigitIndex) {
-          return price.toFixed(Math.max(6 - price.toFixed().length, firstDigitIndex.index + 1));
-        }
-
-        return price.toFixed(6 - price.toFixed().length);
-      }
-
-      window.formatAmount = function(amount, precision) {
-        if (amount >= 1000000) {
-          amount = (amount / 1000000).toFixed(1) + 'M';
-        } else if (amount >= 1000) {
-          amount = (amount / 1000).toFixed(1) + 'K';
-        } else {
-          amount = formatPrice(amount, precision);
-        }
-
-        return amount;
+      for (let name of Object.keys(settings)) {
+        options[name] = settings[name];
       }
     },
     mounted() {
