@@ -61,6 +61,7 @@
       <div class="chart__selection" v-bind:style="{left: selection.left, width: selection.width}"></div>
       <div class="chart__canvas"></div>
     </div>
+    <div class="chart__height-handler" ref="chartHeightHandler" v-on:mousedown="startResize" v-on:dblclick.stop.prevent="resetHeight"></div>
   </div>
 </template>
 
@@ -75,7 +76,6 @@
         fetching: false,
         defaultRange: 1000 * 60 * 15,
         timeframe: 10000,
-        isTwitchMode: false,
         following: true,
         shiftPressed: false,
         unfinishedTick: null,
@@ -129,7 +129,7 @@
         }
       });
 
-      socket.$on('connecting', this.onConnecting);
+      socket.$on('pairing', this.onPairing);
 
       socket.$on('historical', this.onFetch);
 
@@ -258,10 +258,16 @@
         },{
           name: 'SELL',
           stacking: 'area',
-          type: 'area',
+          type: 'areaspline',
           data: [],
           color: '#f77a71',
-          fillColor: '#F44336',
+          fillColor: {
+            linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1},
+            stops: [
+              [0, 'rgba(244, 67, 54, .8)'],
+              [1, 'rgba(244, 67, 54, .6)']
+            ]
+          },
           animation: false,
           marker: {
             symbol: 'circle',
@@ -270,10 +276,16 @@
         },{
           name: 'BUY',
           stacking: 'area',
-          type: 'area',
+          type: 'areaspline',
           data: [],
           color: '#9CCC65',
-          fillColor: '#7ca74e',
+          fillColor: {
+            linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1},
+            stops: [
+              [0, 'rgba(124, 167, 78, .8)'],
+              [1, 'rgba(124, 167, 78, .6)']
+            ]
+          },
           animation: false,
           marker: {
             symbol: 'circle',
@@ -298,10 +310,6 @@
         }],
       });
 
-      if (window.location.hash.indexOf('twitch') !== -1) {
-        this.goTwitchMode(true);
-      }
-
       options.dark && this.toggleDark(options.dark);
 
       this.onResize();
@@ -320,13 +328,13 @@
 
       this.$refs.chartContainer.addEventListener('wheel', this._doZoom);
 
-      this._doScroll = this.doScroll.bind(this);
+      this._doDrag = this.doDrag.bind(this);
 
-      window.addEventListener('mousemove', this._doScroll, false);
+      window.addEventListener('mousemove', this._doDrag, false);
 
-      this._stopScroll = this.stopScroll.bind(this);
+      this._stopDrag = this.stopDrag.bind(this);
 
-      window.addEventListener('mouseup', this._stopScroll, false);
+      window.addEventListener('mouseup', this._stopDrag, false);
 
       this._shiftTracker = (e => {
         this.shiftPressed = e.shiftKey;
@@ -335,17 +343,11 @@
       window.addEventListener('keydown', this._shiftTracker, false);
       window.addEventListener('keyup', this._shiftTracker, false);
       window.addEventListener('blur', this._shiftTracker, false);
-
-      this._onHashChange = (() => {
-        this.goTwitchMode(window.location.hash.indexOf('twitch') !== -1);
-      }).bind(this);
-
-      window.addEventListener('hashchange', this._onHashChange, false);
     },
     beforeDestroy() {
       socket.$off('trades', this.onTrades);
       socket.$off('historical', this.onFetch);
-      socket.$off('connecting', this.onConnecting);
+      socket.$off('pairing', this.onPairing);
       options.$off('change', this.onSettings);
       options.$off('follow', this.onFollow);
 
@@ -361,7 +363,6 @@
       window.removeEventListener('keydown', this._shiftTracker);
       window.removeEventListener('keyup', this._shiftTracker);
       window.removeEventListener('blur', this._shiftTracker);
-      window.removeEventListener('hashchange', this._onHashChange);
     },
     methods: {
 
@@ -372,7 +373,7 @@
       // \/ /_/ \__,_|_| |_|\__,_|_|\___|_|  |___/
       //
 
-      onConnecting(pair) {
+      onPairing(pair) {
         if (!this.chart) {
           return;
         }
@@ -470,14 +471,7 @@
           return;
         }
 
-        var w = window,
-            d = document,
-            e = d.documentElement,
-            g = d.getElementsByTagName('body')[0],
-            w = w.innerWidth || e.clientWidth || g.clientWidth,
-            h = w.innerHeight|| e.clientHeight|| g.clientHeight;
-
-        this.chart.setSize(w, Math.min(w / 3, Math.max(100, h / 3)), false);
+        this.updateChartHeight();
       },
 
       //   _____       _                      _   _       _ _
@@ -555,11 +549,17 @@
         }
       },
 
-      doScroll(event) {
-        if (this.fetching || isNaN(this.scrolling) || !this.chart.series[0].xData.length) {
-          return;
+      doDrag(event) {
+        if (!isNaN(this.resizing)) {
+          console.log('do resize');
+          this.doResize(event);
+        } else if (this.scrolling && !this.fetching && this.chart.series[0].xData.length) {
+          console.log('do scroll');
+          this.doScroll(event);
         }
+      },
 
+      doScroll(event) {
         if (this.shiftPressed) {
           this.selection.to = event.pageX;
 
@@ -597,7 +597,7 @@
         this.scrolling = event.pageX;
       },
 
-      stopScroll(event) {
+      stopDrag(event) {
         if (this.scrolling) {
           if (this.shiftPressed) {
             const viewbox = this.chart.xAxis[0].max - this.chart.xAxis[0].min;
@@ -627,7 +627,49 @@
           }
         }
 
+        if (this.resizing) {
+          options.height = this.chart.chartHeight;
+        }
+
         delete this.scrolling;
+        delete this.resizing;
+      },
+
+      startResize(event) {
+        if (event.which === 3) {
+          return;
+        }
+        console.log('start resize at ', event.pageY);
+        this.resizing = event.pageY;
+      },
+
+      doResize(event) {
+        this.chart.setSize(this.chart.chartWidth, this.chart.chartHeight + (event.pageY - this.resizing), false);
+
+        this.resizing = event.pageY;
+      },
+
+      resetHeight(event) {
+        delete this.resizing;
+        options.height = null;
+        
+        this.updateChartHeight();
+      },
+      
+      updateChartHeight() {
+        var w = window,
+            d = document,
+            e = d.documentElement,
+            g = d.getElementsByTagName('body')[0],
+            w = w.innerWidth || e.clientWidth || g.clientWidth;
+
+        if (options.height > 0) {
+          this.chart.setSize(w, options.height, false);
+        } else {
+          var h = w.innerHeight|| e.clientHeight|| g.clientHeight;
+
+          this.chart.setSize(w, +Math.min(w / 3, Math.max(100, h / 3)).toFixed(), false);
+        }
       },
 
       //  _____ _      _
@@ -681,7 +723,7 @@
                 this.averages.splice(0, this.averages.length - options.avgPeriods);
               }
             }
-            console.log('new tick', new Date(+data[i][1]));
+
             this.tick = {
               timestamp: +data[i][1],
               exchanges: {},
@@ -875,7 +917,7 @@
           this.chart.redraw();
 
           if (pointWasAdded && !this._zoomAfterTimeout && this.following && this.chart.series[0].xData.length) {
-            this.snapToRight();
+            this.snapToRight(true);
           }
         }
       },
@@ -1203,18 +1245,6 @@
           gridLineColor: state ? 'rgba(255, 255, 255, .1)' : 'rgba(0, 0, 0, .05)'
         });
       },
-
-      goTwitchMode(state) {
-        this.isTwitchMode = state;
-
-        if (state) {
-          window.document.body.classList.add('twitch');
-          options.dark = true;
-          options.maxRows = 10;
-        } else {
-          window.document.body.classList.remove('twitch');
-        }
-      },
     }
   }
 </script>
@@ -1416,5 +1446,15 @@
     .highcharts-credits {
       visibility: hidden;
     }
+  }
+
+  .chart__height-handler {
+    position: absolute;
+    height: 8px;
+    left: 0;
+    margin-top: -4px;
+    right: 0;
+    z-index: 1;
+    cursor: ns-resize;
   }
 </style>

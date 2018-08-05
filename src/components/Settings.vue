@@ -113,8 +113,8 @@
             </div>
             <div class="settings__exchanges__item__detail" v-if="expanded.indexOf(exchange) !== -1">
               <div class="form-group">
-                <label>Threshold <span v-if="options.thresholds[exchange] !== 1">({{ (options.thresholds[exchange] * 100).toFixed(2) }}%)</span></label>
-                <input type="range" min="0" max="2" step="0.01" v-model="options.thresholds[exchange]">
+                <label>Threshold <span v-if="options.thresholds[exchange] !== 1">({{ (options.thresholds[exchange] * 100).toFixed() }}%)</span></label>
+                <input type="range" min="0" max="2" step="0.01" v-on:change="ajustThreshold(exchange, $event.target.value)">
               </div>
             </div>
           </div>
@@ -173,18 +173,16 @@
           number: process.env.VERSION || 'DEV',
           date: process.env.BUILD_DATE || 'now'
         },
-        autosaveHandler: this.save.bind(this),
       }
     },
     created() {
-      window.addEventListener('beforeunload', this.autosaveHandler);
-
       this.connected = socket.connected;
       this.errors = socket.errors;
       this.matchs = socket.matchs;
       this.disabled = options.disabled;
       this.filters = options.filters;
       this.exchanges = socket.exchanges;
+      this.thresholds = options.thresholds;
     },
     mounted() {
       socket.$on('exchange_error', this.onExchangeFailed);
@@ -236,11 +234,7 @@
           this.expanded.splice(index, 1);
         }
       },
-      save() {
-        localStorage.setItem('options', JSON.stringify(options.$data));
-      },
       reset() {
-        window.removeEventListener('beforeunload', this.autosaveHandler);
         window.localStorage && window.localStorage.clear();
 
         window.location.reload(true);

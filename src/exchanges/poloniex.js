@@ -8,10 +8,7 @@ class Poloniex extends Exchange {
     this.id = 'poloniex';
 		
     this.endpoints = {
-      PRODUCTS: [
-        'https://poloniex.com/public?command=returnTicker',
-        'POST|https://www.okex.com/v2/futures/pc/market/futuresCoin.do',
-      ],
+      PRODUCTS: 'https://poloniex.com/public?command=returnTicker',
 			TRADES: () => () => `https://poloniex.com/public?command=returnTradeHistory&currencyPair=${this.pair}&start=${(+new Date() / 1000) - 60 * 15}&end=${+new Date() / 1000}`
     }
 

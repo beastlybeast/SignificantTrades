@@ -27,6 +27,7 @@ const emitter = new Vue({
       settings: [],
       showPlotsSignificants: false,
       showPlotsLiquidations: false,
+      height: null,
     }
   },
   created() {
@@ -76,6 +77,8 @@ const emitter = new Vue({
       this.$emit('follow', state);
     },
     onChange(prop, current, old) {
+      localStorage && localStorage.setItem('options', JSON.stringify(this.$data));
+
       this.$emit('change', {
         prop: prop,
         value: current

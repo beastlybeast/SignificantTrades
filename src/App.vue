@@ -39,7 +39,7 @@
     created() {
       const settings = JSON.parse(localStorage.getItem('options'));
 
-      socket.$on('connecting', pair => {
+      socket.$on('pairing', pair => {
         this.pair = options.pair = pair;
 
         this.updatePairCurrency(this.pair);

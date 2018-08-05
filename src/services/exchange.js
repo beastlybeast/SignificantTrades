@@ -24,16 +24,15 @@ class Exchange extends EventEmitter {
 
 				this.pairs = storage.data;
 
+				if (!this.pairs || (Array.isArray(this.pairs) && !this.pairs.length) || (typeof this.pairs === 'object' && !Object.keys(this.pairs).length)) {
+					this.pairs = null;
+				}
 			} else {
 				console.info(`[${this.id}] products data expired`);
 			}
 		} catch (error) {
 			console.error(`[${this.id}] unable to retrieve stored products`, error);
 		}
-	}
-
-	get hasProducts() {
-		return this.pairs && ((Array.isArray(this.pairs) && this.pairs.length) || (typeof this.pairs === 'object' && Object.keys(this.pairs).length));
 	}
 
 	set pair(name) {
@@ -182,7 +181,7 @@ class Exchange extends EventEmitter {
 	validatePair(pair) {
 		this.valid = false;
 
-		if (!this.hasProducts) {
+		if (!this.pairs) {
 			return this.fetchProducts()
 				.then(data => this.validatePair(pair))
 		}

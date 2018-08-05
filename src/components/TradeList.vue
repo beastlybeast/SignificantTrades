@@ -46,6 +46,7 @@
         this.sfx = new Sfx();
       }
 
+      socket.$on('pairing', this.onPairing);
       socket.$on('trades', this.onTrades);
 
       setTimeout(() => {
@@ -59,6 +60,7 @@
       }, 1000);
     },
     beforeDestroy() {
+      socket.$off('pairing', this.onPairing);
       socket.$off('trades', this.onTrades);
       options.$off('change', this.onSettings);
 
@@ -78,6 +80,9 @@
           break;
         }
       },
+      onPairing() {
+        this.trades = [];
+      },
       onTrades(trades) {
         for (let trade of trades) {
           const size = trade[2] * trade[3];
@@ -87,7 +92,7 @@
           if (trade[5] === 1) {
             this.sfx && this.sfx.liquidation();
 
-            if (size >= threshold) {
+            if (size >= options.threshold * multiplier) {
               this.appendRow(trade, ['liquidation'], `${app.getAttribute('data-symbol')}<strong>${formatAmount(size, 1)}</strong> liquidated <strong>${trade[4] ? 'SHORT' : 'LONG'}</strong> @ ${app.getAttribute('data-symbol')}${formatPrice(trade[2])}`);
             }
             continue;
@@ -368,7 +373,7 @@
         left: 0;
         bottom: 0;
         right: 0;
-        background-color: rgba(black, .1);
+        background-color: rgba(black, .2);
       }
     }
 

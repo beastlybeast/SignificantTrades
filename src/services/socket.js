@@ -19,14 +19,14 @@ const exchanges = [
   // new Kraken(), <- disabled til Kraken release ws api
   new Bitmex(),
   new Bitfinex(),
-  // new Coinex(),
-  // new Binance(),
-  // new Gdax(),
-  // new Huobi(),
-  // new Bitstamp(),
-  // new Hitbtc(),
-  // new Okex(),
-  // new Poloniex(),
+  new Coinex(),
+  new Binance(),
+  new Gdax(),
+  new Huobi(),
+  new Bitstamp(),
+  new Hitbtc(),
+  new Okex(),
+  new Poloniex(),
 ];
 
 const emitter = new Vue({
@@ -137,10 +137,10 @@ const emitter = new Vue({
 
       this.trades = [];
 
-      this.$emit('connecting', options.pair);
+      this.$emit('pairing', options.pair);
 
       console.log(`[socket.connect] connecting to "${options.pair}"`);
-
+      
       Promise.all(exchanges.map(exchange => exchange.validatePair(options.pair))).then(() => {
         const validExchanges = exchanges.filter(exchange => exchange.valid && options.disabled.indexOf(exchange.id) === -1);
 
@@ -194,7 +194,7 @@ const emitter = new Vue({
       return null;
     },
     fetchHistoricalData(from, to = null, willReplace = false) {
-      if (!from || this.API_URL || options.pair !== 'BTCUSD') {
+      if (!from || !this.API_URL || !/btcusd/i.test(options.pair)) {
         return Promise.resolve();
       }
 
@@ -255,7 +255,7 @@ const emitter = new Vue({
             id: `fetch_error`
           });
 
-          reject(err);
+          resolve();
         })
       });
     }

@@ -152,7 +152,7 @@ class Okex extends Exchange {
       }
     });
 
-    return output;
+    return Object.keys(output.spots).length || Object.keys(output.spots).length ? output : [];
   }
 
 }
