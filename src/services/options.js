@@ -33,6 +33,12 @@ const emitter = new Vue({
     for (let prop in this.$data) {
       this.$watch(prop, this.onChange.bind(this, prop));
     }
+
+    const subdomain = window.location.hostname.match(/^([\w\d])\./i);
+
+    if (subdomain && subdomain[0]) {
+      this.pair = subdomain.toUpperCase();
+    }
   },
   methods: {
     toggleExchange(exchange) {
