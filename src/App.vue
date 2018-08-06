@@ -13,7 +13,7 @@
 <script>
   import socket from './services/socket';
   import options from './services/options';
-  
+
   import Alerts from './components/Alerts.vue';
   import Header from './components/Header.vue';
   import Settings from './components/Settings.vue';
@@ -91,7 +91,7 @@
 
           if (param[0] === 'threshold' && param[1].indexOf('%') !== -1) {
             const factor = (parseFloat(param[1]) || 1) / 100;
-            
+
             settings['threshold'] = +formatAmount(options.threshold * factor);
             settings['significantTradeThreshold'] = +formatAmount(options.significantTradeThreshold * factor);
             settings['hugeTradeThreshold'] = +formatAmount(options.hugeTradeThreshold * factor);
@@ -107,7 +107,12 @@
       }
     },
     mounted() {
-      socket.initialize()
+      fetch('showads.js')
+        .then(() => {})
+        .catch(error => {
+          console.log(error);
+          socket.initialize();
+        })
     },
     methods: {
       updatePairCurrency(pair) {

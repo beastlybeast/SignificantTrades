@@ -93,8 +93,8 @@ module.exports.plugins = (module.exports.plugins || []).concat([
       NODE_ENV: JSON.stringify(process.env.NODE_ENV),
       VERSION: JSON.stringify(require("./package.json").version),
       BUILD_DATE: JSON.stringify(date.getDate() + ' ' + date.toLocaleString('en-US', {month: 'short'}).toLowerCase()),
-      PROXY_URL: JSON.stringify(process.env.PROXY_URL || null),
-      API_URL: JSON.stringify(process.env.API_URL || null),
+      PROXY_URL: JSON.stringify(process.env.PROXY_URL || 'https://api.aggr.trade/cors/'),
+      API_URL: JSON.stringify(process.env.API_URL || 'https://api.aggr.trade'),
     }
   })
 ]);

@@ -525,13 +525,13 @@
 
         &::-webkit-slider-thumb {
           transform: scale(1.1);
-          color: white;
+          background: white;
           box-shadow: 0 0 2px rgba(white, .2), 0 0 20px rgba(white, .5);
         }
 
         &::-moz-slider-thumb {
           transform: scale(1.1);
-          color: white;
+          background: white;
           box-shadow: 0 0 2px rgba(white, .2), 0 0 20px rgba(white, .5);
         }
       }

@@ -41,6 +41,7 @@ const emitter = new Vue({
       timestamps: {},
       API_URL: null,
       PROXY_URL: null,
+      queue: [],
     }
   },
   methods: {
@@ -76,11 +77,7 @@ const emitter = new Vue({
             }
           }
 
-          this.trades = this.trades.concat(data);
-
-          const filtered = data.filter(a => options.filters.indexOf(a[0]) === -1);
-
-          this.$emit('trades', filtered);
+          this.queue = this.queue.concat(data);
         });
 
         exchange.on('open', event => {
@@ -127,6 +124,18 @@ const emitter = new Vue({
       });
 
       this.connectExchanges();
+
+      setInterval(() => {
+        if (!this.queue.length) {
+          return;
+        }
+
+        this.trades = this.trades.concat(this.queue);
+
+        this.$emit('trades', this.queue.filter(a => options.filters.indexOf(a[0]) === -1));
+
+        this.queue = [];
+      }, 200);
     },
     connectExchanges(pair = null) {
       this.disconnectExchanges();
@@ -140,7 +149,7 @@ const emitter = new Vue({
       this.$emit('pairing', options.pair);
 
       console.log(`[socket.connect] connecting to "${options.pair}"`);
-      
+
       Promise.all(exchanges.map(exchange => exchange.validatePair(options.pair))).then(() => {
         const validExchanges = exchanges.filter(exchange => exchange.valid && options.disabled.indexOf(exchange.id) === -1);
 

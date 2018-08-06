@@ -1,6 +1,6 @@
 import Exchange from '../services/exchange'
 
-class Huobi extends Exchange {
+class Hitbtc extends Exchange {
 
 	constructor(options) {
 		super(options);
@@ -11,14 +11,14 @@ class Huobi extends Exchange {
       PRODUCTS: 'https://api.hitbtc.com/api/2/public/symbol',
       TRADES: () => `https://api.hitbtc.com/api/2/public/trades/${this.pair}?sort=DESC&limit=500`
     }
-		
+
 		this.options = Object.assign({
 			url: 'wss://api.hitbtc.com/api/2/ws',
 		}, this.options);
 	}
 
 	connect() {
-    if (!super.connect())  
+    if (!super.connect())
       return;
 
     this.api = new WebSocket(this.getUrl());
@@ -85,4 +85,4 @@ class Huobi extends Exchange {
 
 }
 
-export default Huobi;
+export default Hitbtc;

@@ -45,7 +45,7 @@
         if (typeof price === 'number') {
           this.title = formatPrice(price);
 
-          window.document.title = this.title.replace(/<\/?[^>]+(>|$)/g, '');
+          window.document.title = this.title.toString().replace(/<\/?[^>]+(>|$)/g, '');
         }
 
         if (direction) {

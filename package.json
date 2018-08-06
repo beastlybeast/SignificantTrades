@@ -6,10 +6,6 @@
   "author": "KEVIN ROSTAGNI <kevin.rostagni@seloger.com>",
   "license": "MIT",
   "private": true,
-  "config": {
-    "PROXY_URL": "https://api.aggr.trade/cors/",
-    "API_URL": "https://api.aggr.trade"
-  },
   "scripts": {
     "dev": "cross-env NODE_ENV=development webpack-dev-server --open --hot",
     "build": "cross-env NODE_ENV=production webpack --progress --hide-modules"
