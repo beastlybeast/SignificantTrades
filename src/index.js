@@ -15,7 +15,7 @@ Vue.use(VueTippy, {
 });
 
 Vue.component('editable', {
-  template: `<div contenteditable="true" @input="$emit('update:content', $event.target.innerText)"></div>`,
+  template: `<div contenteditable="true" @keydown.enter.prevent @input="handle"></div>`,
   props: ['content'],
   mounted: function () {
     this.$el.innerText = this.content;
@@ -25,6 +25,16 @@ Vue.component('editable', {
       if (this.$el.innerText !== this.content) {
         this.$el.innerText = this.content;
       }
+    }
+  },
+  methods: {
+    handle($event) {
+      if ($event.which === 13) {
+        event.preventDefault();
+        return;
+      }
+
+      this.$emit('update:content', $event.target.innerText);
     }
   }
 });

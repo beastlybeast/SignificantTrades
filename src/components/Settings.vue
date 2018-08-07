@@ -669,6 +669,8 @@
             font-family: inherit;
             color: white;
             margin-left: 5px;
+            position: absolute;
+            pointer-events: none;
           }
         }
       }
