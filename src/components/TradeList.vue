@@ -79,11 +79,10 @@
             }
           break;
           case 'gifsThresholds':
-            
             data.value.forEach((keyword, index) => {
-              if (data.old[index] !== keyword) {
-                console.log(`fetch new gif for threshold #${index}, keyword: ${keyword}`)
-                this.fetchGifs(keyword, index);
+              if (this.keywords[index] !== keyword) {
+                clearTimeout(this.gifKeywordFetchTimeout);
+                this.gifKeywordFetchTimeout = setTimeout(this.fetchGifByKeyword.bind(this, keyword, index), 2000);
               }
             })
           break;
@@ -164,7 +163,7 @@
           classname.push('significant');
 
           if (options.useShades) {
-            let ratio = Math.min(1, (amount - options.thresholds[1] * multiplier) / (options.hugeTradeThreshold * multiplier - options.significantTradeThreshold * multiplier));
+            let ratio = Math.min(1, (amount - options.thresholds[1] * multiplier) / (options.thresholds[2] * multiplier - options.thresholds[1] * multiplier));
 
             if (trade[4]) {
               hsl = `hsl(89, ${(36 + ((1 - ratio) * 10)).toFixed(2)}%, ${(35 + (ratio * 20)).toFixed(2)}%)`;
@@ -209,6 +208,8 @@
         });
       },
       getGifs(refresh) {
+        this.keywords = options.gifsThresholds.slice(0, options.gifsThresholds.length);
+
         options.gifsThresholds.forEach((keyword, index) => {
           if (!keyword) {
             return;
@@ -243,6 +244,8 @@
         return output;
       },
       fetchGifByKeyword(keyword, index) {
+        this.keywords[index] = keyword;
+
         if (!keyword) {
           if (this.gifs[index]) {
             console.log(`remove gifs at index ${index}`);

@@ -63,11 +63,11 @@
           </div>
         </div>
         <div class="settings__chart">
-          <div class="form-group mb8">
+          <div class="form-group mb8" v-if="options.thresholds.length > 0">
             <label class="checkbox-control flex-left" v-tippy title="Shows significants orders on the chart">
               <input type="checkbox" class="form-control" v-model="options.showPlotsSignificants">
               <div></div>
-              <span>Highlight {{options.hugeTradeThreshold}}+</span>
+              <span>Highlight {{options.thresholds[1]}}+</span>
             </label>
           </div>
           <div class="form-group mb8">

@@ -43,10 +43,10 @@ class Exchange extends EventEmitter {
 
 		if (this.matchPairName && typeof this.matchPairName === 'function') {
 			this._pair = this.matchPairName(name);
-		} else if (typeof this.pairs === 'object') {
-			this._pair = this.pairs[name] || null;
 		} else if (Array.isArray(this.pairs) && this.pairs.indexOf(name) !== -1) {
 			this._pair = name;
+		} else if (typeof this.pairs === 'object') {
+			this._pair = this.pairs[name] || null;
 		} else {
 			this._pair = null;
 		}
