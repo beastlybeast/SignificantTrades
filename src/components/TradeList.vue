@@ -79,6 +79,7 @@
             }
           break;
           case 'gifsThresholds':
+            
             data.value.forEach((keyword, index) => {
               if (data.old[index] !== keyword) {
                 console.log(`fetch new gif for threshold #${index}, keyword: ${keyword}`)
