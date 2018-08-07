@@ -76,49 +76,11 @@
       }
     },
     created() {
-      const settings = JSON.parse(localStorage.getItem('options')) || {};
-
       socket.$on('pairing', pair => {
         this.pair = options.pair = pair;
 
         this.updatePairCurrency(this.pair);
       });
-
-      const query = window.location.search.substring(1);
-
-      if (query.length) {
-        query.split('&').forEach(segment => {
-          const param = segment.split('=');
-
-          if (param[0] === 'threshold') {
-            if (param[1].indexOf('%') !== -1) {
-              const factor = (parseFloat(param[1]) || 1) / 100;
-
-              settings['thresholds'] = [
-                +formatAmount(options.thresholds[0] * factor),
-                +formatAmount(options.thresholds[1] * factor),
-                +formatAmount(options.thresholds[2] * factor),
-                +formatAmount(options.thresholds[3] * factor),
-              ];
-            } else {
-              const threshold = parseFloat(param[1]);
-
-              settings['thresholds'] = [
-                threshold,
-                threshold * 2,
-                threshold * 10,
-                threshold * 100,
-              ];
-            }
-          } else if (typeof options[param[0]] !== 'undefined') {
-            settings[param[0]] = param[1];
-          }
-        });
-      }
-
-      for (let name of Object.keys(settings)) {
-        options[name] = settings[name];
-      }
     },
     mounted() {
 
