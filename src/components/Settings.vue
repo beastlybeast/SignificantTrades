@@ -13,19 +13,16 @@
           <input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
         </div>
       </div>
-      <div class="mt8 settings__title" v-on:click="toggleSection('thresholds')" v-bind:class="{closed: options.settings.indexOf('thresholds') > -1}">Thresholds <i class="icon-up"></i></div>
-      <div class="settings__thresholds settings__column">
+      <div class="mt8 settings__title" v-on:click="toggleSection('exchangeThresholds')" v-bind:class="{closed: options.settings.indexOf('exchangeThresholds') > -1}">Thresholds <i class="icon-up"></i></div>
+      <div class="settings__thresholds">
         <div class="form-group">
-          <label><span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content.sync="options.threshold"></editable> won't show up<span class="icon-info-circle" v-bind:title="help.threshold" v-tippy></span></label>
-          <label><span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content.sync="options.significantTradeThreshold"></editable> = <u>significant</u> <span class="icon-info-circle" v-bind:title="help.significantTradeThreshold" v-tippy></span></label>
-          <label><span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content.sync="options.hugeTradeThreshold"></editable> = <strong>huge</strong> <span class="icon-info-circle" v-bind:title="help.hugeTradeThreshold" v-tippy></span></label>
-          <label><span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content.sync="options.rareTradeThreshold"></editable> = <strong><i>rare</i></strong> <span class="icon-info-circle" v-bind:title="help.rareTradeThreshold" v-tippy></span></label>
-        </div>
-        <div class="form-group" title="Use dynamic shades of green/red to highlight the amount of each significant+ trades" v-tippy>
-          <div class="shades" v-bind:class="{active: options.useShades}"></div>
-          <label class="checkbox-control flex-right">
-            <input type="checkbox" class="form-control" v-model="options.useShades">
-            <div></div>
+          <label v-for="(threshold, index) in options.thresholds" :key="`threshold-${index}`">
+            <span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content.sync="options.thresholds[index]"></editable> 
+              <span v-if="index === 0">won't show up</span>
+              <span v-if="index > 0">
+                will show
+                <editable class="settings__thresholds--gifkeyword" :content.sync="options.gifsThresholds[index]"></editable>
+              </span>
           </label>
         </div>
       </div>
@@ -113,8 +110,8 @@
             </div>
             <div class="settings__exchanges__item__detail" v-if="expanded.indexOf(exchange) !== -1">
               <div class="form-group">
-                <label>Threshold <span v-if="options.thresholds[exchange] !== 1">({{ (options.thresholds[exchange] * 100).toFixed() }}%)</span></label>
-                <input type="range" min="0" max="2" step="0.01" v-bind:value="options.thresholds[exchange]" v-on:change="ajustThreshold(exchange, $event.target.value)">
+                <label>Threshold <span v-if="options.exchangeThresholds[exchange] !== 1">({{ (options.exchangeThresholds[exchange] * 100).toFixed() }}%)</span></label>
+                <input type="range" min="0" max="2" step="0.01" v-bind:value="options.exchangeThresholds[exchange]" v-on:change="ajustThreshold(exchange, $event.target.value)">
               </div>
             </div>
           </div>
@@ -182,7 +179,7 @@
       this.disabled = options.disabled;
       this.filters = options.filters;
       this.exchanges = socket.exchanges;
-      this.thresholds = options.thresholds;
+      this.exchangeThresholds = options.exchangeThresholds;
     },
     mounted() {
       socket.$on('exchange_error', this.onExchangeFailed);
@@ -219,14 +216,14 @@
         }
       },
       ajustThreshold(exchange, value) {
-        this.$set(options.thresholds, exchange, value);
+        this.$set(options.exchangeThresholds, exchange, value);
       },
       toggleExpander(exchange) {
         const index = this.expanded.indexOf(exchange);
 
         if (index === -1) {
-          if (typeof options.thresholds[exchange] === 'undefined') {
-            options.thresholds[exchange] = 1;
+          if (typeof options.exchangeThresholds[exchange] === 'undefined') {
+            options.exchangeThresholds[exchange] = 1;
           }
 
           this.expanded.push(exchange);
@@ -503,6 +500,7 @@
       opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
       -webkit-transition: .2s; /* 0.2 seconds transition on hover */
       transition: opacity .2s;
+      cursor: ew-resize;
 
       &::-webkit-slider-thumb {
         -webkit-appearance: none; /* Override default look */
@@ -510,17 +508,18 @@
         width: 8px; /* Set a specific slider handle width */
         height: 24px; /* Slider handle height */
         background: $green + 20%; /* Green background */
-        cursor: pointer; /* Cursor on hover */
+        cursor: ew-resize;
       }
 
       &::-moz-range-thumb {
         width: 8px; /* Set a specific slider handle width */
         height: 24px; /* Slider handle height */
         background: $green + 20%; /* Green background */
-        cursor: pointer; /* Cursor on hover */
+        cursor: ew-resize;
       }
 
-      &:hover {
+      &:hover,
+      &:active {
         opacity: 1; /* Fully shown on mouse-over */
 
         &::-webkit-slider-thumb {
@@ -639,40 +638,6 @@
     }
 
     .settings__thresholds {
-      .shades {
-        width: 1.5em;
-        height: 1.5em;
-        margin-bottom: .8em;
-        border-radius: 50%;
-        background-color: $green;
-        box-shadow: 0 0 0 $green - 30%, 0 0 0 $green - 60%;
-        transition: all .4s $easeElastic;
-
-        &.active {
-          width: 1em;
-          height: 1em;
-          margin-bottom: 1.2em;
-          box-shadow: 0.4em 0.6em 0 $green - 30%, -0.4em 0.6em 0 $green - 60%;
-        }
-      }
-
-      > div {
-        flex-basis: auto;
-        flex-grow: 0;
-        max-width: none;
-
-        &:first-child {
-          flex-grow: 1;
-        }
-
-        &:last-child {
-          padding: 0 10px;
-          justify-content: center;
-          align-items: center;
-          display: flex;
-        }
-      }
-
       .label {
         margin-bottom: 2px;
       }
@@ -688,6 +653,24 @@
 
       .icon-currency {
         color: $green;
+      }
+
+      [contenteditable] {
+        min-width: 40px;
+        
+        &.settings__thresholds--gifkeyword {
+          &:empty:before {
+            content: 'nothing';
+            opacity: .4;
+          }
+          
+          &:not(:empty):after {
+            content: 'gifs';
+            font-family: inherit;
+            color: white;
+            margin-left: 5px;
+          }
+        }
       }
     }
 

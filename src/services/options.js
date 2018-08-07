@@ -4,8 +4,10 @@ import socket from './socket'
 const emitter = new Vue({
   data() {
     return {
-      threshold: 100000,
-      thresholds: {},
+      thresholds: [100000, 100000, 1000000, 10000000],
+      gifsThresholds: ['', '', 'cash', 'explosion'],
+      exchangeThresholds: {},
+      pairThresholds: {},
       maxRows: 20,
       pair: 'BTCUSD',
       avgPeriods: 2,
@@ -17,9 +19,6 @@ const emitter = new Vue({
       filters: [],
       debug: false,
       dark: true,
-      significantTradeThreshold: 100000,
-      hugeTradeThreshold: 1000000,
-      rareTradeThreshold: 10000000,
       useShades: true,
       useAudio: false,
       audioIncludeAll: true,
@@ -79,9 +78,19 @@ const emitter = new Vue({
     onChange(prop, current, old) {
       localStorage && localStorage.setItem('options', JSON.stringify(this.$data));
 
+      switch (prop) {
+        case 'threshold':
+        case 'significantTradeThreshold':
+        case 'hugeTradeThreshol':
+        case 'rareTradeThreshol':
+          this.pairThresholds[this.pair] = [threshold[0], threshold[1], threshold[0], threshold[0]]
+        break;
+      }
+
       this.$emit('change', {
         prop: prop,
-        value: current
+        value: current,
+        old: old
       })
     }
   }

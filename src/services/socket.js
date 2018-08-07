@@ -146,12 +146,18 @@ const emitter = new Vue({
 
       this.trades = [];
 
-      this.$emit('pairing', options.pair);
-
       console.log(`[socket.connect] connecting to "${options.pair}"`);
 
       Promise.all(exchanges.map(exchange => exchange.validatePair(options.pair))).then(() => {
-        const validExchanges = exchanges.filter(exchange => exchange.valid && options.disabled.indexOf(exchange.id) === -1);
+        let validExchanges = exchanges.filter(exchange => exchange.valid);
+        
+        if (!validExchanges.length) {
+          return;
+        }
+
+        this.$emit('pairing', options.pair);
+
+        validExchanges = validExchanges.filter(exchange => options.disabled.indexOf(exchange.id) === -1);
 
         console.log(`[socket.connect] ${validExchanges.length} successfully matched with "${options.pair}"`);
 

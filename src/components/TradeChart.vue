@@ -315,6 +315,7 @@
       this.onResize();
 
       if (socket.trades && socket.trades.length > 1) {
+        console.log('set initial range, from', this.range, 'to', socket.trades[socket.trades.length - 1][1] - socket.trades[0][1]);
         this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
         this.ajustTimeframe();
         this.appendTicksToChart(this.getTicks(), true);
@@ -380,6 +381,7 @@
 
         this.chart.series[0].update({name: pair}, false);
 
+        console.log('on pairing set range from', this.range, 'to', this.defaultRange);
         this.range = this.defaultRange;
         this.averages = [];
         this.toggleFollow(true);
@@ -402,16 +404,17 @@
 
         if (willReplace) {
           this.toggleFollow(true);
-
-          this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
-
-          this.chart.xAxis[0].min = +new Date() - this.range;
-          this.chart.xAxis[0].max = +new Date();
+          console.log('set fetch range', 'will replace', 'from', this.range, 'to', socket.trades[socket.trades.length - 1][1] - socket.trades[0][1])
         }
 
         this.ajustTimeframe();
 
         this.appendTicksToChart(this.getTicks(), true);
+
+        if (willReplace) {
+          console.log('set extreme', Math.max(this.chart.series[0].xData[this.chart.series[0].xData.length - 1] - this.range, this.chart.series[0].xData[0]), this.chart.series[0].xData[this.chart.series[0].xData.length - 1]);
+          this.chart.xAxis[0].setExtremes(Math.max(this.chart.series[0].xData[this.chart.series[0].xData.length - 1] - this.range, this.chart.series[0].xData[0]), this.chart.series[0].xData[this.chart.series[0].xData.length - 1]);
+        }
       },
 
       onTrades(trades) {
@@ -828,7 +831,7 @@
           x: +trade[1],
           y: +trade[2],
           marker: {
-            radius: Math.max(5, Math.log(1 + (trade[2] * trade[3]) / (options.hugeTradeThreshold - options.threshold)) * 6),
+            radius: Math.max(5, Math.log(1 + (trade[2] * trade[3]) / (options.thresholds[2] - options.thresholds[0])) * 6),
             symbol: trade[5] ? 'diamond' : (trade[4] == 1 ? 'triangle' : 'triangle-down'),
             fillColor: fill
           },
@@ -982,6 +985,7 @@
         const axisMin = Math.max(dataMin, dataMax - this.range);
 
         this.chart.xAxis[0].setExtremes(axisMin, dataMax, redraw);
+            console.log('set extreme', 'snapToRight', axisMin, dataMax);
       },
 
       //    __            _

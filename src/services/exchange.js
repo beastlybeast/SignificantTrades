@@ -19,7 +19,7 @@ class Exchange extends EventEmitter {
 		try {
 			const storage = JSON.parse(localStorage.getItem(this.id));
 
-			if (storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24) {
+			if (storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7) {
 				console.info(`[${this.id}] reading stored products`);
 
 				this.pairs = storage.data;

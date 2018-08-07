@@ -3,7 +3,7 @@
 		<div v-for="(alert, index) in alerts" class="alert" :key="alert.id" :class="'alert--' + alert.type" v-on:click="alert.click ? alert.click(alert) && dismiss(index) : dismiss(index)">
 			<span class="alert__icon icon-"></span>
 			<div class="alert__title">{{ alert.title }}</div>
-			<div v-if="alert.message" class="alert__message">{{ alert.message }}</div>
+			<div v-if="alert.message" class="alert__message" v-html="alert.message"></div>
 		</div>
 	</div>
 </template>
@@ -49,6 +49,10 @@
 					return;
 				}
 
+				if (alert.message) {
+					alert.message = alert.message.trim().replace(/\n/, '<br>');
+				}
+
 				this.alerts.push(alert);
 
 				if (alert.type !== 'error') {
@@ -79,7 +83,8 @@
 		> .alert__message {
 			flex-basis: 100%;
 			font-size: 70%;
-			margin: 5px 0 0;
+			margin: 5px 0 0;    
+			line-height: 1.4;
 		}
 
 		> .alert__title {

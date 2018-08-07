@@ -35,7 +35,7 @@
       return {
         ticks: {},
         trades: [],
-        gifs: [],
+        gifs: {},
       }
     },
     created() {
@@ -78,6 +78,14 @@
               this.sfx && this.sfx.disconnect() && delete this.sfx;
             }
           break;
+          case 'gifsThresholds':
+            data.value.forEach((keyword, index) => {
+              if (data.old[index] !== keyword) {
+                console.log(`fetch new gif for threshold #${index}, keyword: ${keyword}`)
+                this.fetchGifs(keyword, index);
+              }
+            })
+          break;
         }
       },
       onPairing() {
@@ -87,25 +95,25 @@
         for (let trade of trades) {
           const size = trade[2] * trade[3];
 
-          const multiplier = typeof options.thresholds[trade[0]] === 'string' ? +options.thresholds[trade[0]] : 1;
+          const multiplier = typeof options.exchangeThresholds[trade[0]] === 'string' ? +options.exchangeThresholds[trade[0]] : 1;
 
           if (trade[5] === 1) {
             this.sfx && this.sfx.liquidation();
 
-            if (size >= options.threshold * multiplier) {
+            if (size >= options.thresholds[0] * multiplier) {
               this.appendRow(trade, ['liquidation'], `${app.getAttribute('data-symbol')}<strong>${formatAmount(size, 1)}</strong> liquidated <strong>${trade[4] ? 'SHORT' : 'LONG'}</strong> @ ${app.getAttribute('data-symbol')}${formatPrice(trade[2])}`);
             }
             continue;
           }
           
-          if (options.useAudio && ((options.audioIncludeAll && size > options.threshold * Math.max(.1, multiplier) * .1) || size > options.significantTradeThreshold * Math.max(.1, multiplier))) {
-            this.sfx && this.sfx.tradeToSong(size / (options.significantTradeThreshold * multiplier), trade[4]);
+          if (options.useAudio && ((options.audioIncludeAll && size > options.thresholds[0] * Math.max(.1, multiplier) * .1) || size > options.thresholds[1] * Math.max(.1, multiplier))) {
+            this.sfx && this.sfx.tradeToSong(size / (options.thresholds[1] * multiplier), trade[4]);
           }
 
           // group by [exchange name + buy=1/sell=0] (ex bitmex1)
           const tid = trade[0] + trade[4];
 
-          if (options.threshold) {
+          if (options.thresholds[0]) {
             if (this.ticks[tid]) {
               if (+new Date() - this.ticks[tid][2] > 5000) {
                 delete this.ticks[tid];
@@ -117,7 +125,7 @@
                 // sum volume
                 this.ticks[tid][3] += trade[3];
 
-                if (this.ticks[tid][2] * this.ticks[tid][3] >= options.threshold * multiplier) {
+                if (this.ticks[tid][2] * this.ticks[tid][3] >= options.thresholds[0] * multiplier) {
                   this.appendRow(this.ticks[tid]);
                   delete this.ticks[tid];
                 }
@@ -126,7 +134,7 @@
               }
             }
 
-            if (!this.ticks[tid] && size < options.threshold * multiplier) {
+            if (!this.ticks[tid] && size < options.thresholds[0] * multiplier) {
               this.ticks[tid] = trade;
               continue;
             }
@@ -143,7 +151,7 @@
         let hsl;
         let amount = trade[2] * trade[3];
 
-        const multiplier = typeof options.thresholds[trade[0]] === 'string' ? +options.thresholds[trade[0]] : 1;
+        const multiplier = typeof options.exchangeThresholds[trade[0]] === 'string' ? +options.exchangeThresholds[trade[0]] : 1;
 
         if (trade[4]) {
           classname.push('buy');
@@ -151,11 +159,11 @@
           classname.push('sell');
         }
 
-        if (amount >= options.significantTradeThreshold * multiplier) {
+        if (amount >= options.thresholds[1] * multiplier) {
           classname.push('significant');
 
           if (options.useShades) {
-            let ratio = Math.min(1, (amount - options.significantTradeThreshold * multiplier) / (options.hugeTradeThreshold * multiplier - options.significantTradeThreshold * multiplier));
+            let ratio = Math.min(1, (amount - options.thresholds[1] * multiplier) / (options.hugeTradeThreshold * multiplier - options.significantTradeThreshold * multiplier));
 
             if (trade[4]) {
               hsl = `hsl(89, ${(36 + ((1 - ratio) * 10)).toFixed(2)}%, ${(35 + (ratio * 20)).toFixed(2)}%)`;
@@ -165,22 +173,16 @@
           }
         }
 
-        if (amount >= options.hugeTradeThreshold * multiplier) {
-          if (this.gifs.huge && this.gifs.huge.length) {
-            image = this.gifs.huge[Math.floor(Math.random() * (this.gifs.huge.length - 1))];
+        for (let i=1; i<options.thresholds.length; i++) {
+          if (amount < options.thresholds[i] * multiplier) {
+            break;
           }
 
-          hsl = null;
-
-          classname.push('huge');
-        }
-
-        if (amount >= options.rareTradeThreshold * multiplier) {
-          if (this.gifs.rare && this.gifs.rare.length) {
-            image = this.gifs.rare[Math.floor(Math.random() * (this.gifs.rare.length - 1))];
+          if (this.gifs[i] && this.gifs[i].length) {
+            image = this.gifs[i][Math.floor(Math.random() * (this.gifs[i].length - 1))];
           }
 
-          classname.push('rare');
+          classname.push('level-' + i);
         }
 
         amount = formatAmount(amount);
@@ -206,36 +208,17 @@
         });
       },
       getGifs(refresh) {
-        [{
-          threshold: 'huge',
-          query: 'cash',
-        },{
-          threshold: 'rare',
-          query: 'explosion'
-        }].forEach(animation => {
-          const storage = localStorage ? JSON.parse(localStorage.getItem(animation.threshold + '_gifs')) : null;
+        options.gifsThresholds.forEach((keyword, index) => {
+          if (!keyword) {
+            return;
+          }
 
-          if (!refresh && storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24) {
-            this.gifs[animation.threshold] = storage.data;
+          const storage = localStorage ? JSON.parse(localStorage.getItem('threshold_' + index + '_gifs')) : null;
+
+          if (!refresh && storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7) {
+            this.gifs[index] = storage.data;
           } else {
-            fetch('https://api.giphy.com/v1/gifs/search?q=' + animation.query + '&rating=r&limit=100&api_key=b5Y5CZcpj9spa0xEfskQxGGnhChYt3hi')
-              .then(res => res.json())
-              .then(res => {
-                if (!res.data || !res.data.length) {
-                  return;
-                }
-
-                this.gifs[animation.threshold] = [];
-
-                for (let item of res.data) {
-                  this.gifs[animation.threshold].push(item.images.original.url);
-                }
-
-                localStorage.setItem(animation.threshold + '_gifs', JSON.stringify({
-                  timestamp: +new Date(),
-                  data: this.gifs[animation.threshold]
-                }))
-              });
+            this.fetchGifByKeyword(keyword, index);
           }
         });
       },
@@ -257,6 +240,42 @@
           output = Math.ceil(seconds) + 's';
 
         return output;
+      },
+      fetchGifByKeyword(keyword, index) {
+        if (!keyword) {
+          if (this.gifs[index]) {
+            console.log(`remove gifs at index ${index}`);
+            delete this.gifs[index];
+          }
+
+          localStorage.removeItem('threshold_' + index + '_gifs');
+
+          return;
+        }
+
+        console.log(`get giphy for keyword ${keyword}`);
+
+        fetch('https://api.giphy.com/v1/gifs/search?q=' + keyword + '&rating=r&limit=100&api_key=b5Y5CZcpj9spa0xEfskQxGGnhChYt3hi')
+          .then(res => res.json())
+          .then(res => {
+            if (!res.data || !res.data.length) {
+              console.log(`giphy => no result for keyword ${keyword}`);
+              return;
+            }
+
+            console.log(`save ${res.data.length} gifs at index ${index}`);
+
+            this.gifs[index] = [];
+
+            for (let item of res.data) {
+              this.gifs[index].push(item.images.original.url);
+            }
+
+            localStorage.setItem('threshold_' + index + '_gifs', JSON.stringify({
+              timestamp: +new Date(),
+              data: this.gifs[index]
+            }))
+          });
       }
     }
   }
@@ -351,7 +370,7 @@
       }
     }
 
-    &.trades__item--significant {
+    &.trades__item--level-1 {
       color: white;
     }
 
@@ -359,7 +378,7 @@
       background-color: $pink !important;
     }
 
-    &.trades__item--huge {
+    &.trades__item--level-2 {
       padding: .6em .6em;
 
       > div {
@@ -377,7 +396,7 @@
       }
     }
 
-    &.trades__item--rare {
+    &.trades__item--level-3 {
       box-shadow: 0 0 20px rgba(red, .5);
       z-index: 1;
     }

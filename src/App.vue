@@ -40,6 +40,7 @@
     const firstDigitIndex = price.toString().match(/[1-9]/);
 
     if (firstDigitIndex) {
+      console.log(price, firstDigitIndex);
       return +price.toFixed(Math.max(8 - price.toFixed().length, firstDigitIndex.index + 1));
     }
 
@@ -89,13 +90,26 @@
         query.split('&').forEach(segment => {
           const param = segment.split('=');
 
-          if (param[0] === 'threshold' && param[1].indexOf('%') !== -1) {
-            const factor = (parseFloat(param[1]) || 1) / 100;
+          if (param[0] === 'threshold') {
+            if (param[1].indexOf('%') !== -1) {
+              const factor = (parseFloat(param[1]) || 1) / 100;
 
-            settings['threshold'] = +formatAmount(options.threshold * factor);
-            settings['significantTradeThreshold'] = +formatAmount(options.significantTradeThreshold * factor);
-            settings['hugeTradeThreshold'] = +formatAmount(options.hugeTradeThreshold * factor);
-            settings['rareTradeThreshold'] = +formatAmount(options.rareTradeThreshold * factor);
+              settings['thresholds'] = [
+                +formatAmount(options.thresholds[0] * factor),
+                +formatAmount(options.thresholds[1] * factor),
+                +formatAmount(options.thresholds[2] * factor),
+                +formatAmount(options.thresholds[3] * factor),
+              ];
+            } else {
+              const threshold = parseFloat(param[1]);
+
+              settings['thresholds'] = [
+                threshold,
+                threshold * 2,
+                threshold * 10,
+                threshold * 100,
+              ];
+            }
           } else if (typeof options[param[0]] !== 'undefined') {
             settings[param[0]] = param[1];
           }
@@ -107,12 +121,20 @@
       }
     },
     mounted() {
+
+      // Test if there is some kind of adblocker ON
       fetch('showads.js')
         .then(() => {})
-        .catch(error => {
-          console.log(error);
-          socket.initialize();
-        })
+        .catch((response, a) => {
+          socket.$emit('alert', {
+            type: 'error',
+            title: `Disable your AdBlocker`,
+            message: `Some adblockers may block access to exchanges api.\nMake sure to turn it off, there is no ads anyway :-)`,
+            id: `adblock_error`
+          });
+        });
+
+      socket.initialize();
     },
     methods: {
       updatePairCurrency(pair) {
