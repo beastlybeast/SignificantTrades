@@ -90,12 +90,26 @@ const emitter = new Vue({
                 this.$emit('pair', data.pair, true);
               }
 
-              this.$emit('alert', {
-                id: `server_status`,
-                type: 'info',
-                title: `Tracking ${data.pair}`,
-                message: !this.exchanges.length ? 'No connected exchanges' : 'On ' + this.exchanges.join(', ').toUpperCase()
-              });
+              if (data.notice && localStorage.getItem('notice') != data.notice.timestamp) {
+                this.$emit('alert', {
+                  id: `server_status`,
+                  type: 'warning',
+                  title: `Notice ${new Date(data.notice.timestamp).toUTCString()}`,
+                  message: data.notice.message,
+                  click: () => {
+                    localStorage.setItem('notice', data.notice.timestamp);
+
+                    return true;
+                  }
+                });
+              } else {
+                this.$emit('alert', {
+                  id: `server_status`,
+                  type: 'info',
+                  title: `Tracking ${data.pair}`,
+                  message: !this.exchanges.length ? 'No connected exchanges' : 'On ' + this.exchanges.join(', ').toUpperCase()
+                });
+              }
             break;
             case 'pair':
               this.$emit('pair', data.pair);
@@ -151,6 +165,14 @@ const emitter = new Vue({
                   message: data.message
                 });
               }
+            break;
+            case 'message':
+              this.$emit('alert', {
+                type: 'warning',
+                id: `server_status`,
+                title: 'Notice',
+                message: data.message
+              });
             break;
           }
         }

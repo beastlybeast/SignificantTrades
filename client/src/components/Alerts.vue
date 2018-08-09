@@ -101,7 +101,7 @@
 		}
 
 		&.alert--warning {
-			background-color: $orange;
+			background-color: $orange - 40%;
 
 			.alert__icon:before {
 				content: unicode($icon-warning);
