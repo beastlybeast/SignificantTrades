@@ -83,10 +83,12 @@
 
         if (interval > 1) {
           socket.fetch(interval)
-            .then(data => {
+            .then()
+            .catch(err => {})
+            .then(() => {
               this.dashoffset = 0;
               this.fetchLabel = this._fetchLabel;
-            })
+            });
         }
       },
       toggleFollow() {

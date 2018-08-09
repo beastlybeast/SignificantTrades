@@ -102,7 +102,7 @@
             <i class="divider">|</i>
             <a href="javascript:void(0);" v-on:click="reset()"> reset</a>
             <i class="divider">|</i>
-            <a href="bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX" target="_blank" title="Bitcoin for more <3" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">donate</a>
+            <a href="bitcoin:​3NuLQsrphzgKxTBU3Vunj87XADPvZqZ7gc" target="_blank" title="Bitcoin for more <3" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">donate</a>
           </div>
         </div>
         <div class="form-group">
@@ -603,7 +603,7 @@
       span {
         margin-right: 4px;
         display: none;
-        
+
         @media only screen and (min-width: 320px) {
           display: inline-block;
         }

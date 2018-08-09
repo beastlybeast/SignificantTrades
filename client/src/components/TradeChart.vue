@@ -372,6 +372,8 @@
         this.chart.series[0].update({name: pair}, false);
 
         this.range = this.defaultRange;
+        this.averages = [];
+        this.tick = null;
         this.timeframe = 10000;
         this.toggleFollow(true);
 
@@ -490,8 +492,10 @@
             this.fetching = true;
             socket.fetch(axisMin, this.chart.series[0].xData[0])
               .then()
-              .catch()
-              .then(() => this.fetching = false);
+              .catch(err => {})
+              .then(() => {
+                this.fetching = false
+              });
           } else if (this.ajustTimeframe()) {
             this.appendTicksToChart(this.getTicks(), true);
           }
@@ -573,7 +577,7 @@
 
             socket.fetch(this.chart.xAxis[0].min, this.chart.series[0].xData[0], false , false)
               .then()
-              .catch()
+              .catch(err => {})
               .then(() => this.fetching = false);
           }
         }
@@ -1350,6 +1354,10 @@
   .chart__container {
     position: relative;
     width: calc(100% + 1px);
+
+    .highcharts-container {
+      width: 100% !important;
+    }
 
     .chart__selection {
       position: absolute;

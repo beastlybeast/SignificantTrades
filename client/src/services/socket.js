@@ -86,7 +86,9 @@ const emitter = new Vue({
 
               this.$emit('exchanges', this.exchanges);
 
-              this.$emit('pair', data.pair, true);
+              if (data.pair.toUpperCase() !== options.pair.toUpperCase()) {
+                this.$emit('pair', data.pair, true);
+              }
 
               this.$emit('alert', {
                 id: `server_status`,
@@ -94,8 +96,6 @@ const emitter = new Vue({
                 title: `Tracking ${data.pair}`,
                 message: !this.exchanges.length ? 'No connected exchanges' : 'On ' + this.exchanges.join(', ').toUpperCase()
               });
-
-              let dismissed = localStorage.getItem('inaccurate_clock_dismissed') || 0;
             break;
             case 'pair':
               this.$emit('pair', data.pair);
@@ -265,7 +265,7 @@ const emitter = new Vue({
         .catch(err => {
           err && this.$emit('alert', {
             type: 'error',
-            title: `Unable to retrieve history`,
+            title: err.response && err.response.data && err.response.data.error ? err.response.data.error : `Unable to retrieve history`,
             message: err.message,
             id: `fetch_error`
           });
