@@ -92,7 +92,6 @@
         }
       },
       toggleFollow() {
-        console.log(!this.following);
         options.follow(!this.following);
       },
       togglePopup() {
