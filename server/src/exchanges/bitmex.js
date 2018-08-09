@@ -9,6 +9,7 @@ class Bitmex extends Exchange {
 		this.id = 'bitmex';
 
 		this.mapping = {
+			ETHUSD: 'ETHUSD',
 			BTCUSD: 'XBTUSD',
 			ADABTC: 'ADAM18',
 			BCHBTC: 'BCHM18',
