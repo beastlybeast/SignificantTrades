@@ -1,9 +1,9 @@
 <template>
 	<div class="alerts">
-		<div v-for="(alert, index) in alerts" class="alert" :key="alert.id" :class="'alert--' + alert.type" v-on:click="alert.click ? alert.click(alert) && dismiss(index) : dismiss(index)">
+		<div v-for="(alert, index) in alerts" class="alert" :key="alert.id" :class="alert.classname" v-on:click="alert.click ? alert.click(alert) && dismiss(index) : dismiss(index)">
 			<span class="alert__icon icon-"></span>
 			<div class="alert__title">{{ alert.title }}</div>
-			<div v-if="alert.message" class="alert__message">{{ alert.message }}</div>
+			<div v-if="alert.message" class="alert__message" v-html="alert.message"></div>
 		</div>
 	</div>
 </template>
@@ -49,6 +49,14 @@
 					return;
 				}
 
+				if (typeof alert.classname === 'undefined') {
+					alert.classname = '';
+				}
+
+				if (alert.type) {
+					alert.classname += ' alert--' + alert.type;
+				}
+
 				this.alerts.push(alert);
 
 				if (alert.type !== 'error') {
@@ -75,11 +83,21 @@
 		cursor: pointer;
 		flex-wrap: wrap;
 		padding: 8px 10px;
+		align-items: center;
 
 		> .alert__message {
 			flex-basis: 100%;
 			font-size: 70%;
 			margin: 5px 0 0;
+
+			a {
+				color: rgba(white, .8);
+				text-decoration: underline;
+
+				&:hover {
+					color: white;
+				}
+			}
 		}
 
 		> .alert__title {
@@ -121,6 +139,16 @@
 
 			.alert__icon:before {
 				content: unicode($icon-info);
+			}
+		}
+
+		&.alert--notice {
+			.alert__title {
+				font-size: 14px;
+			}
+
+			.alert-message {
+				font-size: 12px;
 			}
 		}
 	}

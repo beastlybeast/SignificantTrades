@@ -99,8 +99,6 @@
     },
     created() {
       this.timestamp = +new Date();
-
-      this.range = parseInt(this.defaultRange);
     },
     mounted() {
       this._trimInvisibleTradesInterval = setInterval(this.trimChart, 60 * 1000);
@@ -304,9 +302,10 @@
 
       options.dark && this.toggleDark(options.dark);
 
+      this.range = +this.defaultRange;
+
       if (socket.trades && socket.trades.length > 1) {
         this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
-        this.ajustTimeframe();
         this.appendTicksToChart(this.getTicks(), true);
       }
 
@@ -397,7 +396,6 @@
 
         if (willReplace) {
           this.toggleFollow(true);
-          this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
         }
 
         this.ajustTimeframe();

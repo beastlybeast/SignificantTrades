@@ -93,6 +93,7 @@ const emitter = new Vue({
               if (data.notice && localStorage.getItem('notice') != data.notice.timestamp) {
                 this.$emit('alert', {
                   id: `server_status`,
+                  classname: 'alert--notice',
                   type: 'warning',
                   title: `Notice ${new Date(data.notice.timestamp).toUTCString()}`,
                   message: data.notice.message,
@@ -170,6 +171,7 @@ const emitter = new Vue({
               this.$emit('alert', {
                 type: 'warning',
                 id: `server_status`,
+                classname: 'alert--notice',
                 title: 'Notice',
                 message: data.message
               });
