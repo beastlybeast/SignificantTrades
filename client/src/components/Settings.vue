@@ -193,7 +193,7 @@
         options.hide();
       },
       switchPair(event) {
-        socket.$emit('alert', 'clear');
+        socket.$emit('alert');
         socket.send('pair', options.pair);
       },
       toggleSection(name) {

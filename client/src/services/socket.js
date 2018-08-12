@@ -168,13 +168,18 @@ const emitter = new Vue({
               }
             break;
             case 'message':
-              this.$emit('alert', {
-                type: 'warning',
-                id: `server_status`,
-                classname: 'alert--notice',
-                title: 'Notice',
-                message: data.message
-              });
+              if (typeof data.message === 'string' && data.message.trim().length) {
+                this.$emit('alert', {
+                  type: 'warning',
+                  id: `server_status`,
+                  classname: 'alert--notice',
+                  title: 'Notice',
+                  message: data.message
+                });
+              } else {
+                this.$emit('alert', 'server_status');
+              }
+
             break;
           }
         }

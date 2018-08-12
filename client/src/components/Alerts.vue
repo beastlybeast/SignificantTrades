@@ -20,7 +20,21 @@
     },
     created() {
       socket.$on('alert', alert => {
-				if (alert === 'clear') {
+				if (!alert || typeof alert !== 'object') {
+					let index = 0;
+					let length = this.alerts.length;
+
+					if (typeof alert === 'string') {
+						for (let i = 0; i < this.alerts.length; i++) {
+							if (this.alerts[i].id === alert) {
+								clearTimeout(alert.hideTimeout);
+								index = i;
+								length = 1;
+								break;
+							}
+						}
+					}
+					
 					this.alerts.splice(0, this.alerts.length);
 					return;
 				}
@@ -60,7 +74,7 @@
 				this.alerts.push(alert);
 
 				if (alert.type !== 'error') {
-					setTimeout(() => {
+					alert.hideTimeout = setTimeout(() => {
 						this.dismiss(this.alerts.indexOf(alert));
 					}, 1000 * 30);
 				}
