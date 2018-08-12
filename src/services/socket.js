@@ -155,7 +155,11 @@ const emitter = new Vue({
           return;
         }
 
-        this.$emit('pairing', options.pair);
+        if (this.pair !== options.pair) {
+          this.$emit('pairing', options.pair, this.canFetch());
+
+          this.pair = options.pair;
+        }
 
         validExchanges = validExchanges.filter(exchange => options.disabled.indexOf(exchange.id) === -1);
 
@@ -208,8 +212,11 @@ const emitter = new Vue({
 
       return null;
     },
+    canFetch() {
+      return this.API_URL && /btcusd/i.test(options.pair);
+    },
     fetchHistoricalData(from, to = null, willReplace = false) {
-      if (!from || !this.API_URL || !/btcusd/i.test(options.pair)) {
+      if (!from || !this.canFetch()) {
         return Promise.resolve();
       }
 
@@ -266,7 +273,7 @@ const emitter = new Vue({
           err && this.$emit('alert', {
             type: 'error',
             title: `Unable to retrieve history`,
-            message: err.message,
+            message: err.response && err.response.data && err.response.data.error ? err.response.data.error : err.message,
             id: `fetch_error`
           });
 

@@ -9,6 +9,7 @@ const emitter = new Vue({
       exchangeThresholds: {},
       pairThresholds: {},
       maxRows: 20,
+      precision: null,
       pair: 'BTCUSD',
       avgPeriods: 2,
       useWeighedAverage: true,
@@ -101,6 +102,9 @@ const emitter = new Vue({
         this.filters.splice(index, 1);
       }
     },
+    setExchangeThreshold(exchange, threshold) {
+      this.$set(this.exchangeThresholds, exchange, threshold);
+    },    
     show() {
       this.$emit('open');
     },

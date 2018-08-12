@@ -36,7 +36,7 @@ class Exchange extends EventEmitter {
 	}
 
 	set pair(name) {
-		if (!this.pairs) {
+		if (typeof this.pairs === 'undefined') {
 			this._pair = null;
 			return;
 		}
@@ -181,7 +181,7 @@ class Exchange extends EventEmitter {
 	validatePair(pair) {
 		this.valid = false;
 
-		if (!this.pairs) {
+		if (typeof this.pairs === 'undefined') {
 			return this.fetchProducts()
 				.then(data => this.validatePair(pair))
 		}
@@ -262,15 +262,23 @@ class Exchange extends EventEmitter {
 		console.log(`[${this.id}] fetching products...`, urls)
 
 		return new Promise((resolve, reject) => {
-			return Promise.all(urls.map(action => {
+			return Promise.all(urls.map((action, index) => {
 				action = action.split('|');
 
 				let method = action.length > 1 ? action.shift() : 'GET';
 				let url = action[0];
 
-				return fetch(`${process.env.PROXY_URL ? process.env.PROXY_URL : ''}${url}`, {method: method})
-				.then(response => response.json())
-				.catch(response => [])
+				return new Promise((resolve, reject) => {
+					setTimeout(() => {
+						resolve(fetch(`${process.env.PROXY_URL ? process.env.PROXY_URL : ''}${url}`, {method: method})
+							.then(response => response.json())
+							.catch(err => {
+								console.log(err);
+
+								return null;
+							}));
+					}, 500)
+				});
 			})).then(data => {
 				console.log(`[${this.id}] received API products response => format products`);
 
@@ -278,14 +286,18 @@ class Exchange extends EventEmitter {
 					data = data[0];
 				}
 
-				this.pairs = this.formatProducts(data) || [];
+				if (data) {
+					this.pairs = this.formatProducts(data) || [];
 
-				console.log(`[${this.id}] storing products`, this.pairs);
+					console.log(`[${this.id}] storing products`, this.pairs);
 
-				localStorage.setItem(this.id, JSON.stringify({
-					timestamp: +new Date(),
-					data: this.pairs
-				}));
+					localStorage.setItem(this.id, JSON.stringify({
+						timestamp: +new Date(),
+						data: this.pairs
+					}));
+				} else {
+					this.pairs = null;
+				}
 
 				resolve(this.pairs);
 			});

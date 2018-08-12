@@ -37,10 +37,13 @@
       return +price.toFixed(2);
     }
 
+    if (options.precision) {
+      return +price.toFixed(options.precision);
+    }
+
     const firstDigitIndex = price.toString().match(/[1-9]/);
 
     if (firstDigitIndex) {
-      console.log(price, firstDigitIndex);
       return +price.toFixed(Math.max(8 - price.toFixed().length, firstDigitIndex.index + 1));
     }
 
@@ -57,6 +60,11 @@
     }
 
     return amount;
+  }
+
+  window.pad = function(num, size) {
+    var s = '000000000' + num;
+    return s.substr(s.length - size);
   }
 
   export default {

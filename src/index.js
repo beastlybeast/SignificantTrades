@@ -34,7 +34,7 @@ Vue.component('editable', {
         return;
       }
 
-      this.$emit('update:content', $event.target.innerText);
+      this.$emit('output', $event.target.innerText);
     }
   }
 });

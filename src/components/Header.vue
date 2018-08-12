@@ -2,12 +2,12 @@
   <header class="header">
     <div class="header__title"><span class="icon-currency"></span> <span v-html="title"></span></div>
     <button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}"><span class="icon-external-link"></span></button>
-    <!-- <button type="button" v-on:click="retrieveChart" v-bind:title="fetchLabel" v-tippy="{placement: 'bottom'}">
+    <button type="button" v-if="canFetch" v-on:click="retrieveChart" v-bind:title="fetchLabel" v-tippy="{placement: 'bottom'}">
       <svg class="loader" v-bind:class="{loading: dashoffset > 0}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14">
         <path :stroke-dashoffset="dashoffset" d="M7,1a6.06,6.06,0,0,1,6,6,6.06,6.06,0,0,1-6,6A6.06,6.06,0,0,1,1,7,6.06,6.06,0,0,1,7,1Z"/>
       </svg>
       <span class="icon-history"></span>
-    </button> -->
+    </button>
     <button type="button" v-on:click="toggleFollow" v-bind:title="following ? 'Stop live mode' : 'Go live mode'" v-tippy="{placement: 'bottom'}"><span class="icon-play" v-bind:class="{following: following}"></span></button>
     <button type="button" v-on:click="$emit('settings')"><span class="icon-cog"></span></button>
   </header>
@@ -24,13 +24,18 @@
         dashoffset: 0,
         fetchLabel: 'Load chart history',
         following: true,
-        isPopupMode: window.opener !== null
+        isPopupMode: window.opener !== null,
+        canFetch: false
       }
     },
     created() {
       this._fetchLabel = this.fetchLabel.substr();
 
       options.$on('following', state => this.following = state);
+
+      socket.$on('pairing', (pair, canFetch) => {
+        this.canFetch = canFetch;
+      });
 
       socket.$on('fetchProgress', event => {
         if (!event || isNaN(event.progress)) {

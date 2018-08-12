@@ -2,26 +2,34 @@
   <div class="settings__container stack__container" v-on:click="$event.target === $el && $emit('close')">
     <div class="stack__wrapper" ref="settingsWrapper">
       <a href="#" class="stack__toggler icon-cross" v-on:click="$emit('close')"></a>
-      <div class="settings__title" v-on:click="toggleSection('basics')" v-bind:class="{closed: options.settings.indexOf('basics') > -1}">Basics <i class="icon-up"></i></div>
-      <div class="settings__column">
-        <div class="form-group">
-          <label>Pair <span class="icon-info-circle" v-bind:title="help.pair" v-tippy></span></label>
-          <input type="string" placeholder="BTCUSD" class="form-control" v-model="options.pair" @change="switchPair">
+      <div class="form-group settings__pair mb8">
+        <label>Pair <span class="icon-info-circle" v-bind:title="help.pair" v-tippy></span></label>
+        <div class="settings__pair--container">
+          <input type="string" placeholder="BTCUSD" class="form-control" v-model.lazy="options.pair" @change="switchPair">
         </div>
-        <div class="form-group">
-          <label>Max rows <span class="icon-info-circle" v-bind:title="help.maxRows" v-tippy></span></label>
-          <input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
+      </div>
+      <div class="settings__title" v-on:click="toggleSection('basics')" v-bind:class="{closed: options.settings.indexOf('basics') > -1}">Basics <i class="icon-up"></i></div>
+      <div class="mb8">
+        <div class="settings__column">
+          <div class="form-group">
+            <label>Max rows <span class="icon-info-circle" v-bind:title="help.maxRows" v-tippy></span></label>
+            <input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
+          </div>
+          <div class="form-group">
+            <label>Precision <span class="icon-info-circle" v-bind:title="help.precision" v-tippy></span></label>
+            <input type="number" min="0" max="10" step="1" placeholder="auto" class="form-control" v-model="options.precision">
+          </div>
         </div>
       </div>
       <div class="mt8 settings__title" v-on:click="toggleSection('exchangeThresholds')" v-bind:class="{closed: options.settings.indexOf('exchangeThresholds') > -1}">Thresholds <i class="icon-up"></i></div>
       <div class="settings__thresholds">
-        <div class="form-group">
+        <div class="form-group mb8">
           <label v-for="(threshold, index) in options.thresholds" :key="`threshold-${index}`">
-            <span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content.sync="options.thresholds[index]"></editable> 
+            <span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content="options.thresholds[index]" @output="options.thresholds[index] = $event"></editable> 
               <span v-if="index === 0">won't show up</span>
               <span v-if="index > 0">
                 will show
-                <editable class="settings__thresholds--gifkeyword" :content.sync="options.gifsThresholds[index]"></editable>
+                <editable class="settings__thresholds--gifkeyword" :content="options.gifsThresholds[index]" @output="options.gifsThresholds[index] = $event"></editable>
               </span>
           </label>
         </div>
@@ -49,7 +57,7 @@
         <div class="settings__column">
           <div class="form-group">
             <label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
-            <input type="string" placeholder="XX% or XXs" class="form-control" v-model="options.timeframe">
+            <input type="string" placeholder="XX% or XXs" class="form-control" v-model.lazy="options.timeframe">
           </div>
           <div class="form-group">
             <label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgPeriods" v-tippy></span></label>
@@ -111,7 +119,7 @@
             <div class="settings__exchanges__item__detail" v-if="expanded.indexOf(exchange) !== -1">
               <div class="form-group">
                 <label>Threshold <span v-if="options.exchangeThresholds[exchange] !== 1">({{ (options.exchangeThresholds[exchange] * 100).toFixed() }}%)</span></label>
-                <input type="range" min="0" max="2" step="0.01" v-bind:value="options.exchangeThresholds[exchange]" v-on:change="ajustThreshold(exchange, $event.target.value)">
+                <input type="range" min="0" max="2" step="0.01" v-bind:value="options.exchangeThresholds[exchange]" v-on:change="options.setExchangeThreshold(exchange, $event.target.value)">
               </div>
             </div>
           </div>
@@ -158,6 +166,7 @@
           pair: `The pair to aggregate from<br><small><i>special access required</i></small>`,
           avgPeriods: `Define how many periods are used to smooth the chart<br><ol><li>Exchange prices are averaged <strong>within</strong> the tick first (using weighed average in that timeframe if enabled, if not then the close value is used)</li><li>If cumulated periods are > 1 then the price is averaged (using weighed or simple average) using the number of periods you choosed right there (2 by default)</li></ol>`,
           maxRows: `Numbers of trades to keep visible`,
+          precision: `Define how much digits will be displayed after the decimal point`,
           timeframe: `Define how much trades we stack together in the chart, type a amount of seconds or % of the visible range<br><ul><li>Type 1.5% for optimal result</li><li>Minimum is 5s whatever you enter</li></ul>`,
           exchanges: `Enable/disable exchanges<br>(exclude from list & chart)`,
           cacheDuration: `Trim invisible chart data after N minutes (to free memory)`,
@@ -214,9 +223,6 @@
         } else {
           options.settings.splice(index, 1);
         }
-      },
-      ajustThreshold(exchange, value) {
-        this.$set(options.exchangeThresholds, exchange, value);
       },
       toggleExpander(exchange) {
         const index = this.expanded.indexOf(exchange);
@@ -633,6 +639,26 @@
       &.active {
         .form-group {
           opacity: 1;
+        }
+      }
+    }
+
+    .settings__pair {
+      margin-bottom: 8px;
+
+      .settings__pair--container {
+        margin: 0 -20px;
+
+        input {
+          margin: 0;
+          width: calc(100% - 38px);
+          border-radius: 0;
+          padding: 12px 19px;
+          font-size: 16px;
+          letter-spacing: 0px;
+          font-weight: 700;
+          color: white;
+          background-color: rgba(black, .25);
         }
       }
     }

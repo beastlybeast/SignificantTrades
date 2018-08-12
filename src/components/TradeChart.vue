@@ -58,6 +58,10 @@
       </div>
     </div>
     <div class="chart__container" ref="chartContainer" v-bind:class="{fetching: fetching}" v-on:mousedown="startScroll">
+      <div class="chart__range">
+        <div>{{ rangeFrom }}</div>
+        <div>{{ rangeTo }}</div>
+      </div>
       <div class="chart__selection" v-bind:style="{left: selection.left, width: selection.width}"></div>
       <div class="chart__canvas"></div>
     </div>
@@ -95,6 +99,8 @@
           left: 0,
           right: 0,
         },
+        rangeFrom: 0,
+        rangeTo: 0,
       }
     },
     created() {
@@ -149,6 +155,21 @@
           margin: [0, 0, 0, 0],
           spacingTop: 0,
           backgroundColor: 'transparent',
+          events: {
+            redraw: () => {
+              if (!this.chart.xAxis[0].min || !this.chart.xAxis[0].max) {
+                this.rangeFrom = '';
+                this.rangeTo = '';
+                return;
+              }
+
+              const from = new Date(this.chart.xAxis[0].min);
+              this.rangeFrom = from.getHours() + ':' + window.pad(from.getMinutes(), 2);
+
+              const to = new Date(this.chart.xAxis[0].max);
+              this.rangeTo = to.getHours() + ':' + window.pad(to.getMinutes(), 2);
+            }
+          }
         },
         title: {
           text: '',
@@ -210,7 +231,7 @@
           shadow: false,
           hideDelay: 0,
           formatter: function(e) {
-            return this.point.name ? this.point.name : '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + this.series.name + ' ' + app.getAttribute('data-symbol') + formatPrice(this.y).toString().replace(/(\d)(?=(\d{3})+\.)/g, '$1,');
+            return this.point.name ? this.point.name : '<small>' + Highcharts.dateFormat('%H:%M:%S', this.point.x)+ '</small><br>' + this.series.name + ' ' + app.getAttribute('data-symbol') + (this.series.name === 'BUY' || this.series.name === 'SELL' ? formatAmount(this.y) : formatPrice(this.y).toString().replace(/(\d)(?=(\d{3})+\.)/g, '$1,'));
           },
           style: {
             color: 'white',
@@ -312,13 +333,14 @@
 
       options.dark && this.toggleDark(options.dark);
 
-      this.onResize();
+      this.range = +this.defaultRange;
 
       if (socket.trades && socket.trades.length > 1) {
-        console.log('set initial range, from', this.range, 'to', socket.trades[socket.trades.length - 1][1] - socket.trades[0][1]);
         this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
-        this.ajustTimeframe();
+        this.onResize();
         this.appendTicksToChart(this.getTicks(), true);
+      } else {
+        this.onResize();
       }
 
       this._onResize = this.onResize.bind(this);
@@ -383,6 +405,7 @@
 
         console.log('on pairing set range from', this.range, 'to', this.defaultRange);
         this.range = this.defaultRange;
+        this.tick = null;
         this.averages = [];
         this.toggleFollow(true);
 
@@ -475,6 +498,12 @@
         }
 
         this.updateChartHeight();
+
+        if (/px$/i.test(options.timeframe)) {
+          if (this.ajustTimeframe()) {
+            this.appendTicksToChart(this.getTicks(), true);
+          }
+        }
       },
 
       //   _____       _                      _   _       _ _
@@ -507,7 +536,7 @@
 
         const delta = range * .1 * (event.deltaY > 0 ? 1 : -1);
         const deltaX = Math.min(this.chart.chartWidth / 1.5, Math.max(0, event.offsetX - this.chart.chartWidth / 3 / 2)) / (this.chart.chartWidth / 1.5);
-
+    
         axisMin = axisMin - delta * deltaX;
         axisMax = Math.min(dataMax, axisMax + delta * (1 - deltaX));
 
@@ -554,10 +583,8 @@
 
       doDrag(event) {
         if (!isNaN(this.resizing)) {
-          console.log('do resize');
           this.doResize(event);
         } else if (this.scrolling && !this.fetching && this.chart.series[0].xData.length) {
-          console.log('do scroll');
           this.doScroll(event);
         }
       },
@@ -927,7 +954,7 @@
 
       getTimeframe() {
         let value = parseFloat(options.timeframe);
-        let type = /\%$/.test(options.timeframe) ? 'percent' : 'length';
+        let type = /\%$/.test(options.timeframe) ? 'percent' : /\px$/i.test(options.timeframe) ? 'width' : 'time';
         let output;
 
         if (!value) {
@@ -937,8 +964,13 @@
 
         if (type === 'percent') {
           value /= 100;
-
+          
+          if (this.chart) {
+            output
+          }
           output = this.range * value;
+        } else if (type === 'width') {
+          output = value / this.chart.chartWidth * this.range;
         } else {
           output = value * 1000;
         }
@@ -985,7 +1017,6 @@
         const axisMin = Math.max(dataMin, dataMax - this.range);
 
         this.chart.xAxis[0].setExtremes(axisMin, dataMax, redraw);
-            console.log('set extreme', 'snapToRight', axisMin, dataMax);
       },
 
       //    __            _
@@ -1427,6 +1458,23 @@
       .icon-bear {
         color: $blue;
       }
+    }
+  }
+
+  .chart__range {
+    display: flex;
+    justify-content: space-between;
+    position: absolute;
+    width: 100%;
+    height: 0px;
+    font-size: 14px;
+    opacity: .4;
+    font-family: monospace;
+    font-weight: 300;
+    letter-spacing: -.5px;
+
+    > div {
+      padding: 10px;
     }
   }
 
