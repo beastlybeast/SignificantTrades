@@ -7,10 +7,10 @@ class Bitmex extends Exchange {
 
 		this.id = 'bitmex';
 
-    this.endpoints = {
-      PRODUCTS: 'https://www.bitmex.com/api/v1/instrument/active',
-      TRADES: () => `https://www.bitmex.com/api/v1/trade?symbol=${this.pair}&reverse=true&count=500`
-    }
+		this.endpoints = {
+			PRODUCTS: 'https://www.bitmex.com/api/v1/instrument/active',
+			TRADES: () => `https://www.bitmex.com/api/v1/trade?symbol=${this.pair}&reverse=true&count=500`
+		}
 
 		this.options = Object.assign({
 			url: () => {
@@ -20,11 +20,11 @@ class Bitmex extends Exchange {
 	}
 
 	connect() {
-    if (!super.connect())  
-      return;
+		if (!super.connect())
+			return;
 
 		this.api = new WebSocket(this.getUrl());
-		
+
 		this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)));
 		this.api.onopen = this.emitOpen.bind(this);
 		this.api.onclose = this.emitClose.bind(this);
@@ -32,8 +32,8 @@ class Bitmex extends Exchange {
 	}
 
 	disconnect() {
-    if (!super.disconnect())  
-      return;
+		if (!super.disconnect())
+			return;
 
 		if (this.api && this.api.readyState < 2) {
 			this.api.close();
@@ -77,15 +77,15 @@ class Bitmex extends Exchange {
 		}
 	} */
 
-  formatProducts(data) {
+	formatProducts(data) {
 		const output = {};
 
-    data.forEach(a => {
+		data.forEach(a => {
 			output[a.symbol.replace('XBT', 'BTC')] = a.symbol;
 		});
 
 		return output;
-  }
+	}
 
 }
 

@@ -5,7 +5,7 @@ class Noop extends Exchange {
 	constructor(options) {
 		super(options);
 
-    this.id = 'noop';
+		this.id = 'noop';
 	}
 
 	connect() {
@@ -13,5 +13,5 @@ class Noop extends Exchange {
 	}
 
 }
-		
+
 export default Noop;

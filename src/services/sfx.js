@@ -5,7 +5,7 @@ class Sfx {
 
 	constructor() {
 		this.timestamp = +new Date();
-		window.play=this.tradeToSong.bind(this);
+		window.play = this.tradeToSong.bind(this);
 		this.connect();
 	}
 
@@ -40,7 +40,7 @@ class Sfx {
 		setTimeout(() => {
 			if (side) {
 				if (factor >= 10) {
-					[659.26, 830.6, 987.76, 1318.52].forEach((f, i, a) => setTimeout(() => this.play(f, .05 + Math.sqrt(factor) / 10, .1 + factor * .1), i * 80));
+					[659.26, 830.6, 987.76, 1318.52].forEach((f, i, a) => setTimeout(() => this.play(f, .05 + Math.sqrt(factor) / 15, .1 + factor * .1), i * 80));
 				} else if (factor >= 1) {
 					[659.26, 830.6].forEach((f, i) => setTimeout(() => this.play(f, .05 + Math.sqrt(factor) / 10, .1 + factor * .1), i * 80));
 				} else {

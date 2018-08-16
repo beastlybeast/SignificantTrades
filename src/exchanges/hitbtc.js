@@ -5,12 +5,12 @@ class Hitbtc extends Exchange {
 	constructor(options) {
 		super(options);
 
-    this.id = 'hitbtc';
+		this.id = 'hitbtc';
 
-    this.endpoints = {
-      PRODUCTS: 'https://api.hitbtc.com/api/2/public/symbol',
-      TRADES: () => `https://api.hitbtc.com/api/2/public/trades/${this.pair}?sort=DESC&limit=500`
-    }
+		this.endpoints = {
+			PRODUCTS: 'https://api.hitbtc.com/api/2/public/symbol',
+			TRADES: () => `https://api.hitbtc.com/api/2/public/trades/${this.pair}?sort=DESC&limit=500`
+		}
 
 		this.options = Object.assign({
 			url: 'wss://api.hitbtc.com/api/2/ws',
@@ -18,43 +18,43 @@ class Hitbtc extends Exchange {
 	}
 
 	connect() {
-    if (!super.connect())
-      return;
+		if (!super.connect())
+			return;
 
-    this.api = new WebSocket(this.getUrl());
+		this.api = new WebSocket(this.getUrl());
 
 		this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)));
 
 		this.api.onopen = event => {
-      this.api.send(JSON.stringify({
+			this.api.send(JSON.stringify({
 				method: 'subscribeTrades',
 				params: {
 					symbol: this.pair
 				},
-      }));
+			}));
 
-      this.emitOpen(event);
-    };
+			this.emitOpen(event);
+		};
 
 		this.api.onclose = this.emitClose.bind(this);
 
-    this.api.onerror = this.emitError.bind(this);
+		this.api.onerror = this.emitError.bind(this);
 	}
 
 	disconnect() {
-    if (!super.disconnect()) {
-      return;
+		if (!super.disconnect()) {
+			return;
 		}
 
-    if (this.api && this.api.readyState < 2) {
-      this.api.close();
-    }
+		if (this.api && this.api.readyState < 2) {
+			this.api.close();
+		}
 	}
 
 	formatLiveTrades(json) {
-    if (!json) {
-      return;
-    }
+		if (!json) {
+			return;
+		}
 
 		if (json.method === 'updateTrades' && json.params && json.params.data && json.params.data.length) {
 			return json.params.data.map(trade => [

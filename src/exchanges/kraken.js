@@ -7,11 +7,11 @@ class Kraken extends Exchange {
 		super(options);
 
 		this.id = 'kraken';
-		
-    this.endpoints = {
-      PRODUCTS: 'https://api.kraken.com/0/public/AssetPairs',
+
+		this.endpoints = {
+			PRODUCTS: 'https://api.kraken.com/0/public/AssetPairs',
 			TRADES: () => `https://api.kraken.com/0/public/Trades?pair=${this.pair}`
-    }
+		}
 
 		this.options = Object.assign({
 			url: 'https://api.kraken.com/0/public/Trades',
@@ -20,8 +20,8 @@ class Kraken extends Exchange {
 	}
 
 	connect() {
-    if (!super.connect())  
-      return;
+		if (!super.connect())
+			return;
 
 		this.schedule();
 	}
@@ -76,8 +76,8 @@ class Kraken extends Exchange {
 	}
 
 	disconnect() {
-    if (!this.connected || !super.disconnect())  
-      return;
+		if (!this.connected ||  !super.disconnect())
+			return;
 
 		clearTimeout(this.timeout);
 		this.source && this.source.cancel();
@@ -137,11 +137,11 @@ class Kraken extends Exchange {
 			let quote = data.result[a].quote;
 
 			if (base.length > 3 && (base[0] === 'Z' || base[0] === 'X')) {
-					base = base.substr(1);
+				base = base.substr(1);
 			}
 
 			if (quote.length > 3 && (quote[0] === 'Z' || quote[0] === 'X')) {
-					quote = quote.substr(1);
+				quote = quote.substr(1);
 			}
 
 			output[(base + quote).replace('XBT', 'BTC')] = a;

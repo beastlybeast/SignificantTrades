@@ -5,22 +5,22 @@ class Gdax extends Exchange {
 	constructor(options) {
 		super(options);
 
-    this.id = 'gdax';
+		this.id = 'gdax';
 
-    this.endpoints = {
-      PRODUCTS: 'https://api.pro.coinbase.com/products',
-      TRADES: () => `https://api.pro.coinbase.com/products/${this.pair}/trades`
-    }
+		this.endpoints = {
+			PRODUCTS: 'https://api.pro.coinbase.com/products',
+			TRADES: () => `https://api.pro.coinbase.com/products/${this.pair}/trades`
+		}
 
-    this.matchPairName = pair => {
-      pair = pair.substr(0, 3) + '-' + pair.substr(3, pair.length);
+		this.matchPairName = pair => {
+			pair = pair.substr(0, 3) + '-' + pair.substr(3, pair.length);
 
-      if (this.pairs.indexOf(pair) !== -1) {
-        return pair;
-      }
+			if (this.pairs.indexOf(pair) !== -1) {
+				return pair;
+			}
 
-      return false;
-    }
+			return false;
+		}
 
 		this.options = Object.assign({
 			url: 'wss://ws-feed.pro.coinbase.com',
@@ -28,65 +28,65 @@ class Gdax extends Exchange {
 	}
 
 	connect() {
-    if (!super.connect())  
-      return;
+		if (!super.connect())
+			return;
 
 		this.api = new WebSocket(this.getUrl());
 		this.api.onmessage = event => {
-      if (!event) {
-        return;
-      }
+			if (!event) {
+				return;
+			}
 
-      let obj = JSON.parse(event.data);
+			let obj = JSON.parse(event.data);
 
-      if (obj && obj.type === 'match') {
-        this.emitTrades([[
-          this.id,
-          +new Date(obj.time),
-          +obj.price,
-          +obj.size,
-          obj.side === 'buy' ? 0 : 1,
-        ]]);
-      }
-    };
+			if (obj && obj.type === 'match') {
+				this.emitTrades([[
+					this.id,
+					+new Date(obj.time),
+					+obj.price,
+					+obj.size,
+					obj.side === 'buy' ? 0 : 1,
+				]]);
+			}
+		};
 
 		this.api.onopen = event => {
-      this.api.send(JSON.stringify({
-        type: 'subscribe',
-        channels: [{"name": "full", "product_ids": [this.pair]}]
-      }));
+			this.api.send(JSON.stringify({
+				type: 'subscribe',
+				channels: [{ 'name': 'full', 'product_ids': [this.pair] }]
+			}));
 
-      this.emitOpen(event);
-    };
+			this.emitOpen(event);
+		};
 
-		this.api.onclose =this.emitClose.bind(this);
-    this.api.onerror = this.emitError.bind(this);
+		this.api.onclose = this.emitClose.bind(this);
+		this.api.onerror = this.emitError.bind(this);
 	}
 
 	disconnect() {
-    if (!super.disconnect())
-      return;
+		if (!super.disconnect())
+			return;
 
-    if (this.api && this.api.readyState < 2) {
-      this.api.close();
-    }
+		if (this.api && this.api.readyState < 2) {
+			this.api.close();
+		}
 	}
 
-  formatProducts(data) {
-    return data.map(a => a.id);
-  }
+	formatProducts(data) {
+		return data.map(a => a.id);
+	}
 
-  /* formatRecentsTrades(response) {
-    if (response && response.length) {
-      return response.map(trade => [
-        this.id,
-        +new Date(trade.time),
-        +trade.price,
-        +trade.size,
-        trade.side === 'buy' ? 0 : 1,
-      ])
-    }
-  } */
+	/* formatRecentsTrades(response) {
+		if (response && response.length) {
+			return response.map(trade => [
+				this.id,
+				+new Date(trade.time),
+				+trade.price,
+				+trade.size,
+				trade.side === 'buy' ? 0 : 1,
+			])
+		}
+	} */
 
 }
 

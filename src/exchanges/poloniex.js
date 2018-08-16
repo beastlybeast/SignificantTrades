@@ -5,12 +5,12 @@ class Poloniex extends Exchange {
 	constructor(options) {
 		super(options);
 
-    this.id = 'poloniex';
-		
-    this.endpoints = {
-      PRODUCTS: 'https://poloniex.com/public?command=returnTicker',
+		this.id = 'poloniex';
+
+		this.endpoints = {
+			PRODUCTS: 'https://poloniex.com/public?command=returnTicker',
 			TRADES: () => () => `https://poloniex.com/public?command=returnTradeHistory&currencyPair=${this.pair}&start=${(+new Date() / 1000) - 60 * 15}&end=${+new Date() / 1000}`
-    }
+		}
 
 		this.options = Object.assign({
 			url: 'wss://api2.poloniex.com',
@@ -18,42 +18,42 @@ class Poloniex extends Exchange {
 	}
 
 	connect() {
-    if (!super.connect())  
-      return;
+		if (!super.connect())
+			return;
 
-    this.api = new WebSocket(this.getUrl());
+		this.api = new WebSocket(this.getUrl());
 
 		this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)));
 
 		this.api.onopen = event => {
-      this.api.send(JSON.stringify({
-        command: 'subscribe',
-        channel: this.pair,
-      }));
+			this.api.send(JSON.stringify({
+				command: 'subscribe',
+				channel: this.pair,
+			}));
 
-      this.emitOpen(event);
-    };
+			this.emitOpen(event);
+		};
 
 		this.api.onclose = this.emitClose.bind(this);
 
-    this.api.onerror = this.emitError.bind(this);
+		this.api.onerror = this.emitError.bind(this);
 	}
 
 	disconnect() {
-    if (!super.disconnect()) {
-      return;
+		if (!super.disconnect()) {
+			return;
 		}
 
-    if (this.api && this.api.readyState < 2) {
-      this.api.close();
-    }
+		if (this.api && this.api.readyState < 2) {
+			this.api.close();
+		}
 	}
 
 	formatLiveTrades(json) {
-    if (!json || json.length !== 3) {
-      return;
-    }
-		
+		if (!json || json.length !== 3) {
+			return;
+		}
+
 		if (json[2] && json[2].length) {
 			return json[2].filter(result => result[0] === 't').map(trade => [
 				this.id,

@@ -36,7 +36,7 @@ class Exchange extends EventEmitter {
 	}
 
 	set pair(name) {
-		if (typeof this.pairs === 'undefined') {
+		if (!this.pairs) {
 			this._pair = null;
 			return;
 		}
@@ -247,7 +247,7 @@ class Exchange extends EventEmitter {
 	} */
 
 	fetchProducts() {
-		if (!this.endpoints || !this.endpoints.PRODUCTS) {
+		if (!this.endpoints ||  !this.endpoints.PRODUCTS) {
 			this.pairs = [];
 
 			return Promise.resolve();
@@ -270,7 +270,7 @@ class Exchange extends EventEmitter {
 
 				return new Promise((resolve, reject) => {
 					setTimeout(() => {
-						resolve(fetch(`${process.env.PROXY_URL ? process.env.PROXY_URL : ''}${url}`, {method: method})
+						resolve(fetch(`${process.env.PROXY_URL ? process.env.PROXY_URL : ''}${url}`, { method: method })
 							.then(response => response.json())
 							.catch(err => {
 								console.log(err);
@@ -286,7 +286,7 @@ class Exchange extends EventEmitter {
 					data = data[0];
 				}
 
-				if (data) {
+				if (data)  {
 					this.pairs = this.formatProducts(data) || [];
 
 					console.log(`[${this.id}] storing products`, this.pairs);
