@@ -305,7 +305,6 @@ export default {
 
       if (!keyword) {
         if (this.gifs[index]) {
-          console.log(`remove gifs at index ${index}`);
           delete this.gifs[index];
         }
 
@@ -313,8 +312,6 @@ export default {
 
         return;
       }
-
-      console.log(`get giphy for keyword ${keyword}`);
 
       fetch(
         'https://api.giphy.com/v1/gifs/search?q=' +
@@ -324,11 +321,8 @@ export default {
         .then(res => res.json())
         .then(res => {
           if (!res.data || !res.data.length) {
-            console.log(`giphy => no result for keyword ${keyword}`);
             return;
           }
-
-          console.log(`save ${res.data.length} gifs at index ${index}`);
 
           this.gifs[index] = [];
 

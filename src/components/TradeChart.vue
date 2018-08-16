@@ -350,12 +350,6 @@ export default {
 
       this.chart.series[0].update({ name: pair }, false);
 
-      console.log(
-        'on pairing set range from',
-        this.range,
-        'to',
-        this.defaultRange
-      );
       this.range = this.defaultRange;
       this.tick = null;
       this.averages = [];
@@ -383,14 +377,6 @@ export default {
 
       if (willReplace) {
         this.toggleFollow(true);
-        console.log(
-          'set fetch range',
-          'will replace',
-          'from',
-          this.range,
-          'to',
-          socket.trades[socket.trades.length - 1][1] - socket.trades[0][1]
-        );
       }
 
       this.ajustTimeframe();
@@ -398,15 +384,6 @@ export default {
       this.appendTicksToChart(this.getTicks(), true);
 
       if (willReplace) {
-        console.log(
-          'set extreme',
-          Math.max(
-            this.chart.series[0].xData[this.chart.series[0].xData.length - 1] -
-              this.range,
-            this.chart.series[0].xData[0]
-          ),
-          this.chart.series[0].xData[this.chart.series[0].xData.length - 1]
-        );
         this.chart.xAxis[0].setExtremes(
           Math.max(
             this.chart.series[0].xData[this.chart.series[0].xData.length - 1] -
@@ -641,7 +618,7 @@ export default {
       if (event.which === 3) {
         return;
       }
-      console.log('start resize at ', event.pageY);
+
       this.resizing = event.pageY;
     },
 
@@ -663,17 +640,18 @@ export default {
     },
 
     updateChartHeight() {
+      const w = document.documentElement.clientWidth || innerWidth;
+      const h = document.documentElement.clientHeight || innerHeight;
+
       if (options.height > 0) {
         this.chart.setSize(
-          document.documentElement.clientWidth,
+          w,
           options.height,
           false
         );
       } else {
-        var h = w.innerHeight || e.clientHeight || g.clientHeight;
-
         this.chart.setSize(
-          document.documentElement.clientWidth,
+          w,
           +Math.min(w / 3, Math.max(100, h / 3)).toFixed(),
           false
         );
