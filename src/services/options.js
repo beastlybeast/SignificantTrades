@@ -47,12 +47,7 @@ const emitter = new Vue({
 					if (param[1].indexOf('%') !== -1) {
 						const factor = (parseFloat(param[1]) ||  1) / 100;
 
-						settings['thresholds'] = [
-							+formatAmount(options.thresholds[0] * factor),
-							+formatAmount(options.thresholds[1] * factor),
-							+formatAmount(options.thresholds[2] * factor),
-							+formatAmount(options.thresholds[3] * factor),
-						];
+						settings['thresholds'] = this.thresholds.map(threshold => +formatAmount(threshold * factor));
 					} else {
 						const threshold = parseFloat(param[1]);
 

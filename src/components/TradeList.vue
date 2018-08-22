@@ -96,6 +96,11 @@ export default {
     },
     onTrades(trades) {
       for (let trade of trades) {
+        this.processTrade(trade, Math.min(2000, trades[trades.length - 1][1] - trades[0][1]));
+      }
+    },
+    processTrade(trade, delay) {
+      setTimeout(() => {
         const size = trade[2] * trade[3];
 
         const multiplier =
@@ -120,7 +125,7 @@ export default {
               )}`
             );
           }
-          continue;
+          return;
         }
 
         if (
@@ -161,20 +166,18 @@ export default {
                 delete this.ticks[tid];
               }
 
-              continue;
+              return;
             }
           }
 
           if (!this.ticks[tid] && size < options.thresholds[0] * multiplier) {
             this.ticks[tid] = trade;
-            continue;
+            return;
           }
         }
 
         this.appendRow(trade);
-      }
-
-      this.trades.splice(+options.maxRows || 20, this.trades.length);
+      }, delay)
     },
     appendRow(trade, classname = [], message = null) {
       let icon;
@@ -255,6 +258,8 @@ export default {
         image: image,
         message: message
       });
+
+      this.trades.splice(+options.maxRows || 20, this.trades.length);
     },
     getGifs(refresh) {
       this.keywords = options.gifsThresholds.slice(
@@ -526,7 +531,7 @@ export default {
 
     &.trades__item__date {
       text-align: right;
-      flex-basis: 4em;
+      flex-basis: 2em;
       flex-grow: 0;
     }
 

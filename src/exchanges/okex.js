@@ -94,7 +94,7 @@ class Okex extends Exchange {
 		base.setTime(base.getTime() + ((8 + base.getTimezoneOffset() / 60) * 60 * 60 * 1000));
 
 		const output = json[0].data.map((trade, index, array) => {
-			const timestamp = +new Date(`${base.getFullYear()}-${base.getMonth() + 1}-${base.getDate()} ${trade[3]}+08:00`);
+			const timestamp = +new Date(`${base.getFullYear()}-${pad(base.getMonth() + 1, 2)}-${base.getDate()}T${trade[3]}+08:00`);
 
 			if (index === array.length - 1) {
 				this.reference = timestamp;

@@ -182,7 +182,8 @@ body.dark {
     background-color: lighten($dark, 10%);
   }
 
-  .settings__container {
+  .settings__container,
+  .settings__container .stack__scroller {
     background-color: $dark;
   }
 
@@ -273,6 +274,25 @@ body.twitch {
   overflow: hidden;
   max-height: 1000px;
   font-size: 12px;
+  z-index: 1;
+
+  .stack__backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    display: block;
+    background-color: rgba(0, 0, 0, 0.22);
+    pointer-events: none;
+  }
+
+  .stack__scroller {
+    overflow: auto;
+    position: relative;
+    max-height: 100%;
+  }
 
   .stack__toggler {
     position: absolute;
@@ -290,8 +310,6 @@ body.twitch {
 
   .stack__wrapper {
     padding: 8px 10px;
-    max-height: 100%;
-    overflow: auto;
     position: relative;
 
     p {

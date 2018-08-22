@@ -1,6 +1,6 @@
 <template>
 	<header class="header">
-		<div class="header__title"><span class="icon-currency"></span> <span v-html="title"></span></div>
+		<div class="header__title"> <span class="pair" v-if="pair">{{pair}}</span> <span class="icon-currency"></span> <span v-html="title"></span></div>
 		<button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}"><span class="icon-external-link"></span></button>
 		<button type="button" v-if="canFetch" v-on:click="retrieveChart" v-bind:title="fetchLabel" v-tippy="{placement: 'bottom'}">
 			<svg class="loader" v-bind:class="{loading: dashoffset > 0}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14">
@@ -21,6 +21,7 @@ export default {
   data() {
     return {
       title: 'SignificantTrades',
+      pair: '',
       dashoffset: 0,
       fetchLabel: 'Load chart history',
       following: true,
@@ -34,6 +35,7 @@ export default {
     options.$on('following', state => (this.following = state));
 
     socket.$on('pairing', (pair, canFetch) => {
+      this.pair = pair;
       this.canFetch = canFetch;
     });
 
@@ -133,6 +135,10 @@ header.header {
   .header__title {
     width: 100%;
     padding: 10px;
+
+    .pair {
+      opacity: .5;
+    }
 
     sup {
       line-height: 0;

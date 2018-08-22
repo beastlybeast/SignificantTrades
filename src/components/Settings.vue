@@ -1,150 +1,154 @@
 <template>
 	<div class="settings__container stack__container" v-on:click="$event.target === $el && $emit('close')">
-		<div class="stack__wrapper" ref="settingsWrapper">
-			<a href="#" class="stack__toggler icon-cross" v-on:click="$emit('close')"></a>
-			<div class="form-group settings__pair mb8">
-				<label>Pair <span class="icon-info-circle" v-bind:title="help.pair" v-tippy></span></label>
-				<div class="settings__pair--container">
-					<input type="string" placeholder="BTCUSD" class="form-control" v-model.lazy="options.pair" @change="switchPair">
-				</div>
-			</div>
-			<div class="settings__title" v-on:click="toggleSection('basics')" v-bind:class="{closed: options.settings.indexOf('basics') > -1}">Basics <i class="icon-up"></i></div>
-			<div class="mb8">
-				<div class="settings__column">
-					<div class="form-group">
-						<label>Max rows <span class="icon-info-circle" v-bind:title="help.maxRows" v-tippy></span></label>
-						<input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
-					</div>
-					<div class="form-group">
-						<label>Precision <span class="icon-info-circle" v-bind:title="help.precision" v-tippy></span></label>
-						<input type="number" min="0" max="10" step="1" placeholder="auto" class="form-control" v-model="options.precision">
-					</div>
-				</div>
-			</div>
-			<div class="mt8 settings__title" v-on:click="toggleSection('exchangeThresholds')" v-bind:class="{closed: options.settings.indexOf('exchangeThresholds') > -1}">Thresholds <i class="icon-up"></i></div>
-			<div class="settings__thresholds">
-				<div class="form-group mb8">
-					<label v-for="(threshold, index) in options.thresholds" :key="`threshold-${index}`">
-						<span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content="options.thresholds[index]" @output="options.thresholds[index] = $event"></editable> 
-							<span v-if="index === 0">won't show up</span>
-							<span v-if="index > 0">
-								will show
-								<editable class="settings__thresholds--gifkeyword" :content="options.gifsThresholds[index]" @output="options.gifsThresholds[index] = $event"></editable>
-							</span>
-					</label>
-				</div>
-			</div>
-			<div class="mt8 settings__title" v-on:click="toggleSection('audio')" v-bind:class="{closed: options.settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
-			<div class="settings__audio settings__column" v-bind:class="{active: options.useAudio}">
-				<div class="form-group">
-					<label class="checkbox-control flex-right" v-tippy title="Enable audio">
-						<input type="checkbox" class="form-control" v-model="options.useAudio">
-						<div></div>
-					</label>
-				</div>
-				<div class="form-group">
-					<label class="checkbox-control flex-right" v-tippy title="Include insignificants">
-						<input type="checkbox" class="form-control" v-model="options.audioIncludeAll">
-						<div class="icon-expand"></div>
-					</label>
-				</div>
-				<div class="form-group">
-					<input type="range" min="0" max="5" step=".1" v-model="options.audioVolume">
-				</div>
-			</div>
-			<div class="mt8 settings__title" v-on:click="toggleSection('chart')" v-bind:class="{closed: options.settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
-			<div>
-				<div class="settings__column">
-					<div class="form-group">
-						<label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
-						<input type="string" placeholder="XX% or XXs" class="form-control" v-model.lazy="options.timeframe">
-					</div>
-					<div class="form-group">
-						<label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgPeriods" v-tippy></span></label>
-						<div class="input-group">
-							<input type="number" min="0" max="100" step="1" class="form-control" v-model="options.avgPeriods">
-							<label class="checkbox-control flex-right" title="Use weighed average" v-tippy>
-								<input type="checkbox" class="form-control" v-model="options.useWeighedAverage">
-								<div></div>
-							</label>
-						</div>
-					</div>
-				</div>
-				<div class="settings__chart">
-					<div class="form-group mb8" v-if="options.thresholds.length > 0">
-						<label class="checkbox-control flex-left" v-tippy title="Shows significants orders on the chart">
-							<input type="checkbox" class="form-control" v-model="options.showPlotsSignificants">
-							<div></div>
-							<span>Highlight {{options.thresholds[1]}}+</span>
-						</label>
-					</div>
-					<div class="form-group mb8">
-						<label class="checkbox-control flex-left" v-tippy title="Shows liquidations on the chart">
-							<input type="checkbox" class="form-control" v-model="options.showPlotsLiquidations">
-							<div></div>
-							<span>Highlight liquidations</span>
-						</label>
-					</div>
-					<div class="form-group mb8">
-						<label class="checkbox-control flex-left" v-tippy title="Wipe invisible data after a while to free memory and speed up the app">
-							<input type="checkbox" class="form-control" v-model="options.wipeCache">
-							<div></div>
-							<span>Wipe invisible data <span v-if="options.wipeCache" v-on:click.stop.prevent>after <editable :content.sync="options.wipeCacheDuration"></editable> minutes</span></span>
-						</label>
-					</div>
-				</div>
-			</div>
-			<div class="mt8 settings__title" v-on:click="toggleSection('exchanges')" v-bind:class="{closed: options.settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
-			<div class="form-group">
-				<div class="settings__exchanges">
-					<div v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index"
-						class="settings__exchanges__item"
-						v-bind:class="{
-							'settings__exchanges__item--active': connected.indexOf(exchange) !== -1,
-							'settings__exchanges__item--enabled': options.disabled.indexOf(exchange) === -1,
-							'settings__exchanges__item--loading': matchs[exchange] && connected.indexOf(exchange) === -1 && options.disabled.indexOf(exchange) === -1,
-							'settings__exchanges__item--error': options.disabled.indexOf(exchange) !== -1 && fails[exchange] > 0,
-							'settings__exchanges__item--unmatched': !matchs[exchange],
-							'settings__exchanges__item--invisible': filters.indexOf(exchange) !== -1,
-							'settings__exchanges__item--expanded': expanded.indexOf(exchange) !== -1
-						}">
-						<div class="settings__exchanges__item__header" v-on:click="options.toggleExchange(exchange)">
-							<div class="settings__exchanges__item__name">{{ exchange }}</div>
-							<i class="icon-warning"></i>
-							<div class="settings__exchanges__item__controls">
-								<button class="settings__exchanges__item__visibility" v-on:click.stop.prevent="options.toggleFilter(exchange)"><i class="icon-invisible"></i></button>
-								<button class="settings__exchanges__item__more" v-on:click.stop.prevent="toggleExpander(exchange)"><i class="icon-down"></i></button>
-							</div>
-						</div>
-						<div class="settings__exchanges__item__detail" v-if="expanded.indexOf(exchange) !== -1">
-							<div class="form-group">
-								<label>Threshold <span v-if="exchangeThresholds[exchange] !== 1">({{ formatAmount(exchangeThresholds[exchange] * options.thresholds[0]) }})</span></label>
-								<input type="range" min="0" max="2" step="0.01" v-bind:value="exchangeThresholds[exchange]" @input="setExchangeThreshold(exchange, $event.target.value)">
-							</div>
-						</div>
-					</div>
-					<div v-if="!exchanges.length" class="mb8">You are not connected to any exchanges</div>
-				</div>
-			</div>
-			<div class="mt15 settings__column settings__footer flex-middle">
-				<div class="form-group">
-					<div v-if="version.number">
-						<span>v{{ version.number }} <sup class="version-date">{{ version.date }}</sup></span>
-						<i class="divider">|</i>
-						<a href="javascript:void(0);" v-on:click="reset()"> reset</a>
-						<i class="divider">|</i>
-						<a href="bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX" target="_blank" title="Bitcoin for more <3" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">donate</a>
-					</div>
-				</div>
-				<div class="form-group">
-					<label class="checkbox-control settings_luminosity flex-right" title="Switch luminosity" v-tippy>
-						<input type="checkbox" class="form-control" v-model="options.dark">
-						<span>{{ options.dark ? 'Day mode' : 'Night mode' }}</span>
-						<div></div>
-					</label>
-				</div>
-			</div>
-		</div>
+    <div class="stack__backdrop"></div>
+    <div class="stack__scroller">
+      <div class="stack__wrapper">
+        <a href="#" class="stack__toggler icon-cross" v-on:click="$emit('close')"></a>
+        <div class="form-group settings__pair mb8">
+          <label>Pair <span class="icon-info-circle" v-bind:title="help.pair" v-tippy></span></label>
+          <div class="settings__pair--container">
+            <input type="string" placeholder="BTCUSD" class="form-control" v-model.lazy="options.pair" @change="switchPair">
+          </div>
+        </div>
+        <div class="settings__title" v-on:click="toggleSection('basics')" v-bind:class="{closed: options.settings.indexOf('basics') > -1}">Basics <i class="icon-up"></i></div>
+        <div class="mb8">
+          <div class="settings__column">
+            <div class="form-group">
+              <label>Max rows <span class="icon-info-circle" v-bind:title="help.maxRows" v-tippy></span></label>
+              <input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
+            </div>
+            <div class="form-group">
+              <label>Precision <span class="icon-info-circle" v-bind:title="help.precision" v-tippy></span></label>
+              <input type="number" min="0" max="10" step="1" placeholder="auto" class="form-control" v-model="options.precision">
+            </div>
+          </div>
+        </div>
+        <div class="mt8 settings__title" v-on:click="toggleSection('exchangeThresholds')" v-bind:class="{closed: options.settings.indexOf('exchangeThresholds') > -1}">Thresholds <i class="icon-up"></i></div>
+        <div class="settings__thresholds">
+          <div class="form-group mb8">
+            <label v-for="(threshold, index) in options.thresholds" :key="`threshold-${index}`">
+              <span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content="options.thresholds[index]" @output="$set(options.thresholds, index, $event)"></editable> 
+                <span v-if="index === 0">won't show up</span>
+                <span v-if="index === 1">will be highlighted</span>
+                <span v-if="index > 1">
+                  will show
+                  <editable class="settings__thresholds--gifkeyword" :content="options.gifsThresholds[index]" @output="$set(options.gifsThresholds, index, $event)"></editable>
+                </span>
+            </label>
+          </div>
+        </div>
+        <div class="mt8 settings__title" v-on:click="toggleSection('audio')" v-bind:class="{closed: options.settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
+        <div class="settings__audio settings__column" v-bind:class="{active: options.useAudio}">
+          <div class="form-group">
+            <label class="checkbox-control flex-right" v-tippy title="Enable audio">
+              <input type="checkbox" class="form-control" v-model="options.useAudio">
+              <div></div>
+            </label>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-control flex-right" v-tippy title="Include insignificants">
+              <input type="checkbox" class="form-control" v-model="options.audioIncludeAll">
+              <div class="icon-expand"></div>
+            </label>
+          </div>
+          <div class="form-group">
+            <input type="range" min="0" max="5" step=".1" v-model="options.audioVolume">
+          </div>
+        </div>
+        <div class="mt8 settings__title" v-on:click="toggleSection('chart')" v-bind:class="{closed: options.settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
+        <div>
+          <div class="settings__column">
+            <div class="form-group">
+              <label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
+              <input type="string" placeholder="XX% or XXs" class="form-control" v-model.lazy="options.timeframe">
+            </div>
+            <div class="form-group">
+              <label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgPeriods" v-tippy></span></label>
+              <div class="input-group">
+                <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.avgPeriods">
+                <label class="checkbox-control flex-right" title="Use weighed average" v-tippy>
+                  <input type="checkbox" class="form-control" v-model="options.useWeighedAverage">
+                  <div></div>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="settings__chart">
+            <div class="form-group mb8" v-if="options.thresholds.length > 0">
+              <label class="checkbox-control flex-left" v-tippy title="Shows significants orders on the chart">
+                <input type="checkbox" class="form-control" v-model="options.showPlotsSignificants">
+                <div></div>
+                <span>Highlight {{options.thresholds[1]}}+</span>
+              </label>
+            </div>
+            <div class="form-group mb8">
+              <label class="checkbox-control flex-left" v-tippy title="Shows liquidations on the chart">
+                <input type="checkbox" class="form-control" v-model="options.showPlotsLiquidations">
+                <div></div>
+                <span>Highlight liquidations</span>
+              </label>
+            </div>
+            <div class="form-group mb8">
+              <label class="checkbox-control flex-left" v-tippy title="Wipe invisible data after a while to free memory and speed up the app">
+                <input type="checkbox" class="form-control" v-model="options.wipeCache">
+                <div></div>
+                <span>Auto-clear data <span v-if="options.wipeCache" v-on:click.stop.prevent>after <editable :content="options.wipeCacheDuration" @output="options.wipeCacheDuration = $event"></editable> minutes</span></span>
+              </label>
+            </div>
+          </div>
+        </div>
+        <div class="mt8 settings__title" v-on:click="toggleSection('exchanges')" v-bind:class="{closed: options.settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
+        <div class="form-group">
+          <div class="settings__exchanges">
+            <div v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index"
+              class="settings__exchanges__item"
+              v-bind:class="{
+                'settings__exchanges__item--active': connected.indexOf(exchange) !== -1,
+                'settings__exchanges__item--enabled': options.disabled.indexOf(exchange) === -1,
+                'settings__exchanges__item--loading': matchs[exchange] && connected.indexOf(exchange) === -1 && options.disabled.indexOf(exchange) === -1,
+                'settings__exchanges__item--error': options.disabled.indexOf(exchange) !== -1 && fails[exchange] > 0,
+                'settings__exchanges__item--unmatched': !matchs[exchange],
+                'settings__exchanges__item--invisible': filters.indexOf(exchange) !== -1,
+                'settings__exchanges__item--expanded': expanded.indexOf(exchange) !== -1
+              }">
+              <div class="settings__exchanges__item__header" v-on:click="options.toggleExchange(exchange)">
+                <div class="settings__exchanges__item__name">{{ exchange }}</div>
+                <i class="icon-warning"></i>
+                <div class="settings__exchanges__item__controls">
+                  <button class="settings__exchanges__item__visibility" v-on:click.stop.prevent="options.toggleFilter(exchange)"><i class="icon-invisible"></i></button>
+                  <button class="settings__exchanges__item__more" v-on:click.stop.prevent="toggleExpander(exchange)"><i class="icon-down"></i></button>
+                </div>
+              </div>
+              <div class="settings__exchanges__item__detail" v-if="expanded.indexOf(exchange) !== -1">
+                <div class="form-group">
+                  <label>Threshold <span v-if="exchangeThresholds[exchange] !== 1">({{ formatAmount(exchangeThresholds[exchange] * options.thresholds[0]) }})</span></label>
+                  <input type="range" min="0" max="2" step="0.01" v-bind:value="exchangeThresholds[exchange]" @input="setExchangeThreshold(exchange, $event.target.value)">
+                </div>
+              </div>
+            </div>
+            <div v-if="!exchanges.length" class="mb8">You are not connected to any exchanges</div>
+          </div>
+        </div>
+        <div class="mt15 settings__column settings__footer flex-middle">
+          <div class="form-group">
+            <div v-if="version.number">
+              <span>v{{ version.number }} <sup class="version-date">{{ version.date }}</sup></span>
+              <i class="divider">|</i>
+              <a href="javascript:void(0);" v-on:click="reset()"> reset</a>
+              <i class="divider">|</i>
+              <a href="bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX" target="_blank" title="Bitcoin for more <3" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">donate</a>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="checkbox-control settings_luminosity flex-right" title="Switch luminosity" v-tippy>
+              <input type="checkbox" class="form-control" v-model="options.dark">
+              <span>{{ options.dark ? 'Day mode' : 'Night mode' }}</span>
+              <div></div>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
 	</div>
 </template>
 
@@ -247,31 +251,30 @@ export default {
 @import '../assets/sass/variables';
 
 .settings__container {
-  background-color: #222;
+  background: none !important;
   color: white;
 
   @media screen and (min-width: 500px) {
-    position: fixed;
     z-index: 2;
+    position: fixed;
     height: 100%;
-    width: 320px;
-    overflow: auto;
+    width: 100%;
 
-    &:before {
-      content: "";
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background-color: rgba(0, 0, 0, 0.22);
-      z-index: -1;
+    .stack__scroller {
+      width: 320px;
+      height: 100%;
+      background: #222;
     }
 
     .stack__wrapper {
-      background-color: inherit;
-      height: calc(100% + 20px);
-      overflow: visible;
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100% - 40px);
+
+      > div:last-child {
+        margin-top: auto;
+        padding-top: 16px;
+      }
     }
   }
 
@@ -347,6 +350,7 @@ export default {
       width: calc(100% - 16px);
       letter-spacing: -0.5px;
       min-width: 0;
+      height: 100%;
     }
 
     .input-group {
@@ -546,6 +550,13 @@ export default {
     cursor: text;
     font-family: monospace;
     color: $green;
+
+    -webkit-touch-callout: auto;
+    -webkit-user-select: auto;
+    -khtml-user-select: auto;
+    -moz-user-select: auto;
+    -ms-user-select: auto;
+    user-select: auto;
   }
 
   .settings__column {

@@ -133,7 +133,7 @@ const emitter = new Vue({
 				}
 
 				this.trades = this.trades.concat(this.queue);
-
+				
 				this.$emit('trades', this.queue.filter(a => options.filters.indexOf(a[0]) === -1));
 
 				this.queue = [];
@@ -150,8 +150,22 @@ const emitter = new Vue({
 
 			console.log(`[socket.connect] connecting to "${options.pair}"`);
 
+			this.$emit('alert', {
+				id: `server_status`,
+				type: 'info',
+				title: `Loading`,
+				message: `Fetching products...`
+			});
+
 			Promise.all(exchanges.map(exchange => exchange.validatePair(options.pair))).then(() => {
 				let validExchanges = exchanges.filter(exchange => exchange.valid);
+
+				this.$emit('alert', {
+					id: `server_status`,
+					type: 'info',
+					title: `Loading`,
+					message: `Matching "${pair}" exchanges...`
+				});
 
 				if (!validExchanges.length) {
 					return;
@@ -167,6 +181,15 @@ const emitter = new Vue({
 
 				console.log(`[socket.connect] ${validExchanges.length} successfully matched with "${options.pair}"`);
 
+				if (this.canFetch()) {
+					this.$emit('alert', {
+						id: `server_status`,
+						type: 'info',
+						title: `Loading`,
+						message: 'Fetch last 60s...'
+					});
+				}
+
 				this.fetchHistoricalData(1, null, true).then(data => {
 					console.log(`[socket.connect] connect exchanges asynchronously`);
 
@@ -176,7 +199,6 @@ const emitter = new Vue({
 						id: `server_status`,
 						type: 'info',
 						title: `Tracking ${options.pair}`,
-						message: !validExchanges.length ? 'No connected exchanges' : 'On ' + validExchanges.map(exchange => exchange.id).join(', ').toUpperCase()
 					});
 				})
 			});

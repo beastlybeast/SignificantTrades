@@ -75,12 +75,30 @@ export default {
 <style lang="scss">
 @import '../assets/sass/variables';
 
+.alerts {
+  position: absolute;
+  z-index: 1;
+  display: flex;
+  margin: 20px;
+  left: 0;
+  right: 0;
+  flex-direction: row;
+  flex-wrap: wrap;
+}
+
 .alert {
   display: flex;
   color: white;
   cursor: pointer;
   flex-wrap: wrap;
   padding: 8px 10px;
+  border-radius: 2px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.05), 0 5px 20px rgba(0, 0, 0, 0.1);
+  width: auto;
+  flex-grow: 0;
+  flex-basis: auto;
+  margin-right: auto;
+  margin-bottom: 10px;
 
   > .alert__message {
     flex-basis: 100%;
