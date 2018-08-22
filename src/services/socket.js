@@ -197,8 +197,6 @@ const emitter = new Vue({
 
 					this.$emit('alert', {
 						id: `server_status`,
-						type: 'info',
-						title: `Tracking ${options.pair}`,
 					});
 				})
 			});

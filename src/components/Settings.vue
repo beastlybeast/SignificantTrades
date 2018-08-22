@@ -2,6 +2,7 @@
 	<div class="settings__container stack__container" v-on:click="$event.target === $el && $emit('close')">
     <div class="stack__backdrop"></div>
     <div class="stack__scroller">
+      <a href="https://github.com/Tucsky/SignificantTrades/issues" target="_blank" class="settings__report"><i class="icon-warning"></i> Found a bug or feedback ? Let me know on Github !</a>
       <div class="stack__wrapper">
         <a href="#" class="stack__toggler icon-cross" v-on:click="$emit('close')"></a>
         <div class="form-group settings__pair mb8">
@@ -224,6 +225,8 @@ export default {
     setExchangeThreshold(exchange, threshold) {
       this.$set(this.exchangeThresholds, exchange, threshold);
       this.$set(options.exchangeThresholds, exchange, threshold);
+
+      options.save();
     },
     toggleExpander(exchange) {
       const index = this.expanded.indexOf(exchange);
@@ -249,6 +252,12 @@ export default {
 
 <style lang='scss'>
 @import '../assets/sass/variables';
+
+.settings__report {
+  display: block;
+  padding: 10px;
+  background-color: $red;
+}
 
 .settings__container {
   background: none !important;

@@ -84,6 +84,7 @@ export default {
   right: 0;
   flex-direction: row;
   flex-wrap: wrap;
+  pointer-events: none;
 }
 
 .alert {
@@ -99,6 +100,7 @@ export default {
   flex-basis: auto;
   margin-right: auto;
   margin-bottom: 10px;
+  pointer-events: all;
 
   > .alert__message {
     flex-basis: 100%;

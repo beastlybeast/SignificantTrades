@@ -110,7 +110,7 @@ const emitter = new Vue({
 			this.$emit('follow', state);
 		},
 		onChange(prop, current, old) {
-			localStorage && localStorage.setItem('options', JSON.stringify(this.$data));
+			this.save();
 
 			switch (prop) {
 				case 'threshold':
@@ -126,6 +126,9 @@ const emitter = new Vue({
 				value: current,
 				old: old
 			})
+		},
+		save() {
+			localStorage && localStorage.setItem('options', JSON.stringify(this.$data));
 		}
 	}
 });
