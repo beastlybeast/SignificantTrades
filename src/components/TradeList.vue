@@ -100,7 +100,7 @@ export default {
       }
     },
     processTrade(trade, delay) {
-      setTimeout(() => {
+      // setTimeout(() => {
         const size = trade[2] * trade[3];
 
         const multiplier =
@@ -177,7 +177,7 @@ export default {
         }
 
         this.appendRow(trade);
-      }, delay)
+      // }, delay)
     },
     appendRow(trade, classname = [], message = null) {
       let icon;
