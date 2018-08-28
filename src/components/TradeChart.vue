@@ -12,6 +12,8 @@
 </template>
 
 <script>
+import { mapState } from 'vuex';
+
 import Highcharts from 'highcharts';
 import options from '../services/options';
 import socket from '../services/socket';
@@ -334,6 +336,9 @@ export default {
     window.removeEventListener('resize', this._onResize);
     window.removeEventListener('mousemove', this._doScroll);
     window.removeEventListener('mouseup', this._stopScroll);
+  },
+  computed: {
+    ...mapState(['pair'])
   },
   methods: {
     //                        _ _

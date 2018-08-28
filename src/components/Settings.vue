@@ -8,32 +8,32 @@
         <div class="form-group settings__pair mb8">
           <label>Pair <span class="icon-info-circle" v-bind:title="help.pair" v-tippy></span></label>
           <div class="settings__pair--container">
-            <input type="string" placeholder="BTCUSD" class="form-control" v-model.lazy="options.pair" @change="switchPair">
+            <input type="string" placeholder="BTCUSD" class="form-control" v:value="pair" @change="$store.commit('setPair', $event.target.value)">
           </div>
         </div>
-        <div class="settings__title" v-on:click="toggleSection('basics')" v-bind:class="{closed: options.settings.indexOf('basics') > -1}">Basics <i class="icon-up"></i></div>
+        <div class="mt8 settings__title" v-on:click="toggleSection('basics')" v-bind:class="{closed: options.settings.indexOf('basics') > -1}">Basics <i class="icon-up"></i></div>
         <div class="mb8">
           <div class="settings__column">
             <div class="form-group">
               <label>Max rows <span class="icon-info-circle" v-bind:title="help.maxRows" v-tippy></span></label>
-              <input type="number" min="0" max="1000" step="1" class="form-control" v-model="options.maxRows">
+              <input type="number" min="0" max="1000" step="1" class="form-control" v:value="maxRows" @change="$store.commit('setMaxRows', $event.target.value)">
             </div>
             <div class="form-group">
               <label>Precision <span class="icon-info-circle" v-bind:title="help.precision" v-tippy></span></label>
-              <input type="number" min="0" max="10" step="1" placeholder="auto" class="form-control" v-model="options.precision">
+              <input type="number" min="0" max="10" step="1" placeholder="auto" class="form-control" v:value="precisions" @change="$store.commit('setPrecisions', $event.target.value)">
             </div>
           </div>
         </div>
         <div class="mt8 settings__title" v-on:click="toggleSection('exchangeThresholds')" v-bind:class="{closed: options.settings.indexOf('exchangeThresholds') > -1}">Thresholds <i class="icon-up"></i></div>
         <div class="settings__thresholds">
           <div class="form-group mb8">
-            <label v-for="(threshold, index) in options.thresholds" :key="`threshold-${index}`">
-              <span>Trades </span>&lt; <i class="icon-currency"></i> <editable :content="options.thresholds[index]" @output="$set(options.thresholds, index, $event)"></editable> 
+            <label v-for="(threshold, index) in thresholds" :key="`threshold-${index}`">
+              <span>Trades </span>{{index == 0 ? "&lt;" : "&gt;"}} <i class="icon-currency"></i> <editable :content="threshold.amount" @output="$store.commit('setThresholdAmount', {index: index, value: $event})"></editable> 
                 <span v-if="index === 0">won't show up</span>
                 <span v-if="index === 1">will be highlighted</span>
                 <span v-if="index > 1">
                   will show
-                  <editable class="settings__thresholds--gifkeyword" :content="options.gifsThresholds[index]" @output="$set(options.gifsThresholds, index, $event)"></editable>
+                  <editable class="settings__thresholds--gifkeyword" :content="threshold.gif" @output="$store.commit('setThresholdGif', {index: index, value: $event})"></editable>
                 </span>
             </label>
           </div>
@@ -104,16 +104,16 @@
             <div v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index"
               class="settings__exchanges__item"
               v-bind:class="{
-                'settings__exchanges__item--active': connected.indexOf(exchange) !== -1,
-                'settings__exchanges__item--enabled': options.disabled.indexOf(exchange) === -1,
-                'settings__exchanges__item--loading': matchs[exchange] && connected.indexOf(exchange) === -1 && options.disabled.indexOf(exchange) === -1,
-                'settings__exchanges__item--error': options.disabled.indexOf(exchange) !== -1 && fails[exchange] > 0,
-                'settings__exchanges__item--unmatched': !matchs[exchange],
-                'settings__exchanges__item--invisible': filters.indexOf(exchange) !== -1,
-                'settings__exchanges__item--expanded': expanded.indexOf(exchange) !== -1
+                'settings__exchanges__item--active': exchange.connected,
+                'settings__exchanges__item--enabled': disabled.indexOf(exchange.id) === -1,
+                'settings__exchanges__item--loading': disabled.indexOf(exchange.id) === -1 && !exchange.connected && exchange.valid,
+                'settings__exchanges__item--error': false,
+                'settings__exchanges__item--unmatched': !exchange.valid,
+                'settings__exchanges__item--invisible': filters.indexOf(exchange.id) !== -1,
+                'settings__exchanges__item--expanded': expanded.indexOf(exchange.id) !== -1
               }">
-              <div class="settings__exchanges__item__header" v-on:click="options.toggleExchange(exchange)">
-                <div class="settings__exchanges__item__name">{{ exchange }}</div>
+              <div class="settings__exchanges__item__header" v-on:click="toggleExchange(exchange)">
+                <div class="settings__exchanges__item__name">{{ exchange.id }}</div>
                 <i class="icon-warning"></i>
                 <div class="settings__exchanges__item__controls">
                   <button class="settings__exchanges__item__visibility" v-on:click.stop.prevent="options.toggleFilter(exchange)"><i class="icon-invisible"></i></button>
@@ -154,6 +154,8 @@
 </template>
 
 <script>
+import { mapState } from 'vuex';
+
 import options from '../services/options';
 import socket from '../services/socket';
 
@@ -161,11 +163,6 @@ export default {
   data() {
     return {
       exchanges: socket.exchanges,
-      connected: socket.connected,
-      filters: options.filters,
-      fails: socket.errors,
-      disabled: socket.disabled,
-      matchs: socket.matchs,
       options: options,
       exchangeThresholds: Object.assign({}, options.exchangeThresholds),
       expanded: [],
@@ -188,21 +185,38 @@ export default {
       }
     };
   },
+  computed: {
+    ...mapState(['pair', 'filters', 'disabled', 'thresholds'])
+  },
+  created() {
+    console.log('ok', this.disabled);
+  },
   mounted() {
     socket.$on('exchange_error', this.onExchangeFailed);
   },
   beforeDestroy() {
     socket.$off('exchange_error', this.onExchangeFailed);
   },
-  computed: {
-    formatAmount: () => window.formatAmount
-  },
   methods: {
+    toggleExchange(exchange) {
+			const index = this.disabled.indexOf(exchange.id);
+
+			if (index === -1) {
+        exchange.disconnect();
+
+        this.$store.commit('disableExchange', exchange.id);
+			} else {
+				exchange.connect(options.pair);
+
+        this.$store.commit('enableExchange', exchange.id);
+			}
+    },
     onExchangeFailed(exchange, count) {
       this.fails[exchange] = count;
     },
     switchPair(event) {
       socket.$emit('alert', 'clear');
+      
       if (options.pair) {
         options.pair = options.pair.toUpperCase();
 
@@ -255,7 +269,7 @@ export default {
 
 .settings__report {
   display: block;
-  padding: 10px;
+  padding: 7px 6px 6px;
   background-color: $red;
 }
 
@@ -269,10 +283,17 @@ export default {
     height: 100%;
     width: 100%;
 
+    + .app__wrapper {
+      filter: blur(10px) saturate(.2);
+      transform: scale(1.2);
+    }
+
     .stack__scroller {
       width: 320px;
       height: 100%;
       background: #222;
+
+      box-shadow: 0 0 10px rgba(white, .05), 0 0 50px rgba(white, .1);
     }
 
     .stack__wrapper {
@@ -662,26 +683,6 @@ export default {
     }
   }
 
-  .settings__pair {
-    margin-bottom: 8px;
-
-    .settings__pair--container {
-      margin: 0 -20px;
-
-      input {
-        margin: 0;
-        width: calc(100% - 38px);
-        border-radius: 0;
-        padding: 12px 19px;
-        font-size: 16px;
-        letter-spacing: 0px;
-        font-weight: 700;
-        color: white;
-        background-color: rgba(black, 0.25);
-      }
-    }
-  }
-
   .settings__thresholds {
     .label {
       margin-bottom: 2px;
@@ -723,15 +724,22 @@ export default {
 
   .settings__exchanges {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
 
     .settings__exchanges__item {
       background-color: rgba(white, 0.15);
       color: white;
       transition: all 0.2s $easeOutExpo;
       border-radius: 2px;
-      margin-bottom: 4px;
+      margin-bottom: 8px;
       overflow: hidden;
+      flex-basis: calc(50% - 4px);
+
+      &:nth-child(odd) {
+        margin-right: 8px;
+      }
 
       &.settings__exchanges__item--loading {
         background-color: $blue;
@@ -798,7 +806,7 @@ export default {
 
     .settings__exchanges__item__name {
       position: relative;
-      padding: 8px;
+      margin: 10px;
 
       &:before {
         content: "";
@@ -807,8 +815,8 @@ export default {
         height: 1px;
         background-color: white;
         transition: width 0.2s $easeOutExpo 0.2s;
-        left: 12%;
-        width: 76%;
+        left: -2px;
+        width: calc(100% + 4px);
       }
     }
 

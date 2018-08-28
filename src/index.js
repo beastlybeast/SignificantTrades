@@ -1,7 +1,8 @@
 import Vue from 'vue'
 import App from './App.vue'
-
 import VueTippy from 'vue-tippy'
+
+import store from './services/store'
 
 Vue.use(VueTippy, {
 	maxWidth: '200px',
@@ -41,5 +42,7 @@ Vue.component('editable', {
 
 new Vue({
 	el: '#app',
-	render: h => h(App)
+	store,
+	render: h => h(App),
+	props: ['initialized'],
 })

@@ -175,4 +175,9 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-visible); 
   }
 }
+.icon-skull {
+  &:before {
+    content: unicode($icon-skull); 
+  }
+}
 

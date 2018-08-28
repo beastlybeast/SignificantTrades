@@ -15,26 +15,22 @@ import Poloniex from '../exchanges/poloniex'
 
 import options from './options'
 
-const exchanges = [
-	// new Kraken(), <- disabled til Kraken release ws api
-	new Bitmex(),
-	new Bitfinex(),
-	new Coinex(),
-	new Binance(),
-	new Gdax(),
-	new Huobi(),
-	new Bitstamp(),
-	new Hitbtc(),
-	new Okex(),
-	new Poloniex(),
-];
-
 const emitter = new Vue({
 	data() {
 		return {
-			delay: 0,
 			trades: [],
-			exchanges: [],
+			exchanges: [
+				new Bitmex(),
+				new Bitfinex(),
+				new Coinex(),
+				new Binance(),
+				new Gdax(),
+				new Huobi(),
+				new Bitstamp(),
+				new Hitbtc(),
+				new Okex(),
+				new Poloniex()
+			],
 			connected: [],
 			matchs: {},
 			errors: {},
@@ -44,10 +40,66 @@ const emitter = new Vue({
 			queue: [],
 		}
 	},
+	created() {
+		this.exchanges.forEach(exchange => {
+			exchange.on('live_trades', data => {
+				if (!data || !data.length) {
+					return;
+				}
+
+				this.timestamps[exchange.id] = +new Date();
+
+				data = data
+					.sort((a, b) => a[1] - b[1]);
+
+				this.queue = this.queue.concat(data);
+			});
+
+			exchange.on('open', event => {
+				console.log(`[socket.exchange.on.open] ${exchange.id} opened`);
+
+				const index = this.connected.indexOf(exchange.id);
+				index === -1 && this.connected.push(exchange.id);
+
+				this.errors[exchange.id] = 0;
+
+				this.$emit('connected', exchange.id);
+			});
+
+			exchange.on('close', event => {
+				console.log(`[socket.exchange.on.close] ${exchange.id} closed`);
+
+				const index = this.connected.indexOf(exchange.id);
+				index >= 0 && this.connected.splice(index, 1);
+
+				this.$emit('connected', exchange.id);
+
+				if (exchange.shouldBeConnected && options.disabled.indexOf(exchange) === -1) {
+					exchange.reconnect(options.pair);
+				}
+			});
+
+			exchange.on('match', pair => {
+				console.log(`[socket.exchange.on.match] ${exchange.id} matched ${pair}`);
+
+				// this.matchs[exchange.id] = pair;
+			});
+
+			exchange.on('error', event => {
+				console.log(`[socket.exchange.on.error] ${exchange.id} reported an error`);
+
+				/* if (!this.errors[exchange.id]) {
+					this.errors[exchange.id] = 0;
+				}
+
+				this.errors[exchange.id]++;
+
+				this.$emit('exchange_error', exchange.id, this.errors[exchange.id]); */
+			});
+		})
+	},
 	methods: {
 		initialize() {
-			this.exchanges = exchanges.map(exchange => exchange.id);
-
 			console.log(`[sockets] initializing ${this.exchanges.length} exchange(s)`);
 
 			if (process.env.API_URL) {
@@ -60,70 +112,7 @@ const emitter = new Vue({
 				console.info(`[sockets] PROXY_URL = ${this.PROXY_URL}`);
 			}
 
-			window.emittrade = (trades) => this.$emit('trades', trades);
-
-			exchanges.forEach(exchange => {
-				exchange.on('live_trades', data => {
-					if (!data || !data.length) {
-						return;
-					}
-
-					this.timestamps[exchange.id] = +new Date();
-
-					data = data
-						.sort((a, b) => a[1] - b[1]);
-
-					if (this.delayed) {
-						for (let i = 0; i < data.length; i++) {
-							data[i][1] -= this.delay;
-						}
-					}
-
-					this.queue = this.queue.concat(data);
-				});
-
-				exchange.on('open', event => {
-					console.log(`[socket.exchange.on.open] ${exchange.id} opened`);
-
-					const index = this.connected.indexOf(exchange.id);
-					index === -1 && this.connected.push(exchange.id);
-
-					this.errors[exchange.id] = 0;
-
-					this.$emit('connected', this.connected);
-				});
-
-				exchange.on('close', event => {
-					console.log(`[socket.exchange.on.close] ${exchange.id} closed`);
-
-					const index = this.connected.indexOf(exchange.id);
-					index >= 0 && this.connected.splice(index, 1);
-
-					this.$emit('connected', this.connected);
-
-					if (exchange.shouldBeConnected && options.disabled.indexOf(exchange) === -1) {
-						exchange.reconnect(options.pair);
-					}
-				});
-
-				exchange.on('match', pair => {
-					console.log(`[socket.exchange.on.match] ${exchange.id} matched ${pair}`);
-
-					this.matchs[exchange.id] = pair;
-				});
-
-				exchange.on('error', event => {
-					console.log(`[socket.exchange.on.error] ${exchange.id} reported an error`);
-
-					if (!this.errors[exchange.id]) {
-						this.errors[exchange.id] = 0;
-					}
-
-					this.errors[exchange.id]++;
-
-					this.$emit('exchange_error', exchange.id, this.errors[exchange.id]);
-				});
-			});
+			console.log(this.exchanges);
 
 			this.connectExchanges();
 
@@ -157,8 +146,8 @@ const emitter = new Vue({
 				message: `Fetching products...`
 			});
 
-			Promise.all(exchanges.map(exchange => exchange.validatePair(options.pair))).then(() => {
-				let validExchanges = exchanges.filter(exchange => exchange.valid);
+			Promise.all(this.exchanges.map(exchange => exchange.validatePair(options.pair))).then(() => {
+				let validExchanges = this.exchanges.filter(exchange => exchange.valid);
 
 				this.$emit('alert', {
 					id: `server_status`,
@@ -193,7 +182,7 @@ const emitter = new Vue({
 				this.fetchHistoricalData(1, null, true).then(data => {
 					console.log(`[socket.connect] connect exchanges asynchronously`);
 
-					validExchanges.forEach(exchange => exchange.connect());
+					validExchanges.forEach(exchange => this.exchanges.connect());
 
 					this.$emit('alert', {
 						id: `server_status`,
@@ -204,7 +193,7 @@ const emitter = new Vue({
 		disconnectExchanges() {
 			console.log(`[socket.connect] disconnect exchanges asynchronously`);
 
-			exchanges.forEach(exchange => exchange.disconnect());
+			this.exchanges.forEach(exchange => exchange.disconnect());
 		},
 		trimTradesData(timestamp) {
 			let index;
@@ -226,7 +215,7 @@ const emitter = new Vue({
 			this.$emit('trim', timestamp);
 		},
 		getExchangeById(id) {
-			for (let exchange of exchanges) {
+			for (let exchange of this.exchanges) {
 				if (exchange.id === id) {
 					return exchange;
 				}
@@ -263,12 +252,6 @@ const emitter = new Vue({
 					.then(response => {
 						const trades = response.data;
 						const count = this.trades.length;
-
-						if (this.delayed) {
-							for (let i = 0; i < trades.length; i++) {
-								trades[i][1] -= this.delay;
-							}
-						}
 
 						if (willReplace || !this.trades || !this.trades.length) {
 							this.trades = trades;

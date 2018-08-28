@@ -82,7 +82,7 @@ export default {
   margin: 20px;
   left: 0;
   right: 0;
-  flex-direction: row;
+  flex-direction: column;
   flex-wrap: wrap;
   pointer-events: none;
 }

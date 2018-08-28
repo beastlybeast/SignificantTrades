@@ -1,5 +1,6 @@
 <template>
 	<div class="trades">
+    <input type="text" :value="pair" @change="$store.commit('setPair', $event.target.value)">
 		<ul v-if="trades.length">
 			<li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ 'background-image': trade.image, 'background-color': trade.hsl }">
 				<template v-if="trade.message">
@@ -26,6 +27,8 @@
 </template>
 
 <script>
+import { mapState } from 'vuex';
+
 import options from '../services/options';
 import socket from '../services/socket';
 import Sfx from '../services/sfx';
@@ -38,6 +41,9 @@ export default {
       gifs: {}
     };
   },
+  computed: {
+    ...mapState(['pair', 'filters'])
+  },
   created() {
     this.getGifs();
   },
@@ -48,10 +54,10 @@ export default {
 
     socket.$on('pairing', this.onPairing);
     socket.$on('trades', this.onTrades);
-
-    setTimeout(() => {
-      options.$on('change', this.onSettings);
-    }, 1000);
+    
+    this.$store.subscribeAction((mutation, state) => {
+      console.log('tradelist subscribeAction', mutation, state);
+    });
 
     this.timeAgoInterval = setInterval(() => {
       for (let element of this.$el.querySelectorAll('[timestamp]')) {
@@ -62,7 +68,6 @@ export default {
   beforeDestroy() {
     socket.$off('pairing', this.onPairing);
     socket.$off('trades', this.onTrades);
-    options.$off('change', this.onSettings);
 
     clearInterval(this.timeAgoInterval);
 
@@ -82,10 +87,7 @@ export default {
           data.value.forEach((keyword, index) => {
             if (this.keywords[index] !== keyword) {
               clearTimeout(this.gifKeywordFetchTimeout);
-              this.gifKeywordFetchTimeout = setTimeout(
-                this.fetchGifByKeyword.bind(this, keyword, index),
-                2000
-              );
+              this.gifKeywordFetchTimeout = setTimeout(this.fetchGifByKeyword.bind(this, keyword, index), 2000);
             }
           });
           break;
@@ -101,82 +103,63 @@ export default {
     },
     processTrade(trade, delay) {
       // setTimeout(() => {
-        const size = trade[2] * trade[3];
+      const size = trade[2] * trade[3];
 
-        const multiplier =
-          typeof options.exchangeThresholds[trade[0]] === 'string'
-            ? +options.exchangeThresholds[trade[0]]
-            : 1;
+      const multiplier = typeof options.exchangeThresholds[trade[0]] === 'string' ? +options.exchangeThresholds[trade[0]] : 1;
 
-        if (trade[5] === 1) {
-          this.sfx && this.sfx.liquidation();
+      if (trade[5] === 1) {
+        this.sfx && this.sfx.liquidation();
 
-          if (size >= options.thresholds[0] * multiplier) {
-            this.appendRow(
-              trade,
-              ['liquidation'],
-              `${app.getAttribute('data-symbol')}<strong>${formatAmount(
-                size,
-                1
-              )}</strong> liquidated <strong>${
-                trade[4] ? 'SHORT' : 'LONG'
-              }</strong> @ ${app.getAttribute('data-symbol')}${formatPrice(
-                trade[2]
-              )}`
-            );
-          }
-          return;
+        if (size >= options.thresholds[0] * multiplier) {
+          this.appendRow(
+            trade,
+            ['liquidation'],
+            `${app.getAttribute('data-symbol')}<strong>${formatAmount(size, 1)}</strong> liquidated <strong>${
+              trade[4] ? 'SHORT' : 'LONG'
+            }</strong> @ ${app.getAttribute('data-symbol')}${formatPrice(trade[2])}`
+          );
         }
+        return;
+      }
 
-        if (
-          options.useAudio &&
-          ((options.audioIncludeAll &&
-            size > options.thresholds[0] * Math.max(0.1, multiplier) * 0.1) ||
-            size > options.thresholds[1] * Math.max(0.1, multiplier))
-        ) {
-          this.sfx &&
-            this.sfx.tradeToSong(
-              size / (options.thresholds[1] * multiplier),
-              trade[4]
-            );
-        }
+      if (
+        options.useAudio &&
+        ((options.audioIncludeAll && size > options.thresholds[0] * Math.max(0.1, multiplier) * 0.1) ||
+          size > options.thresholds[1] * Math.max(0.1, multiplier))
+      ) {
+        this.sfx && this.sfx.tradeToSong(size / (options.thresholds[1] * Math.max(0.1, multiplier)), trade[4]);
+      }
 
-        // group by [exchange name + buy=1/sell=0] (ex bitmex1)
-        const tid = trade[0] + trade[4];
+      // group by [exchange name + buy=1/sell=0] (ex bitmex1)
+      const tid = trade[0] + trade[4];
 
-        if (options.thresholds[0]) {
-          if (this.ticks[tid]) {
-            if (+new Date() - this.ticks[tid][2] > 5000) {
+      if (options.thresholds[0]) {
+        if (this.ticks[tid]) {
+          if (+new Date() - this.ticks[tid][2] > 5000) {
+            delete this.ticks[tid];
+          } else {
+            // average group prices
+            this.ticks[tid][2] = (this.ticks[tid][2] * this.ticks[tid][3] + size) / 2 / ((this.ticks[tid][3] + trade[3]) / 2);
+
+            // sum volume
+            this.ticks[tid][3] += trade[3];
+
+            if (this.ticks[tid][2] * this.ticks[tid][3] >= options.thresholds[0] * multiplier) {
+              this.appendRow(this.ticks[tid]);
               delete this.ticks[tid];
-            } else {
-              // average group prices
-              this.ticks[tid][2] =
-                (this.ticks[tid][2] * this.ticks[tid][3] + size) /
-                2 /
-                ((this.ticks[tid][3] + trade[3]) / 2);
-
-              // sum volume
-              this.ticks[tid][3] += trade[3];
-
-              if (
-                this.ticks[tid][2] * this.ticks[tid][3] >=
-                options.thresholds[0] * multiplier
-              ) {
-                this.appendRow(this.ticks[tid]);
-                delete this.ticks[tid];
-              }
-
-              return;
             }
-          }
 
-          if (!this.ticks[tid] && size < options.thresholds[0] * multiplier) {
-            this.ticks[tid] = trade;
             return;
           }
         }
 
-        this.appendRow(trade);
+        if (!this.ticks[tid] && size < options.thresholds[0] * multiplier) {
+          this.ticks[tid] = trade;
+          return;
+        }
+      }
+
+      this.appendRow(trade);
       // }, delay)
     },
     appendRow(trade, classname = [], message = null) {
@@ -185,10 +168,7 @@ export default {
       let hsl;
       let amount = trade[2] * trade[3];
 
-      const multiplier =
-        typeof options.exchangeThresholds[trade[0]] === 'string'
-          ? +options.exchangeThresholds[trade[0]]
-          : 1;
+      const multiplier = typeof options.exchangeThresholds[trade[0]] === 'string' ? +options.exchangeThresholds[trade[0]] : 1;
 
       if (trade[4]) {
         classname.push('buy');
@@ -200,23 +180,12 @@ export default {
         classname.push('significant');
 
         if (options.useShades) {
-          let ratio = Math.min(
-            1,
-            (amount - options.thresholds[1] * multiplier) /
-              (options.thresholds[2] * multiplier -
-                options.thresholds[1] * multiplier)
-          );
+          let ratio = Math.min(1, (amount - options.thresholds[1] * multiplier) / (options.thresholds[2] * multiplier - options.thresholds[1] * multiplier));
 
           if (trade[4]) {
-            hsl = `hsl(89, ${(36 + (1 - ratio) * 10).toFixed(2)}%, ${(
-              35 +
-              ratio * 20
-            ).toFixed(2)}%)`;
+            hsl = `hsl(89, ${(36 + (1 - ratio) * 10).toFixed(2)}%, ${(35 + ratio * 20).toFixed(2)}%)`;
           } else {
-            hsl = `hsl(4, ${(70 + ratio * 30).toFixed(2)}%, ${(
-              45 +
-              (1 - ratio) * 15
-            ).toFixed(2)}%)`;
+            hsl = `hsl(4, ${(70 + ratio * 30).toFixed(2)}%, ${(45 + (1 - ratio) * 15).toFixed(2)}%)`;
           }
         }
       }
@@ -227,9 +196,7 @@ export default {
         }
 
         if (this.gifs[i] && this.gifs[i].length) {
-          image = this.gifs[i][
-            Math.floor(Math.random() * (this.gifs[i].length - 1))
-          ];
+          image = this.gifs[i][Math.floor(Math.random() * (this.gifs[i].length - 1))];
         }
 
         classname.push('level-' + i);
@@ -262,25 +229,16 @@ export default {
       this.trades.splice(+options.maxRows || 20, this.trades.length);
     },
     getGifs(refresh) {
-      this.keywords = options.gifsThresholds.slice(
-        0,
-        options.gifsThresholds.length
-      );
+      this.keywords = options.gifsThresholds.slice(0, options.gifsThresholds.length);
 
       options.gifsThresholds.forEach((keyword, index) => {
         if (!keyword) {
           return;
         }
 
-        const storage = localStorage
-          ? JSON.parse(localStorage.getItem('threshold_' + index + '_gifs'))
-          : null;
+        const storage = localStorage ? JSON.parse(localStorage.getItem('threshold_' + index + '_gifs')) : null;
 
-        if (
-          !refresh &&
-          storage &&
-          +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7
-        ) {
+        if (!refresh && storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7) {
           this.gifs[index] = storage.data;
         } else {
           this.fetchGifByKeyword(keyword, index);
@@ -291,16 +249,11 @@ export default {
       const seconds = Math.floor((new Date() - timestamp) / 1000);
       let interval, output;
 
-      if ((interval = Math.floor(seconds / 31536000)) > 1)
-        output = interval + 'y';
-      else if ((interval = Math.floor(seconds / 2592000)) > 1)
-        output = interval + 'm';
-      else if ((interval = Math.floor(seconds / 86400)) > 1)
-        output = interval + 'd';
-      else if ((interval = Math.floor(seconds / 3600)) > 1)
-        output = interval + 'h';
-      else if ((interval = Math.floor(seconds / 60)) > 1)
-        output = interval + 'm';
+      if ((interval = Math.floor(seconds / 31536000)) > 1) output = interval + 'y';
+      else if ((interval = Math.floor(seconds / 2592000)) > 1) output = interval + 'm';
+      else if ((interval = Math.floor(seconds / 86400)) > 1) output = interval + 'd';
+      else if ((interval = Math.floor(seconds / 3600)) > 1) output = interval + 'h';
+      else if ((interval = Math.floor(seconds / 60)) > 1) output = interval + 'm';
       else output = Math.ceil(seconds) + 's';
 
       return output;
@@ -318,11 +271,7 @@ export default {
         return;
       }
 
-      fetch(
-        'https://api.giphy.com/v1/gifs/search?q=' +
-          keyword +
-          '&rating=r&limit=100&api_key=b5Y5CZcpj9spa0xEfskQxGGnhChYt3hi'
-      )
+      fetch('https://api.giphy.com/v1/gifs/search?q=' + keyword + '&rating=r&limit=100&api_key=b5Y5CZcpj9spa0xEfskQxGGnhChYt3hi')
         .then(res => res.json())
         .then(res => {
           if (!res.data || !res.data.length) {
@@ -389,7 +338,7 @@ export default {
   }
 
   &:after {
-    content: "";
+    content: '';
     position: absolute;
     top: 0;
     left: 0;
@@ -453,7 +402,7 @@ export default {
     }
 
     &:before {
-      content: "";
+      content: '';
       position: absolute;
       top: 0;
       left: 0;

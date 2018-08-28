@@ -38,6 +38,7 @@ $icon-magic: \e91a;
 $icon-numbers: \e91b;
 $icon-invisible: \e91d;
 $icon-visible: \e91c;
+$icon-skull: \e91e;
 
 @function unicode($str) {
   @return unquote("\"") + $str + unquote("\"");

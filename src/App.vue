@@ -1,9 +1,15 @@
 <template>
-	<div id="app" :data-currency="currency" :data-commodity="commodity" :data-symbol="symbol" :data-pair="pair">
+	<div 
+    id="app" 
+    :data-currency="currency" 
+    :data-commodity="commodity" 
+    :data-symbol="symbol" 
+    :data-pair="pair"
+  >
 		<Settings v-if="showSettings" @close="showSettings = false"/>
-		<div class="app-wrapper">
+		<div class="app__wrapper">
 			<Alerts/>
-			<Header @settings="showSettings = !showSettings"/>
+			<Header @toggleSettings="showSettings = !showSettings"/>
 			<TradeChart/>
 			<TradeList/>
 		</div>
@@ -88,6 +94,11 @@ export default {
       showSettings: false,
       showStatistics: false
     };
+  },
+  computed: {
+    ready () {
+      return this.$store.getters.ready
+    }
   },
   created() {
     socket.$on('pairing', pair => {
@@ -185,6 +196,10 @@ body.dark {
   .settings__container,
   .settings__container .stack__scroller {
     background-color: $dark;
+
+    &::-webkit-scrollbar-thumb {
+      background-color: white;
+    }
   }
 
   .stack__container {
@@ -222,51 +237,51 @@ body.dark {
   }
 }
 
-body.twitch {
-  background: none !important;
-}
-
 #app {
   width: 100%;
   overflow: hidden;
   position: relative;
-  min-height: 250px;
+  min-height: 100%;
 
   .icon-commodity:before {
     content: unicode($icon-coin);
   }
 
-  &[data-currency="dollar"] .icon-currency:before {
+  &[data-currency='dollar'] .icon-currency:before {
     content: unicode($icon-dollar);
   }
 
-  &[data-currency="euro"] .icon-currency:before {
+  &[data-currency='euro'] .icon-currency:before {
     content: unicode($icon-euro);
   }
 
-  &[data-currency="yen"] .icon-currency:before {
+  &[data-currency='yen'] .icon-currency:before {
     content: unicode($icon-yen);
   }
 
-  &[data-currency="bitcoin"] .icon-currency:before {
+  &[data-currency='bitcoin'] .icon-currency:before {
     content: unicode($icon-btc);
   }
 
-  &[data-currency="ethereum"] .icon-currency:before {
+  &[data-currency='ethereum'] .icon-currency:before {
     content: unicode($icon-eth);
   }
 
-  &[data-currency="pound"] .icon-currency:before {
+  &[data-currency='pound'] .icon-currency:before {
     content: unicode($icon-pound);
   }
 
-  &[data-commodity="bitcoin"] .icon-commodity:before {
+  &[data-commodity='bitcoin'] .icon-commodity:before {
     content: unicode($icon-btc);
   }
 
-  &[data-commodity="ethereum"] .icon-commodity:before {
+  &[data-commodity='ethereum'] .icon-commodity:before {
     content: unicode($icon-eth);
   }
+}
+
+.app__wrapper {
+  height: 100%;
 }
 
 .stack__container {
@@ -292,6 +307,18 @@ body.twitch {
     overflow: auto;
     position: relative;
     max-height: 100%;
+
+    &::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background-color: rgba(black, 0.1);
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: $green;
+    }
   }
 
   .stack__toggler {

@@ -39,7 +39,7 @@ class Gdax extends Exchange {
 
 			let obj = JSON.parse(event.data);
 
-			if (obj && obj.type === 'match') {
+			if (obj && obj.size > 0) {
 				this.emitTrades([[
 					this.id,
 					+new Date(obj.time),
@@ -53,7 +53,7 @@ class Gdax extends Exchange {
 		this.api.onopen = event => {
 			this.api.send(JSON.stringify({
 				type: 'subscribe',
-				channels: [{ 'name': 'full', 'product_ids': [this.pair] }]
+				channels: [{ 'name': 'matches', 'product_ids': [this.pair] }]
 			}));
 
 			this.emitOpen(event);

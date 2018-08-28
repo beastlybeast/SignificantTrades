@@ -11,6 +11,7 @@ class Sfx {
 
 	connect() {
 		this.context = new (window.AudioContext || window.webkitAudioContext);
+		this.queued = 0;
 
 		var tuna = new Tuna(this.context);
 
@@ -37,7 +38,11 @@ class Sfx {
 		const now = +new Date();
 		const osc = [];
 
+		this.queued++;
+		
 		setTimeout(() => {
+			this.queued--;
+
 			if (side) {
 				if (factor >= 10) {
 					[659.26, 830.6, 987.76, 1318.52].forEach((f, i, a) => setTimeout(() => this.play(f, .05 + Math.sqrt(factor) / 15, .1 + factor * .1), i * 80));
