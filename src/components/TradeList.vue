@@ -46,18 +46,18 @@ export default {
   },
   created() {
     this.getGifs();
+    
+    this._subscription = this.$store.subscribe((mutation, state) => {
+      console.log('tradelist subscribe', mutation, state);
+    });
+
+    socket.$on('pairing', this.onPairing);
+    socket.$on('trades', this.onTrades);
   },
   mounted() {
     if (options.useAudio) {
       this.sfx = new Sfx();
     }
-
-    socket.$on('pairing', this.onPairing);
-    socket.$on('trades', this.onTrades);
-    
-    this.$store.subscribeAction((mutation, state) => {
-      console.log('tradelist subscribeAction', mutation, state);
-    });
 
     this.timeAgoInterval = setInterval(() => {
       for (let element of this.$el.querySelectorAll('[timestamp]')) {
@@ -68,6 +68,8 @@ export default {
   beforeDestroy() {
     socket.$off('pairing', this.onPairing);
     socket.$off('trades', this.onTrades);
+
+    this._subscription();
 
     clearInterval(this.timeAgoInterval);
 
@@ -124,7 +126,7 @@ export default {
 
       if (
         options.useAudio &&
-        ((options.audioIncludeAll && size > options.thresholds[0] * Math.max(0.1, multiplier) * 0.1) ||
+        ((options.audioIncludeInsignificants && size > options.thresholds[0] * Math.max(0.1, multiplier) * 0.1) ||
           size > options.thresholds[1] * Math.max(0.1, multiplier))
       ) {
         this.sfx && this.sfx.tradeToSong(size / (options.thresholds[1] * Math.max(0.1, multiplier)), trade[4]);

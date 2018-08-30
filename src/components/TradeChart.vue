@@ -15,7 +15,6 @@
 import { mapState } from 'vuex';
 
 import Highcharts from 'highcharts';
-import options from '../services/options';
 import socket from '../services/socket';
 
 export default {
@@ -32,14 +31,20 @@ export default {
       rangeTo: 0
     };
   },
+  computed: {
+    ...mapState([
+      'autoWipeCache',
+      'autoWipeCacheDuration'
+    ])
+  },
   created() {
     this.timestamp = +new Date();
   },
   mounted() {
-    if (options.wipeCache) {
+    if (autoWipeCache) {
       this._trimInvisibleTradesInterval = setInterval(
         this.trimChart,
-        60 * options.wipeCacheDuration * 1000
+        60 * autoWipeCacheDuration * 1000
       );
     }
 
@@ -75,11 +80,11 @@ export default {
 
     socket.$on('trades', this.onTrades);
 
-    options.$on('follow', this.onFollow);
+    /* options.$on('follow', this.onFollow);
 
     setTimeout(() => {
       options.$on('change', this.onSettings);
-    }, 1000);
+    }, 1000); */
 
     this.chart = window.chart = Highcharts.chart(
       this.$el.querySelector('.chart__canvas'),
@@ -290,7 +295,7 @@ export default {
       }
     );
 
-    options.dark && this.toggleDark(options.dark);
+    // options.dark && this.toggleDark(options.dark);
 
     this.range = +this.defaultRange;
 
@@ -325,8 +330,8 @@ export default {
     socket.$off('trades', this.onTrades);
     socket.$off('historical', this.onFetch);
     socket.$off('pairing', this.onPairing);
-    options.$off('change', this.onSettings);
-    options.$off('follow', this.onFollow);
+    /* options.$off('change', this.onSettings);
+    options.$off('follow', this.onFollow); */
 
     clearTimeout(this._zoomAfterTimeout);
     clearInterval(this._trimInvisibleTradesInterval);
@@ -421,8 +426,8 @@ export default {
         case 'filters':
         case 'avgPeriods':
         case 'useWeighedAverage':
-        case 'showPlotsSignificants':
-        case 'showPlotsLiquidations':
+        case 'chartSignificantOrders':
+        case 'chartLiquidations':
           this.appendTicksToChart(this.getTicks(), true);
           break;
         case 'timeframe':
@@ -693,7 +698,7 @@ export default {
         if (data[i][5]) {
           switch (+data[i][5]) {
             case 1:
-              options.showPlotsLiquidations &&
+              options.chartLiquidations &&
                 labels.push(
                   this.createPoint(
                     data[i],
@@ -756,7 +761,7 @@ export default {
         this.tick[data[i][4] > 0 ? 'buys' : 'sells'] += data[i][3] * data[i][2];
 
         if (
-          options.showPlotsSignificants &&
+          options.chartSignificantOrders &&
           data[i][3] * data[i][2] >= options.hugeTradeThreshold
         ) {
           labels.push(this.createPoint(data[i]));

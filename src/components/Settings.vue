@@ -6,25 +6,25 @@
       <div class="stack__wrapper">
         <a href="#" class="stack__toggler icon-cross" v-on:click="$emit('close')"></a>
         <div class="form-group settings__pair mb8">
-          <label>Pair <span class="icon-info-circle" v-bind:title="help.pair" v-tippy></span></label>
+          <label>Pair <span class="icon-info-circle" title="The pair to aggregate from" v-tippy></span></label>
           <div class="settings__pair--container">
-            <input type="string" placeholder="BTCUSD" class="form-control" v:value="pair" @change="$store.commit('setPair', $event.target.value)">
+            <input type="string" placeholder="BTCUSD" class="form-control" v-bind:value="pair" @change="$store.commit('setPair', $event.target.value)">
           </div>
         </div>
-        <div class="mt8 settings__title" v-on:click="toggleSection('basics')" v-bind:class="{closed: options.settings.indexOf('basics') > -1}">Basics <i class="icon-up"></i></div>
+        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'basics')" v-bind:class="{closed: settings.indexOf('basics') > -1}">Basics <i class="icon-up"></i></div>
         <div class="mb8">
           <div class="settings__column">
             <div class="form-group">
-              <label>Max rows <span class="icon-info-circle" v-bind:title="help.maxRows" v-tippy></span></label>
-              <input type="number" min="0" max="1000" step="1" class="form-control" v:value="maxRows" @change="$store.commit('setMaxRows', $event.target.value)">
+              <label>Max rows <span class="icon-info-circle" title="Numbers of trades to keep visible" v-tippy></span></label>
+              <input type="number" min="0" max="1000" step="1" class="form-control" v-bind:value="maxRows" @change="$store.commit('setMaxRows', $event.target.value)">
             </div>
             <div class="form-group">
-              <label>Precision <span class="icon-info-circle" v-bind:title="help.precision" v-tippy></span></label>
-              <input type="number" min="0" max="10" step="1" placeholder="auto" class="form-control" v:value="precisions" @change="$store.commit('setPrecisions', $event.target.value)">
+              <label>Precision <span class="icon-info-circle" title="Define how much digits will be displayed after the decimal point" v-tippy></span></label>
+              <input type="number" min="0" max="10" step="1" placeholder="auto" class="form-control" v-bind:value="precision" @change="$store.commit('setPrecision', $event.target.value)">
             </div>
           </div>
         </div>
-        <div class="mt8 settings__title" v-on:click="toggleSection('exchangeThresholds')" v-bind:class="{closed: options.settings.indexOf('exchangeThresholds') > -1}">Thresholds <i class="icon-up"></i></div>
+        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'thresholds')" v-bind:class="{closed: settings.indexOf('thresholds') > -1}">Thresholds <i class="icon-up"></i></div>
         <div class="settings__thresholds">
           <div class="form-group mb8">
             <label v-for="(threshold, index) in thresholds" :key="`threshold-${index}`">
@@ -38,67 +38,67 @@
             </label>
           </div>
         </div>
-        <div class="mt8 settings__title" v-on:click="toggleSection('audio')" v-bind:class="{closed: options.settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
-        <div class="settings__audio settings__column" v-bind:class="{active: options.useAudio}">
+        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'audio')" v-bind:class="{closed: settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
+        <div class="settings__audio settings__column" v-bind:class="{active: useAudio}">
           <div class="form-group">
             <label class="checkbox-control flex-right" v-tippy title="Enable audio">
-              <input type="checkbox" class="form-control" v-model="options.useAudio">
+              <input type="checkbox" class="form-control" v-bind:value="useAudio" @change="$store.commit('toggleAudio', $event.value)">
               <div></div>
             </label>
           </div>
           <div class="form-group">
-            <label class="checkbox-control flex-right" v-tippy title="Include insignificants">
-              <input type="checkbox" class="form-control" v-model="options.audioIncludeAll">
+            <label class="checkbox-control flex-right" v-tippy title="Include orders down to 10% of significant orders">
+              <input type="checkbox" class="form-control" v-bind:value="audioIncludeInsignificants" @change="$store.commit('toggleaudioIncludeInsignificants', $event.value)">
               <div class="icon-expand"></div>
             </label>
           </div>
           <div class="form-group">
-            <input type="range" min="0" max="5" step=".1" v-model="options.audioVolume">
+            <input type="range" min="0" max="5" step=".1" v-bind:value="audioVolume" @change="$store.commit('setAudioVolume', $event.value)">
           </div>
         </div>
-        <div class="mt8 settings__title" v-on:click="toggleSection('chart')" v-bind:class="{closed: options.settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
+        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'chart')" v-bind:class="{closed: settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
         <div>
           <div class="settings__column">
             <div class="form-group">
               <label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
-              <input type="string" placeholder="XX% or XXs" class="form-control" v-model.lazy="options.timeframe">
+              <input type="string" placeholder="XX% or XXs" class="form-control" v-bind:value="timeframe" @change="$store.commit('setTimeframe', $event.value)">
             </div>
             <div class="form-group">
-              <label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgPeriods" v-tippy></span></label>
+              <label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgLength" v-tippy></span></label>
               <div class="input-group">
-                <input type="number" min="0" max="100" step="1" class="form-control" v-model="options.avgPeriods">
+                <input type="number" min="0" max="100" step="1" class="form-control" v-bind:value="avgLength" @change="$store.commit('setAverageLength', $event.value)">
                 <label class="checkbox-control flex-right" title="Use weighed average" v-tippy>
-                  <input type="checkbox" class="form-control" v-model="options.useWeighedAverage">
+                  <input type="checkbox" class="form-control" v-bind:value="useWeighedAverage" @change="$store.commit('toggleWeighedAverage', $event.value)">
                   <div></div>
                 </label>
               </div>
             </div>
           </div>
           <div class="settings__chart">
-            <div class="form-group mb8" v-if="options.thresholds.length > 0">
+            <div class="form-group mb8" v-if="thresholds.length > 0">
               <label class="checkbox-control flex-left" v-tippy title="Shows significants orders on the chart">
-                <input type="checkbox" class="form-control" v-model="options.showPlotsSignificants">
+                <input type="checkbox" class="form-control" v-bind:value="chartSignificantOrders" @change="$store.commit('toggleSignificantOrdersPlot', $event.value)">
                 <div></div>
-                <span>Highlight {{options.thresholds[1]}}+</span>
+                <span>Highlight {{thresholds[1].amount}}+</span>
               </label>
             </div>
             <div class="form-group mb8">
               <label class="checkbox-control flex-left" v-tippy title="Shows liquidations on the chart">
-                <input type="checkbox" class="form-control" v-model="options.showPlotsLiquidations">
+                <input type="checkbox" class="form-control" v-bind:value="chartLiquidations" @change="$store.commit('toggleLiquidationsPlot', $event.value)">
                 <div></div>
                 <span>Highlight liquidations</span>
               </label>
             </div>
             <div class="form-group mb8">
               <label class="checkbox-control flex-left" v-tippy title="Wipe invisible data after a while to free memory and speed up the app">
-                <input type="checkbox" class="form-control" v-model="options.wipeCache">
+                <input type="checkbox" class="form-control" v-bind:value="autoWipeCache" @change="$store.commit('toggleAutoWipeCache', $event.value)">
                 <div></div>
-                <span>Auto-clear data <span v-if="options.wipeCache" v-on:click.stop.prevent>after <editable :content="options.wipeCacheDuration" @output="options.wipeCacheDuration = $event"></editable> minutes</span></span>
+                <span>Auto-clear data <span v-if="autoWipeCache" v-on:click.stop.prevent>after <editable :content="autoWipeCacheDuration" @output="$store.commit('setAutoWipeCacheDuration', $event.value)"></editable> minutes</span></span>
               </label>
             </div>
           </div>
         </div>
-        <div class="mt8 settings__title" v-on:click="toggleSection('exchanges')" v-bind:class="{closed: options.settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
+        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'exchanges')" v-bind:class="{closed: settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
         <div class="form-group">
           <div class="settings__exchanges">
             <div v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index"
@@ -116,14 +116,14 @@
                 <div class="settings__exchanges__item__name">{{ exchange.id }}</div>
                 <i class="icon-warning"></i>
                 <div class="settings__exchanges__item__controls">
-                  <button class="settings__exchanges__item__visibility" v-on:click.stop.prevent="options.toggleFilter(exchange)"><i class="icon-invisible"></i></button>
+                  <button class="settings__exchanges__item__visibility" v-on:click.stop.prevent="$store.commit('toggleExchangeVisibility', exchange)"><i class="icon-invisible"></i></button>
                   <button class="settings__exchanges__item__more" v-on:click.stop.prevent="toggleExpander(exchange)"><i class="icon-down"></i></button>
                 </div>
               </div>
               <div class="settings__exchanges__item__detail" v-if="expanded.indexOf(exchange) !== -1">
                 <div class="form-group">
-                  <label>Threshold <span v-if="exchangeThresholds[exchange] !== 1">({{ formatAmount(exchangeThresholds[exchange] * options.thresholds[0]) }})</span></label>
-                  <input type="range" min="0" max="2" step="0.01" v-bind:value="exchangeThresholds[exchange]" @input="setExchangeThreshold(exchange, $event.target.value)">
+                  <label>Threshold <span v-if="exchangeThresholds[exchange] !== 1">({{ formatAmount(exchangeThresholds[exchange] * thresholds[0]) }})</span></label>
+                  <input type="range" min="0" max="2" step="0.01" v-bind:value="exchangeThresholds[exchange.id]" @change="$store.commit('setExchangeThreshold', {exchange: exchange.id, threshold: $event.value})">
                 </div>
               </div>
             </div>
@@ -142,8 +142,8 @@
           </div>
           <div class="form-group">
             <label class="checkbox-control settings_luminosity flex-right" title="Switch luminosity" v-tippy>
-              <input type="checkbox" class="form-control" v-model="options.dark">
-              <span>{{ options.dark ? 'Day mode' : 'Night mode' }}</span>
+              <input type="checkbox" class="form-control" v-bind:value="dark" @change="$store.commit('dark', $event.value)">
+              <span>{{ dark ? 'Day mode' : 'Night mode' }}</span>
               <div></div>
             </label>
           </div>
@@ -163,21 +163,22 @@ export default {
   data() {
     return {
       exchanges: socket.exchanges,
-      options: options,
-      exchangeThresholds: Object.assign({}, options.exchangeThresholds),
       expanded: [],
       help: {
-        pair: `The pair to aggregate from<br><small><i>special access required</i></small>`,
-        avgPeriods: `Define how many periods are used to smooth the chart<br><ol><li>Exchange prices are averaged <strong>within</strong> the tick first (using weighed average in that timeframe if enabled, if not then the close value is used)</li><li>If cumulated periods are > 1 then the price is averaged (using weighed or simple average) using the number of periods you choosed right there (2 by default)</li></ol>`,
-        maxRows: `Numbers of trades to keep visible`,
-        precision: `Define how much digits will be displayed after the decimal point`,
-        timeframe: `Define how much trades we stack together in the chart, type a amount of seconds or % of the visible range<br><ul><li>Type 1.5% for optimal result</li><li>Minimum is 5s whatever you enter</li></ul>`,
-        exchanges: `Enable/disable exchanges<br>(exclude from list & chart)`,
-        cacheDuration: `Trim invisible chart data after N minutes (to free memory)`,
-        threshold: `Minimum amount a trade should have in order to show up on the list`,
-        significantTradeThreshold: `Highlight the trade in the list`,
-        hugeTradeThreshold: `Shows animation under it !`,
-        rareTradeThreshold: `Shows another animation !`
+        avgLength: `
+          Define how many periods are used to smooth the chart<br>
+          <ol>
+            <li>Exchange prices are averaged <strong>within</strong> the tick first (using weighed average in that timeframe if enabled, if not then the close value is used)</li>
+            <li>If cumulated periods are > 1 then the price is averaged (using weighed or simple average) using the number of periods you choosed right there (2 by default)</li>
+          </ol>
+        `,
+        timeframe: `
+          Define how much trades we stack together in the chart, type a amount of seconds or % of the visible range<br>
+          <ul>
+            <li>Type 1.5% for optimal result</li>
+            <li>Minimum is 5s whatever you enter</li>
+          </ul>
+        `
       },
       version: {
         number: process.env.VERSION || 'DEV',
@@ -186,7 +187,27 @@ export default {
     };
   },
   computed: {
-    ...mapState(['pair', 'filters', 'disabled', 'thresholds'])
+    ...mapState([
+      'pair',
+      'maxRows',
+      'precision',
+      'filters',
+      'disabled',
+      'thresholds',
+      'useAudio',
+      'audioIncludeInsignificants',
+      'audioVolume',
+      'timeframe',
+      'avgLength',
+      'useWeighedAverage',
+      'chartSignificantOrders',
+      'chartLiquidations',
+      'autoWipeCache',
+      'autoWipeCacheDuration',
+      'exchangeThresholds',
+      'dark',
+      'settings',
+    ])
   },
   created() {
     console.log('ok', this.disabled);
@@ -206,41 +227,13 @@ export default {
 
         this.$store.commit('disableExchange', exchange.id);
 			} else {
-				exchange.connect(options.pair);
+				exchange.connect(pair);
 
         this.$store.commit('enableExchange', exchange.id);
 			}
     },
     onExchangeFailed(exchange, count) {
       this.fails[exchange] = count;
-    },
-    switchPair(event) {
-      socket.$emit('alert', 'clear');
-      
-      if (options.pair) {
-        options.pair = options.pair.toUpperCase();
-
-        socket.disconnectExchanges();
-
-        setTimeout(() => {
-          socket.connectExchanges();
-        }, 500);
-      }
-    },
-    toggleSection(name) {
-      const index = options.settings.indexOf(name);
-
-      if (index === -1) {
-        options.settings.push(name);
-      } else {
-        options.settings.splice(index, 1);
-      }
-    },
-    setExchangeThreshold(exchange, threshold) {
-      this.$set(this.exchangeThresholds, exchange, threshold);
-      this.$set(options.exchangeThresholds, exchange, threshold);
-
-      options.save();
     },
     toggleExpander(exchange) {
       const index = this.expanded.indexOf(exchange);
