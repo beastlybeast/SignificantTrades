@@ -395,6 +395,7 @@
         }
 
         if (willReplace) {
+          this.range = socket.trades[socket.trades.length - 1][1] - socket.trades[0][1];
           this.toggleFollow(true);
         }
 
