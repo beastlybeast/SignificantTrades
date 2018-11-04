@@ -9,7 +9,6 @@
 </template>
 
 <script>
-import options from "../services/options";
 import socket from "../services/socket";
 
 export default {

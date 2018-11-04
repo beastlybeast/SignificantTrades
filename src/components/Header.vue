@@ -1,20 +1,30 @@
 <template>
 	<header class="header">
 		<div class="header__title"> <span class="pair" v-if="pair">{{pair}}</span> <span class="icon-currency"></span> <span v-html="title"></span></div>
-		<button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}"><span class="icon-external-link"></span></button>
-		<button type="button" v-if="canFetch" v-on:click="retrieveChart" v-bind:title="fetchLabel" v-tippy="{placement: 'bottom'}">
-			<svg class="loader" v-bind:class="{loading: dashoffset > 0}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14">
-				<path :stroke-dashoffset="dashoffset" d="M7,1a6.06,6.06,0,0,1,6,6,6.06,6.06,0,0,1-6,6A6.06,6.06,0,0,1,1,7,6.06,6.06,0,0,1,7,1Z"/>
-			</svg>
-			<span class="icon-history"></span>
+    <button></button>
+		<button type="button" v-if="canFetch" v-bind:title="fetchLabel" v-tippy="{placement: 'bottom'}">
+      {{timeframeLabel}}
+      <ul class="dropdown">
+        <li @click="setTimeframe(1000 * 10)">10s</li>
+        <li @click="setTimeframe(1000 * 30)">30s</li>
+        <li @click="setTimeframe(1000 * 60)">1m</li>
+        <li @click="setTimeframe(1000 * 60 * 5)">5m</li>
+        <li @click="setTimeframe(1000 * 60 * 15)">15m</li>
+        <li @click="setTimeframe(1000 * 60 * 30)">30m</li>
+        <li @click="setTimeframe(1000 * 60 * 60)">1h</li>
+        <li @click="setTimeframe(1000 * 60 * 60 * 2)">2h</li>
+        <li @click="setTimeframe(1000 * 60 * 60 * 4)">4h</li>
+      </ul>
 		</button>
-		<button type="button" v-on:click="toggleFollow" v-bind:title="following ? 'Stop live mode' : 'Go live mode'" v-tippy="{placement: 'bottom'}"><span class="icon-play" v-bind:class="{following: following}"></span></button>
+    <button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}"><span class="icon-external-link"></span></button>
+		<button type="button" v-on:click="$store.commit('toggleSnap', !isSnaped)" v-bind:title="isSnaped ? 'Disable auto snap' : 'Auto snap chart to the latest candle'" v-tippy="{placement: 'bottom'}"><span class="icon-play" v-bind:class="{snaped: isSnaped}"></span></button>
 		<button type="button" v-on:click="$emit('toggleSettings')"><span class="icon-cog"></span></button>
 	</header>
 </template>
 
 <script>
-import options from '../services/options';
+import { mapState } from 'vuex';
+
 import socket from '../services/socket';
 
 export default {
@@ -23,19 +33,25 @@ export default {
       title: 'SignificantTrades',
       pair: '',
       dashoffset: 0,
-      fetchLabel: 'Load chart history',
-      following: true,
+      fetchLabel: 'Fetch specific timeframe',
       isPopupMode: window.opener !== null,
-      canFetch: false
+      canFetch: false,
+      showTimeframeDropdown: false,
+      timeframeLabel: '15m',
     };
+  },
+  computed: {
+    ...mapState([
+      'isSnaped',
+      'timeframe',
+		])
   },
   created() {
     this._fetchLabel = this.fetchLabel.substr();
 
-    options.$on('following', state => (this.following = state));
-
     socket.$on('pairing', (pair, canFetch) => {
       this.pair = pair;
+
       this.canFetch = canFetch;
     });
 
@@ -52,7 +68,7 @@ export default {
 
     socket.$on('price', (price, direction) => {
       if (typeof price === 'number') {
-        this.title = formatPrice(price);
+        this.title = this.$root.formatPrice(price);
 
         window.document.title = this.title
           .toString()
@@ -79,25 +95,17 @@ export default {
       }
     });
 
-    setTimeout(() => (this.created = true), 2000);
+    this.updateTimeframeLabel();
   },
   methods: {
-    retrieveChart() {
-      if (this.dashoffset) {
-        return;
-      }
+    setTimeframe(timeframe) {
+      document.activeElement.blur();
 
-      const interval = parseInt(window.prompt(`Fetch last 𝑥 minutes`, 60));
-
-      if (interval > 1) {
-        socket.fetchHistoricalData(interval).then(data => {
-          this.dashoffset = 0;
-          this.fetchLabel = this._fetchLabel;
-        });
-      }
+      this.updateTimeframeLabel(timeframe);
+      this.$store.commit('setTimeframe', timeframe);
     },
-    toggleFollow() {
-      options.follow(!this.following);
+    updateTimeframeLabel(timeframe) {
+      this.timeframeLabel = this.$root.ago(+new Date() - (timeframe || this.timeframe));
     },
     togglePopup() {
       window.open(
@@ -128,8 +136,7 @@ export default {
 
 header.header {
   display: flex;
-  background-color: #222;
-  color: white;
+  color: #222;
   align-items: center;
 
   .header__title {
@@ -154,13 +161,65 @@ header.header {
   button {
     border: 0;
     background: none;
-    color: white;
+    color: #222;
     padding: 6px 10px 5px;
     font-size: 20px;
     position: relative;
 
     align-self: stretch;
     cursor: pointer;
+    
+    .dropdown {
+      display: none;
+      position: absolute;
+      top: 3.5em;
+      right: 0em;
+      border-radius: 2px;
+      font-size: 14px;
+      text-align: right;
+      min-width: 5em;
+      margin: 0;
+      background-color: $green;
+      color: white;
+      padding: 0;
+      animation: .4s $easeOutExpo appear-from-above;
+      z-index: 10001;
+      max-height: 200px;
+      overflow: auto;
+
+      @keyframes appear-from-above {
+        0% {
+          -webkit-transform: translateY(-20%);
+          transform: translateY(-20%);
+          opacity: 0;
+        }
+        100% {
+          -webkit-transform: translateY(0);
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      > li {
+        list-style: none;
+        background-color: rgba(white, .05);
+        padding: .5em 1em;
+
+        transition: background-color .2s $easeOutExpo;
+
+        &:nth-child(odd) {
+          background-color: rgba(white, .1);
+        }
+
+        &:hover {
+          background-color: rgba(white, .2);
+        }
+      }
+    }
+
+    &:focus .dropdown {
+      display: block;
+    }
 
     > span {
       display: inline-block;
@@ -200,7 +259,7 @@ header.header {
     .icon-play {
       opacity: 0.2;
 
-      &.following {
+      &.snaped {
         opacity: 1;
         color: $red;
         transform: rotateZ(-7deg) scale(1.2) translateX(10%);
@@ -215,7 +274,7 @@ header.header {
         text-shadow: 0 0 20px $orange, 0 0 2px white;
       }
 
-      .icon-play:not(.following) {
+      .icon-play:not(.snaped) {
         opacity: 1;
         transform: rotateZ(-7deg) scale(1.2) translateX(10%);
         text-shadow: 0 0 20px $blue, 0 0 2px white;

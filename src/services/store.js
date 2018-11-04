@@ -1,7 +1,11 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 
-Vue.use(Vuex)
+Vue.use(Vuex);
+
+const EPHEMERAL_PROPERTIES = [
+	'isSnaped',
+]
 
 const defaults = {
 	pair: 'BTCUSD',
@@ -13,10 +17,14 @@ const defaults = {
 	],
 	exchangeThresholds: {},
 	maxRows: 20,
-	precision: null,
+	decimalPrecision: null,
+	enableCounters: true,
+	counterPrecision: 1000 * 10,
+	hideEmptyCounter: true,
+	countersSteps: [1000 * 30, 1000 * 60, 1000 * 60 * 2, 1000 * 60 * 5, 1000 * 60 * 10, 1000 * 60 * 15],
 	avgLength: 2,
-	useWeighedAverage: true,
-	timeframe: '1.5%',
+	useWeighedAverage: false,
+	timeframe: 1000 * 10,
 	autoWipeCache: true,
 	autoWipeCacheDuration: 15,
 	disabled: ['bithumb', 'hitbtc', 'kraken'],
@@ -30,7 +38,10 @@ const defaults = {
 	settings: [],
 	chartSignificantOrders: false,
 	chartLiquidations: false,
-	height: null,
+	chartHeight: null,
+
+	// runtime state
+	isSnaped: true
 }
 
 const store = new Vuex.Store({
@@ -42,8 +53,31 @@ const store = new Vuex.Store({
 		setMaxRows(state, value) {
 			state.maxRows = value;
 		},
-		setPrecision(state, value) {
-			state.precision = value;
+		setDecimalPrecision(state, value) {
+			state.decimalPrecision = value;
+		},
+		setCounterPrecision(state, payload) {
+			state.counterPrecision = value;
+		},
+		toggleCounters(state, value) {
+			state.enableCounters = value ? true : false;
+		},
+		toggleHideEmptyCounter(state, value) {
+			state.hideEmptyCounter = value ? true : false;
+		},
+		setCounterStep(state, payload) {
+			const step = state.countersSteps[payload.index];
+
+			if (payload.value) {
+				Vue.set(state.countersSteps, payload.index, payload.value);
+			} else {
+				state.countersSteps.splice(payload.index, 1);
+			}
+
+			state.countersSteps = state.countersSteps.sort((a, b) => a - b);
+		},
+		replaceCounterSteps(state, counters) {
+			state.countersSteps = counters.sort((a, b) => a - b);
 		},
 		setThresholdAmount(state, payload) {
 			const threshold = state.thresholds[payload.index];
@@ -86,23 +120,26 @@ const store = new Vuex.Store({
 			}
 		},
 		toggleExchangeVisibility(state, exchange) {
-			if (state.filters.indexOf(exchange) === -1) {
-				this.commit('hideExchange', exchange);
+			if (state.filters.indexOf(exchange.id) !== -1) {
+				this.commit('hideExchange', exchange.id);
 			} else {
-				this.commit('showExchange', exchange);
+				this.commit('showExchange', exchange.id);
 			}
 		},
 		toggleSettingsPanel(state, value) {
       const index = state.settings.indexOf(value);
 
       if (index === -1) {
-        state.settings.push(name);
+        state.settings.push(value);
       } else {
         state.settings.splice(index, 1);
       }
 		},
 		toggleAudio(state, value) {
 			state.useAudio = value ? true : false;
+		},
+		toggleDark(state, value) {
+			state.dark = value ? true : false;
 		},
 		toggleaudioIncludeInsignificants(state, value) {
 			state.audioIncludeInsignificants = value ? true : false;
@@ -132,15 +169,29 @@ const store = new Vuex.Store({
 			state.autoWipeCacheDuration = Math.min(1, value || 0);
 		},
 		setExchangeThreshold(state, payload) {
-			Vue.set(state.thresholds, payload.exchange, payload.threshold);
+			Vue.set(state.exchangeThresholds, payload.exchange, +payload.threshold);
+		},
+		setChartHeight(state, value) {
+			state.chartHeight = value || null;
+		},
+
+		// runtime commit
+		toggleSnap(state, value) {
+			state.isSnaped = value ? true : false;
 		}
 	},
 })
 
 store.subscribe((mutation, state) => {
-  localStorage.setItem('settings', JSON.stringify(state));
+	const copy = JSON.parse(JSON.stringify(state));
 
-	console.log('save', mutation, state);
+	for (let name of EPHEMERAL_PROPERTIES) {
+		if (copy.hasOwnProperty(name)) {
+			delete copy[name];
+		}
+	}
+
+  localStorage.setItem('settings', JSON.stringify(copy));
 });
 
 export default store;

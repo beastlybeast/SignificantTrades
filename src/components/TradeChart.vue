@@ -22,7 +22,7 @@ export default {
     return {
       fetching: false,
       defaultRange: 1000 * 60 * 15,
-      timeframe: 10000,
+      tickLength: 10000,
       following: true,
       priceLineColor: '#222',
       averages: [],
@@ -33,18 +33,62 @@ export default {
   },
   computed: {
     ...mapState([
+      'dark',
+      'pair',
+      'filters',
+      'timeframe',
       'autoWipeCache',
-      'autoWipeCacheDuration'
+      'autoWipeCacheDuration',
+      'useWeighedAverage',
+      'avgLength',
+      'thresholds',
+      'chartSignificantOrders',
+      'chartLiquidations'
     ])
   },
   created() {
     this.timestamp = +new Date();
+    
+    this.onStoreMutation = this.$store.subscribe((mutation, state) => {
+      switch (mutation.type) {
+        case 'toggleDark':
+          this.toggleDarkChart(mutation.payload);
+          break;
+        case 'showExchange':
+        case 'hideExchange':
+        case 'setAverageLength':
+        case 'toggleWeighedAverage':
+        case 'toggleSignificantOrdersPlot':
+        case 'toggleLiquidationsPlot':
+          this.appendTicksToChart(this.getTicks(), true);
+          break;
+        case 'setTimeframe':
+          if (this.ajustTimeframe()) {
+            this.appendTicksToChart(this.getTicks(), true);
+          }
+          break;
+        case 'toggleDark':
+          this.toggleDark(data.value);
+          break;
+        case 'toggleAutoWipeCache':
+        case 'setAutoWipeCacheDuration':
+          clearInterval(this._trimInvisibleTradesInterval);
+
+          if (this.wipeCache) {
+            this._trimInvisibleTradesInterval = setInterval(
+              this.trimChart,
+              60 * this.wipeCacheDuration * 1000
+            );
+          }
+          break;
+      }
+    });
   },
   mounted() {
-    if (autoWipeCache) {
+    if (this.autoWipeCache) {
       this._trimInvisibleTradesInterval = setInterval(
         this.trimChart,
-        60 * autoWipeCacheDuration * 1000
+        60 * this.autoWipeCacheDuration * 1000
       );
     }
 
@@ -106,11 +150,11 @@ export default {
 
               const from = new Date(this.chart.xAxis[0].min);
               this.rangeFrom =
-                from.getHours() + ':' + window.pad(from.getMinutes(), 2);
+                from.getHours() + ':' + this.$root.padNumber(from.getMinutes(), 2);
 
               const to = new Date(this.chart.xAxis[0].max);
               this.rangeTo =
-                to.getHours() + ':' + window.pad(to.getMinutes(), 2);
+                to.getHours() + ':' + this.$root.padNumber(to.getMinutes(), 2);
             }
           }
         },
@@ -176,21 +220,7 @@ export default {
           padding: 4,
           shadow: false,
           hideDelay: 0,
-          formatter: function(e) {
-            return this.point.name
-              ? this.point.name
-              : '<small>' +
-                  Highcharts.dateFormat('%H:%M:%S', this.point.x) +
-                  '</small><br>' +
-                  this.series.name +
-                  ' ' +
-                  app.getAttribute('data-symbol') +
-                  (this.series.name === 'BUY' || this.series.name === 'SELL'
-                    ? formatAmount(this.y)
-                    : formatPrice(this.y)
-                        .toString()
-                        .replace(/(\d)(?=(\d{3})+\.)/g, '$1,'));
-          },
+          formatter: this.getTooltip.bind(this),
           style: {
             color: 'white',
             fontSize: 10,
@@ -295,7 +325,7 @@ export default {
       }
     );
 
-    // options.dark && this.toggleDark(options.dark);
+    this.toggleDarkChart(this.dark);
 
     this.range = +this.defaultRange;
 
@@ -330,8 +360,6 @@ export default {
     socket.$off('trades', this.onTrades);
     socket.$off('historical', this.onFetch);
     socket.$off('pairing', this.onPairing);
-    /* options.$off('change', this.onSettings);
-    options.$off('follow', this.onFollow); */
 
     clearTimeout(this._zoomAfterTimeout);
     clearInterval(this._trimInvisibleTradesInterval);
@@ -341,9 +369,8 @@ export default {
     window.removeEventListener('resize', this._onResize);
     window.removeEventListener('mousemove', this._doScroll);
     window.removeEventListener('mouseup', this._stopScroll);
-  },
-  computed: {
-    ...mapState(['pair'])
+
+    this.onStoreMutation();
   },
   methods: {
     //                        _ _
@@ -372,7 +399,7 @@ export default {
       }
 
       this.chart.xAxis[0].setExtremes(
-        timestamp - this.timeframe,
+        timestamp - this.tickLength,
         timestamp,
         false
       );
@@ -422,34 +449,6 @@ export default {
     },
 
     onSettings(data) {
-      switch (data.prop) {
-        case 'filters':
-        case 'avgPeriods':
-        case 'useWeighedAverage':
-        case 'chartSignificantOrders':
-        case 'chartLiquidations':
-          this.appendTicksToChart(this.getTicks(), true);
-          break;
-        case 'timeframe':
-          if (this.ajustTimeframe()) {
-            this.appendTicksToChart(this.getTicks(), true);
-          }
-          break;
-        case 'dark':
-          this.toggleDark(data.value);
-          break;
-        case 'wipeCache':
-        case 'wipeCacheDuration':
-          clearInterval(this._trimInvisibleTradesInterval);
-
-          if (options.wipeCache) {
-            this._trimInvisibleTradesInterval = setInterval(
-              this.trimChart,
-              60 * options.wipeCacheDuration * 1000
-            );
-          }
-          break;
-      }
     },
 
     onResize(e) {
@@ -467,7 +466,7 @@ export default {
 
       this.updateChartHeight();
 
-      if (/px$/i.test(options.timeframe)) {
+      if (/px$/i.test(this.timeframe)) {
         if (this.ajustTimeframe()) {
           this.appendTicksToChart(this.getTicks(), true);
         }
@@ -525,7 +524,7 @@ export default {
         delete this._zoomAfterTimeout;
 
         if (!this.fetching && axisMin < this.chart.series[0].xData[0]) {
-          if (/btcusd/i.test(options.pair)) {
+          if (/btcusd/i.test(this.pair)) {
             this.fetching = true;
             socket
               .fetchHistoricalData(axisMin, this.chart.series[0].xData[0])
@@ -600,7 +599,7 @@ export default {
         !this.fetching &&
         this.chart.xAxis[0].min < this.chart.series[0].xData[0]
       ) {
-        if (/btcusd/i.test(options.pair)) {
+        if (/btcusd/i.test(this.pair)) {
           this.fetching = true;
 
           socket
@@ -617,7 +616,7 @@ export default {
       }
 
       if (this.resizing) {
-        options.height = this.chart.chartHeight;
+        this.chartHeight = this.chart.chartHeight;
       }
 
       delete this.scrolling;
@@ -644,7 +643,7 @@ export default {
 
     resetHeight(event) {
       delete this.resizing;
-      options.height = null;
+      this.chartHeight = null;
 
       this.updateChartHeight();
     },
@@ -653,10 +652,10 @@ export default {
       const w = document.documentElement.clientWidth || innerWidth;
       const h = document.documentElement.clientHeight || innerHeight;
 
-      if (options.height > 0) {
+      if (this.chartHeight > 0) {
         this.chart.setSize(
           w,
-          options.height,
+          this.chartHeight,
           false
         );
       } else {
@@ -687,7 +686,7 @@ export default {
         data = socket.trades.slice(0);
       }
 
-      data = data.filter(a => options.filters.indexOf(a[0]) === -1);
+      data = data.filter(a => this.filters.indexOf(a[0]) === -1 && socket.ids.indexOf(a[0]) !== -1);
 
       const sells = [];
       const buys = [];
@@ -698,7 +697,7 @@ export default {
         if (data[i][5]) {
           switch (+data[i][5]) {
             case 1:
-              options.chartLiquidations &&
+              this.chartLiquidations &&
                 labels.push(
                   this.createPoint(
                     data[i],
@@ -717,7 +716,7 @@ export default {
           continue;
         }
 
-        if (!this.tick || data[i][1] - this.tick.timestamp > this.timeframe) {
+        if (!this.tick || data[i][1] - this.tick.timestamp > this.tickLength) {
           if (this.tick) {
             const point = this.tickToPoint(this.tick);
 
@@ -730,10 +729,10 @@ export default {
               point.buys[1] + point.sells[1]
             ]);
 
-            if (this.averages.length > options.avgPeriods) {
+            if (this.averages.length > this.avgLength) {
               this.averages.splice(
                 0,
-                this.averages.length - options.avgPeriods
+                this.averages.length - this.avgLength
               );
             }
           }
@@ -761,8 +760,8 @@ export default {
         this.tick[data[i][4] > 0 ? 'buys' : 'sells'] += data[i][3] * data[i][2];
 
         if (
-          options.chartSignificantOrders &&
-          data[i][3] * data[i][2] >= options.hugeTradeThreshold
+          this.chartSignificantOrders &&
+          data[i][3] * data[i][2] >= this.thresholds[1].amount
         ) {
           labels.push(this.createPoint(data[i]));
         }
@@ -789,7 +788,7 @@ export default {
           let price =
             tick.exchanges[exchange].prices / tick.exchanges[exchange].size;
 
-          if (options.useWeighedAverage) {
+          if (this.useWeighedAverage) {
             closes.push([price, tick.exchanges[exchange].size]);
           } else {
             closes.push([
@@ -802,7 +801,7 @@ export default {
           tick.low = isNaN(tick.low) ? price : Math.min(tick.low, price);
         }
 
-        if (options.useWeighedAverage) {
+        if (this.useWeighedAverage) {
           tick.close =
             closes.map(a => a[0] * a[1]).reduce((a, b) => a + b) / tick.size;
         } else {
@@ -820,8 +819,8 @@ export default {
           [typical, tick.buys + tick.sells]
         ]);
 
-        if (this.averages && options.avgPeriods > 0 && cumulatives.length > 1) {
-          if (options.useWeighedAverage) {
+        if (this.averages && this.avgLength > 0 && cumulatives.length > 1) {
+          if (this.useWeighedAverage) {
             this.priceIndex =
               cumulatives.map(a => a[0] * a[1]).reduce((a, b) => a + b) /
               cumulatives.map(a => a[1]).reduce((a, b) => a + b);
@@ -858,11 +857,11 @@ export default {
     createPoint(trade, label = null, color = null) {
       label =
         label ||
-        `${trade[4] == 1 ? 'Buy' : 'Sell'} ${formatAmount(
+        `${trade[4] == 1 ? 'Buy' : 'Sell'} ${this.$root.formatAmount(
           trade[2] * trade[3]
         )}${app.getAttribute('data-symbol')} @ ${app.getAttribute(
           'data-symbol'
-        )}${formatPrice(trade[2]).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')}`;
+        )}${this.$root.formatPrice(trade[2]).replace(/(\d)(?=(\d{3})+\.)/g, '$1,')}`;
       let fill = color || (trade[4] == 1 ? '#7ca74e' : '#F44336');
 
       return {
@@ -875,7 +874,7 @@ export default {
               1 +
                 trade[2] *
                   trade[3] /
-                  (options.thresholds[2] - options.thresholds[0])
+                  (this.thresholds[2].amount - this.thresholds[0].amount)
             ) * 6
           ),
           symbol: trade[5]
@@ -885,6 +884,24 @@ export default {
         },
         name: label
       };
+    },
+
+    getTooltip(tooltip) {
+      const point = tooltip.chart.hoverPoint;
+
+      return point.name
+        ? point.name
+        : '<small>' +
+            Highcharts.dateFormat('%H:%M:%S', point.x) +
+            '</small><br>' +
+            point.series.name +
+            ' ' +
+            app.getAttribute('data-symbol') +
+            (point.series.name === 'BUY' || point.series.name === 'SELL'
+              ? this.$root.formatAmount(point.y)
+              : this.$root.formatPrice(point.y)
+                  .toString()
+                  .replace(/(\d)(?=(\d{3})+\.)/g, '$1,'));
     },
 
     appendTicksToChart(ticks, replace = false) {
@@ -996,10 +1013,10 @@ export default {
     },
 
     getTimeframe() {
-      let value = parseFloat(options.timeframe);
-      let type = /\%$/.test(options.timeframe)
+      let value = parseFloat(this.timeframe);
+      let type = /\%$/.test(this.timeframe)
         ? 'percent'
-        : /\px$/i.test(options.timeframe) ? 'width' : 'time';
+        : /\px$/i.test(this.timeframe) ? 'width' : 'time';
       let output;
 
       if (!value) {
@@ -1026,8 +1043,8 @@ export default {
     ajustTimeframe() {
       const timeframe = this.getTimeframe();
 
-      if (timeframe != this.timeframe) {
-        this.timeframe = timeframe;
+      if (timeframe != this.tickLength) {
+        this.tickLength = timeframe;
 
         return true;
       }
@@ -1037,7 +1054,7 @@ export default {
 
     trimChart() {
       if (this.following && +new Date() - this.timestamp >= 1000 * 60 * 5) {
-        const min = this.chart.xAxis[0].min - this.timeframe;
+        const min = this.chart.xAxis[0].min - this.tickLength;
         socket.trimTradesData(min);
 
         this.chart.series.forEach(serie => {
@@ -1077,18 +1094,16 @@ export default {
       if (this.following !== state) {
         this.timestamp = +new Date();
 
-        options.$emit('following', state);
+        // options.$emit('following', state);
 
         this.following = state;
       }
     },
 
-    toggleDark(state) {
-      window.document.body.classList[state ? 'add' : 'remove']('dark');
-
+    toggleDarkChart(isDarkMode) {
       this.chart.series[0].update({
-        color: state ? '#fff' : '#222',
-        shadow: state
+        color: isDarkMode ? '#fff' : '#222',
+        shadow: isDarkMode
           ? {
               color: 'rgba(255, 255, 255, .1)',
               width: 15,
@@ -1099,7 +1114,7 @@ export default {
       });
 
       this.chart.series[3].update({
-        shadow: state
+        shadow: isDarkMode
           ? {
               color: 'rgba(255, 255, 255, .1)',
               width: 15,
@@ -1110,7 +1125,7 @@ export default {
       });
 
       this.chart.yAxis[0].update({
-        gridLineColor: state ? 'rgba(255, 255, 255, .1)' : 'rgba(0, 0, 0, .05)'
+        gridLineColor: isDarkMode ? 'rgba(255, 255, 255, .1)' : 'rgba(0, 0, 0, .05)'
       });
     }
   }

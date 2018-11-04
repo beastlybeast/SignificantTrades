@@ -9,71 +9,27 @@
 		<Settings v-if="showSettings" @close="showSettings = false"/>
 		<div class="app__wrapper">
 			<Alerts/>
-			<Header @toggleSettings="showSettings = !showSettings"/>
-			<TradeChart/>
+			<Header 
+        @toggleSettings="showSettings = !showSettings"
+      />
+			<Chart/>
+      <Counter v-if="enableCounters"/>
 			<TradeList/>
 		</div>
 	</div>
 </template>
 
 <script>
+import { mapState } from 'vuex';
+
 import socket from './services/socket';
-import options from './services/options';
 
 import Alerts from './components/Alerts.vue';
 import Header from './components/Header.vue';
 import Settings from './components/Settings.vue';
 import TradeList from './components/TradeList.vue';
-import TradeChart from './components/TradeChart.vue';
-
-window.formatPrice = function(price, precision) {
-  price = +price;
-
-  if (isNaN(price) || !price) {
-    return (0).toFixed(precision);
-  }
-
-  if (precision) {
-    return price.toFixed(precision);
-  }
-
-  if (price <= 0.0001) {
-    return (price * 100000000).toFixed() + ' <small>sats</small>';
-  } else if (price >= 1000) {
-    return +price.toFixed(2);
-  }
-
-  if (options.precision) {
-    return +price.toFixed(options.precision);
-  }
-
-  const firstDigitIndex = price.toString().match(/[1-9]/);
-
-  if (firstDigitIndex) {
-    return +price.toFixed(
-      Math.max(8 - price.toFixed().length, firstDigitIndex.index + 1)
-    );
-  }
-
-  return +price.toFixed(8 - price.toFixed().length);
-};
-
-window.formatAmount = function(amount, precision) {
-  if (amount >= 1000000) {
-    amount = (amount / 1000000).toFixed(1) + 'M';
-  } else if (amount >= 1000) {
-    amount = (amount / 1000).toFixed(1) + 'K';
-  } else {
-    amount = formatPrice(amount, precision);
-  }
-
-  return amount;
-};
-
-window.pad = function(num, size) {
-  var s = '000000000' + num;
-  return s.substr(s.length - size);
-};
+import Chart from './components/chart/Chart.vue';
+import Counter from './components/Counter.vue';
 
 export default {
   components: {
@@ -81,12 +37,12 @@ export default {
     Header,
     Settings,
     TradeList,
-    TradeChart
+    Chart,
+    Counter
   },
   name: 'app',
   data() {
     return {
-      pair: 'BTCUSD',
       currency: 'dollar',
       commodity: 'bitcoin',
       symbol: '$',
@@ -96,33 +52,113 @@ export default {
     };
   },
   computed: {
-    ready () {
-      return this.$store.getters.ready
-    }
+    ...mapState([
+      'dark',
+      'pair',
+      'enableCounters',
+      'decimalPrecision'
+    ])
   },
   created() {
-    socket.$on('pairing', pair => {
-      this.pair = options.pair = pair;
+    this.$root.formatPrice = this.formatPrice.bind(this);
+    this.$root.formatAmount = this.formatAmount.bind(this);
+    this.$root.padNumber = this.padNumber.bind(this);
+    this.$root.ago = this.ago.bind(this);
 
+    socket.$on('pairing', value => {
       this.updatePairCurrency(this.pair);
     });
-  },
-  mounted() {
-    // Test if there is some kind of adblocker ON
+    
+    this.onStoreMutation = this.$store.subscribe((mutation, state) => {
+      switch (mutation.type) {
+        case 'toggleDark':
+          this.toggleDarkChart(mutation.payload);
+        break;
+      }
+    });
+
+    this.toggleDarkChart(this.dark);
+
+    // Is request blocked by browser ?
+    // If true notice user that most of the exchanges may be unavailable 
     fetch('showads.js')
       .then(() => {})
       .catch((response, a) => {
         socket.$emit('alert', {
           type: 'error',
           title: `Disable your AdBlocker`,
-          message: `Some adblockers may block access to exchanges api.\nMake sure to turn it off, there is no ads anyway :-)`,
+          message: `Some adblockers may block access to exchanges api.\nMake sure to turn it off, you wont find any ads here ever :-)`,
           id: `adblock_error`
         });
       });
 
     socket.initialize();
   },
+  mounted() {
+  },
+  beforeDestroy() {
+    this.onStoreMutation();
+  },
   methods: {
+    padNumber(num, size) {
+      var s = '000000000' + num;
+      return s.substr(s.length - size);
+    },
+    formatAmount(amount, decimals) {
+      if (amount >= 1000000) {
+        amount = (amount / 1000000).toFixed(1) + 'M';
+      } else if (amount >= 1000) {
+        amount = (amount / 1000).toFixed(1) + 'K';
+      } else {
+        amount = this.$root.formatPrice(amount, decimals);
+      }
+
+      return amount;
+    },
+    formatPrice(price, decimals) {
+      price = +price;
+
+      if (isNaN(price) || !price) {
+        return (0).toFixed(decimals);
+      }
+
+      if (typeof decimals !== 'undefined') {
+        return price.toFixed(decimals);
+      }
+
+      if (price <= 0.0001) {
+        return (price * 100000000).toFixed() + ' <small>sats</small>';
+      } else if (price >= 1000) {
+        return +price.toFixed(2);
+      }
+
+      if (this.decimalPrecision) {
+        return +price.toFixed(this.decimalPrecision);
+      }
+
+      const firstDigitIndex = price.toString().match(/[1-9]/);
+
+      if (firstDigitIndex) {
+        return +price.toFixed(
+          Math.max(8 - price.toFixed().length, firstDigitIndex.index + 1)
+        );
+      }
+
+      return +price.toFixed(8 - price.toFixed().length);
+    },
+    ago(timestamp) {
+      const seconds = Math.floor((new Date() - timestamp) / 1000);
+      let interval, output;
+
+      if ((interval = Math.floor(seconds / 31536000)) > 1) output = interval + 'y';
+      else if ((interval = Math.floor(seconds / 2592000)) > 1) output = interval + 'm';
+      else if ((interval = Math.floor(seconds / 86400)) > 1) output = interval + 'd';
+      else if ((interval = Math.floor(seconds / 3600)) > 1) output = interval + 'h';
+      else if ((interval = Math.floor(seconds / 60)) > 1) output = interval + 'm';
+      else output = Math.ceil(seconds) + 's';
+ 
+      return output;
+    },
     updatePairCurrency(pair) {
       const symbols = {
         BTC: ['bitcoin', '฿'],
@@ -138,15 +174,18 @@ export default {
       this.symbol = '$';
 
       for (let symbol of Object.keys(symbols)) {
-        if (new RegExp(symbol + '$').test(options.pair)) {
+        if (new RegExp(symbol + '$').test(pair)) {
           this.currency = symbols[symbol][0];
           this.symbol = symbols[symbol][1];
         }
 
-        if (new RegExp('^' + symbol).test(options.pair)) {
+        if (new RegExp('^' + symbol).test(pair)) {
           this.commodity = symbols[symbol][0];
         }
       }
+    },
+    toggleDarkChart(isDarkMode) {
+      window.document.body.classList[isDarkMode ? 'add' : 'remove']('dark');
     }
   }
 };
@@ -191,20 +230,29 @@ body.dark {
 
   header.header {
     background-color: lighten($dark, 10%);
+    color: white;
+
+    button {
+      color: white;
+    }
   }
 
   .settings__container,
   .settings__container .stack__scroller {
     background-color: $dark;
+  }
 
-    &::-webkit-scrollbar-thumb {
-      background-color: white;
-    }
+  .settings__container + .app__wrapper {
+    filter: none;
   }
 
   .stack__container {
     .stack__wrapper code {
       background-color: rgba(white, 0.1);
+    }
+
+    .stack__backdrop {
+      background-color: rgba(black, .5);
     }
 
     .stack__toggler {
@@ -282,6 +330,7 @@ body.dark {
 
 .app__wrapper {
   height: 100%;
+  transition: transform .3s $easeOutExpo;
 }
 
 .stack__container {
@@ -291,34 +340,24 @@ body.dark {
   font-size: 12px;
   z-index: 1;
 
-  .stack__backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+  @media screen and (min-width: 500px) {
+    .stack__backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
 
-    display: block;
-    background-color: rgba(0, 0, 0, 0.22);
-    pointer-events: none;
+      display: block;
+      background-color: rgba(white, 0.5);
+      pointer-events: none;
+    }
   }
 
   .stack__scroller {
     overflow: auto;
     position: relative;
     max-height: 100%;
-
-    &::-webkit-scrollbar {
-      width: 5px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background-color: rgba(black, 0.1);
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background-color: $green;
-    }
   }
 
   .stack__toggler {

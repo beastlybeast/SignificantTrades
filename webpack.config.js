@@ -86,7 +86,6 @@ module.exports = {
   devtool: '#eval-source-map'
 }
 var date = new Date();
-
 module.exports.plugins = (module.exports.plugins || []).concat([
   new webpack.DefinePlugin({
     'process.env': {
@@ -94,7 +93,7 @@ module.exports.plugins = (module.exports.plugins || []).concat([
       VERSION: JSON.stringify(require("./package.json").version),
       BUILD_DATE: JSON.stringify(date.getDate() + ' ' + date.toLocaleString('en-US', {month: 'short'}).toLowerCase()),
       PROXY_URL: JSON.stringify(process.env.PROXY_URL || 'https://cors.aggr.trade/'),
-      API_URL: JSON.stringify(process.env.API_URL || 'https://api.aggr.trade'),
+      API_URL: JSON.stringify(process.env.API_URL || 'https://api.aggr.trade/history/'),
     }
   })
 ]);

@@ -180,4 +180,13 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-skull); 
   }
 }
-
+.icon-edit {
+  &:before {
+    content: unicode($icon-edit); 
+  }
+}
+.icon-add {
+  &:before {
+    content: unicode($icon-add); 
+  }
+}

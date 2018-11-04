@@ -1,8 +1,7 @@
 <template>
 	<div class="trades">
-    <input type="text" :value="pair" @change="$store.commit('setPair', $event.target.value)">
 		<ul v-if="trades.length">
-			<li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ 'background-image': trade.image, 'background-color': trade.hsl }">
+			<li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ backgroundImage: trade.image, backgroundColor: trade.hsl }">
 				<template v-if="trade.message">
 					<div class="trades__item__side icon-side"></div>
 					<div class="trades__item__message" v-html="trade.message"></div>
@@ -29,7 +28,6 @@
 <script>
 import { mapState } from 'vuex';
 
-import options from '../services/options';
 import socket from '../services/socket';
 import Sfx from '../services/sfx';
 
@@ -42,12 +40,20 @@ export default {
     };
   },
   computed: {
-    ...mapState(['pair', 'filters'])
+    ...mapState([
+      'pair', 
+      'filters',
+      'thresholds',
+      'exchangeThresholds',
+      'useAudio',
+      'audioIncludeInsignificants',
+      'maxRows'
+    ])
   },
   created() {
     this.getGifs();
     
-    this._subscription = this.$store.subscribe((mutation, state) => {
+    this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       console.log('tradelist subscribe', mutation, state);
     });
 
@@ -55,13 +61,13 @@ export default {
     socket.$on('trades', this.onTrades);
   },
   mounted() {
-    if (options.useAudio) {
+    if (this.useAudio) {
       this.sfx = new Sfx();
     }
 
     this.timeAgoInterval = setInterval(() => {
       for (let element of this.$el.querySelectorAll('[timestamp]')) {
-        element.innerHTML = this.ago(element.getAttribute('timestamp'));
+        element.innerHTML = this.$root.ago(element.getAttribute('timestamp'));
       }
     }, 1000);
   },
@@ -69,7 +75,7 @@ export default {
     socket.$off('pairing', this.onPairing);
     socket.$off('trades', this.onTrades);
 
-    this._subscription();
+    this.onStoreMutation();
 
     clearInterval(this.timeAgoInterval);
 
@@ -87,7 +93,7 @@ export default {
           break;
         case 'gifsThresholds':
           data.value.forEach((keyword, index) => {
-            if (this.keywords[index] !== keyword) {
+            if (thresholds[index].gif !== keyword) {
               clearTimeout(this.gifKeywordFetchTimeout);
               this.gifKeywordFetchTimeout = setTimeout(this.fetchGifByKeyword.bind(this, keyword, index), 2000);
             }
@@ -107,35 +113,35 @@ export default {
       // setTimeout(() => {
       const size = trade[2] * trade[3];
 
-      const multiplier = typeof options.exchangeThresholds[trade[0]] === 'string' ? +options.exchangeThresholds[trade[0]] : 1;
+      const multiplier = typeof this.exchangeThresholds[trade[0]] === 'string' ? +this.exchangeThresholds[trade[0]] : 1;
 
       if (trade[5] === 1) {
         this.sfx && this.sfx.liquidation();
 
-        if (size >= options.thresholds[0] * multiplier) {
+        if (size >= this.thresholds[0].amount * multiplier) {
           this.appendRow(
             trade,
             ['liquidation'],
-            `${app.getAttribute('data-symbol')}<strong>${formatAmount(size, 1)}</strong> liquidated <strong>${
+            `${app.getAttribute('data-symbol')}<strong>${this.$root.formatAmount(size, 1)}</strong> liquidated <strong>${
               trade[4] ? 'SHORT' : 'LONG'
-            }</strong> @ ${app.getAttribute('data-symbol')}${formatPrice(trade[2])}`
+            }</strong> @ ${app.getAttribute('data-symbol')}${this.$root.formatPrice(trade[2])}`
           );
         }
         return;
       }
 
       if (
-        options.useAudio &&
-        ((options.audioIncludeInsignificants && size > options.thresholds[0] * Math.max(0.1, multiplier) * 0.1) ||
-          size > options.thresholds[1] * Math.max(0.1, multiplier))
+        this.useAudio &&
+        ((this.audioIncludeInsignificants && size > this.thresholds[0].amount * Math.max(0.1, multiplier) * 0.1) ||
+          size > this.thresholds[1].amount * Math.max(0.1, multiplier))
       ) {
-        this.sfx && this.sfx.tradeToSong(size / (options.thresholds[1] * Math.max(0.1, multiplier)), trade[4]);
+        this.sfx && this.sfx.tradeToSong(size / (this.thresholds[1].amount * Math.max(0.1, multiplier)), trade[4]);
       }
 
       // group by [exchange name + buy=1/sell=0] (ex bitmex1)
       const tid = trade[0] + trade[4];
 
-      if (options.thresholds[0]) {
+      if (this.thresholds[0].amount) {
         if (this.ticks[tid]) {
           if (+new Date() - this.ticks[tid][2] > 5000) {
             delete this.ticks[tid];
@@ -146,7 +152,7 @@ export default {
             // sum volume
             this.ticks[tid][3] += trade[3];
 
-            if (this.ticks[tid][2] * this.ticks[tid][3] >= options.thresholds[0] * multiplier) {
+            if (this.ticks[tid][2] * this.ticks[tid][3] >= thresholds[0].amount * multiplier) {
               this.appendRow(this.ticks[tid]);
               delete this.ticks[tid];
             }
@@ -155,7 +161,7 @@ export default {
           }
         }
 
-        if (!this.ticks[tid] && size < options.thresholds[0] * multiplier) {
+        if (!this.ticks[tid] && size < this.thresholds[0].amount * multiplier) {
           this.ticks[tid] = trade;
           return;
         }
@@ -170,7 +176,7 @@ export default {
       let hsl;
       let amount = trade[2] * trade[3];
 
-      const multiplier = typeof options.exchangeThresholds[trade[0]] === 'string' ? +options.exchangeThresholds[trade[0]] : 1;
+      const multiplier = parseFloat(this.exchangeThresholds[trade[0]]) || 1;
 
       if (trade[4]) {
         classname.push('buy');
@@ -178,22 +184,20 @@ export default {
         classname.push('sell');
       }
 
-      if (amount >= options.thresholds[1] * multiplier) {
+      if (amount >= this.thresholds[1].amount * multiplier) {
         classname.push('significant');
 
-        if (options.useShades) {
-          let ratio = Math.min(1, (amount - options.thresholds[1] * multiplier) / (options.thresholds[2] * multiplier - options.thresholds[1] * multiplier));
+        let ratio = Math.min(1, (amount - this.thresholds[1].amount * multiplier) / (this.thresholds[2].amount * multiplier - this.thresholds[1].amount * multiplier));
 
-          if (trade[4]) {
-            hsl = `hsl(89, ${(36 + (1 - ratio) * 10).toFixed(2)}%, ${(35 + ratio * 20).toFixed(2)}%)`;
-          } else {
-            hsl = `hsl(4, ${(70 + ratio * 30).toFixed(2)}%, ${(45 + (1 - ratio) * 15).toFixed(2)}%)`;
-          }
+        if (trade[4]) {
+          hsl = `hsl(89, ${(36 + (1 - ratio) * 10).toFixed(2)}%, ${(35 + ratio * 20).toFixed(2)}%)`;
+        } else {
+          hsl = `hsl(4, ${(70 + ratio * 30).toFixed(2)}%, ${(45 + (1 - ratio) * 15).toFixed(2)}%)`;
         }
       }
 
-      for (let i = 1; i < options.thresholds.length; i++) {
-        if (amount < options.thresholds[i] * multiplier) {
+      for (let i = 1; i < this.thresholds.length; i++) {
+        if (amount < this.thresholds[i].amount * multiplier) {
           break;
         }
 
@@ -204,7 +208,7 @@ export default {
         classname.push('level-' + i);
       }
 
-      amount = formatAmount(amount);
+      amount = this.$root.formatAmount(amount);
 
       if (image) {
         image = 'url(' + image + ')';
@@ -218,23 +222,21 @@ export default {
         side: trade[4] ? 'BUY' : 'SELL',
         size: trade[3],
         exchange: trade[0],
-        price: formatPrice(trade[2]),
+        price: this.$root.formatPrice(trade[2]),
         amount: amount,
         classname: classname.map(a => 'trades__item--' + a).join(' '),
         icon: icon,
-        date: this.ago(trade[1]),
+        date: this.$root.ago(trade[1]),
         timestamp: trade[1],
         image: image,
         message: message
       });
 
-      this.trades.splice(+options.maxRows || 20, this.trades.length);
+      this.trades.splice(+this.maxRows || 20, this.trades.length);
     },
     getGifs(refresh) {
-      this.keywords = options.gifsThresholds.slice(0, options.gifsThresholds.length);
-
-      options.gifsThresholds.forEach((keyword, index) => {
-        if (!keyword) {
+      this.thresholds.forEach((threshold, index) => {
+        if (!threshold.gif) {
           return;
         }
 
@@ -243,26 +245,11 @@ export default {
         if (!refresh && storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7) {
           this.gifs[index] = storage.data;
         } else {
-          this.fetchGifByKeyword(keyword, index);
+          this.fetchGifByKeyword(threshold.gif, index);
         }
       });
     },
-    ago(timestamp) {
-      const seconds = Math.floor((new Date() - timestamp) / 1000);
-      let interval, output;
-
-      if ((interval = Math.floor(seconds / 31536000)) > 1) output = interval + 'y';
-      else if ((interval = Math.floor(seconds / 2592000)) > 1) output = interval + 'm';
-      else if ((interval = Math.floor(seconds / 86400)) > 1) output = interval + 'd';
-      else if ((interval = Math.floor(seconds / 3600)) > 1) output = interval + 'h';
-      else if ((interval = Math.floor(seconds / 60)) > 1) output = interval + 'm';
-      else output = Math.ceil(seconds) + 's';
-
-      return output;
-    },
     fetchGifByKeyword(keyword, index) {
-      this.keywords[index] = keyword;
-
       if (!keyword) {
         if (this.gifs[index]) {
           delete this.gifs[index];
@@ -482,7 +469,7 @@ export default {
 
     &.trades__item__date {
       text-align: right;
-      flex-basis: 2em;
+      flex-basis: 2.5em;
       flex-grow: 0;
     }
 

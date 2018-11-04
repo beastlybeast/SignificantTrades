@@ -13,15 +13,16 @@ import Hitbtc from '../exchanges/hitbtc'
 import Okex from '../exchanges/okex'
 import Poloniex from '../exchanges/poloniex'
 
-import options from './options'
+import store from '../services/store'
 
 const emitter = new Vue({
 	data() {
 		return {
+			ids: [],
 			trades: [],
 			exchanges: [
 				new Bitmex(),
-				new Bitfinex(),
+				/*new Bitfinex(),
 				new Coinex(),
 				new Binance(),
 				new Gdax(),
@@ -29,7 +30,7 @@ const emitter = new Vue({
 				new Bitstamp(),
 				new Hitbtc(),
 				new Okex(),
-				new Poloniex()
+				new Poloniex()*/
 			],
 			connected: [],
 			matchs: {},
@@ -38,10 +39,31 @@ const emitter = new Vue({
 			API_URL: null,
 			PROXY_URL: null,
 			queue: [],
+			_pair: null,
+			modifier: null
 		}
 	},
+  computed: {
+    pair () {
+      return store.state.pair
+    },
+		disabled () {
+			return store.state.disabled
+		},
+		filters () {
+			return store.state.filters
+		}
+  },
 	created() {
+		window.emitTrade = (exchange, price, amount, side, type = null) => {
+			let trade = [exchange || 'bitmex', +new Date(), price || '1', amount || 1, side ? 1 : 0, type]
+
+			this.emitFilteredTradesAndVolumeSum([trade]);
+		}
+
 		this.exchanges.forEach(exchange => {
+			this.ids.push(exchange.id);
+
 			exchange.on('live_trades', data => {
 				if (!data || !data.length) {
 					return;
@@ -74,8 +96,8 @@ const emitter = new Vue({
 
 				this.$emit('connected', exchange.id);
 
-				if (exchange.shouldBeConnected && options.disabled.indexOf(exchange) === -1) {
-					exchange.reconnect(options.pair);
+				if (exchange.shouldBeConnected && this.disabled.indexOf(exchange) === -1) {
+					exchange.reconnect(this.pair);
 				}
 			});
 
@@ -97,11 +119,40 @@ const emitter = new Vue({
 				this.$emit('exchange_error', exchange.id, this.errors[exchange.id]); */
 			});
 		})
+
+		// this.emitFakeTrade();
 	},
 	methods: {
+		emitFakeTrade() {
+			setTimeout(() => {
+				const id = this.ids[Math.floor(Math.random()*this.ids.length)];
+				const exchange = this.getExchangeById(id);
+
+				if (!id) {
+					return this.emitFakeTrade();
+				}
+
+				let price = parseFloat(exchange.price);
+
+				if (isNaN(price)) {
+					return this.emitFakeTrade();
+				} 
+
+				price += (1 * Math.random() + -1 * Math.random());
+
+				const rand = Math.random();
+				const size = rand * 20 * Math.abs(Math.sin(+new Date())) * 10;
+
+				console.log('emit fake!', price, size);
+
+				window.emitTrade(id, price, size, rand > .5 ? 1 : 0);
+
+				return this.emitFakeTrade();
+			}, 2000 * Math.random());
+		},
 		initialize() {
 			console.log(`[sockets] initializing ${this.exchanges.length} exchange(s)`);
-
+		
 			if (process.env.API_URL) {
 				this.API_URL = process.env.API_URL;
 				console.info(`[sockets] API_URL = ${this.API_URL}`);
@@ -122,8 +173,8 @@ const emitter = new Vue({
 				}
 
 				this.trades = this.trades.concat(this.queue);
-				
-				this.$emit('trades', this.queue.filter(a => options.filters.indexOf(a[0]) === -1));
+
+				this.emitFilteredTradesAndVolumeSum(this.queue);
 
 				this.queue = [];
 			}, 200);
@@ -132,12 +183,12 @@ const emitter = new Vue({
 			this.disconnectExchanges();
 
 			if (pair) {
-				options.pair = pair;
+				this.pair = pair;
 			}
 
 			this.trades = [];
 
-			console.log(`[socket.connect] connecting to "${options.pair}"`);
+			console.log(`[socket.connect] connecting to "${this.pair}"`);
 
 			this.$emit('alert', {
 				id: `server_status`,
@@ -146,7 +197,7 @@ const emitter = new Vue({
 				message: `Fetching products...`
 			});
 
-			Promise.all(this.exchanges.map(exchange => exchange.validatePair(options.pair))).then(() => {
+			Promise.all(this.exchanges.map(exchange => exchange.validatePair(this.pair))).then(() => {
 				let validExchanges = this.exchanges.filter(exchange => exchange.valid);
 
 				this.$emit('alert', {
@@ -160,15 +211,15 @@ const emitter = new Vue({
 					return;
 				}
 
-				if (this.pair !== options.pair) {
-					this.$emit('pairing', options.pair, this.canFetch());
+				if (this._pair !== this.pair) {
+					this.$emit('pairing', this.pair, this.canFetch());
 
-					this.pair = options.pair;
+					this._pair = this.pair;
 				}
 
-				validExchanges = validExchanges.filter(exchange => options.disabled.indexOf(exchange.id) === -1);
+				validExchanges = validExchanges.filter(exchange => this.disabled.indexOf(exchange.id) === -1);
 
-				console.log(`[socket.connect] ${validExchanges.length} successfully matched with "${options.pair}"`);
+				console.log(`[socket.connect] ${validExchanges.length} successfully matched with "${this.pair}"`);
 
 				if (this.canFetch()) {
 					this.$emit('alert', {
@@ -179,15 +230,13 @@ const emitter = new Vue({
 					});
 				}
 
-				this.fetchHistoricalData(1, null, true).then(data => {
-					console.log(`[socket.connect] connect exchanges asynchronously`);
+				console.log(`[socket.connect] connect exchanges asynchronously`);
 
-					validExchanges.forEach(exchange => this.exchanges.connect());
+				validExchanges.forEach(exchange => exchange.connect());
 
-					this.$emit('alert', {
-						id: `server_status`,
-					});
-				})
+				this.$emit('alert', {
+					id: `server_status`,
+				});
 			});
 		},
 		disconnectExchanges() {
@@ -223,17 +272,70 @@ const emitter = new Vue({
 
 			return null;
 		},
-		canFetch() {
-			return this.API_URL && /btcusd/i.test(options.pair);
-		},
-		fetchHistoricalData(from, to = null, willReplace = false) {
-			if (!from || !this.canFetch()) {
-				return Promise.resolve();
+		emitFilteredTradesAndVolumeSum(trades) {
+			let upVolume = 0;
+			let downVolume = 0;
+
+			/* if (this.modifier === null && trades.length) {
+				this.modifier = 1 * Math.random() + -1 * Math.random();
 			}
 
-			console.log(`[socket.fetch] retrieve ${(to ? (to - from) / 1000 / 60 : from).toFixed(2)} minute(s) of trades`);
+			this.modifier += 1 * Math.random() + -1 * Math.random(); */
 
-			const url = `${process.env.API_URL ? process.env.API_URL : ''}/history/${parseInt(from)}${to ? '/' + parseInt(to) : ''}`;
+			const output = trades.filter(a => {
+				if (this.filters.indexOf(a[0]) >= 0) {
+					return false;
+				}
+
+				if (a[4]) {
+					upVolume += a[3];
+				} else {
+					downVolume += a[3];
+				}
+
+				/* a[2] += this.modifier * 2 * Math.random();
+				
+				const id = this.ids[Math.floor(Math.random()*this.ids.length)];
+				const exchange = this.getExchangeById(id);
+
+				if (!id) {
+					exchange.price = a[2];
+				} */
+
+				return true;
+			})
+				
+			this.$emit('trades', output, upVolume, downVolume);
+		},
+		canFetch() {
+			return this.API_URL && /btcusd/i.test(this.pair);
+		},
+		fetchRangeIfNeeded(range, timeframe) {
+			const now = +new Date();
+
+      let promise;
+			let from = now - range;
+			let to = !this.trades.length ? now : this.trades[0][1];
+        
+			from = Math.floor(from / timeframe) * timeframe;
+			to = Math.ceil(to / timeframe) * timeframe;
+
+			console.log('socket->fetchRangeIfNeeded', `\n\tcurrent time: ${new Date(now)}\n\tfrom: ${new Date(from)}\n\tto: ${new Date(to)} (${this.trades.length ? 'using first trade as base' : 'using now for reference'})`);
+
+      if (this.canFetch() && (!this.trades.length || this.trades[0][1] > from)) {
+        promise = this.fetchHistoricalData(from, to, true);
+      } else {
+        promise = Promise.resolve(null);
+      }
+
+			return promise;
+		},
+		fetchHistoricalData(from, to) {
+			if (!from || !to || !this.canFetch()) {
+				return Promise.resolve();
+			}
+			
+			const url = `${process.env.API_URL ? process.env.API_URL : ''}${parseInt(from)}/${parseInt(to)}`;
 
 			if (this.lastFetchUrl === url) {
 				return Promise.resolve();
@@ -250,14 +352,15 @@ const emitter = new Vue({
 					})
 				})
 					.then(response => {
-						const trades = response.data;
+						let fetchedTrades = response.data;
+
 						const count = this.trades.length;
 
-						if (willReplace || !this.trades || !this.trades.length) {
-							this.trades = trades;
+						if (!this.trades.length) {
+							this.trades = fetchedTrades;
 						} else {
-							const prepend = trades.filter(trade => trade[1] <= this.trades[0][1]);
-							const append = trades.filter(trade => trade[1] >= this.trades[this.trades.length - 1][1]);
+							const prepend = fetchedTrades.filter(trade => trade[1] <= this.trades[0][1]);
+							const append = fetchedTrades.filter(trade => trade[1] >= this.trades[this.trades.length - 1][1]);
 
 							if (prepend.length) {
 								this.trades = prepend.concat(this.trades);
@@ -269,10 +372,10 @@ const emitter = new Vue({
 						}
 
 						if (count !== this.trades.length) {
-							this.$emit('historical', willReplace);
+							this.$emit('historical', fetchedTrades);
 						}
 
-						resolve(trades);
+						resolve(fetchedTrades);
 					})
 					.catch(err => {
 						err && this.$emit('alert', {
@@ -282,7 +385,7 @@ const emitter = new Vue({
 							id: `fetch_error`
 						});
 
-						resolve();
+						reject();
 					})
 			});
 		}

@@ -2,7 +2,7 @@
 	<div class="settings__container stack__container" v-on:click="$event.target === $el && $emit('close')">
     <div class="stack__backdrop"></div>
     <div class="stack__scroller">
-      <a href="https://github.com/Tucsky/SignificantTrades/issues" target="_blank" class="settings__report"><i class="icon-warning"></i> Found a bug or feedback ? Let me know on Github !</a>
+      <!-- <a href="https://github.com/Tucsky/SignificantTrades/issues" target="_blank" class="settings__report"><i class="icon-warning"></i> Found a bug or feedback ? Let me know on Github !</a> -->
       <div class="stack__wrapper">
         <a href="#" class="stack__toggler icon-cross" v-on:click="$emit('close')"></a>
         <div class="form-group settings__pair mb8">
@@ -20,7 +20,7 @@
             </div>
             <div class="form-group">
               <label>Precision <span class="icon-info-circle" title="Define how much digits will be displayed after the decimal point" v-tippy></span></label>
-              <input type="number" min="0" max="10" step="1" placeholder="auto" class="form-control" v-bind:value="precision" @change="$store.commit('setPrecision', $event.target.value)">
+              <input type="number" min="0" max="10" step="1" placeholder="auto" class="form-control" v-bind:value="decimalPrecision" @change="$store.commit('setDecimalPrecision', $event.target.value)">
             </div>
           </div>
         </div>
@@ -39,21 +39,39 @@
           </div>
         </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'audio')" v-bind:class="{closed: settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
-        <div class="settings__audio settings__column" v-bind:class="{active: useAudio}">
-          <div class="form-group">
-            <label class="checkbox-control flex-right" v-tippy title="Enable audio">
-              <input type="checkbox" class="form-control" v-bind:value="useAudio" @change="$store.commit('toggleAudio', $event.value)">
+        <div class="settings__audio settings__activable settings__column" v-bind:class="{active: useAudio}">
+          <div class="form-group settings__column__tight">
+            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Enable audio">
+              <input type="checkbox" class="form-control" v-bind:checked="useAudio" @change="$store.commit('toggleAudio', $event.target.checked)">
               <div></div>
             </label>
           </div>
-          <div class="form-group">
-            <label class="checkbox-control flex-right" v-tippy title="Include orders down to 10% of significant orders">
-              <input type="checkbox" class="form-control" v-bind:value="audioIncludeInsignificants" @change="$store.commit('toggleaudioIncludeInsignificants', $event.value)">
+          <div class="form-group settings__column__tight">
+            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Include orders down to 10% of significant orders">
+              <input type="checkbox" class="form-control" v-bind:checked="audioIncludeInsignificants" @change="$store.commit('toggleaudioIncludeInsignificants', $event.target.checked)">
               <div class="icon-expand"></div>
             </label>
           </div>
-          <div class="form-group">
-            <input type="range" min="0" max="5" step=".1" v-bind:value="audioVolume" @change="$store.commit('setAudioVolume', $event.value)">
+          <div class="form-group settings__column__fill">
+            <input type="range" min="0" max="5" step=".1" v-bind:value="audioVolume" @change="$store.commit('setAudioVolume', $event.target.value)">
+          </div>
+        </div>
+        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'counters')" v-bind:class="{closed: settings.indexOf('counters') > -1}">Counter <i class="icon-up"></i></div>
+        <div class="settings__counters settings__activable settings__column" v-bind:class="{active: enableCounters}">
+          <div class="form-group settings__column__tight">
+            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Enable counters">
+              <input type="checkbox" class="form-control" v-bind:checked="enableCounters" @change="$store.commit('toggleCounters', $event.target.checked)">
+              <div></div>
+            </label>
+          </div>
+          <div class="form-group settings__column__tight">
+            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Do not show counter when empty">
+              <input type="checkbox" class="form-control" v-bind:checked="hideEmptyCounter" @change="$store.commit('toggleHideEmptyCounter', $event.target.checked)">
+              <div class="icon-expand"></div>
+            </label>
+          </div>
+          <div class="form-group settings__column__fill">
+            <input type="string" placeholder="Counters step separed by a comma (ie: 1m, 5m, 10m, 15m)" class="form-control" v-bind:value="countersStepsStringified" @change="replaceCounters($event.target.value)">
           </div>
         </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'chart')" v-bind:class="{closed: settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
@@ -61,14 +79,14 @@
           <div class="settings__column">
             <div class="form-group">
               <label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
-              <input type="string" placeholder="XX% or XXs" class="form-control" v-bind:value="timeframe" @change="$store.commit('setTimeframe', $event.value)">
+              <input type="string" placeholder="XX% or XXs" class="form-control" v-bind:value="timeframe" @change="$store.commit('setTimeframe', $event.target.value)">
             </div>
             <div class="form-group">
               <label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgLength" v-tippy></span></label>
               <div class="input-group">
-                <input type="number" min="0" max="100" step="1" class="form-control" v-bind:value="avgLength" @change="$store.commit('setAverageLength', $event.value)">
+                <input type="number" min="0" max="100" step="1" class="form-control" v-bind:value="avgLength" @change="$store.commit('setAverageLength', $event.target.value)">
                 <label class="checkbox-control flex-right" title="Use weighed average" v-tippy>
-                  <input type="checkbox" class="form-control" v-bind:value="useWeighedAverage" @change="$store.commit('toggleWeighedAverage', $event.value)">
+                  <input type="checkbox" class="form-control" v-bind:checked="useWeighedAverage" @change="$store.commit('toggleWeighedAverage', $event.target.checked)">
                   <div></div>
                 </label>
               </div>
@@ -77,23 +95,23 @@
           <div class="settings__chart">
             <div class="form-group mb8" v-if="thresholds.length > 0">
               <label class="checkbox-control flex-left" v-tippy title="Shows significants orders on the chart">
-                <input type="checkbox" class="form-control" v-bind:value="chartSignificantOrders" @change="$store.commit('toggleSignificantOrdersPlot', $event.value)">
+                <input type="checkbox" class="form-control" v-bind:value="chartSignificantOrders" @change="$store.commit('toggleSignificantOrdersPlot', $event.target.checked)">
                 <div></div>
                 <span>Highlight {{thresholds[1].amount}}+</span>
               </label>
             </div>
             <div class="form-group mb8">
               <label class="checkbox-control flex-left" v-tippy title="Shows liquidations on the chart">
-                <input type="checkbox" class="form-control" v-bind:value="chartLiquidations" @change="$store.commit('toggleLiquidationsPlot', $event.value)">
+                <input type="checkbox" class="form-control" v-bind:checked="chartLiquidations" @change="$store.commit('toggleLiquidationsPlot', $event.target.checked)">
                 <div></div>
                 <span>Highlight liquidations</span>
               </label>
             </div>
             <div class="form-group mb8">
               <label class="checkbox-control flex-left" v-tippy title="Wipe invisible data after a while to free memory and speed up the app">
-                <input type="checkbox" class="form-control" v-bind:value="autoWipeCache" @change="$store.commit('toggleAutoWipeCache', $event.value)">
+                <input type="checkbox" class="form-control" v-bind:checked="autoWipeCache" @change="$store.commit('toggleAutoWipeCache', $event.target.checked)">
                 <div></div>
-                <span>Auto-clear data <span v-if="autoWipeCache" v-on:click.stop.prevent>after <editable :content="autoWipeCacheDuration" @output="$store.commit('setAutoWipeCacheDuration', $event.value)"></editable> minutes</span></span>
+                <span>Auto-clear data <span v-if="autoWipeCache" v-on:click.stop.prevent>after <editable :content="autoWipeCacheDuration" @output="$store.commit('setAutoWipeCacheDuration', $event.target.value)"></editable> minutes</span></span>
               </label>
             </div>
           </div>
@@ -101,32 +119,7 @@
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'exchanges')" v-bind:class="{closed: settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
         <div class="form-group">
           <div class="settings__exchanges">
-            <div v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index"
-              class="settings__exchanges__item"
-              v-bind:class="{
-                'settings__exchanges__item--active': exchange.connected,
-                'settings__exchanges__item--enabled': disabled.indexOf(exchange.id) === -1,
-                'settings__exchanges__item--loading': disabled.indexOf(exchange.id) === -1 && !exchange.connected && exchange.valid,
-                'settings__exchanges__item--error': false,
-                'settings__exchanges__item--unmatched': !exchange.valid,
-                'settings__exchanges__item--invisible': filters.indexOf(exchange.id) !== -1,
-                'settings__exchanges__item--expanded': expanded.indexOf(exchange.id) !== -1
-              }">
-              <div class="settings__exchanges__item__header" v-on:click="toggleExchange(exchange)">
-                <div class="settings__exchanges__item__name">{{ exchange.id }}</div>
-                <i class="icon-warning"></i>
-                <div class="settings__exchanges__item__controls">
-                  <button class="settings__exchanges__item__visibility" v-on:click.stop.prevent="$store.commit('toggleExchangeVisibility', exchange)"><i class="icon-invisible"></i></button>
-                  <button class="settings__exchanges__item__more" v-on:click.stop.prevent="toggleExpander(exchange)"><i class="icon-down"></i></button>
-                </div>
-              </div>
-              <div class="settings__exchanges__item__detail" v-if="expanded.indexOf(exchange) !== -1">
-                <div class="form-group">
-                  <label>Threshold <span v-if="exchangeThresholds[exchange] !== 1">({{ formatAmount(exchangeThresholds[exchange] * thresholds[0]) }})</span></label>
-                  <input type="range" min="0" max="2" step="0.01" v-bind:value="exchangeThresholds[exchange.id]" @change="$store.commit('setExchangeThreshold', {exchange: exchange.id, threshold: $event.value})">
-                </div>
-              </div>
-            </div>
+            <Exchange v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index"  :exchange="exchange" />
             <div v-if="!exchanges.length" class="mb8">You are not connected to any exchanges</div>
           </div>
         </div>
@@ -142,7 +135,7 @@
           </div>
           <div class="form-group">
             <label class="checkbox-control settings_luminosity flex-right" title="Switch luminosity" v-tippy>
-              <input type="checkbox" class="form-control" v-bind:value="dark" @change="$store.commit('dark', $event.value)">
+              <input type="checkbox" class="form-control" v-bind:checked="dark" @change="$store.commit('toggleDark', $event.target.checked)">
               <span>{{ dark ? 'Day mode' : 'Night mode' }}</span>
               <div></div>
             </label>
@@ -156,13 +149,16 @@
 <script>
 import { mapState } from 'vuex';
 
-import options from '../services/options';
 import socket from '../services/socket';
 
+import Exchange from './Exchange.vue';
+
 export default {
+  components: {
+    Exchange
+  },
   data() {
     return {
-      exchanges: socket.exchanges,
       expanded: [],
       help: {
         avgLength: `
@@ -190,7 +186,11 @@ export default {
     ...mapState([
       'pair',
       'maxRows',
-      'precision',
+      'decimalPrecision',
+      'enableCounters',
+      'counterPrecision',
+      'hideEmptyCounter',
+      'countersSteps',
       'filters',
       'disabled',
       'thresholds',
@@ -207,46 +207,57 @@ export default {
       'exchangeThresholds',
       'dark',
       'settings',
-    ])
+    ]),
+    exchanges: () => {
+      return socket.exchanges.sort((a, b) => a.price - b.price)
+    }
   },
   created() {
-    console.log('ok', this.disabled);
+    this.stringifyCounters();
   },
-  mounted() {
-    socket.$on('exchange_error', this.onExchangeFailed);
+  beforeUpdate(a, b, c) {
+    console.log('SETTINGS: before update');
   },
-  beforeDestroy() {
-    socket.$off('exchange_error', this.onExchangeFailed);
+  updated(a, b, c) {
+    console.log('SETTINGS: updated');
   },
   methods: {
-    toggleExchange(exchange) {
-			const index = this.disabled.indexOf(exchange.id);
-
-			if (index === -1) {
-        exchange.disconnect();
-
-        this.$store.commit('disableExchange', exchange.id);
-			} else {
-				exchange.connect(pair);
-
-        this.$store.commit('enableExchange', exchange.id);
-			}
+    stringifyCounters() {
+      console.log('stringity counter', this.countersSteps);
+      const now = +new Date();
+      this.countersStepsStringified = this.countersSteps.map(a => this.$root.ago(now - a)).join(', ');
     },
-    onExchangeFailed(exchange, count) {
-      this.fails[exchange] = count;
-    },
-    toggleExpander(exchange) {
-      const index = this.expanded.indexOf(exchange);
+    replaceCounters(value) {
+      console.log('replace counter', value);
+      const counters = value.split(',')
+        .map(a => {
+          a = a.trim();
 
-      if (index === -1) {
-        if (typeof options.exchangeThresholds[exchange] === 'undefined') {
-          options.exchangeThresholds[exchange] = 1;
-        }
+          if (/[\d.]+s/.test(a)) {
+            return parseFloat(a) * 1000;
+          } else if (/[\d.]+h/.test(a)) {
+            return parseFloat(a) * 1000 * 60 * 60;
+          } else {
+            return parseFloat(a) * 1000 * 60;
+          }
+        }).filter(function(item, pos, self) {
+          return self.indexOf(item) == pos;
+        });
 
-        this.expanded.push(exchange);
-      } else {
-        this.expanded.splice(index, 1);
+
+      if (counters.filter(a => isNaN(a)).length) {
+        socket.$emit('alert', {
+          type: 'error',
+          title: `Invalid counter`,
+          message: `Your counters (${value}) contains invalid steps.`,
+          id: `counter_replace_error`
+        });
+        return;
       }
+
+      this.$store.commit('replaceCounterSteps', counters);
+
+      this.stringifyCounters();
     },
     reset() {
       window.localStorage && window.localStorage.clear();
@@ -277,16 +288,14 @@ export default {
     width: 100%;
 
     + .app__wrapper {
-      filter: blur(10px) saturate(.2);
-      transform: scale(1.2);
+      transform: scale(1.4);
+      filter: blur(5px);
     }
 
     .stack__scroller {
       width: 320px;
       height: 100%;
-      background: #222;
-
-      box-shadow: 0 0 10px rgba(white, .05), 0 0 50px rgba(white, .1);
+      background: rgba(#222, .8);
     }
 
     .stack__wrapper {
@@ -478,6 +487,12 @@ export default {
         margin-left: 5px;
       }
 
+      &.checkbox-control-input {
+        > div {
+          padding: .8em;
+        }
+      }
+
       &.settings_luminosity {
         input {
           ~ div {
@@ -526,7 +541,7 @@ export default {
   input[type="range"] {
     -webkit-appearance: none; /* Override default CSS styles */
     appearance: none;
-    height: 24px; /* Specified height */
+    height: 32px; /* Specified height */
     background: rgba(black, 0.5); /* Grey background */
     outline: none; /* Remove outline */
     opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
@@ -586,6 +601,16 @@ export default {
     display: flex;
     flex-direction: row;
 
+    > .settings__column__tight {
+      flex-basis: auto;
+      flex-grow: 0;
+    }
+
+    > .settings__column__fill {
+      flex-basis: 100%;
+      max-width: 100%;
+    }
+
     > div {
       margin-right: 8px;
       margin-bottom: 8px;
@@ -639,6 +664,22 @@ export default {
     }
   }
 
+  .settings__activable {
+    .form-group {
+      opacity: 0.2;
+
+      &:first-child {
+        opacity: 1;
+      }
+    }
+
+    &.active {
+      .form-group {
+        opacity: 1;
+      }
+    }
+  }
+
   .settings__audio {
     align-items: center;
     padding-bottom: 8px;
@@ -650,29 +691,6 @@ export default {
     input[type="range"] {
       width: 100%;
       margin: 0;
-    }
-
-    .form-group {
-      flex-basis: auto;
-      flex-grow: 0;
-      margin: 0 1em 0 0;
-      max-width: none;
-      opacity: 0.2;
-
-      &:first-child {
-        opacity: 1;
-      }
-
-      &:last-child {
-        flex-grow: 1;
-        width: 100%;
-      }
-    }
-
-    &.active {
-      .form-group {
-        opacity: 1;
-      }
     }
   }
 
@@ -747,7 +765,7 @@ export default {
       }
 
       &.settings__exchanges__item--enabled {
-        .settings__exchanges__item__name:before {
+        .settings__exchanges__item__identity:before {
           width: 0%;
         }
       }
@@ -797,9 +815,13 @@ export default {
       }
     }
 
-    .settings__exchanges__item__name {
+    .settings__exchanges__item__identity {
       position: relative;
-      margin: 10px;
+      margin: 0px 10px;
+      display: flex;
+      flex-direction: column;
+      height: 40px;
+      justify-content: center;
 
       &:before {
         content: "";
@@ -811,6 +833,10 @@ export default {
         left: -2px;
         width: calc(100% + 4px);
       }
+    }
+
+    .settings__exchanges__item__price {
+      opacity: .8;
     }
 
     .settings__exchanges__item__header {
@@ -827,7 +853,7 @@ export default {
 
         background-color: #fff;
         border-radius: 50%;
-        animation: sk-scaleout 1s infinite ease-in-out;
+        animation: circle-scaleout 1s infinite ease-in-out;
         transition: all 0.2s $easeElastic, visibility 0.2s linear 0.2s;
         left: 3px;
         display: none;
@@ -836,7 +862,7 @@ export default {
 
         opacity: 0;
 
-        @keyframes sk-scaleout {
+        @keyframes circle-scaleout {
           0% {
             -webkit-transform: scale(0);
             transform: scale(0);

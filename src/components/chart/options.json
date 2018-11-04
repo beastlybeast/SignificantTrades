@@ -1,0 +1,89 @@
+{
+  "time": { "useUTC": false },
+  "chart": { "backgroundColor": "transparent", "spacing": 0, "spacingBottom": 10, "animation": false },
+  "exporting": { "enabled": false },
+  "navigator": { "enabled": false },
+  "scrollbar": { "enabled": false },
+  "credits": { "enabled": false },
+  "rangeSelector": { "enabled": false },
+  "title": { "enabled": false },
+  "xAxis": { "tickWidth": 0, "lineColor": "transparent", "tickmarkPlacement": "onbetween", "labels": {
+    "y": 15
+  } },
+  "plotOptions": {
+    "series": { "pointPadding": 0.1, "groupPadding": 0, 
+      "marker": { "states": { "hover": { "enabled": false, "radiusPlus": 2, "lineWidthPlus": 1 } } } 
+    },
+    "line": { "marker": { "enabled": false } },
+    "sma": { "marker": { "enabled": false } },
+    "areaspline": { "pointPlacement": "onbetween", "showInLegend": false, "tooltip": {
+      "valueDecimals": 2
+    } },
+    "candlestick": { 
+      "dataGrouping": {
+        "enabled": false
+      },
+      "states": { "hover": { "halo": false, "brightness": 2, "lineWidthPlus": 1 } } 
+    }
+  },
+  "yAxis": [
+    {
+      "height": "85%",
+      "opposite": false,
+      "gridLineColor": "rgba(255, 255, 255, .1)",
+      "gridLineWidth": 2,
+      "minorGridLineColor": "rgba(255, 255, 255, .05)",
+      "minorGridLineWidth": 1,
+      "tickPosition": "outside",
+      "showFirstLabel": false,
+      "showLastLabel": false,
+      "labels": { "align": "left", "style": { "color": "rgba(255, 255, 255, .5)" }, "x": 5, "y": -8 }
+    },
+    { "labels": { "enabled": false }, "top": "50%", "height": "50%", "gridLineColor": "transparent" },
+    { "labels": { "enabled": false }, "top": "70%", "height": "30%", "gridLineColor": "transparent" }
+  ],
+  "tooltip": {
+    "split": true,
+    "hideDelay": 0,
+    "borderWidth": 0,
+    "shadow": false,
+    "backgroundColor": "rgba(0, 0, 0, .8)",
+    "style": { "color": "white" },
+    "crosshairs": [{ "width": 1.5, "dashStyle": "dash", "color": "rgba(255, 255, 255, .1)" }]
+  },
+  "series": [
+    {
+      "zIndex": 1,
+      "id": "price",
+      "type": "candlestick",
+      "name": "BTCUSD",
+      "data": [],
+      "lineColor": "rgba(244, 67, 54, 1)",
+      "color": "rgba(244, 67, 54, .85)",
+      "upLineColor": "rgba(139, 195, 74, 1)",
+      "upColor": "rgba(139, 195, 74, .85)",
+      "lineWidth": 1
+    },
+    {
+      "id": "buys",
+      "type": "areaspline",
+      "stacking": "area",
+      "name": "BUYS",
+      "data": [],
+      "color": "rgba(139, 195, 74, 1)",
+      "fillColor": { "linearGradient": { "x1": 0, "y1": 0, "x2": 0, "y2": 1 }, "stops": [[0, "rgba(139, 195, 74, .5)"], [1, "rgba(139, 195, 74, .4)"]] },
+      "yAxis": 1
+    },
+    {
+      "id": "sells",
+      "type": "areaspline",
+      "stacking": "area",
+      "name": "SELLS",
+      "color": "rgba(233, 30, 99, 1)",
+      "data": [],
+      "fillColor": { "linearGradient": { "x1": 0, "y1": 0, "x2": 0, "y2": 1 }, "stops": [[0, "rgba(233, 30, 99, .5)"], [1, "rgba(233, 30, 99, .4)"]] },
+      "yAxis": 1
+    },
+    { "type": "sma", "lineColor": "rgba(255, 255, 255, .25)", "linkedTo": "price", "marker": { "enabled": false } }
+  ]
+}
