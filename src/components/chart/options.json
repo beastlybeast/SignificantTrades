@@ -7,23 +7,34 @@
   "credits": { "enabled": false },
   "rangeSelector": { "enabled": false },
   "title": { "enabled": false },
-  "xAxis": { "tickWidth": 0, "lineColor": "transparent", "tickmarkPlacement": "onbetween", "labels": {
-    "y": 15
-  } },
+  "xAxis": {
+    "tickWidth": 0,
+    "lineColor": "transparent",
+    "tickmarkPlacement": "onbetween",
+    "labels": {
+      "y": 15
+    }
+  },
   "plotOptions": {
-    "series": { "pointPadding": 0.1, "groupPadding": 0, 
-      "marker": { "states": { "hover": { "enabled": false, "radiusPlus": 2, "lineWidthPlus": 1 } } } 
-    },
-    "line": { "marker": { "enabled": false } },
-    "sma": { "marker": { "enabled": false } },
-    "areaspline": { "pointPlacement": "onbetween", "showInLegend": false, "tooltip": {
-      "valueDecimals": 2
-    } },
-    "candlestick": { 
+    "series": {
       "dataGrouping": {
         "enabled": false
       },
-      "states": { "hover": { "halo": false, "brightness": 2, "lineWidthPlus": 1 } } 
+      "pointPadding": 0.15,
+      "groupPadding": 0,
+      "marker": { "states": { "hover": { "enabled": false, "radiusPlus": 2, "lineWidthPlus": 1 } } }
+    },
+    "line": { "marker": { "enabled": false } },
+    "sma": { "marker": { "enabled": false } },
+    "areaspline": {
+      "pointPlacement": "onbetween",
+      "showInLegend": false,
+      "tooltip": {
+        "valueDecimals": 2
+      }
+    },
+    "candlestick": {
+      "states": { "hover": { "halo": false, "brightness": 2, "lineWidthPlus": 1 } }
     }
   },
   "yAxis": [

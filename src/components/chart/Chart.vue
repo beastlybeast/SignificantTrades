@@ -310,13 +310,22 @@ export default {
     },
     getTickDataAveraged(tickData) {
       let totalWeight = 0;
+      let setOpen = false;
 
-      tickData.open = tickData.high = tickData.low = tickData.close = 0;
+      if (tickData.open === null) {
+        setOpen = true;
+        tickData.open = 0;
+      }
+
+      tickData.high = tickData.low = tickData.close = 0;
 
       for (let exchange in tickData.exchanges) {
         let exchangeWeight = tickData.exchanges[exchange].size / tickData.size;
 
-        tickData.open += tickData.exchanges[exchange].open * exchangeWeight;
+        if (setOpen === null) {
+          tickData.open += tickData.exchanges[exchange].open * exchangeWeight;
+        }
+
         tickData.high += tickData.exchanges[exchange].high * exchangeWeight;
         tickData.low += tickData.exchanges[exchange].low * exchangeWeight;
         tickData.close += tickData.exchanges[exchange].close * exchangeWeight;
@@ -324,7 +333,10 @@ export default {
         totalWeight += exchangeWeight;
       }
 
-      tickData.open /= totalWeight;
+      if (setOpen === null) {
+        tickData.open /= totalWeight;
+      }
+
       tickData.high /= totalWeight;
       tickData.low /= totalWeight;
       tickData.close /= totalWeight;

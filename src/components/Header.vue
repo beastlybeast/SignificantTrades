@@ -1,8 +1,8 @@
 <template>
 	<header class="header">
-		<div class="header__title"> <span class="pair" v-if="pair">{{pair}}</span> <span class="icon-currency"></span> <span v-html="title"></span></div>
+		<div class="header__title"> <span class="pair" v-if="pair">{{pair}}</span> <span class="icon-currency"></span> <span v-html="price || 'SignificantTrades'"></span></div>
     <button></button>
-		<button type="button" v-if="canFetch" v-bind:title="fetchLabel" v-tippy="{placement: 'bottom'}">
+		<button type="button" class="header__timeframe" v-if="canFetch" v-bind:title="fetchLabel" v-tippy="{placement: 'left'}">
       {{timeframeLabel}}
       <ul class="dropdown">
         <li @click="setTimeframe(1000 * 10)">10s</li>
@@ -28,9 +28,9 @@ import { mapState } from 'vuex';
 import socket from '../services/socket';
 
 export default {
+  props: ['price'],
   data() {
     return {
-      title: 'SignificantTrades',
       pair: '',
       dashoffset: 0,
       fetchLabel: 'Fetch specific timeframe',
@@ -64,35 +64,6 @@ export default {
       this.fetchLabel = !Math.floor(this.dashoffset)
         ? this._fetchLabel
         : this.sizeOf(event.loaded);
-    });
-
-    socket.$on('price', (price, direction) => {
-      if (typeof price === 'number') {
-        this.title = this.$root.formatPrice(price);
-
-        window.document.title = this.title
-          .toString()
-          .replace(/<\/?[^>]+(>|$)/g, '');
-      }
-
-      if (direction) {
-        let favicon = document.getElementById('favicon');
-
-        if (!favicon || favicon.getAttribute('direction') !== direction) {
-          if (favicon) {
-            document.head.removeChild(favicon);
-          }
-
-          favicon = document.createElement('link');
-          favicon.id = 'favicon';
-          favicon.rel = 'shortcut icon';
-          favicon.href = `static/${direction}.png`;
-
-          favicon.setAttribute('direction', direction);
-
-          document.head.appendChild(favicon);
-        }
-      }
     });
 
     this.updateTimeframeLabel();
@@ -168,6 +139,10 @@ header.header {
 
     align-self: stretch;
     cursor: pointer;
+
+    &.header__timeframe {
+      font-size: 16px;
+    }
     
     .dropdown {
       display: none;

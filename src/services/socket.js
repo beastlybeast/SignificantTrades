@@ -22,8 +22,8 @@ const emitter = new Vue({
 			trades: [],
 			exchanges: [
 				new Bitmex(),
-				/*new Bitfinex(),
-				new Coinex(),
+				new Bitfinex(),
+				/*new Coinex(),
 				new Binance(),
 				new Gdax(),
 				new Huobi(),

@@ -10,6 +10,7 @@
 		<div class="app__wrapper">
 			<Alerts/>
 			<Header 
+        :price="price"
         @toggleSettings="showSettings = !showSettings"
       />
 			<Chart/>
@@ -43,6 +44,7 @@ export default {
   name: 'app',
   data() {
     return {
+      price: null,
       currency: 'dollar',
       commodity: 'bitcoin',
       symbol: '$',
@@ -93,10 +95,14 @@ export default {
       });
 
     socket.initialize();
+
+    this.updatePrice();
   },
   mounted() {
   },
   beforeDestroy() {
+    clearTimeout(this._updatePriceTimeout);
+
     this.onStoreMutation();
   },
   methods: {
@@ -186,6 +192,48 @@ export default {
     },
     toggleDarkChart(isDarkMode) {
       window.document.body.classList[isDarkMode ? 'add' : 'remove']('dark');
+    },
+    updatePrice() {
+      let price = 0;
+      let weight = 0;
+
+      for (let exchange of socket.exchanges) {
+        if (exchange.price === null || exchange.weight === null) {
+          continue;
+        }
+
+        price += exchange.price * exchange.weight;
+        weight += exchange.weight;
+      }
+
+      price = price / weight;
+
+      this.price = this.$root.formatPrice(price);
+
+      window.document.title = this.price
+        .toString()
+        .replace(/<\/?[^>]+(>|$)/g, '');
+
+      /* if (direction) {
+        let favicon = document.getElementById('favicon');
+
+        if (!favicon || favicon.getAttribute('direction') !== direction) {
+          if (favicon) {
+            document.head.removeChild(favicon);
+          }
+
+          favicon = document.createElement('link');
+          favicon.id = 'favicon';
+          favicon.rel = 'shortcut icon';
+          favicon.href = `static/${direction}.png`;
+
+          favicon.setAttribute('direction', direction);
+
+          document.head.appendChild(favicon);
+        }
+      } */
+
+      this._updatePriceTimeout = setTimeout(this.updatePrice, 1000);
     }
   }
 };

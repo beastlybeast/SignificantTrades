@@ -9,6 +9,7 @@ class Exchange extends EventEmitter {
     this.connected = false;
     this.valid = false;
     this.price = null;
+    this.weight = null;
     this.shouldBeConnected = false;
     this.reconnectionDelay = 5000;
     this.counters = [];
@@ -142,6 +143,9 @@ class Exchange extends EventEmitter {
         (group[id][3].reduce((a, b) => a + b) / group[id][3].length);
       group[id][3] = group[id][3].reduce((a, b) => a + b);
 
+      this.price = +group[id][2];
+      this.weight += +group[id][3];
+
       group[id][2] = this.toFixed(group[id][2], 10);
       group[id][3] = this.toFixed(group[id][3], 10);
 
@@ -150,8 +154,6 @@ class Exchange extends EventEmitter {
 
       return group[id];
     });
-
-		this.price = output[output.length - 1][2];
 
     // this.count(at, volume);
 
