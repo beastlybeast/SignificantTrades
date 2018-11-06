@@ -191,6 +191,7 @@ export default {
       'counterPrecision',
       'hideEmptyCounter',
       'countersSteps',
+      'actives',
       'filters',
       'disabled',
       'thresholds',

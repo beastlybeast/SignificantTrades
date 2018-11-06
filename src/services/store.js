@@ -5,6 +5,7 @@ Vue.use(Vuex);
 
 const EPHEMERAL_PROPERTIES = [
 	'isSnaped',
+	'actives'
 ]
 
 const defaults = {
@@ -41,7 +42,8 @@ const defaults = {
 	chartHeight: null,
 
 	// runtime state
-	isSnaped: true
+	isSnaped: true,
+	actives: []
 }
 
 const store = new Vuex.Store({
@@ -178,6 +180,16 @@ const store = new Vuex.Store({
 		// runtime commit
 		toggleSnap(state, value) {
 			state.isSnaped = value ? true : false;
+		},
+		reloadExchangeState(state, exchange) {
+      const index = state.actives.indexOf(exchange);
+      const active = state.disabled.indexOf(exchange) === -1 && state.filters.indexOf(exchange) === -1;
+
+      if (active && index === -1) {
+        state.actives.push(exchange);
+      } else if (!active && index >= 0) {
+        state.actives.splice(index, 1);
+      }
 		}
 	},
 })
@@ -192,6 +204,16 @@ store.subscribe((mutation, state) => {
 	}
 
   localStorage.setItem('settings', JSON.stringify(copy));
+
+	switch (mutation.type) {
+		case 'showExchange':
+		case 'hideExchange':
+		case 'enableExchange':
+		case 'disableExchange':
+			console.log('store', mutation.type, ' => reloadExchangeState')
+			store.commit('reloadExchangeState', mutation.payload);
+		break;
+	}
 });
 
 export default store;

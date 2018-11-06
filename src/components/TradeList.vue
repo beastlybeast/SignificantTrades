@@ -42,7 +42,6 @@ export default {
   computed: {
     ...mapState([
       'pair', 
-      'filters',
       'thresholds',
       'exchangeThresholds',
       'useAudio',
@@ -52,10 +51,6 @@ export default {
   },
   created() {
     this.getGifs();
-    
-    this.onStoreMutation = this.$store.subscribe((mutation, state) => {
-      console.log('tradelist subscribe', mutation, state);
-    });
 
     socket.$on('pairing', this.onPairing);
     socket.$on('trades', this.onTrades);
@@ -74,8 +69,6 @@ export default {
   beforeDestroy() {
     socket.$off('pairing', this.onPairing);
     socket.$off('trades', this.onTrades);
-
-    this.onStoreMutation();
 
     clearInterval(this.timeAgoInterval);
 

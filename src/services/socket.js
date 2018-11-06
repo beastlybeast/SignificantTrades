@@ -23,14 +23,14 @@ const emitter = new Vue({
 			exchanges: [
 				new Bitmex(),
 				new Bitfinex(),
-				/*new Coinex(),
+				new Coinex(),
 				new Binance(),
 				new Gdax(),
 				new Huobi(),
 				new Bitstamp(),
 				new Hitbtc(),
 				new Okex(),
-				new Poloniex()*/
+				new Poloniex()
 			],
 			connected: [],
 			matchs: {},
@@ -52,6 +52,9 @@ const emitter = new Vue({
 		},
 		filters () {
 			return store.state.filters
+		},
+		actives () {
+			return store.state.actives
 		}
   },
 	created() {
@@ -118,38 +121,11 @@ const emitter = new Vue({
 
 				this.$emit('exchange_error', exchange.id, this.errors[exchange.id]); */
 			});
-		})
 
-		// this.emitFakeTrade();
+			store.commit('reloadExchangeState', exchange.id);
+		})
 	},
 	methods: {
-		emitFakeTrade() {
-			setTimeout(() => {
-				const id = this.ids[Math.floor(Math.random()*this.ids.length)];
-				const exchange = this.getExchangeById(id);
-
-				if (!id) {
-					return this.emitFakeTrade();
-				}
-
-				let price = parseFloat(exchange.price);
-
-				if (isNaN(price)) {
-					return this.emitFakeTrade();
-				} 
-
-				price += (1 * Math.random() + -1 * Math.random());
-
-				const rand = Math.random();
-				const size = rand * 20 * Math.abs(Math.sin(+new Date())) * 10;
-
-				console.log('emit fake!', price, size);
-
-				window.emitTrade(id, price, size, rand > .5 ? 1 : 0);
-
-				return this.emitFakeTrade();
-			}, 2000 * Math.random());
-		},
 		initialize() {
 			console.log(`[sockets] initializing ${this.exchanges.length} exchange(s)`);
 		
@@ -177,7 +153,7 @@ const emitter = new Vue({
 				this.emitFilteredTradesAndVolumeSum(this.queue);
 
 				this.queue = [];
-			}, 200);
+			}, 1000);
 		},
 		connectExchanges(pair = null) {
 			this.disconnectExchanges();
@@ -276,14 +252,8 @@ const emitter = new Vue({
 			let upVolume = 0;
 			let downVolume = 0;
 
-			/* if (this.modifier === null && trades.length) {
-				this.modifier = 1 * Math.random() + -1 * Math.random();
-			}
-
-			this.modifier += 1 * Math.random() + -1 * Math.random(); */
-
 			const output = trades.filter(a => {
-				if (this.filters.indexOf(a[0]) >= 0) {
+				if (this.actives.indexOf(a[0]) === -1) {
 					return false;
 				}
 
@@ -292,15 +262,6 @@ const emitter = new Vue({
 				} else {
 					downVolume += a[3];
 				}
-
-				/* a[2] += this.modifier * 2 * Math.random();
-				
-				const id = this.ids[Math.floor(Math.random()*this.ids.length)];
-				const exchange = this.getExchangeById(id);
-
-				if (!id) {
-					exchange.price = a[2];
-				} */
 
 				return true;
 			})

@@ -39,7 +39,8 @@
   },
   "yAxis": [
     {
-      "height": "85%",
+      "height": "100%",
+      "top": "0%",
       "opposite": false,
       "gridLineColor": "rgba(255, 255, 255, .1)",
       "gridLineWidth": 2,
@@ -51,7 +52,19 @@
       "labels": { "align": "left", "style": { "color": "rgba(255, 255, 255, .5)" }, "x": 5, "y": -8 }
     },
     { "labels": { "enabled": false }, "top": "50%", "height": "50%", "gridLineColor": "transparent" },
-    { "labels": { "enabled": false }, "top": "70%", "height": "30%", "gridLineColor": "transparent" }
+    {
+      "type": "logarithmic",
+      "height": "100%",
+      "top": "0%",
+      "opposite": false,
+      "gridLineWidth": 0,
+      "minorGridLineWidth": 0,
+      "tickPosition": "outside",
+      "showFirstLabel": false,
+      "showLastLabel": false,
+      "labels": { "enabled": false },
+      "gridLineColor": "transparent"
+    }
   ],
   "tooltip": {
     "split": true,

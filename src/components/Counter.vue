@@ -61,11 +61,7 @@ export default {
     socket.$on('trades', this.onTrades);
     socket.$on('historical', this.onFetch);
 
-    window.showStacks = () => console.log(this.counters);
-    window.strict = () => console.log(this.strictSums);
-    window.stacked = () => console.log(this.stackedSums);
-		
-		this.countersRefreshCycleInterval = window.setInterval(this.updateCounters.bind(this), this.counterPrecision);
+    this.rebuildCounters();
   },
   beforeDestroy() {
     socket.$off('trades', this.onTrades);
@@ -168,10 +164,12 @@ export default {
           continue;
         }
 
+        const isBuy = +trade[4] ? true : false;
+
         if (stacks.length && trade[1] - stacks[stacks.length - 1][0] < this.counterPrecision) {
-          stacks[stacks.length - 1][trade[4] ? 1 : 2] += +trade[3];
+          stacks[stacks.length - 1][isBuy ? 1 : 2] += +trade[3];
         } else {
-          stacks.push([+trade[1], trade[4] ? +trade[3] : 0, !trade[4] ? +trade[3] : 0]);
+          stacks.push([+trade[1], isBuy ? +trade[3] : 0, !isBuy ? +trade[3] : 0]);
         }
       }
 
@@ -213,7 +211,6 @@ export default {
 			let milliseconds = parseFloat(value);
 
 			if (isNaN(milliseconds)) {
-				console.log('NAN!', value);
 				return false;
 			}
 
@@ -228,6 +225,8 @@ export default {
       return this.$store.commit('setCounterStep', {index: index, value: milliseconds})
     },
     rebuildCounters() {
+      clearInterval(this.countersRefreshCycleInterval);
+
       const now = +new Date();
 
       this.labels.splice(0, this.labels.length);
@@ -243,6 +242,8 @@ export default {
       }
 
       this.populateCounters(this.stackTrades(socket.trades));
+		
+      this.countersRefreshCycleInterval = window.setInterval(this.updateCounters.bind(this), this.counterPrecision);
     }
   }
 };

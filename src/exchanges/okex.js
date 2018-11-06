@@ -1,4 +1,5 @@
 import Exchange from '../services/exchange'
+import pako from 'pako'
 
 class Okex extends Exchange {
 
@@ -44,7 +45,9 @@ class Okex extends Exchange {
 
 		this.api = new WebSocket(this.getUrl());
 
-		this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)));
+		this.api.binaryType = "arraybuffer";
+
+		this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(event.data));
 
 		this.api.onopen = event => {
 			const channel = this.type === 'futures' ? 'ok_sub_futureusd_' + this.pair : 'ok_sub_spot_' + this.pair + '_deals';
@@ -83,8 +86,21 @@ class Okex extends Exchange {
 		}
 	}
 
-	formatLiveTrades(json) {
+	formatLiveTrades(event) {
 		const initial = typeof this.reference === 'undefined';
+
+    let json;
+    
+    try {
+      if (event instanceof String) {
+        json = JSON.parse(event);
+      } else {
+        json = JSON.parse(pako.inflateRaw(event, {to: 'string'}));
+      }
+    } catch (error) {
+      console.error(`[okex] failed to parse event data`, error);
+      return;
+    }
 
 		if (!json || !json[0] || json[0].channel === 'addChannel') {
 			return;
@@ -94,7 +110,7 @@ class Okex extends Exchange {
 		base.setTime(base.getTime() + ((8 + base.getTimezoneOffset() / 60) * 60 * 60 * 1000));
 
 		const output = json[0].data.map((trade, index, array) => {
-			const timestamp = +new Date(`${base.getFullYear()}-${this.$root.padNumber(base.getMonth() + 1, 2)}-${base.getDate()}T${trade[3]}+08:00`);
+			const timestamp = +new Date(`${base.getFullYear()}-${this.pad(base.getMonth() + 1, 2)}-${this.pad(base.getDate(), 2)}T${trade[3]}+08:00`);
 
 			if (index === array.length - 1) {
 				this.reference = timestamp;
@@ -153,6 +169,11 @@ class Okex extends Exchange {
 		});
 
 		return Object.keys(output.spots).length || Object.keys(output.spots).length ? output : [];
+	}
+
+	pad(num, size) {
+		var s = '000000000' + num;
+		return s.substr(s.length - size);
 	}
 
 }
