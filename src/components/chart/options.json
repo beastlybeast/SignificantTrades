@@ -39,8 +39,8 @@
   },
   "yAxis": [
     {
-      "height": "100%",
-      "top": "0%",
+      "top": "20%",
+      "height": "80%",
       "opposite": false,
       "gridLineColor": "rgba(255, 255, 255, .1)",
       "gridLineWidth": 2,
@@ -51,28 +51,16 @@
       "showLastLabel": false,
       "labels": { "align": "left", "style": { "color": "rgba(255, 255, 255, .5)" }, "x": 5, "y": -8 }
     },
-    { "labels": { "enabled": false }, "top": "50%", "height": "50%", "gridLineColor": "transparent" },
-    {
-      "type": "logarithmic",
-      "height": "100%",
-      "top": "0%",
-      "opposite": false,
-      "gridLineWidth": 0,
-      "minorGridLineWidth": 0,
-      "tickPosition": "outside",
-      "showFirstLabel": false,
-      "showLastLabel": false,
-      "labels": { "enabled": false },
-      "gridLineColor": "transparent"
-    }
+    { "visible": false, "labels": { "enabled": false }, "top": "50%", "height": "50%", "gridLineColor": "transparent" }
   ],
   "tooltip": {
     "split": true,
     "hideDelay": 0,
     "borderWidth": 0,
     "shadow": false,
-    "backgroundColor": "rgba(0, 0, 0, .8)",
-    "style": { "color": "white" },
+    "padding": 4,
+    "backgroundColor": "rgba(0, 0, 0, .5)",
+    "style": { "color": "rgba(255, 255, 255, .8)" },
     "crosshairs": [{ "width": 1.5, "dashStyle": "dash", "color": "rgba(255, 255, 255, .1)" }]
   },
   "series": [

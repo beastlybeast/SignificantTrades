@@ -112,7 +112,7 @@ export default {
       console.log('setTimeframe', timeframe);
 
       const count = (this.chart.chartWidth - 20 * .1) / 20;
-      const range = timeframe * count;
+      const range = (timeframe * count) * 1.1;
 
       const now = +new Date();
 
@@ -210,6 +210,7 @@ export default {
           }
 
           this.tickData.exchanges[trades[i][0]].life = 1;
+          this.tickData.exchanges[trades[i][0]].count++;
 
           this.tickData.exchanges[trades[i][0]].high = Math.max(this.tickData.exchanges[trades[i][0]].high, +trades[i][2]);
           this.tickData.exchanges[trades[i][0]].low = Math.min(this.tickData.exchanges[trades[i][0]].low, +trades[i][2]);
@@ -230,10 +231,6 @@ export default {
       if (ticks.length && ticks[0].added) {        
         const tickPoints = this.getTickPoints();
         let serie;
-
-        if (!tickPoints.buys) {
-          debugger;
-        }
       
         tickPoints.buys.update(ticks[0].buys[1], live);
         tickPoints.sells.update(ticks[0].sells[1], live);
@@ -242,7 +239,7 @@ export default {
         for (let exchange of this.actives) {
           serie = this.chart.series[this.actives.indexOf(exchange) + 4];
 
-          serie && serie.points[serie.points.length - 1].update(ticks[0].exchanges[exchange][1], false);
+          serie && ticks[0].exchanges[exchange] && serie.points[serie.points.length - 1].update(ticks[0].exchanges[exchange][1], false);
         }
 
         ticks.splice(0, 1);
@@ -276,6 +273,7 @@ export default {
 
       if (this.tickData) {
         for (let exchange in this.tickData.exchanges) {
+          this.tickData.exchanges[exchange].count = 0;
           this.tickData.exchanges[exchange].life *= 1;
           this.tickData.exchanges[exchange].open = this.tickData.exchanges[exchange].close;
           this.tickData.exchanges[exchange].high = this.tickData.exchanges[exchange].close;
@@ -324,7 +322,13 @@ export default {
       const exchanges = [];
       
       for (let exchange of this.actives) {
-        exchanges[exchange] = [tickData.timestamp, tickData.exchanges[exchange] ? tickData.exchanges[exchange].close : null]
+        exchanges[exchange] = [
+          tickData.timestamp, 
+          tickData.exchanges[exchange] ? 
+            (tickData.exchanges[exchange].close + tickData.exchanges[exchange].high + tickData.exchanges[exchange].low) / 3
+          : 
+            null
+        ]
       }
 
       return {
@@ -358,7 +362,7 @@ export default {
 
         high += tickData.exchanges[exchange].high * exchangeWeight;
         low += tickData.exchanges[exchange].low * exchangeWeight;
-        tickData.close += tickData.exchanges[exchange].close * exchangeWeight;
+        tickData.close += ((tickData.exchanges[exchange].close + tickData.exchanges[exchange].high + tickData.exchanges[exchange].low) / 3) * exchangeWeight;
         
         totalWeight += exchangeWeight;
       }
@@ -459,12 +463,18 @@ export default {
       }
 
       for (let exchange of this.actives) {
+        this.chart.addAxis({    
+          id: exchange + '-axis',
+          visible: false,
+          height: '33%',
+        }, false);
+
         this.chart.addSeries({       
           type: 'spline',                 
           name: exchange,
-          yAxis: 2,
+          yAxis: exchange + '-axis',
           data: []
-        }, true);
+        }, false);
       }
 
       this.setTimeframe(this.timeframe);
