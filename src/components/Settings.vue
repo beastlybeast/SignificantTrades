@@ -28,7 +28,7 @@
         <div class="settings__thresholds">
           <div class="form-group mb8">
             <label v-for="(threshold, index) in thresholds" :key="`threshold-${index}`">
-              <span>Trades </span>{{index == 0 ? "&lt;" : "&gt;"}} <i class="icon-currency"></i> <editable :content="threshold.amount" @output="$store.commit('setThresholdAmount', {index: index, value: $event})"></editable> 
+              <span>Trades </span>{{index == 0 ? "&lt;" : "&gt;"}} <i class="icon-currency"></i> <editable :content="threshold.amount" @output="$store.commit('setThresholdAmount', {index: index, value: $event})"></editable>
                 <span v-if="index === 0">won't show up</span>
                 <span v-if="index === 1">will be highlighted</span>
                 <span v-if="index > 1">
@@ -210,7 +210,7 @@ export default {
       'settings',
     ]),
     exchanges: () => {
-      return socket.exchanges.sort((a, b) => a.price - b.price)
+      return socket.exchanges;
     }
   },
   created() {
@@ -224,12 +224,10 @@ export default {
   },
   methods: {
     stringifyCounters() {
-      console.log('stringity counter', this.countersSteps);
       const now = +new Date();
       this.countersStepsStringified = this.countersSteps.map(a => this.$root.ago(now - a)).join(', ');
     },
     replaceCounters(value) {
-      console.log('replace counter', value);
       const counters = value.split(',')
         .map(a => {
           a = a.trim();
@@ -766,7 +764,7 @@ export default {
       }
 
       &.settings__exchanges__item--enabled {
-        .settings__exchanges__item__identity:before {
+        .settings__exchanges__item__name:before {
           width: 0%;
         }
       }
@@ -823,6 +821,10 @@ export default {
       flex-direction: column;
       height: 40px;
       justify-content: center;
+    }
+
+    .settings__exchanges__item__name {
+      position: relative;
 
       &:before {
         content: "";

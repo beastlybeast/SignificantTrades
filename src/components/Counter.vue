@@ -1,5 +1,8 @@
 <template>
 	<div class="counters">
+    <div class="counters__rate">
+      {{ rate.live }} <sub>t/s</sub>
+    </div>
     <ul>
       <li v-for="(sum, index) of stackedSums" :key="`sum-${index}`" v-if="!hideEmptyCounter || counters[index].length" class="counters__item">
         <div class="counter__index">
@@ -26,7 +29,12 @@ export default {
       strictSums: [],
       stackedSums: [],
 			counters: [],
-			queue: [0, 0],
+      queue: [0, 0],
+      rate: {
+        timestamp: null,
+        average: null,
+        count: 0
+      }
     };
   },
   computed: {
@@ -67,14 +75,19 @@ export default {
     socket.$off('trades', this.onTrades);
     socket.$off('historical', this.onFetch);
 
+		clearInterval(this.tradesRateInterval);
 		clearInterval(this.countersRefreshCycleInterval);
 
     this.onStoreMutation();
   },
   methods: {
     onTrades(trades, upVolume, downVolume) {
+      const now = +new Date();
+
 			this.queue[0] += upVolume;
-			this.queue[1] += downVolume;
+      this.queue[1] += downVolume;
+
+      this.rate.count += trades.length;
 
       for (let index = 0; index < this.stackedSums.length; index++) {
         this.$set(this.stackedSums[index], 0, this.stackedSums[index][0] + upVolume);
@@ -111,7 +124,7 @@ export default {
 			let stepIndex = 0;
       let stackedUpVolume = 0;
       let stackedDownVolume = 0;
-      
+
 			for (let step of this.countersSteps) {
         let upVolume = 0;
         let downVolume = 0;
@@ -146,7 +159,7 @@ export default {
 
         stackedUpVolume += this.strictSums[stepIndex][0];
         stackedDownVolume += this.strictSums[stepIndex][1];
-        
+
         this.$set(this.stackedSums[stepIndex], 0, parseFloat(stackedUpVolume));
         this.$set(this.stackedSums[stepIndex], 1, parseFloat(stackedDownVolume));
 
@@ -226,6 +239,7 @@ export default {
     },
     rebuildCounters() {
       clearInterval(this.countersRefreshCycleInterval);
+      clearInterval(this.tradesRateInterval);
 
       const now = +new Date();
 
@@ -241,9 +255,48 @@ export default {
         this.stackedSums.push([0, 0]);
       }
 
+      this.rate.timestamp = now;
+      this.rate.average = null;
+      this.rate.count = 0;
+
+      let enoughTradesToCompleteRateCycle = false;
+
       this.populateCounters(this.stackTrades(socket.trades));
-		
+
+      for (let i = socket.trades.length - 1; i >= 0; i--) {
+        if (socket.trades[i][1] < now - 1000 * 60) {
+          enoughTradesToCompleteRateCycle = true;
+          break;
+        }
+
+        this.rate.count++;
+      }
+
+      if (enoughTradesToCompleteRateCycle) {
+        this.rate.average = parseInt(this.rate.count);
+        this.rate.count = 0;
+      }
+
       this.countersRefreshCycleInterval = window.setInterval(this.updateCounters.bind(this), this.counterPrecision);
+      this.tradesRateInterval = window.setInterval(this.updateRate.bind(this), 1000);
+    },
+    updateRate() {
+      const now = +new Date();
+
+      if (this.rate.average !== null) {
+        console.log('average !== null (' + this.rate.average + ')', this.rate.count, this.rate.average, (1 + (now - this.rate.timestamp) / 1000 * 60));
+        this.rate.live = parseInt((this.rate.count + this.rate.average) / (1 + (now - this.rate.timestamp) / (1000 * 60)));
+      } else {
+        console.log('average === null', this.rate.count);
+        this.rate.live = this.rate.count;
+      }
+
+      if (now - this.rate.timestamp >= 1000 * 60) {
+        console.log('store live into average', 'timestamp now at', new Date(now));
+        this.rate.average = parseInt(this.rate.live);
+        this.rate.count = 0;
+        this.rate.timestamp = now;
+      }
     }
   }
 };
@@ -292,6 +345,18 @@ export default {
   }
 }
 
+.counters__rate {
+  font-size: .75em;
+  background-color: lighten($dark, 10%);
+  padding: .5em;
+  font-weight: 600;
+  text-align: right;
+
+  sub {
+    font-weight: 400;
+  }
+}
+
 .counters__item {
   > div {
     padding: .25em;
@@ -309,7 +374,7 @@ export default {
 
   &:hover {
     .counter__delete {
-      flex-basis: 2.5em;
+      flex-basis: 2.35em;
 
       &:before {
         transform: none;

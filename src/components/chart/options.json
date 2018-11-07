@@ -39,8 +39,6 @@
   },
   "yAxis": [
     {
-      "top": "20%",
-      "height": "80%",
       "opposite": false,
       "gridLineColor": "rgba(255, 255, 255, .1)",
       "gridLineWidth": 2,

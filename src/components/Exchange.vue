@@ -12,8 +12,8 @@
 		}">
 		<div class="settings__exchanges__item__header" v-on:click="toggleExchange(exchange)">
 			<div class="settings__exchanges__item__identity">
-				<div>{{ exchange.id }}</div>
-				<small class="settings__exchanges__item__price">{{ exchange.price }}</small>
+				<div class="settings__exchanges__item__name">{{ exchange.id }}</div>
+				<small class="settings__exchanges__item__price">{{ $root.formatPrice(exchange.price) }}</small>
 			</div>
 			<i class="icon-warning"></i>
 			<div class="settings__exchanges__item__controls">
