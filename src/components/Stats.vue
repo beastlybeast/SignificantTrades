@@ -1,28 +1,28 @@
 <template>
 	<div class="stats">
     <div>
-      <div class="stats__label">Trades/min</div>
+      <div class="stats__label">TRADES</div>
       <div class="stats__value">
         {{rate.live}}
         <sup>({{rate.side}}{{(100 - (rate.average / rate.live) * 100).toFixed()}}%)</sup>
       </div>
     </div>
     <div>
-      <div class="stats__label">Buys/min</div>
+      <div class="stats__label">BUYS</div>
       <div class="stats__value">
         <span class="icon-commodity"></span> {{up.live.toFixed()}}
         <sup>({{up.side}}{{(100 - (up.average / up.live) * 100).toFixed()}}%)</sup>
       </div>
     </div>
     <div>
-      <div class="stats__label">Sells/min</div>
+      <div class="stats__label">SELLS</div>
       <div class="stats__value">
         <span class="icon-commodity"></span> {{down.live.toFixed()}}
         <sup>({{down.side}}{{(100 - (down.average / down.live) * 100).toFixed()}}%)</sup>
       </div>
     </div>
     <div>
-      <div class="stats__label">Volume/min</div>
+      <div class="stats__label">VOL</div>
       <div class="stats__value"><span class="icon-commodity"></span> {{(up.live + down.live).toFixed()}}</div>
     </div>
 	</div>
@@ -37,6 +37,7 @@ export default {
   data() {
     return {
       timestamp: null,
+      periodLabel: null,
       rate: {
         average: null,
         live: null,
@@ -103,6 +104,7 @@ export default {
 
       const now = +new Date();
 
+      this.periodLabel = this.$root.ago(now - this.statsPeriod);
       this.timestamp = now - this.statsPeriod;
       this.rate.average = this.up.average = this.down.average = null;
       this.rate.count = this.up.count = this.down.count = 0;
@@ -156,20 +158,30 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-evenly;
-  cursor: pointer;
 
   > div {
-    padding: 15px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    flex-direction: column;
+
+    @media screen and (min-width: 768px) {
+      flex-grow: 0;
+      flex-direction: row;
+      justify-content: center;
+    }
   }
 
   .stats__label {
     opacity: .5;
-    text-transform: uppercase;
     font-size: .75em;
   }
 
   .stats__value {
     text-align: right;
+    font-weight: 600;
+    margin-left: 5px;
   }
 }
 </style>

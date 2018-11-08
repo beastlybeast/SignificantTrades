@@ -17,7 +17,7 @@
 			</div>
 			<i class="icon-warning"></i>
 			<div class="settings__exchanges__item__controls">
-				<button class="settings__exchanges__item__visibility" v-on:click.stop.prevent="$store.commit('toggleExchangeVisibility', exchange)"><i class="icon-invisible"></i></button>
+				<button class="settings__exchanges__item__visibility" v-on:click.stop.prevent="$store.commit('toggleExchangeVisibility', exchange)"><i class="icon-eye-crossed"></i></button>
 				<button class="settings__exchanges__item__more" v-on:click.stop.prevent="expanded = !expanded"><i class="icon-down"></i></button>
 			</div>
 		</div>

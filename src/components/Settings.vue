@@ -65,7 +65,7 @@
             </label>
           </div>
           <div class="form-group settings__column__tight">
-            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Do not show counter when empty">
+            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Do not show empty counter">
               <input type="checkbox" class="form-control" v-bind:checked="hideEmptyCounter" @change="$store.commit('toggleHideEmptyCounter', $event.target.checked)">
               <div class="icon-expand"></div>
             </label>
@@ -787,8 +787,8 @@ export default {
       &.settings__exchanges__item--invisible {
         opacity: 0.8;
 
-        .icon-invisible:before {
-          content: unicode($icon-visible);
+        .icon-eye-crossed:before {
+          content: unicode($icon-eye);
         }
       }
 

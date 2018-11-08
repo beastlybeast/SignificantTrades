@@ -36,11 +36,12 @@ $icon-expand: \e909;
 $icon-balance: \e919;
 $icon-magic: \e91a;
 $icon-numbers: \e91b;
-$icon-invisible: \e91d;
-$icon-visible: \e91c;
 $icon-skull: \e91e;
 $icon-edit: \e91f;
 $icon-add: \e920;
+$icon-rip: \e921;
+$icon-eye: \e922;
+$icon-eye-crossed: \e923;
 
 @function unicode($str) {
   @return unquote("\"") + $str + unquote("\"");
