@@ -39,8 +39,7 @@ const emitter = new Vue({
 			API_URL: null,
 			PROXY_URL: null,
 			queue: [],
-			_pair: null,
-			modifier: null
+			_pair: null
 		}
 	},
   computed: {
@@ -128,7 +127,7 @@ const emitter = new Vue({
 	methods: {
 		initialize() {
 			console.log(`[sockets] initializing ${this.exchanges.length} exchange(s)`);
-		
+
 			if (process.env.API_URL) {
 				this.API_URL = process.env.API_URL;
 				console.info(`[sockets] API_URL = ${this.API_URL}`);
@@ -265,7 +264,7 @@ const emitter = new Vue({
 
 				return true;
 			})
-				
+
 			this.$emit('trades', output, upVolume, downVolume);
 		},
 		canFetch() {
@@ -277,7 +276,7 @@ const emitter = new Vue({
       let promise;
 			let from = now - range;
 			let to = !this.trades.length ? now : this.trades[0][1];
-        
+
 			from = Math.floor(from / timeframe) * timeframe;
 			to = Math.ceil(to / timeframe) * timeframe;
 
@@ -295,7 +294,7 @@ const emitter = new Vue({
 			if (!from || !to || !this.canFetch()) {
 				return Promise.resolve();
 			}
-			
+
 			const url = `${process.env.API_URL ? process.env.API_URL : ''}${parseInt(from)}/${parseInt(to)}`;
 
 			if (this.lastFetchUrl === url) {
@@ -318,22 +317,26 @@ const emitter = new Vue({
 						const count = this.trades.length;
 
 						if (!this.trades.length) {
+							console.log(`[fetch] set socket.trades (${this.trades} trades)`);
+
 							this.trades = fetchedTrades;
 						} else {
 							const prepend = fetchedTrades.filter(trade => trade[1] <= this.trades[0][1]);
 							const append = fetchedTrades.filter(trade => trade[1] >= this.trades[this.trades.length - 1][1]);
 
 							if (prepend.length) {
+								console.log(`[fetch] prepend ${prepend.length} trades`);
 								this.trades = prepend.concat(this.trades);
 							}
 
 							if (append.length) {
+								console.log(`[fetch] append ${prepend.length} trades`);
 								this.trades = this.trades.concat(append);
 							}
 						}
 
 						if (count !== this.trades.length) {
-							this.$emit('historical', fetchedTrades);
+							this.$emit('historical', fetchedTrades, from, to);
 						}
 
 						resolve(fetchedTrades);

@@ -1,20 +1,21 @@
 <template>
-	<div 
-    id="app" 
-    :data-currency="currency" 
-    :data-commodity="commodity" 
-    :data-symbol="symbol" 
+	<div
+    id="app"
+    :data-currency="currency"
+    :data-commodity="commodity"
+    :data-symbol="symbol"
     :data-pair="pair"
   >
 		<Settings v-if="showSettings" @close="showSettings = false"/>
 		<div class="app__wrapper">
 			<Alerts/>
-			<Header 
+			<Header
         :price="price"
         @toggleSettings="showSettings = !showSettings"
       />
 			<Chart/>
-      <Counter v-if="enableCounters"/>
+      <Stats v-if="showStats"/>
+      <Counter v-if="showCounters"/>
 			<TradeList/>
 		</div>
 	</div>
@@ -31,6 +32,7 @@ import Settings from './components/Settings.vue';
 import TradeList from './components/TradeList.vue';
 import Chart from './components/chart/Chart.vue';
 import Counter from './components/Counter.vue';
+import Stats from './components/Stats.vue';
 
 export default {
   components: {
@@ -39,7 +41,8 @@ export default {
     Settings,
     TradeList,
     Chart,
-    Counter
+    Counter,
+    Stats
   },
   name: 'app',
   data() {
@@ -57,7 +60,8 @@ export default {
     ...mapState([
       'dark',
       'pair',
-      'enableCounters',
+      'showCounters',
+      'showStats',
       'decimalPrecision'
     ])
   },
@@ -70,7 +74,7 @@ export default {
     socket.$on('pairing', value => {
       this.updatePairCurrency(this.pair);
     });
-    
+
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
         case 'toggleDark':
@@ -82,7 +86,7 @@ export default {
     this.toggleDarkChart(this.dark);
 
     // Is request blocked by browser ?
-    // If true notice user that most of the exchanges may be unavailable 
+    // If true notice user that most of the exchanges may be unavailable
     fetch('showads.js')
       .then(() => {})
       .catch((response, a) => {
@@ -162,7 +166,7 @@ export default {
       else if ((interval = Math.floor(seconds / 3600)) > 1) output = interval + 'h';
       else if ((interval = Math.floor(seconds / 60)) > 1) output = interval + 'm';
       else output = Math.ceil(seconds) + 's';
- 
+
       return output;
     },
     updatePairCurrency(pair) {

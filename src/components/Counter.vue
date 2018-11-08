@@ -1,8 +1,5 @@
 <template>
 	<div class="counters">
-    <div class="counters__rate">
-      {{ rate.live }} <sub>t/s</sub>
-    </div>
     <ul>
       <li v-for="(sum, index) of stackedSums" :key="`sum-${index}`" v-if="!hideEmptyCounter || counters[index].length" class="counters__item">
         <div class="counter__index">
@@ -29,12 +26,7 @@ export default {
       strictSums: [],
       stackedSums: [],
 			counters: [],
-      queue: [0, 0],
-      rate: {
-        timestamp: null,
-        average: null,
-        count: 0
-      }
+      queue: [0, 0]
     };
   },
   computed: {
@@ -86,8 +78,6 @@ export default {
 
 			this.queue[0] += upVolume;
       this.queue[1] += downVolume;
-
-      this.rate.count += trades.length;
 
       for (let index = 0; index < this.stackedSums.length; index++) {
         this.$set(this.stackedSums[index], 0, this.stackedSums[index][0] + upVolume);
@@ -239,7 +229,6 @@ export default {
     },
     rebuildCounters() {
       clearInterval(this.countersRefreshCycleInterval);
-      clearInterval(this.tradesRateInterval);
 
       const now = +new Date();
 
@@ -255,45 +244,9 @@ export default {
         this.stackedSums.push([0, 0]);
       }
 
-      this.rate.timestamp = now;
-      this.rate.average = null;
-      this.rate.count = 0;
-
-      let enoughTradesToCompleteRateCycle = false;
-
       this.populateCounters(this.stackTrades(socket.trades));
 
-      for (let i = socket.trades.length - 1; i >= 0; i--) {
-        if (socket.trades[i][1] < now - 1000 * 60) {
-          enoughTradesToCompleteRateCycle = true;
-          break;
-        }
-
-        this.rate.count++;
-      }
-
-      if (enoughTradesToCompleteRateCycle) {
-        this.rate.average = parseInt(this.rate.count);
-        this.rate.count = 0;
-      }
-
       this.countersRefreshCycleInterval = window.setInterval(this.updateCounters.bind(this), this.counterPrecision);
-      this.tradesRateInterval = window.setInterval(this.updateRate.bind(this), 1000);
-    },
-    updateRate() {
-      const now = +new Date();
-
-      if (this.rate.average !== null) {
-        this.rate.live = parseInt((this.rate.count + this.rate.average) / (1 + (now - this.rate.timestamp) / (1000 * 60)));
-      } else {
-        this.rate.live = this.rate.count;
-      }
-
-      if (now - this.rate.timestamp >= 1000 * 60) {
-        this.rate.average = parseInt(this.rate.live);
-        this.rate.count = 0;
-        this.rate.timestamp = now;
-      }
     }
   }
 };
@@ -339,18 +292,6 @@ export default {
 
   @media only screen and (min-width: 480px) {
     font-size: 1.25em;
-  }
-}
-
-.counters__rate {
-  font-size: .75em;
-  background-color: lighten($dark, 10%);
-  padding: .5em;
-  font-weight: 600;
-  text-align: right;
-
-  sub {
-    font-weight: 400;
   }
 }
 

@@ -57,10 +57,10 @@
           </div>
         </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'counters')" v-bind:class="{closed: settings.indexOf('counters') > -1}">Counter <i class="icon-up"></i></div>
-        <div class="settings__counters settings__activable settings__column" v-bind:class="{active: enableCounters}">
+        <div class="settings__counters settings__activable settings__column" v-bind:class="{active: showCounters}">
           <div class="form-group settings__column__tight">
             <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Enable counters">
-              <input type="checkbox" class="form-control" v-bind:checked="enableCounters" @change="$store.commit('toggleCounters', $event.target.checked)">
+              <input type="checkbox" class="form-control" v-bind:checked="showCounters" @change="$store.commit('toggleCounters', $event.target.checked)">
               <div></div>
             </label>
           </div>
@@ -187,7 +187,7 @@ export default {
       'pair',
       'maxRows',
       'decimalPrecision',
-      'enableCounters',
+      'showCounters',
       'counterPrecision',
       'hideEmptyCounter',
       'countersSteps',

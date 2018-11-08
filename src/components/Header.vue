@@ -143,7 +143,7 @@ header.header {
     &.header__timeframe {
       font-size: 16px;
     }
-    
+
     .dropdown {
       display: none;
       position: absolute;

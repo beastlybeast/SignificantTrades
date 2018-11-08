@@ -19,9 +19,11 @@ const defaults = {
 	exchangeThresholds: {},
 	maxRows: 20,
 	decimalPrecision: null,
-	enableCounters: true,
+	showCounters: true,
 	counterPrecision: 1000 * 10,
 	hideEmptyCounter: true,
+	showStats: true,
+	statsPeriod: 1000 * 60,
 	countersSteps: [1000 * 30, 1000 * 60, 1000 * 60 * 2, 1000 * 60 * 5, 1000 * 60 * 10, 1000 * 60 * 15],
 	avgLength: 2,
 	useWeighedAverage: false,
@@ -62,7 +64,10 @@ const store = new Vuex.Store({
 			state.counterPrecision = value;
 		},
 		toggleCounters(state, value) {
-			state.enableCounters = value ? true : false;
+			state.showCounters = value ? true : false;
+		},
+		toggleStats(state, value) {
+			state.showStats = value ? true : false;
 		},
 		toggleHideEmptyCounter(state, value) {
 			state.hideEmptyCounter = value ? true : false;
