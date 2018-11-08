@@ -94,6 +94,8 @@
       "fillColor": { "linearGradient": { "x1": 0, "y1": 0, "x2": 0, "y2": 1 }, "stops": [[0, "rgba(233, 30, 99, .5)"], [1, "rgba(233, 30, 99, .4)"]] },
       "yAxis": 1
     },
-    { "type": "sma", "lineColor": "rgba(255, 255, 255, .25)", "linkedTo": "price", "marker": { "enabled": false } }
+    { "type": "sma", "name": "Price SMA (14)", "lineColor": "rgba(255, 255, 255, .25)", "linkedTo": "price", "marker": { "enabled": false } },
+    { "type": "sma", "name": "Buys SMA (14)", "lineColor": "rgba(233, 30, 99, 1)", "linkedTo": "sells", "marker": { "enabled": false }, "yAxis": 1 },
+    { "type": "sma", "name": "Sell SMA (14)", "lineColor": "rgba(139, 195, 74, 1)", "linkedTo": "buys", "marker": { "enabled": false }, "yAxis": 1 }
   ]
 }

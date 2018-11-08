@@ -284,15 +284,12 @@ export default {
       const now = +new Date();
 
       if (this.rate.average !== null) {
-        console.log('average !== null (' + this.rate.average + ')', this.rate.count, this.rate.average, (1 + (now - this.rate.timestamp) / 1000 * 60));
         this.rate.live = parseInt((this.rate.count + this.rate.average) / (1 + (now - this.rate.timestamp) / (1000 * 60)));
       } else {
-        console.log('average === null', this.rate.count);
         this.rate.live = this.rate.count;
       }
 
       if (now - this.rate.timestamp >= 1000 * 60) {
-        console.log('store live into average', 'timestamp now at', new Date(now));
         this.rate.average = parseInt(this.rate.live);
         this.rate.count = 0;
         this.rate.timestamp = now;
@@ -379,10 +376,6 @@ export default {
       &:before {
         transform: none;
         opacity: 1;
-      }
-
-      &:hover:before {
-        transform: scale(1.2);
       }
     }
   }

@@ -43,6 +43,11 @@ export default {
 		])
   },
   created() {
+    Highcharts.wrap(Highcharts.Chart.prototype, 'pan', function(proceed) {
+      console.log("panning...");
+      proceed.call(this, arguments[1], arguments[2]);
+    });
+
     socket.$on('trades', this.onTrades);
 
     socket.$on('pairing', this.onPairing);
@@ -63,7 +68,6 @@ export default {
     });
   },
 	mounted() {
-    console.log('MOUNTED!');
     this.createChart();
 
     this._doDrag = this.doDrag.bind(this);
@@ -78,8 +82,6 @@ export default {
     this.setTimeframe(this.timeframe);
 	},
   beforeDestroy() {
-    console.info('DESTROY');
-
     if (this.chart) {
       this.chart.destroy();
 
@@ -99,6 +101,7 @@ export default {
   },
   methods: {
     createChart() {
+
       this.chart = Highcharts.stockChart(this.$el.querySelector('.chart__canvas'), JSON.parse(JSON.stringify(chartOptions)));
 
       if (this.chartHeight) {
@@ -110,10 +113,8 @@ export default {
         return;
       }
 
-      console.log('setTimeframe', timeframe);
-
-      const count = (this.chart.chartWidth - 20 * .1) / 20;
-      const range = (timeframe * count) * 2;
+      const count = (this.chart.chartWidth - 20 * .1) / 10;
+      const range = timeframe * 2 * count
 
       const now = +new Date();
 
@@ -122,14 +123,15 @@ export default {
       socket.fetchRangeIfNeeded(range, timeframe).then(trades => {
         // this.stopTickInterval();
 
-          console.log('clear all chart DATA');
         for (let serie of this.chart.series) {
-          serie.setData([], false);
+          !serie.linkedParent && serie.setData([], false);
         }
 
         this.tickData = null;
 
         this.chart.redraw();
+
+        console.log('redraw empty series');
 
         if (!socket.trades.length) {
           return;
@@ -227,7 +229,9 @@ export default {
 
         ticks.push(this.formatTickData(this.tickData));
       }
-
+      if (live) {
+        console.info('livemode');
+      }
       if (ticks.length && ticks[0].added) {
         const tickPoints = this.getTickPoints();
         // let serie;
@@ -250,6 +254,8 @@ export default {
       }
 
       this.chart.redraw();
+
+      console.log('redraw filled series');
 
       this.tickData.added = true;
     },
@@ -357,7 +363,7 @@ export default {
       for (let exchange in tickData.exchanges) {
         let exchangeWeight = tickData.exchanges[exchange].life;
 
-        if (setOpen === null) {
+        if (setOpen) {
           tickData.open += tickData.exchanges[exchange].open * exchangeWeight;
         }
 
@@ -368,7 +374,7 @@ export default {
         totalWeight += exchangeWeight;
       }
 
-      if (setOpen === null) {
+      if (setOpen) {
         tickData.open /= totalWeight;
       }
 
