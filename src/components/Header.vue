@@ -42,6 +42,7 @@ export default {
   },
   computed: {
     ...mapState([
+      'showChart',
       'isSnaped',
       'timeframe',
 		])
@@ -52,7 +53,7 @@ export default {
     socket.$on('pairing', (pair, canFetch) => {
       this.pair = pair;
 
-      this.canFetch = canFetch;
+      this.canFetch = canFetch && this.showChart;
     });
 
     socket.$on('fetchProgress', event => {

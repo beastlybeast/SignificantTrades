@@ -2,14 +2,32 @@
 	display: flex;
 	flex-direction: column;
 
-	.app_components {
+	@media screen and (min-width: 768px) {
+		height: 100vh;
+
+		#header {
+			flex-grow: 0;
+			flex-basis: auto;
+		}
+
+		.app__layout {
+			flex-grow: 1;
+		}
+	}
+}
+
+.app__layout {
+	display: flex;
+	flex-direction: column;
+
+	.app__widgets {
 		display: flex;
 		flex-direction: column;
 	}
 
 
 	@media screen and (min-width: 480px) and (max-width: 767px) {
-		.app_components {
+		.app__widgets {
 			font-size: 1.1em;
 		}
 	}
@@ -18,25 +36,20 @@
 		flex-direction: row;
 		flex-wrap: wrap;
 
-		#header {
-			flex-grow: 1;
-			flex-basis: 100%;
-		}
-
 		#chart {
 			overflow: hidden;
 			flex-basis: 75%;
 			flex-grow: 0;
 		}
 
-		.app_components {
+		.app__widgets {
 			overflow: hidden;
 			flex-basis: 25%;
 
 			font-size: .8em;
 			flex-grow: 1;
 
-			.stats {
+			#stats {
 				flex-wrap: wrap;
 
 				> div {
@@ -47,14 +60,14 @@
 				}
 			}
 
-			.trades {
+			#trades {
 				flex-grow: 1;
 			}
 		}
 	}
 
 	@media screen and (min-width: 1400px) {
-		.app_components {
+		.app__widgets {
 			font-size: 1.2em;
 		}
 	}

@@ -23,6 +23,7 @@ const defaults = {
 	counterPrecision: 1000 * 10,
 	hideEmptyCounter: true,
 	showStats: true,
+	showChart: true,
 	statsPeriod: 1000 * 60,
 	countersSteps: [1000 * 30, 1000 * 60, 1000 * 60 * 2, 1000 * 60 * 5, 1000 * 60 * 10, 1000 * 60 * 15],
 	avgLength: 2,
@@ -65,6 +66,9 @@ const store = new Vuex.Store({
 		},
 		toggleCounters(state, value) {
 			state.showCounters = value ? true : false;
+		},
+		toggleChart(state, value) {
+			state.showChart = value ? true : false;
 		},
 		toggleStats(state, value) {
 			state.showStats = value ? true : false;

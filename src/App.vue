@@ -13,11 +13,13 @@
         :price="price"
         @toggleSettings="showSettings = !showSettings"
       />
-			<Chart/>
-      <div class="app_components">
-        <Stats v-if="showStats"/>
-        <Counters v-if="showCounters"/>
-        <TradeList/>
+      <div class="app__layout">
+        <Chart v-if="showChart"/>
+        <div class="app__widgets">
+          <Stats v-if="showStats"/>
+          <Counters v-if="showCounters"/>
+          <TradeList/>
+        </div>
       </div>
 		</div>
 	</div>
@@ -64,6 +66,7 @@ export default {
       'pair',
       'showCounters',
       'showStats',
+      'showChart',
       'decimalPrecision'
     ])
   },

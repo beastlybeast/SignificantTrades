@@ -67,7 +67,7 @@
           <div class="form-group settings__column__tight">
             <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Do not show empty counter">
               <input type="checkbox" class="form-control" v-bind:checked="hideEmptyCounter" @change="$store.commit('toggleHideEmptyCounter', $event.target.checked)">
-              <div class="icon-expand"></div>
+              <div class="icon-eye-crossed"></div>
             </label>
           </div>
           <div class="form-group settings__column__fill">
@@ -75,31 +75,14 @@
           </div>
         </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'chart')" v-bind:class="{closed: settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
-        <div>
-          <div class="settings__column">
-            <div class="form-group">
-              <label>Timeframe <span class="icon-info-circle" v-bind:title="help.timeframe" v-tippy></span></label>
-              <input type="string" placeholder="XX% or XXs" class="form-control" v-bind:value="timeframe" @change="$store.commit('setTimeframe', $event.target.value)">
-            </div>
-            <div class="form-group">
-              <label>Avg. price <span class="icon-info-circle" v-bind:title="help.avgLength" v-tippy></span></label>
-              <div class="input-group">
-                <input type="number" min="0" max="100" step="1" class="form-control" v-bind:value="avgLength" @change="$store.commit('setAverageLength', $event.target.value)">
-                <label class="checkbox-control flex-right" title="Use weighed average" v-tippy>
-                  <input type="checkbox" class="form-control" v-bind:checked="useWeighedAverage" @change="$store.commit('toggleWeighedAverage', $event.target.checked)">
-                  <div></div>
-                </label>
-              </div>
-            </div>
+        <div class="settings__chart settings__activable settings__column" v-bind:class="{active: showChart}">
+          <div class="form-group settings__column__tight">
+            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Enable chart">
+              <input type="checkbox" class="form-control" v-bind:checked="showChart" @change="$store.commit('toggleChart', $event.target.checked)">
+              <div></div>
+            </label>
           </div>
-          <div class="settings__chart">
-            <div class="form-group mb8" v-if="thresholds.length > 0">
-              <label class="checkbox-control flex-left" v-tippy title="Shows significants orders on the chart">
-                <input type="checkbox" class="form-control" v-bind:value="chartSignificantOrders" @change="$store.commit('toggleSignificantOrdersPlot', $event.target.checked)">
-                <div></div>
-                <span>Highlight {{thresholds[1].amount}}+</span>
-              </label>
-            </div>
+          <div class="settings__column__fill">
             <div class="form-group mb8">
               <label class="checkbox-control flex-left" v-tippy title="Shows liquidations on the chart">
                 <input type="checkbox" class="form-control" v-bind:checked="chartLiquidations" @change="$store.commit('toggleLiquidationsPlot', $event.target.checked)">
@@ -191,6 +174,7 @@ export default {
       'counterPrecision',
       'hideEmptyCounter',
       'countersSteps',
+      'showChart',
       'actives',
       'filters',
       'disabled',
