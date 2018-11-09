@@ -14,9 +14,11 @@
         @toggleSettings="showSettings = !showSettings"
       />
 			<Chart/>
-      <Stats v-if="showStats"/>
-      <Counter v-if="showCounters"/>
-			<TradeList/>
+      <div class="app_components">
+        <Stats v-if="showStats"/>
+        <Counters v-if="showCounters"/>
+        <TradeList/>
+      </div>
 		</div>
 	</div>
 </template>
@@ -31,7 +33,7 @@ import Header from './components/Header.vue';
 import Settings from './components/Settings.vue';
 import TradeList from './components/TradeList.vue';
 import Chart from './components/chart/Chart.vue';
-import Counter from './components/Counter.vue';
+import Counters from './components/Counters.vue';
 import Stats from './components/Stats.vue';
 
 export default {
@@ -41,7 +43,7 @@ export default {
     Settings,
     TradeList,
     Chart,
-    Counter,
+    Counters,
     Stats
   },
   name: 'app',
@@ -195,7 +197,7 @@ export default {
       }
     },
     toggleDarkChart(isDarkMode) {
-      window.document.body.classList[isDarkMode ? 'add' : 'remove']('dark');
+      window.document.body.classList[isDarkMode ? 'add' : 'remove']('theme-dark');
     },
     updatePrice() {
       let price = 0;
@@ -245,208 +247,11 @@ export default {
 
 <style lang='scss'>
 @import './assets/sass/variables';
-@import './assets/sass/basic';
+@import './assets/sass/helper';
+@import './assets/sass/layout';
 @import './assets/sass/icons';
+@import './assets/sass/currency';
+@import './assets/sass/tooltip';
 
-.icon-commodity,
-.icon-currency {
-  top: 1px;
-  position: relative;
-}
-
-.tippy-tooltip {
-  &.blue-theme {
-    background-color: $blue;
-  }
-
-  ul,
-  ol {
-    text-align: left;
-    font-size: 90%;
-    line-height: 1.2;
-    padding-left: 20px;
-
-    li {
-      margin-bottom: 5px;
-
-      &:last-child {
-        margin: 0;
-      }
-    }
-  }
-}
-
-body.dark {
-  background-color: $dark;
-  color: white;
-
-  header.header {
-    background-color: lighten($dark, 10%);
-    color: white;
-
-    button {
-      color: white;
-    }
-  }
-
-  .settings__container,
-  .settings__container .stack__scroller {
-    background-color: $dark;
-  }
-
-  .settings__container + .app__wrapper {
-    filter: none;
-  }
-
-  .stack__container {
-    .stack__wrapper code {
-      background-color: rgba(white, 0.1);
-    }
-
-    .stack__backdrop {
-      background-color: rgba(black, .5);
-    }
-
-    .stack__toggler {
-      color: white;
-    }
-  }
-
-  .chart__container .chart__selection {
-    background-color: rgba(white, 0.1);
-  }
-
-  .trades__item.trades__item--sell {
-    color: lighten($red, 15%);
-    background-color: rgba($red, 0.1);
-
-    &.trades__item--significant {
-      background-color: $red;
-      color: white;
-    }
-  }
-
-  .trades__item.trades__item--buy {
-    color: $green;
-    background-color: rgba($green, 0.1);
-
-    &.trades__item--significant {
-      background-color: $green;
-      color: white;
-    }
-  }
-}
-
-#app {
-  width: 100%;
-  overflow: hidden;
-  position: relative;
-  min-height: 100%;
-
-  .icon-commodity:before {
-    content: unicode($icon-coin);
-  }
-
-  &[data-currency='dollar'] .icon-currency:before {
-    content: unicode($icon-dollar);
-  }
-
-  &[data-currency='euro'] .icon-currency:before {
-    content: unicode($icon-euro);
-  }
-
-  &[data-currency='yen'] .icon-currency:before {
-    content: unicode($icon-yen);
-  }
-
-  &[data-currency='bitcoin'] .icon-currency:before {
-    content: unicode($icon-btc);
-  }
-
-  &[data-currency='ethereum'] .icon-currency:before {
-    content: unicode($icon-eth);
-  }
-
-  &[data-currency='pound'] .icon-currency:before {
-    content: unicode($icon-pound);
-  }
-
-  &[data-commodity='bitcoin'] .icon-commodity:before {
-    content: unicode($icon-btc);
-  }
-
-  &[data-commodity='ethereum'] .icon-commodity:before {
-    content: unicode($icon-eth);
-  }
-}
-
-.app__wrapper {
-  height: 100%;
-  transition: transform .3s $easeOutExpo;
-}
-
-.stack__container {
-  transform: none;
-  overflow: hidden;
-  max-height: 1000px;
-  font-size: 12px;
-  z-index: 1;
-
-  @media screen and (min-width: 500px) {
-    .stack__backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-
-      display: block;
-      background-color: rgba(white, 0.5);
-      pointer-events: none;
-    }
-  }
-
-  .stack__scroller {
-    overflow: auto;
-    position: relative;
-    max-height: 100%;
-  }
-
-  .stack__toggler {
-    position: absolute;
-    right: 0;
-    top: 0;
-    font-size: 18px;
-    opacity: 0.2;
-    padding: 8px;
-    z-index: 1;
-
-    &:hover {
-      opacity: 1;
-    }
-  }
-
-  .stack__wrapper {
-    padding: 8px 10px;
-    position: relative;
-
-    p {
-      margin: 0 0 2px;
-
-      &:last-child {
-        margin: 0;
-      }
-    }
-
-    code {
-      background-color: rgba(black, 0.1);
-      font-weight: 400;
-      padding: 3px 4px;
-      line-height: 1;
-      display: inline-block;
-      position: relative;
-      letter-spacing: -0.5px;
-    }
-  }
-}
+@import './assets/sass/dark';
 </style>

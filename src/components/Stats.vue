@@ -1,5 +1,5 @@
 <template>
-	<div class="stats">
+	<div id="stats" class="stats">
     <div>
       <div class="stats__label">TRADES</div>
       <div class="stats__value">
@@ -160,7 +160,7 @@ export default {
   justify-content: space-evenly;
 
   > div {
-    padding: 10px;
+    padding: .8em 1em;
     display: flex;
     align-items: center;
     flex-grow: 1;
@@ -182,6 +182,7 @@ export default {
     text-align: right;
     font-weight: 600;
     margin-left: 5px;
+    white-space: nowrap;
   }
 }
 </style>

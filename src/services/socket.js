@@ -330,7 +330,7 @@ const emitter = new Vue({
 							}
 
 							if (append.length) {
-								console.log(`[fetch] append ${prepend.length} trades`);
+								console.log(`[fetch] append ${append.length} trades`);
 								this.trades = this.trades.concat(append);
 							}
 						}

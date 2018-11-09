@@ -1,0 +1,67 @@
+.app__wrapper {
+	display: flex;
+	flex-direction: column;
+
+	.app_components {
+		display: flex;
+		flex-direction: column;
+	}
+
+
+	@media screen and (min-width: 480px) and (max-width: 767px) {
+		.app_components {
+			font-size: 1.1em;
+		}
+	}
+
+	@media screen and (min-width: 768px) {
+		flex-direction: row;
+		flex-wrap: wrap;
+
+		#header {
+			flex-grow: 1;
+			flex-basis: 100%;
+		}
+
+		#chart {
+			overflow: hidden;
+			flex-basis: 75%;
+			flex-grow: 0;
+		}
+
+		.app_components {
+			overflow: hidden;
+			flex-basis: 25%;
+
+			font-size: .8em;
+			flex-grow: 1;
+
+			.stats {
+				flex-wrap: wrap;
+
+				> div {
+					flex-direction: column;
+					align-items: center;
+					flex-basis: 50%;
+					padding: 1em 0;
+				}
+			}
+
+			.trades {
+				flex-grow: 1;
+			}
+		}
+	}
+
+	@media screen and (min-width: 1400px) {
+		.app_components {
+			font-size: 1.2em;
+		}
+	}
+}
+
+#app {
+	@media screen and (min-width: 768px) {
+		height: 100vh;
+	}
+}

@@ -1,5 +1,5 @@
 <template>
-	<header class="header">
+	<header id="header" class="header">
 		<div class="header__title"> <span class="pair" v-if="pair">{{pair}}</span> <span class="icon-currency"></span> <span v-html="price || 'SignificantTrades'"></span></div>
     <button></button>
 		<button type="button" class="header__timeframe" v-if="canFetch" v-bind:title="fetchLabel" v-tippy="{placement: 'left'}">

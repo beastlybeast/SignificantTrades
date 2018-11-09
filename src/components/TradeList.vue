@@ -1,5 +1,5 @@
 <template>
-	<div class="trades">
+	<div id="trades" class="trades">
 		<ul v-if="trades.length">
 			<li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ backgroundImage: trade.image, backgroundColor: trade.hsl }">
 				<template v-if="trade.message">
@@ -310,14 +310,6 @@ export default {
   background-blend-mode: overlay;
   position: relative;
   align-items: center;
-
-  @media only screen and (min-width: 480px) {
-    font-size: 1.25em;
-  }
-
-  @media only screen and (min-width: 1024px) {
-    font-size: 1.5em;
-  }
 
   &:after {
     content: '';

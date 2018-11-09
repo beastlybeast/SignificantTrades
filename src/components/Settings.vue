@@ -1,5 +1,5 @@
 <template>
-	<div class="settings__container stack__container" v-on:click="$event.target === $el && $emit('close')">
+	<div id="settings" class="settings__container stack__container" v-on:click="$event.target === $el && $emit('close')">
     <div class="stack__backdrop"></div>
     <div class="stack__scroller">
       <!-- <a href="https://github.com/Tucsky/SignificantTrades/issues" target="_blank" class="settings__report"><i class="icon-warning"></i> Found a bug or feedback ? Let me know on Github !</a> -->

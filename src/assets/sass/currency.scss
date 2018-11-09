@@ -1,0 +1,43 @@
+#app {
+  .icon-commodity,
+  .icon-currency {
+    top: 1px;
+    position: relative;
+  }
+
+  .icon-commodity:before {
+    content: unicode($icon-coin);
+  }
+
+  &[data-currency='dollar'] .icon-currency:before {
+    content: unicode($icon-dollar);
+  }
+
+  &[data-currency='euro'] .icon-currency:before {
+    content: unicode($icon-euro);
+  }
+
+  &[data-currency='yen'] .icon-currency:before {
+    content: unicode($icon-yen);
+  }
+
+  &[data-currency='bitcoin'] .icon-currency:before {
+    content: unicode($icon-btc);
+  }
+
+  &[data-currency='ethereum'] .icon-currency:before {
+    content: unicode($icon-eth);
+  }
+
+  &[data-currency='pound'] .icon-currency:before {
+    content: unicode($icon-pound);
+  }
+
+  &[data-commodity='bitcoin'] .icon-commodity:before {
+    content: unicode($icon-btc);
+  }
+
+  &[data-commodity='ethereum'] .icon-commodity:before {
+    content: unicode($icon-eth);
+  }
+}

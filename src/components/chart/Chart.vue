@@ -1,6 +1,6 @@
 <template>
-	<div>
-		<div class="chart__container" ref="chartContainer" v-bind:class="{fetching: fetching}">
+	<div id="chart">
+		<div class="chart__container" ref="chartContainer" v-bind:class="{fetching: fetching}" v-bind:style="{ height: chartHeight }">
 			<!-- <div class="chart__range">
 				<div>{{ rangeFrom }}</div>
 				<div>{{ rangeTo }}</div>
@@ -28,7 +28,9 @@ export default {
       fetching: false,
 			chart: null,
       tick: null,
-      cursor: null
+      cursor: null,
+      range: 0,
+      queue: []
     };
   },
   computed: {
@@ -43,10 +45,12 @@ export default {
 		])
   },
   created() {
-    Highcharts.wrap(Highcharts.Chart.prototype, 'pan', function(proceed) {
-      console.log("panning...");
+    /*Highcharts.wrap(Highcharts.Chart.prototype, 'pan', function(proceed, event, arg) {
+      console.log("panning...", this, event, arg);
       proceed.call(this, arguments[1], arguments[2]);
-    });
+    });*/
+    
+    Highcharts.wrap(Highcharts.Chart.prototype, 'pan', this.doPan(this));
 
     socket.$on('trades', this.onTrades);
 
@@ -68,7 +72,13 @@ export default {
     });
   },
 	mounted() {
-    this.createChart();
+    this.$refs.chartContainer.style.height = this.getChartSize().height;
+      
+    window.setTimeout(() => this.createChart());
+
+    this._doResize = this.doResize.bind(this);
+
+    window.addEventListener('resize', this._doResize, false);
 
     this._doDrag = this.doDrag.bind(this);
 
@@ -79,6 +89,7 @@ export default {
     window.addEventListener('mouseup', this._stopDrag, false);
 
     // this.buildExchangesSeries();
+
     this.setTimeframe(this.timeframe);
 	},
   beforeDestroy() {
@@ -94,6 +105,7 @@ export default {
 
     socket.$off('pairing', this.onPairing);
 
+    window.removeEventListener('resize', this._doResize);
     window.removeEventListener('mousemove', this._doDrag);
     window.removeEventListener('mouseup', this._stopDrag);
 
@@ -101,37 +113,37 @@ export default {
   },
   methods: {
     createChart() {
-
+      console.log('new chart');
       this.chart = Highcharts.stockChart(this.$el.querySelector('.chart__canvas'), JSON.parse(JSON.stringify(chartOptions)));
 
-      if (this.chartHeight) {
-        this.updateChartHeight();
+      this.updateChartHeight();
+
+      if (this.range) {
+        this.setRange(this.range);
       }
     },
     setTimeframe(timeframe) {
-      if (!this.chart) {
-        return;
-      }
+      console.log('setTimeframe', timeframe);
 
-      const count = (this.chart.chartWidth - 20 * .1) / 10;
-      const range = timeframe * 2 * count
+      const count = ((this.chart ? this.chart.chartWidth : this.$refs.chartContainer.offsetWidth) - 20 * .1) / 10;
+      const range = timeframe * 2 * count;
 
       const now = +new Date();
 
-      this.chart.xAxis[0].setExtremes(now - range / 2, now, true);
-
       socket.fetchRangeIfNeeded(range, timeframe).then(trades => {
+        this.setRange(range / 2);
+
         // this.stopTickInterval();
 
-        for (let serie of this.chart.series) {
-          !serie.linkedParent && serie.setData([], false);
+        if (this.chart) {
+          for (let serie of this.chart.series) {
+            serie.setData([], false);
+          }
+
+          this.tickData = null;
+
+          this.chart.redraw();
         }
-
-        this.tickData = null;
-
-        this.chart.redraw();
-
-        console.log('redraw empty series');
 
         if (!socket.trades.length) {
           return;
@@ -141,11 +153,11 @@ export default {
 
         this.tickTrades(socket.trades);
 
-        // this.startTickInterval();
+        // this.startTickInterval(); // will fill the gaps when low trades volume & low timeframe
       })
     },
     onPairing(pair, canFetch) {
-      this.chart.series[1].update({
+      /* this.chart.series[1].update({
         tooltip: {
           valuePrefix: app.getAttribute('data-symbol')
         }
@@ -155,20 +167,16 @@ export default {
         tooltip: {
           valuePrefix: app.getAttribute('data-symbol')
         }
-      });
+      }); */
     },
     onTrades(trades) {
-      if (!this.chart || !this.timeframe) {
+      if (!this.timeframe) {
         return;
       }
 
       this.tickTrades(trades);
     },
     tickTrades(trades, live = false) {
-      if (!this.chart || !this.timeframe) {
-        return;
-      }
-
       const ticks = [];
 
       trades = trades
@@ -179,6 +187,15 @@ export default {
 
       if (!trades || !trades.length) {
         return;
+      }
+
+      if (this.isPanned()) {
+        this.queue = this.queue.concat(trades);
+
+        return;
+      } else if (this.queue.length) {
+        console.log('apply queued', this.queue.length);
+        trades = this.queue.splice(0, this.queue.length).concat(trades);
       }
 
       // define range rounded to the timeframe
@@ -235,7 +252,7 @@ export default {
       if (ticks.length && ticks[0].added) {
         const tickPoints = this.getTickPoints();
         // let serie;
-
+        console.log('update point');
         tickPoints.buys.update(ticks[0].buys[1], live);
         tickPoints.sells.update(ticks[0].sells[1], live);
         tickPoints.ohlc.update(ticks[0].ohlc, live);
@@ -250,14 +267,15 @@ export default {
       }
 
       for (let i = 0; i < ticks.length; i++) {
+        console.log('add point');
         this.addTickToSeries(ticks[i], live, i == ticks.length - 1);
       }
-
+      
       this.chart.redraw();
 
-      console.log('redraw filled series');
-
       this.tickData.added = true;
+
+      window.chart = this.chart;
     },
     getTickPoints() {
       return {
@@ -395,10 +413,10 @@ export default {
       this.resizing = event.pageY;
     },
 
-    doResize(event) {
+    doChangeHeight(event) {
       this.chart.setSize(
         document.documentElement.clientWidth,
-        this.chart.chartHeight + (event.pageY - this.resizing),
+        Math.min(document.body.clientHeight - this.$refs.chartContainer.offsetTop, this.chart.chartHeight + (event.pageY - this.resizing)),
         false
       );
 
@@ -414,22 +432,23 @@ export default {
     },
 
     updateChartHeight() {
-      const w = document.documentElement.clientWidth || innerWidth;
+      const size = this.getChartSize();
+
+      this.chart.setSize(
+        size.width,
+        size.height,
+        false
+      );
+    },
+
+    getChartSize() {
+      const w = this.$refs.chartContainer.offsetWidth;
       const h = document.documentElement.clientHeight || innerHeight;
 
-      if (this.chartHeight > 0) {
-        this.chart.setSize(
-          w,
-          this.chartHeight,
-          false
-        );
-      } else {
-        this.chart.setSize(
-          w,
-          +Math.min(w / 3, Math.max(100, h / 3)).toFixed(),
-          false
-        );
-      }
+      return {
+        width: w,
+        height: this.chartHeight > 0 ? this.chartHeight : +Math.min(w / 3, Math.max(100, h / 3)).toFixed()
+      };
     },
     createAndAppendEmptyTick() {
       this.createTick();
@@ -443,9 +462,38 @@ export default {
       this.chart.redraw();
     },
 
+    doResize(event) {
+      clearTimeout(this._resizeTimeout);
+
+      this._resizeTimeout = setTimeout(() => {
+        let height = this.chart.chartHeight
+
+        if (this.chart.chartHeight > document.body.clientHeight - this.$refs.chartContainer.offsetTop) {
+          height = document.body.clientHeight - this.$refs.chartContainer.offsetTop;
+
+          if (this.chartHeight) {
+            this.$store.commit('setChartHeight', height);
+          }
+        }
+
+        this.chart.setSize(this.$refs.chartContainer.offsetWidth, height, true, true);
+      }, 250);
+    },
+
+    doPan(self) {
+      return function(proceed, event, arg, c) {
+        /*console.log('panning',
+          this, event, arg, c,
+          self.chart.series.length && self.chart.series[0].xData.length ? new Date(self.chart.series[0].xData[self.chart.series[0].xData.length - 1]) : 'no last xData', 
+          self.chart.series.length && self.chart.series[0].points.length ? new Date(self.chart.series[0].points[self.chart.series[0].points.length - 1].x) : 'no last point'
+        ); */
+        return proceed.call(self.chart, event, arg);
+      };
+    },
+
     doDrag(event) {
       if (!isNaN(this.resizing)) {
-        this.doResize(event);
+        this.doChangeHeight(event);
       }
     },
 
@@ -461,6 +509,8 @@ export default {
       const axis = this.chart.xAxis[0].getExtremes();
       const now = +new Date();
       const diff = now - axis.max;
+
+      console.log('set extremes', axis.min + diff, axis.max + diff);
       this.chart.xAxis[0].setExtremes(axis.min + diff, axis.max + diff, redraw);
     },
 
@@ -484,7 +534,7 @@ export default {
         }, false);
       }
 
-      this.setTimeframe(this.timeframe);
+      setTimeout(() => this.setTimeframe(this.timeframe), 100);
     }
 
     /*stopTickInterval() {
@@ -521,7 +571,25 @@ export default {
           this.chart.redraw();
         }, this.timeframe);
       }, timeToFirstTick - now);
-    }*/
+    }*/,
+    isPanned() {
+      return !this.chart || !this.chart.series.length || (
+        this.chart.series[0].points.length 
+        && this.chart.series[0].xData.length
+        && this.chart.series[0].points[this.chart.series[0].points.length - 1].x < this.chart.series[0].xData[this.chart.series[0].xData.length - 1]
+      )
+    },
+    setRange(range) {
+      const now = +new Date();
+
+      console.log('save range', range);
+      this.range = range;
+
+      if (this.chart) {
+        console.log('this.chart !== null: set extremes');
+        this.chart.xAxis[0].setExtremes(now - range, now, true);
+      }
+    }
   }
 };
 </script>
@@ -590,5 +658,9 @@ export default {
 
 .highcharts-tooltip-box tspan {
   font-weight: 400 !important;
+}
+
+.highcharts-yaxis-grid path:first-child {
+  display: none;
 }
 </style>

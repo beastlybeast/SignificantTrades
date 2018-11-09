@@ -63,7 +63,6 @@
   },
   "series": [
     {
-      "zIndex": 1,
       "id": "price",
       "type": "candlestick",
       "name": "BTCUSD",
@@ -95,7 +94,7 @@
       "yAxis": 1
     },
     { "type": "sma", "name": "Price SMA (14)", "lineColor": "rgba(255, 255, 255, .25)", "linkedTo": "price", "marker": { "enabled": false } },
-    { "type": "sma", "name": "Buys SMA (14)", "lineColor": "rgba(233, 30, 99, 1)", "linkedTo": "sells", "marker": { "enabled": false }, "yAxis": 1 },
-    { "type": "sma", "name": "Sell SMA (14)", "lineColor": "rgba(139, 195, 74, 1)", "linkedTo": "buys", "marker": { "enabled": false }, "yAxis": 1 }
+    { "type": "sma", "name": "Buys SMA (14)", "lineColor": "rgba(233, 30, 99, .75)", "linkedTo": "sells", "marker": { "enabled": false }, "yAxis": 1 },
+    { "type": "sma", "name": "Sell SMA (14)", "lineColor": "rgba(139, 195, 74, .75)", "linkedTo": "buys", "marker": { "enabled": false }, "yAxis": 1 }
   ]
 }

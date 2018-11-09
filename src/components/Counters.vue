@@ -1,5 +1,5 @@
 <template>
-	<div class="counters">
+	<div id="counters" class="counters">
     <ul>
       <li v-for="(sum, index) of stackedSums" :key="`sum-${index}`" v-if="!hideEmptyCounter || counters[index].length" class="counters__item">
         <div class="counter__index">
@@ -354,7 +354,7 @@ export default {
 
   [contenteditable] {
     padding: 4px;
-    font-size: .72em;
+    font-size: .8em;
 
     &:after {
       content: unicode($icon-edit);
