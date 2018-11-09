@@ -1,30 +1,36 @@
 <template>
 	<div id="stats" class="stats">
-    <div>
-      <div class="stats__label">TRADES</div>
-      <div class="stats__value">
-        {{rate.live}}
-        <sup>({{rate.side}}{{(100 - (rate.average / rate.live) * 100).toFixed()}}%)</sup>
-      </div>
+    <div class="stats__infos" v-if="periodLabel">
+      <i>it happened under the last</i>
+      <div>{{ periodLabel }}</div>
     </div>
-    <div>
-      <div class="stats__label">BUYS</div>
-      <div class="stats__value">
-        <span class="icon-commodity"></span> {{up.live.toFixed()}}
-        <sup>({{up.side}}{{(100 - (up.average / up.live) * 100).toFixed()}}%)</sup>
-      </div>
-    </div>
-    <div>
-      <div class="stats__label">SELLS</div>
-      <div class="stats__value">
-        <span class="icon-commodity"></span> {{down.live.toFixed()}}
-        <sup>({{down.side}}{{(100 - (down.average / down.live) * 100).toFixed()}}%)</sup>
-      </div>
-    </div>
-    <div>
-      <div class="stats__label">VOL</div>
-      <div class="stats__value"><span class="icon-commodity"></span> {{(up.live + down.live).toFixed()}}</div>
-    </div>
+    <ul class="stats__items">
+      <li>
+        <div class="stats__label">TRADES</div>
+        <div class="stats__value">
+          {{rate.live}}
+          <sup>({{rate.side}}{{(100 - (rate.average / rate.live) * 100).toFixed()}}%)</sup>
+        </div>
+      </li>
+      <li>
+        <div class="stats__label">BUYS</div>
+        <div class="stats__value">
+          <span class="icon-commodity"></span> {{up.live.toFixed()}}
+          <sup>({{up.side}}{{(100 - (up.average / up.live) * 100).toFixed()}}%)</sup>
+        </div>
+      </li>
+      <li>
+        <div class="stats__label">SELLS</div>
+        <div class="stats__value">
+          <span class="icon-commodity"></span> {{down.live.toFixed()}}
+          <sup>({{down.side}}{{(100 - (down.average / down.live) * 100).toFixed()}}%)</sup>
+        </div>
+      </li>
+      <li>
+        <div class="stats__label">VOL</div>
+        <div class="stats__value"><span class="icon-commodity"></span> {{(up.live + down.live).toFixed()}}</div>
+      </li>
+    </ul>
 	</div>
 </template>
 
@@ -154,28 +160,13 @@ export default {
 @import '../assets/sass/variables';
 
 .stats {
-  background-color: rgba(white, .1);
-  display: flex;
-  align-items: center;
-  justify-content: space-evenly;
-
-  > div {
-    padding: .8em 1em;
-    display: flex;
-    align-items: center;
-    flex-grow: 1;
-    flex-direction: column;
-
-    @media screen and (min-width: 768px) {
-      flex-grow: 0;
-      flex-direction: row;
-      justify-content: center;
-    }
-  }
+  background-color: rgba(white, .05);
+  position: relative;
 
   .stats__label {
     opacity: .5;
     font-size: .75em;
+    padding: 1em 1em .25em;
   }
 
   .stats__value {
@@ -183,6 +174,64 @@ export default {
     font-weight: 600;
     margin-left: 5px;
     white-space: nowrap;
+    padding: .25em 1em 1em;
+  }
+
+  .stats__items {
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    > li {
+      display: flex;
+      align-items: center;
+      flex-grow: 1;
+      flex-direction: column;
+      flex-basis: 50%;
+    }
+  }
+
+  .stats__infos {
+    display: none;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 100px;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
+    text-align: right;
+
+    > i {
+      font-size: 60%;
+      width: 70%;
+    }
+
+    > div {
+      font-weight: 600;
+      font-size: 1.25em;
+      text-align: right;
+      align-self: flex-end;
+    }
+
+    &:before {
+      position: absolute;
+      content: unicode($icon-stopwatch);
+      font-family: 'icon';
+      color: white;
+      opacity: .1;
+      pointer-events: none;
+      font-size: 140px;
+      bottom: 0;
+      left: -40%;
+    }
+
+    @media screen and (min-width: 1400px) {
+      display: flex;
+    }
   }
 }
 </style>

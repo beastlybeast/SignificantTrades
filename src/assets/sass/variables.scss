@@ -42,6 +42,7 @@ $icon-add: \e920;
 $icon-rip: \e921;
 $icon-eye: \e922;
 $icon-eye-crossed: \e923;
+$icon-stopwatch: \e91c;
 
 @function unicode($str) {
   @return unquote("\"") + $str + unquote("\"");

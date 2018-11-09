@@ -32,6 +32,7 @@ export default {
   computed: {
     ...mapState([
 			'pair',
+			'actives',
 			'countersSteps',
       'counterPrecision',
       'hideEmptyCounter',
@@ -53,6 +54,7 @@ export default {
       switch (mutation.type) {
         case 'setCounterStep':
         case 'replaceCounterSteps':
+        case 'reloadExchangeState':
           this.rebuildCounters();
           break;
       }
@@ -163,7 +165,7 @@ export default {
       let stacks = [];
 
       for (let trade of trades) {
-        if (trade[1] < now - minTimestampForCounter) {
+        if (this.actives.indexOf(trade[0]) === -1 || trade[1] < now - minTimestampForCounter) {
           continue;
         }
 
