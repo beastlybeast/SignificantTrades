@@ -133,9 +133,6 @@ class Exchange extends EventEmitter {
       }
     }
 
-    // let at = 0;
-    // let volume = 0;
-
     const output = Object.keys(group).map((id, index) => {
       group[id][2] =
         group[id][2].map((price, index) => price * group[id][3][index]).reduce((a, b) => a + b) /

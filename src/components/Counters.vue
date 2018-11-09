@@ -58,7 +58,7 @@ export default {
       }
     });
 
-    socket.$on('trades', this.onTrades);
+    socket.$on('trades.queued', this.onTrades);
     socket.$on('historical', this.onFetch);
 
     this.rebuildCounters();

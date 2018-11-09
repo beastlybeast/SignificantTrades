@@ -53,7 +53,7 @@ export default {
     this.getGifs();
 
     socket.$on('pairing', this.onPairing);
-    socket.$on('trades', this.onTrades);
+    socket.$on('trades.instant', this.onTrades);
   },
   mounted() {
     if (this.useAudio) {

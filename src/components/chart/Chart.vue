@@ -52,7 +52,7 @@ export default {
     
     Highcharts.wrap(Highcharts.Chart.prototype, 'pan', this.doPan(this));
 
-    socket.$on('trades', this.onTrades);
+    socket.$on('trades.queued', this.onTrades);
 
     socket.$on('pairing', this.onPairing);
 

@@ -71,7 +71,7 @@ export default {
       }
     });
 
-    socket.$on('trades', this.onTrades);
+    socket.$on('trades.instant', this.onTrades);
     socket.$on('historical', this.onFetch);
 
     this.rebuildStats();

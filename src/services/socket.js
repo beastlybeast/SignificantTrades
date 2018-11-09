@@ -66,17 +66,19 @@ const emitter = new Vue({
 		this.exchanges.forEach(exchange => {
 			this.ids.push(exchange.id);
 
-			exchange.on('live_trades', data => {
-				if (!data || !data.length) {
+			exchange.on('live_trades', (trades, upVolume, downVolume) => {
+				if (!trades || !trades.length) {
 					return;
 				}
 
 				this.timestamps[exchange.id] = +new Date();
 
-				data = data
+				trades = trades
 					.sort((a, b) => a[1] - b[1]);
 
-				this.queue = this.queue.concat(data);
+				this.queue = this.queue.concat(trades);
+
+				this.emitFilteredTradesAndVolumeSum(trades);
 			});
 
 			exchange.on('open', event => {
@@ -149,7 +151,7 @@ const emitter = new Vue({
 
 				this.trades = this.trades.concat(this.queue);
 
-				this.emitFilteredTradesAndVolumeSum(this.queue);
+				this.emitFilteredTradesAndVolumeSum(this.queue, 'trades.queued');
 
 				this.queue = [];
 			}, 1000);
@@ -247,7 +249,7 @@ const emitter = new Vue({
 
 			return null;
 		},
-		emitFilteredTradesAndVolumeSum(trades) {
+		emitFilteredTradesAndVolumeSum(trades, event = 'trades.instant') {
 			let upVolume = 0;
 			let downVolume = 0;
 
@@ -265,7 +267,7 @@ const emitter = new Vue({
 				return true;
 			})
 
-			this.$emit('trades', output, upVolume, downVolume);
+			this.$emit(event, output, upVolume, downVolume);
 		},
 		canFetch() {
 			return this.API_URL && /btcusd/i.test(this.pair);
