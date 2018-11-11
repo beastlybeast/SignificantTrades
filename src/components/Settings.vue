@@ -11,7 +11,7 @@
             <input type="string" placeholder="BTCUSD" class="form-control" v-bind:value="pair" @change="$store.commit('setPair', $event.target.value)">
           </div>
         </div>
-        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'basics')" v-bind:class="{closed: settings.indexOf('basics') > -1}">Basics <i class="icon-up"></i></div>
+        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'list')" v-bind:class="{closed: settings.indexOf('list') > -1}">Trades list <i class="icon-up"></i></div>
         <div class="mb8">
           <div class="settings__column">
             <div class="form-group">
@@ -19,7 +19,7 @@
               <input type="number" min="0" max="1000" step="1" class="form-control" v-bind:value="maxRows" @change="$store.commit('setMaxRows', $event.target.value)">
             </div>
             <div class="form-group">
-              <label>Precision <span class="icon-info-circle" title="Define how much digits will be displayed after the decimal point" v-tippy></span></label>
+              <label>Decimal precision <span class="icon-info-circle" title="Define how much digits will be displayed after the decimal point" v-tippy></span></label>
               <input type="number" min="0" max="10" step="1" placeholder="auto" class="form-control" v-bind:value="decimalPrecision" @change="$store.commit('setDecimalPrecision', $event.target.value)">
             </div>
           </div>
@@ -41,7 +41,7 @@
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'audio')" v-bind:class="{closed: settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
         <div class="settings__audio settings__activable settings__column" v-bind:class="{active: useAudio}">
           <div class="form-group settings__column__tight">
-            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Enable audio">
+            <label class="checkbox-control checkbox-on-off checkbox-control-input flex-right" v-tippy title="Enable audio">
               <input type="checkbox" class="form-control" v-bind:checked="useAudio" @change="$store.commit('toggleAudio', $event.target.checked)">
               <div></div>
             </label>
@@ -59,42 +59,43 @@
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'counters')" v-bind:class="{closed: settings.indexOf('counters') > -1}">Counter <i class="icon-up"></i></div>
         <div class="settings__counters settings__activable settings__column" v-bind:class="{active: showCounters}">
           <div class="form-group settings__column__tight">
-            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Enable counters">
+            <label class="checkbox-control checkbox-on-off checkbox-control-input flex-right" v-tippy title="Enable counters">
               <input type="checkbox" class="form-control" v-bind:checked="showCounters" @change="$store.commit('toggleCounters', $event.target.checked)">
               <div></div>
             </label>
           </div>
           <div class="form-group settings__column__tight">
-            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Do not show empty counter">
-              <input type="checkbox" class="form-control" v-bind:checked="hideEmptyCounter" @change="$store.commit('toggleHideEmptyCounter', $event.target.checked)">
+            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Do not show incomplete counters">
+              <input type="checkbox" class="form-control" v-bind:checked="hideIncompleteCounter" @change="$store.commit('toggleHideIncompleteCounter', $event.target.checked)">
               <div class="icon-eye-crossed"></div>
             </label>
           </div>
           <div class="form-group settings__column__fill">
             <input type="string" placeholder="Counters step separed by a comma (ie: 1m, 5m, 10m, 15m)" class="form-control" v-bind:value="countersStepsStringified" @change="replaceCounters($event.target.value)">
+            <small class="mt8">Write counters intervals separed by a comma (XXs, XXm, XXh ...)</small>
           </div>
         </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'chart')" v-bind:class="{closed: settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
         <div class="settings__chart settings__activable settings__column" v-bind:class="{active: showChart}">
           <div class="form-group settings__column__tight">
-            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Enable chart">
+            <label class="checkbox-control checkbox-on-off checkbox-control-input flex-right" v-tippy title="Enable chart">
               <input type="checkbox" class="form-control" v-bind:checked="showChart" @change="$store.commit('toggleChart', $event.target.checked)">
               <div></div>
             </label>
           </div>
           <div class="settings__column__fill">
             <div class="form-group mb8">
-              <label class="checkbox-control flex-left" v-tippy title="Shows liquidations on the chart">
+              <label class="checkbox-control checkbox-control-input flex-left" v-tippy title="Shows liquidations on the chart">
                 <input type="checkbox" class="form-control" v-bind:checked="chartLiquidations" @change="$store.commit('toggleLiquidationsPlot', $event.target.checked)">
                 <div></div>
-                <span>Highlight liquidations</span>
+                <span>Highlight liquidations <i class="icon-rip"></i></span>
               </label>
             </div>
             <div class="form-group mb8">
-              <label class="checkbox-control flex-left" v-tippy title="Wipe invisible data after a while to free memory and speed up the app">
-                <input type="checkbox" class="form-control" v-bind:checked="autoWipeCache" @change="$store.commit('toggleAutoWipeCache', $event.target.checked)">
+              <label class="checkbox-control checkbox-control-input flex-left" v-tippy title="Wipe invisible data after a while to free memory and speed up the app">
+                <input type="checkbox" class="form-control" v-bind:checked="autoClearTrades" @change="$store.commit('toggleAutoClearTrades', $event.target.checked)">
                 <div></div>
-                <span>Auto-clear data <span v-if="autoWipeCache" v-on:click.stop.prevent>after <editable :content="autoWipeCacheDuration" @output="$store.commit('setAutoWipeCacheDuration', $event.target.value)"></editable> minutes</span></span>
+                <span>Trim invisible data</span>
               </label>
             </div>
           </div>
@@ -172,12 +173,10 @@ export default {
       'decimalPrecision',
       'showCounters',
       'counterPrecision',
-      'hideEmptyCounter',
+      'hideIncompleteCounter',
       'countersSteps',
       'showChart',
       'actives',
-      'filters',
-      'disabled',
       'thresholds',
       'useAudio',
       'audioIncludeInsignificants',
@@ -185,11 +184,8 @@ export default {
       'timeframe',
       'avgLength',
       'useWeighedAverage',
-      'chartSignificantOrders',
       'chartLiquidations',
-      'autoWipeCache',
-      'autoWipeCacheDuration',
-      'exchangeThresholds',
+      'autoClearTrades',
       'dark',
       'settings',
     ]),
@@ -430,9 +426,10 @@ export default {
         width: 1em;
         height: 1em;
         border-radius: 2px;
-        background-color: rgba(white, 0.3);
+        background-color: rgba(black, 0.3);
         transition: all 0.2s $easeOutExpo;
         position: relative;
+        flex-shrink: 0;
 
         &:before,
         &:after {
@@ -450,6 +447,7 @@ export default {
           display: flex;
           align-items: center;
           justify-content: center;
+          line-height: 0;
         }
 
         &:not([class^="icon-"]):before {
@@ -460,6 +458,10 @@ export default {
           transform: none;
           opacity: 1;
         }
+      }
+
+      > span {
+        line-height: 1;
       }
 
       div + span {
@@ -493,6 +495,16 @@ export default {
           &:checked ~ div {
             background-color: $green;
           }
+        }
+      }
+
+      &.checkbox-on-off input ~ div {
+        &:before {
+          content: unicode($icon-power-on);
+        }
+
+        &:after {
+          content: unicode($icon-power-off);
         }
       }
     }
@@ -721,179 +733,6 @@ export default {
     flex-direction: row;
     flex-wrap: wrap;
     align-items: flex-start;
-
-    .settings__exchanges__item {
-      background-color: rgba(white, 0.15);
-      color: white;
-      transition: all 0.2s $easeOutExpo;
-      border-radius: 2px;
-      margin-bottom: 8px;
-      overflow: hidden;
-      flex-basis: calc(50% - 4px);
-
-      &:nth-child(odd) {
-        margin-right: 8px;
-      }
-
-      &.settings__exchanges__item--loading {
-        background-color: $blue;
-
-        .settings__exchanges__item__header:before {
-          transition: all 0.2s $easeElastic;
-          display: block;
-          opacity: 1;
-          width: 16px;
-          height: 16px;
-        }
-      }
-
-      &.settings__exchanges__item--enabled {
-        .settings__exchanges__item__name:before {
-          width: 0%;
-        }
-      }
-
-      &.settings__exchanges__item--active {
-        background-color: $green;
-        color: white;
-
-        .settings__exchanges__item__visibility {
-          display: flex;
-        }
-
-        &.settings__exchanges__item--invisible {
-          .icon-visibility:before {
-            transform: scale(1.2) rotateY(180deg);
-          }
-        }
-      }
-
-      &.settings__exchanges__item--invisible {
-        opacity: 0.8;
-
-        .icon-eye-crossed:before {
-          content: unicode($icon-eye);
-        }
-      }
-
-      &.settings__exchanges__item--error {
-        background-color: $red;
-
-        .icon-warning {
-          display: block;
-          margin-left: 5px;
-        }
-      }
-
-      &.settings__exchanges__item--unmatched {
-        background-color: #555;
-
-        color: rgba(white, 0.75);
-      }
-
-      &.settings__exchanges__item--expanded {
-        .settings__exchanges__item__more i:before {
-          content: unicode($icon-up);
-        }
-      }
-    }
-
-    .settings__exchanges__item__identity {
-      position: relative;
-      margin: 0px 10px;
-      display: flex;
-      flex-direction: column;
-      height: 40px;
-      justify-content: center;
-    }
-
-    .settings__exchanges__item__name {
-      position: relative;
-
-      &:before {
-        content: "";
-        position: absolute;
-        top: calc(50% - 0px);
-        height: 1px;
-        background-color: white;
-        transition: width 0.2s $easeOutExpo 0.2s;
-        left: -2px;
-        width: calc(100% + 4px);
-      }
-    }
-
-    .settings__exchanges__item__price {
-      opacity: .8;
-    }
-
-    .settings__exchanges__item__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: relative;
-      cursor: pointer;
-
-      &:before {
-        content: "";
-        width: 0px;
-        height: 0px;
-
-        background-color: #fff;
-        border-radius: 50%;
-        animation: circle-scaleout 1s infinite ease-in-out;
-        transition: all 0.2s $easeElastic, visibility 0.2s linear 0.2s;
-        left: 3px;
-        display: none;
-        align-self: center;
-        position: relative;
-
-        opacity: 0;
-
-        @keyframes circle-scaleout {
-          0% {
-            -webkit-transform: scale(0);
-            transform: scale(0);
-          }
-          100% {
-            -webkit-transform: scale(1);
-            transform: scale(1);
-            opacity: 0;
-          }
-        }
-      }
-
-      .icon-warning {
-        display: none;
-      }
-    }
-
-    .settings__exchanges__item__controls {
-      display: flex;
-      margin-left: auto;
-      align-self: stretch;
-
-      .settings__exchanges__item__visibility {
-        display: none;
-      }
-
-      button {
-        border: 0;
-        background: none;
-        cursor: pointer;
-        color: white;
-        font-size: 18px;
-        display: flex;
-
-        &:hover {
-          background-color: rgba(white, 0.1);
-        }
-      }
-    }
-
-    .settings__exchanges__item__detail {
-      padding: 10px;
-      background-color: rgba(black, 0.25);
-    }
   }
 
   &.open {

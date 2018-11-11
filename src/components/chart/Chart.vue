@@ -19,8 +19,10 @@ import chartOptions from "./options.json";
 
 import Highcharts from 'highcharts/highstock';
 import Indicators from 'highcharts/indicators/indicators';
+import VBP from 'highcharts/indicators/volume-by-price';
 
 Indicators(Highcharts);
+VBP(Highcharts);
 
 export default {
   data() {
@@ -37,18 +39,21 @@ export default {
     ...mapState([
       'timeframe',
       'actives',
-      'filters',
+      'exchanges',
       'isSnaped',
       'chartHeight',
-			'autoWipeCache',
-			'autoWipeCacheDuration',
+      'chartRange',
+      'chartLiquidations',
 		])
   },
   created() {
-    /*Highcharts.wrap(Highcharts.Chart.prototype, 'pan', function(proceed, event, arg) {
-      console.log("panning...", this, event, arg);
-      proceed.call(this, arguments[1], arguments[2]);
-    });*/
+    Highcharts.SVGRenderer.prototype.symbols.rip = function(x, y, w, h) {
+      return ['M', x + 2, y + h / 3, 'L', x + w - 2, y + h / 3, 'M', x + w / 2, y, 'L', x + w / 2, y + h, 'z'];
+    };
+
+    if (Highcharts.VMLRenderer) {
+      Highcharts.VMLRenderer.prototype.symbols.plus = Highcharts.SVGRenderer.prototype.symbols.plus;
+    }
     
     Highcharts.wrap(Highcharts.Chart.prototype, 'pan', this.doPan(this));
 
@@ -65,8 +70,12 @@ export default {
           mutation.payload && this.snapRight(true);
           break;
         case 'reloadExchangeState':
+        case 'chartLiquidations':
           // this.buildExchangesSeries();
           this.setTimeframe(this.timeframe);
+          break;
+        case 'trimChart':
+          
           break;
       }
     });
@@ -99,7 +108,7 @@ export default {
       delete this.chart;
     }
 
-    socket.$off('trades', this.onTrades);
+    socket.$off('trades.queued', this.onTrades);
 
     socket.$off('historical', this.onFetch);
 
@@ -113,13 +122,15 @@ export default {
   },
   methods: {
     createChart() {
+      const options = JSON.parse(JSON.stringify(chartOptions));
+
       console.log('new chart');
-      this.chart = Highcharts.stockChart(this.$el.querySelector('.chart__canvas'), JSON.parse(JSON.stringify(chartOptions)));
+      this.chart = Highcharts.stockChart(this.$el.querySelector('.chart__canvas'), options);
 
       this.updateChartHeight();
 
-      if (this.range) {
-        this.setRange(this.range);
+      if (this.chartRange) {
+        this.setRange(this.chartRange);
       }
     },
     setTimeframe(timeframe) {
@@ -134,6 +145,8 @@ export default {
         this.setRange(range / 2);
 
         // this.stopTickInterval();
+
+        console.log('(chart redraw)', socket.trades.length, 'trades, ', 'timeframe: ' + this.timeframe, '(range: ' + this.chartRange + ')');
 
         if (this.chart) {
           for (let serie of this.chart.series) {
@@ -170,10 +183,6 @@ export default {
       }); */
     },
     onTrades(trades) {
-      if (!this.timeframe) {
-        return;
-      }
-
       this.tickTrades(trades);
     },
     tickTrades(trades, live = false) {
@@ -218,24 +227,42 @@ export default {
             this.tickData.open = this.tickData.high = this.tickData.low = this.tickData.close = +trades[i][2];
           }
 
-          if (!this.tickData.exchanges[trades[i][0]]) {
-            this.tickData.exchanges[trades[i][0]] = {
-              open: +trades[i][2],
-              high: +trades[i][2],
-              low: +trades[i][2],
-              close: +trades[i][2],
-              life: 1,
-              size: 0
-            };
+          if (trades[i][5]) {
+            switch (+trades[i][5]) {
+              case 1:
+                if (this.chartLiquidations) {
+                  this.tickData.markers.push({
+                    x: trades[i][1],
+                    label: `${app.getAttribute('data-symbol')}${this.$root.formatAmount(trades[i][2] * trades[i][3], 1)} liquidated <b>${trades[i][4] == 1 ? 'SHORT' : 'LONG'}</b>`,
+                    symbol: 'rip'
+                  });
+                }
+                break;
+            }
+            continue;
           }
 
-          this.tickData.exchanges[trades[i][0]].life = 1;
-          this.tickData.exchanges[trades[i][0]].count++;
+          if (this.exchanges[trades[i][0]].ohlc !== false) {
+            if (!this.tickData.exchanges[trades[i][0]]) {
+              this.tickData.exchanges[trades[i][0]] = {
+                open: +trades[i][2],
+                high: +trades[i][2],
+                low: +trades[i][2],
+                close: +trades[i][2],
+                life: 1,
+                size: 0
+              };
+            }
 
-          this.tickData.exchanges[trades[i][0]].high = Math.max(this.tickData.exchanges[trades[i][0]].high, +trades[i][2]);
-          this.tickData.exchanges[trades[i][0]].low = Math.min(this.tickData.exchanges[trades[i][0]].low, +trades[i][2]);
-          this.tickData.exchanges[trades[i][0]].close = +trades[i][2];
-          this.tickData.exchanges[trades[i][0]].size += +trades[i][3];
+            this.tickData.exchanges[trades[i][0]].life = 1;
+            this.tickData.exchanges[trades[i][0]].count++;
+
+            this.tickData.exchanges[trades[i][0]].high = Math.max(this.tickData.exchanges[trades[i][0]].high, +trades[i][2]);
+            this.tickData.exchanges[trades[i][0]].low = Math.min(this.tickData.exchanges[trades[i][0]].low, +trades[i][2]);
+            this.tickData.exchanges[trades[i][0]].close = +trades[i][2];
+            this.tickData.exchanges[trades[i][0]].size += +trades[i][3];
+          }
+
           this.tickData[(trades[i][4] > 0 ? 'buys' : 'sells') + 'Count']++;
           this.tickData[trades[i][4] > 0 ? 'buys' : 'sells'] += trades[i][3] * trades[i][2];
         }
@@ -250,12 +277,8 @@ export default {
         console.info('livemode');
       }
       if (ticks.length && ticks[0].added) {
-        const tickPoints = this.getTickPoints();
+        this.updateCurrentTick(ticks[0], live);
         // let serie;
-        console.log('update point');
-        tickPoints.buys.update(ticks[0].buys[1], live);
-        tickPoints.sells.update(ticks[0].sells[1], live);
-        tickPoints.ohlc.update(ticks[0].ohlc, live);
 
         /* for (let exchange of this.actives) {
           serie = this.chart.series[this.actives.indexOf(exchange) + 4];
@@ -267,21 +290,21 @@ export default {
       }
 
       for (let i = 0; i < ticks.length; i++) {
-        console.log('add point');
         this.addTickToSeries(ticks[i], live, i == ticks.length - 1);
       }
       
       this.chart.redraw();
 
       this.tickData.added = true;
+      this.tickData.markers.splice(0, this.tickData.markers.length);
 
       window.chart = this.chart;
     },
-    getTickPoints() {
+    getCurrentTickPoints() {
       return {
         ohlc: this.chart.series[0].points[this.chart.series[0].points.length - 1],
         buys: this.chart.series[1].points[this.chart.series[1].points.length - 1],
-        sells: this.chart.series[2].points[this.chart.series[2].points.length - 1]
+        sells: this.chart.series[2].points[this.chart.series[2].points.length - 1],
       };
     },
     createTick(timestamp = null) {
@@ -293,9 +316,10 @@ export default {
         this.cursor = Math.floor(+new Date() / this.timeframe) * this.timeframe;
       }
 
-      let exchanges = {};
-
       if (this.tickData) {
+        this.tickData.timestamp = this.cursor;
+        this.tickData.markers = [];
+
         for (let exchange in this.tickData.exchanges) {
           this.tickData.exchanges[exchange].count = 0;
           this.tickData.exchanges[exchange].life *= 1;
@@ -303,7 +327,7 @@ export default {
           this.tickData.exchanges[exchange].high = this.tickData.exchanges[exchange].close;
           this.tickData.exchanges[exchange].low = this.tickData.exchanges[exchange].close;
         }
-        this.tickData.timestamp = this.cursor;
+
         this.tickData.open = parseFloat(this.tickData.close);
         this.tickData.high = null;
         this.tickData.low = null;
@@ -316,6 +340,7 @@ export default {
       } else {
         this.tickData = {
           timestamp: this.cursor,
+          markers: [],
           exchanges: {},
           open: null,
           high: null,
@@ -342,6 +367,42 @@ export default {
         this.snapRight(live);
       }
     },
+    updateCurrentTick(tick, live = false) {
+      const tickPoints = this.getCurrentTickPoints();
+
+      tickPoints.buys.update(tick.buys[1], live);
+      tickPoints.sells.update(tick.sells[1], live);
+      tickPoints.ohlc.update(tick.ohlc, live);
+
+      if (tick.markers.length) {
+        this.processTickMarkers(tick);
+      }
+    },
+    processTickMarkers(tick) {
+      if (!tick.markers.length) {
+        return;
+      }
+
+      tick.markers.forEach(marker => 
+        this.createMarker(marker.x || tick.ohlc[0], marker.y || tick.ohlc[4], marker.label, marker.symbol)
+      )
+    },
+    createMarker(x, y, label, symbol) {
+      const point = {
+        x: x,
+        y: y,
+        marker: {
+          radius: 8,
+          lineWidth: 4,
+          symbol: symbol,
+          fillColor: 'white'
+        },
+        name: label
+      };
+
+      this.chart.series[3].addPoint(point);
+    },
+
     formatTickData(tickData) {
       const ohlc = this.getTickDataAveraged(tickData);
       /* const exchanges = [];
@@ -359,7 +420,14 @@ export default {
       return {
         buys: [tickData.timestamp, tickData.buys],
         sells: [tickData.timestamp, tickData.sells],
-        ohlc: [tickData.timestamp, ohlc.open, ohlc.high, ohlc.low, ohlc.close],
+        ohlc: [
+          tickData.timestamp, 
+          this.$root.formatPrice(ohlc.open), 
+          this.$root.formatPrice(ohlc.high), 
+          this.$root.formatPrice(ohlc.low), 
+          this.$root.formatPrice(ohlc.close)
+        ],
+        markers: tickData.markers,
         // exchanges: exchanges,
         added: tickData.added
       }
@@ -413,16 +481,6 @@ export default {
       this.resizing = event.pageY;
     },
 
-    doChangeHeight(event) {
-      this.chart.setSize(
-        document.documentElement.clientWidth,
-        Math.min(document.body.clientHeight - this.$refs.chartContainer.offsetTop, this.chart.chartHeight + (event.pageY - this.resizing)),
-        false
-      );
-
-      this.resizing = event.pageY;
-    },
-
     resetHeight(event) {
       delete this.resizing;
 
@@ -431,19 +489,23 @@ export default {
       this.updateChartHeight();
     },
 
-    updateChartHeight() {
+    updateChartHeight(height = null) {
       const size = this.getChartSize();
+
+      if (window.innerWidth >= 768) {
+        height = this.$el.clientHeight;
+      }
 
       this.chart.setSize(
         size.width,
-        size.height,
+        height || size.height,
         false
       );
     },
 
     getChartSize() {
       const w = this.$refs.chartContainer.offsetWidth;
-      const h = document.documentElement.clientHeight || innerHeight;
+      const h = document.documentElement.clientHeight;
 
       return {
         width: w,
@@ -465,35 +527,27 @@ export default {
     doResize(event) {
       clearTimeout(this._resizeTimeout);
 
-      this._resizeTimeout = setTimeout(() => {
-        let height = this.chart.chartHeight
-
-        if (this.chart.chartHeight > document.body.clientHeight - this.$refs.chartContainer.offsetTop) {
-          height = document.body.clientHeight - this.$refs.chartContainer.offsetTop;
-
-          if (this.chartHeight) {
-            this.$store.commit('setChartHeight', height);
-          }
-        }
-
-        this.chart.setSize(this.$refs.chartContainer.offsetWidth, height, true, true);
-      }, 250);
+      this._resizeTimeout = setTimeout(this.updateChartHeight.bind(this), 250);
     },
 
     doPan(self) {
       return function(proceed, event, arg, c) {
-        /*console.log('panning',
-          this, event, arg, c,
-          self.chart.series.length && self.chart.series[0].xData.length ? new Date(self.chart.series[0].xData[self.chart.series[0].xData.length - 1]) : 'no last xData', 
-          self.chart.series.length && self.chart.series[0].points.length ? new Date(self.chart.series[0].points[self.chart.series[0].points.length - 1].x) : 'no last point'
-        ); */
+        clearTimeout(this._panTimeout);
+
+        this._panTimeout = setTimeout(() => {
+          self.$store.commit('toggleSnap', !self.isPanned());
+        }, 200);
+        
         return proceed.call(self.chart, event, arg);
       };
     },
 
     doDrag(event) {
       if (!isNaN(this.resizing)) {
-        this.doChangeHeight(event);
+        console.log('doDrag', 'origin:', this.resizing, this.chart.chartHeight + (event.pageY - this.resizing));
+        this.updateChartHeight(this.chart.chartHeight + (event.pageY - this.resizing));
+
+        this.resizing = event.pageY;
       }
     },
 
@@ -583,11 +637,10 @@ export default {
       const now = +new Date();
 
       console.log('save range', range);
-      this.range = range;
+      this.$store.commit('setChartRange', range);
 
       if (this.chart) {
-        console.log('this.chart !== null: set extremes');
-        this.chart.xAxis[0].setExtremes(now - range, now, true);
+        this.chart.xAxis[0].setExtremes(now - this.chartRange, now, true);
       }
     }
   }
@@ -648,6 +701,10 @@ export default {
   right: 0;
   z-index: 1;
   cursor: ns-resize;
+
+  @media screen and (min-width: 768px) {
+    display: none;
+  }
 }
 
 .chart_timeframe {

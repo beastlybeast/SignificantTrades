@@ -2,7 +2,7 @@
 	<header id="header" class="header">
 		<div class="header__title"> <span class="pair" v-if="pair">{{pair}}</span> <span class="icon-currency"></span> <span v-html="price || 'SignificantTrades'"></span></div>
     <button></button>
-		<button type="button" class="header__timeframe" v-if="canFetch" v-bind:title="fetchLabel" v-tippy="{placement: 'left'}">
+		<button type="button" class="header__timeframe" v-bind:title="fetchLabel" v-tippy="{placement: 'left'}">
       {{timeframeLabel}}
       <ul class="dropdown">
         <li @click="setTimeframe(1000 * 10)">10s</li>
@@ -33,7 +33,7 @@ export default {
     return {
       pair: '',
       dashoffset: 0,
-      fetchLabel: 'Fetch specific timeframe',
+      fetchLabel: 'Fetch timeframe',
       isPopupMode: window.opener !== null,
       canFetch: false,
       showTimeframeDropdown: false,
@@ -49,6 +49,7 @@ export default {
   },
   created() {
     this._fetchLabel = this.fetchLabel.substr();
+    this.canFetch = socket.canFetch();
 
     socket.$on('pairing', (pair, canFetch) => {
       this.pair = pair;
@@ -143,6 +144,7 @@ header.header {
 
     &.header__timeframe {
       font-size: 16px;
+      font-family: monospace;
     }
 
     .dropdown {

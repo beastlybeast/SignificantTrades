@@ -28,7 +28,7 @@ class Bitmex extends Exchange {
 		this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)));
 		this.api.onopen = this.emitOpen.bind(this);
 		this.api.onclose = this.emitClose.bind(this);
-		this.api.onerror = this.emitError.bind(this);
+		this.api.onerror = this.emitError.bind(this, {message: 'Websocket error'});
 	}
 
 	disconnect() {
@@ -51,6 +51,8 @@ class Bitmex extends Exchange {
 					trade.side === 'Buy' ? 1 : 0,
 					1
 				]);
+
+				return false;
 			} else if (json.table === 'trade' && json.action === 'insert') {
 				return json.data.map(trade => [
 					this.id,

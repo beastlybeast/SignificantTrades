@@ -1,13 +1,13 @@
 <template>
 	<div id="counters" class="counters">
     <ul>
-      <li v-for="(sum, index) of stackedSums" :key="`sum-${index}`" v-if="!hideEmptyCounter || counters[index].length" class="counters__item">
+      <li v-for="(sum, index) of stackedSums" :key="`sum-${index}`" v-if="!hideIncompleteCounter || index <= completed" class="counters__item">
         <div class="counter__index">
-          <editable class="settings__thresholds--gifkeyword" :content="labels[index]" @output="updateCounterStep(index, $event)"></editable>
+          <editable :content="labels[index]" @output="updateCounterStep(index, $event)"></editable>
         </div>
         <div class="counter__up" v-bind:style="{ flexBasis: (sum[0] / (sum[0] + sum[1]) * 100) + '%' }" :data-amount="$root.formatAmount(sum[0], 2)"></div>
         <div class="counter__down" v-bind:style="{ flexBasis: (sum[1] / (sum[0] + sum[1]) * 100) + '%' }" :data-amount="$root.formatAmount(sum[1], 2)"></div>
-        <div class="counter__delete icon-cross" v-on:click="$store.commit('setCounterStep', {index: index, value: null})"></div>
+        <div class="counter__delete icon-cross" v-on:click="deleteCounter(index)"></div>
       </li>
     </ul>
     <!-- <div class="counters__add"><i class="icon-add"></i> Add step</div> -->
@@ -26,6 +26,7 @@ export default {
       strictSums: [],
       stackedSums: [],
 			counters: [],
+			complete: 0,
       queue: [0, 0]
     };
   },
@@ -35,7 +36,7 @@ export default {
 			'actives',
 			'countersSteps',
       'counterPrecision',
-      'hideEmptyCounter',
+      'hideIncompleteCounter',
     ])
   },
   created() {
@@ -66,10 +67,9 @@ export default {
     this.rebuildCounters();
   },
   beforeDestroy() {
-    socket.$off('trades', this.onTrades);
+    socket.$off('trades.queued', this.onTrades);
     socket.$off('historical', this.onFetch);
 
-		clearInterval(this.tradesRateInterval);
 		clearInterval(this.countersRefreshCycleInterval);
 
     this.onStoreMutation();
@@ -103,6 +103,10 @@ export default {
       }
     },
 		updateCounters() {
+      if (!this.counters.length) {
+        return;
+      }
+
       const now = +new Date();
 
       if (this.queue[0] || this.queue[1]) {
@@ -146,6 +150,10 @@ export default {
             this.counters[stepIndex + 1].push(...expired);
             this.strictSums[stepIndex + 1][0] += upVolume;
             this.strictSums[stepIndex + 1][1] += downVolume;
+
+            if (this.complete < stepIndex) {
+              this.complete = stepIndex;
+            }
           }
         }
 
@@ -182,6 +190,8 @@ export default {
     },
     populateCounters(stacks) {
       const now = +new Date();
+      
+      let last = 0;
 
       for (let stack of stacks) {
         for (let index = 0; index < this.countersSteps.length; index++) {
@@ -197,6 +207,7 @@ export default {
 
       let stackedUpVolume = 0;
       let stackedDownVolume = 0;
+      let completed = 0;
 
       for (let index = 0; index < this.countersSteps.length; index++) {
         this.counters[index] = this.counters[index].sort((a, b) => a[0] - b[0]);
@@ -206,7 +217,13 @@ export default {
 
         this.$set(this.stackedSums[index], 0, parseFloat(stackedUpVolume));
         this.$set(this.stackedSums[index], 1, parseFloat(stackedDownVolume));
+
+        if (stacks[0][0] < now - this.countersSteps[index] * .99) {
+          completed = index;
+        }
       }
+
+      this.completed = completed;
     },
     updateCounterStep(index, value) {
       if (!value) {
@@ -233,7 +250,8 @@ export default {
       clearInterval(this.countersRefreshCycleInterval);
 
       const now = +new Date();
-
+      
+      this.completed = 0;
       this.labels.splice(0, this.labels.length);
       this.counters.splice(0, this.counters.length);
       this.strictSums.splice(0, this.strictSums.length);
@@ -246,11 +264,22 @@ export default {
         this.stackedSums.push([0, 0]);
       }
 
-      this.populateCounters(this.stackTrades(socket.trades));
+      if (socket.trades.length) {
+        this.populateCounters(this.stackTrades(socket.trades));
+      }
 
       this.countersRefreshCycleInterval = window.setInterval(this.updateCounters.bind(this), this.counterPrecision);
+    },
+    deleteCounter(index) {
+      if (this.countersSteps.length === 1) {
+        this.$store.commit('toggleCounters', false);
+
+        return;
+      }
+
+      this.$store.commit('setCounterStep', {index: index, value: null});
     }
-  }
+  },
 };
 </script>
 
@@ -290,10 +319,6 @@ export default {
       position: relative;
       align-items: stretch;
     }
-  }
-
-  @media only screen and (min-width: 480px) {
-    font-size: 1.25em;
   }
 }
 
@@ -350,7 +375,7 @@ export default {
   white-space: nowrap;
   text-align: left;
   flex-shrink: 0;
-  background-color: lighten($dark, 10%);
+  background-color: rgba(white, .1);
   transition: padding .2s $easeOutExpo;
   position: relative;
 
@@ -379,7 +404,7 @@ export default {
     padding-right: .5em;
 
     [contenteditable]:after {
-      transform: translate(-75%);
+      transform: translate(-50%);
       opacity: .6;
     }
   }

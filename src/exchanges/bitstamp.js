@@ -37,7 +37,7 @@ class Bitstamp extends Exchange {
 
 		this.api.bind(this.options.bind, trade => this.emitTrades(this.formatLiveTrades(trade)));
 
-		this.api.connection.bind('error', this.emitError.bind(this));
+		this.api.connection.bind('error', this.emitError.bind(this, {message: 'Websocket error'}));
 		this.api.connection.bind('connected', this.emitOpen.bind(this));
 		this.api.connection.bind('disconnected', this.emitClose.bind(this));
 	}

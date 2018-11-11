@@ -70,7 +70,7 @@ class Okex extends Exchange {
 			clearInterval(this.keepalive);
 		};
 
-		this.api.onerror = this.emitError.bind(this);
+		this.api.onerror = this.emitError.bind(this, {message: 'Websocket error'});
 	}
 
 	disconnect() {

@@ -1,7 +1,7 @@
 <template>
 	<div id="stats" class="stats">
     <div class="stats__infos" v-if="periodLabel">
-      <i>it happened under the last</i>
+      <i>in the last</i>
       <div>{{ periodLabel }}</div>
     </div>
     <ul class="stats__items">
@@ -83,7 +83,7 @@ export default {
     this.rebuildStats();
   },
   beforeDestroy() {
-    socket.$off('trades', this.onTrades);
+    socket.$off('trades.instant', this.onTrades);
     socket.$off('historical', this.onFetch);
 
 		clearInterval(this.statsRefreshCycleInterval);
@@ -106,8 +106,6 @@ export default {
     rebuildStats() {
       clearInterval(this.statsRefreshCycleInterval);
 
-      console.log('rebuildstats');
-
       const now = +new Date();
 
       this.periodLabel = this.$root.ago(now - this.statsPeriod);
@@ -115,14 +113,12 @@ export default {
       this.rate.average = this.up.average = this.down.average = null;
       this.rate.count = this.up.count = this.down.count = 0;
 
-      for (let i = socket.trades.length - 1; i >= 0; i--) {
-        if (socket.trades[i][1] < now - this.statsPeriod) {
-          break;
-        }
-
-        this.rate.count++;
-        this[+socket.trades[i][4] ? 'up' : 'down'].count += +socket.trades[i][3];
-      }
+      socket.trades
+        .filter(trade => trade[1] >= now - this.statsPeriod)
+        .forEach(trade => {
+          this.rate.count++;
+          this[+trade[4] ? 'up' : 'down'].count += +trade[3];
+        })
 
       this.updateStats(now);
 
@@ -172,9 +168,8 @@ export default {
   .stats__value {
     text-align: right;
     font-weight: 600;
-    margin-left: 5px;
     white-space: nowrap;
-    padding: .25em 1em 1em;
+    padding: .25em 1em .75em;
   }
 
   .stats__items {
@@ -188,9 +183,14 @@ export default {
     > li {
       display: flex;
       align-items: center;
-      flex-grow: 1;
+      flex-grow: 0;
       flex-direction: column;
-      flex-basis: 50%;
+      flex-basis: auto;
+      overflow: hidden;
+    }
+
+    sup {
+      font-size: 75%;
     }
   }
 
@@ -199,7 +199,7 @@ export default {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 100px;
+    width: 20%;
     flex-direction: column;
     align-items: flex-end;
     justify-content: center;
@@ -211,7 +211,7 @@ export default {
     }
 
     > div {
-      font-weight: 600;
+      font-family: cursive;
       font-size: 1.25em;
       text-align: right;
       align-self: flex-end;
@@ -226,10 +226,10 @@ export default {
       pointer-events: none;
       font-size: 140px;
       bottom: 0;
-      left: -40%;
+      left: -60%;
     }
 
-    @media screen and (min-width: 1400px) {
+    @media screen and (min-width: 1200px) {
       display: flex;
     }
   }

@@ -14,8 +14,11 @@
         @toggleSettings="showSettings = !showSettings"
       />
       <div class="app__layout">
-        <Chart v-if="showChart"/>
-        <div class="app__widgets">
+        <div class="app__left">
+          <Chart v-if="showChart"/>
+          <Exchanges/>
+        </div>
+        <div class="app__right">
           <Stats v-if="showStats"/>
           <Counters v-if="showCounters"/>
           <TradeList/>
@@ -37,6 +40,7 @@ import TradeList from './components/TradeList.vue';
 import Chart from './components/chart/Chart.vue';
 import Counters from './components/Counters.vue';
 import Stats from './components/Stats.vue';
+import Exchanges from './components/Exchanges.vue';
 
 export default {
   components: {
@@ -46,7 +50,8 @@ export default {
     TradeList,
     Chart,
     Counters,
-    Stats
+    Stats,
+    Exchanges
   },
   name: 'app',
   data() {
@@ -64,10 +69,12 @@ export default {
     ...mapState([
       'dark',
       'pair',
+      'actives',
       'showCounters',
       'showStats',
       'showChart',
-      'decimalPrecision'
+      'decimalPrecision',
+      'autoClearTrades'
     ])
   },
   created() {
@@ -82,13 +89,17 @@ export default {
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
+        case 'toggleAutoClearTrades':
+          this.toggleAutoClearTrades(mutation.payload);
+        break;
         case 'toggleDark':
-          this.toggleDarkChart(mutation.payload);
+          this.toggleDark(mutation.payload);
         break;
       }
     });
 
-    this.toggleDarkChart(this.dark);
+    this.toggleAutoClearTrades(this.autoClearTrades);
+    this.toggleDark(this.dark);
 
     // Is request blocked by browser ?
     // If true notice user that most of the exchanges may be unavailable
@@ -199,23 +210,34 @@ export default {
         }
       }
     },
-    toggleDarkChart(isDarkMode) {
+    toggleDark(isDarkMode) {
       window.document.body.classList[isDarkMode ? 'add' : 'remove']('theme-dark');
+    },
+    toggleAutoClearTrades(isAutoWipeCacheEnabled) {
+      clearInterval(this._autoWipeCacheInterval);
+
+      console.log('toggleAutoClearTrades', isAutoWipeCacheEnabled);
+
+      if (!isAutoWipeCacheEnabled) {
+        return;
+      }
+
+      this._autoWipeCacheInterval = setInterval(socket.clearTrades.bind(socket), 1000 * 60 * 5);
     },
     updatePrice() {
       let price = 0;
-      let weight = 0;
+      let total = 0;
 
       for (let exchange of socket.exchanges) {
-        if (exchange.price === null || exchange.weight === null) {
+        if (exchange.price === null || this.actives.indexOf(exchange.id) === -1) {
           continue;
         }
 
-        price += exchange.price * exchange.weight;
-        weight += exchange.weight;
+        total++;
+        price += exchange.price;
       }
 
-      price = price / weight;
+      price = price / total;
 
       this.price = this.$root.formatPrice(price);
 

@@ -42,11 +42,11 @@ export default {
   computed: {
     ...mapState([
       'pair', 
+      'maxRows',
       'thresholds',
-      'exchangeThresholds',
+      'exchanges',
       'useAudio',
-      'audioIncludeInsignificants',
-      'maxRows'
+      'audioIncludeInsignificants'
     ])
   },
   created() {
@@ -68,7 +68,7 @@ export default {
   },
   beforeDestroy() {
     socket.$off('pairing', this.onPairing);
-    socket.$off('trades', this.onTrades);
+    socket.$off('trades.instant', this.onTrades);
 
     clearInterval(this.timeAgoInterval);
 
@@ -106,7 +106,7 @@ export default {
       // setTimeout(() => {
       const size = trade[2] * trade[3];
 
-      const multiplier = typeof this.exchangeThresholds[trade[0]] === 'string' ? +this.exchangeThresholds[trade[0]] : 1;
+      const multiplier = typeof this.exchanges[trade[0]].thresholds !== 'undefined' ? +this.exchanges[trade[0]].thresholds : 1;
 
       if (trade[5] === 1) {
         this.sfx && this.sfx.liquidation();
@@ -169,7 +169,7 @@ export default {
       let hsl;
       let amount = trade[2] * trade[3];
 
-      const multiplier = parseFloat(this.exchangeThresholds[trade[0]]) || 1;
+      const multiplier = typeof this.exchanges[trade[0]].thresholds !== 'undefined' ? +this.exchanges[trade[0]].thresholds : 1;
 
       if (trade[4]) {
         classname.push('buy');

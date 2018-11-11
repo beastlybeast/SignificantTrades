@@ -43,6 +43,8 @@ $icon-rip: \e921;
 $icon-eye: \e922;
 $icon-eye-crossed: \e923;
 $icon-stopwatch: \e91c;
+$icon-power-on: \e91d;
+$icon-power-off: \e924;
 
 @function unicode($str) {
   @return unquote("\"") + $str + unquote("\"");

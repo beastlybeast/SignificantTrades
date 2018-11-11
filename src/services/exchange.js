@@ -9,7 +9,7 @@ class Exchange extends EventEmitter {
     this.connected = false;
     this.valid = false;
     this.price = null;
-    this.weight = null;
+    this.error = null;
     this.shouldBeConnected = false;
     this.reconnectionDelay = 5000;
     this.counters = [];
@@ -79,6 +79,8 @@ class Exchange extends EventEmitter {
     clearTimeout(this.reconnectionTimeout);
 
     this.shouldBeConnected = false;
+    this.price = null;
+    this.error = null;
 
     return true;
   }
@@ -111,15 +113,27 @@ class Exchange extends EventEmitter {
     this.emit('open', event);
   }
 
-  emitTrades(data) {
-    if (!data || !data.length) {
+  emitTrades(trades) {
+    if (!trades || !trades.length) {
       return;
     }
 
+    let emittedTrades = !isNaN(this.price);
+
+    const output = this.groupTrades(trades);
+
+    let isFirstTrade = !this.price;
+
+    this.price = output[output.length - 1][2];
+
+    this.emit('live_trades', output, isFirstTrade);
+  }
+
+  groupTrades(trades) {
     const group = {};
     const now = +new Date();
 
-    for (let trade of data) {
+    for (let trade of trades) {
       const id = parseInt(trade[1]).toFixed() + '_' + trade[4]; // timestamp + side
 
       if (group[id] && !group[id][5]) {
@@ -140,21 +154,13 @@ class Exchange extends EventEmitter {
         (group[id][3].reduce((a, b) => a + b) / group[id][3].length);
       group[id][3] = group[id][3].reduce((a, b) => a + b);
 
-      this.price = +group[id][2];
-      this.weight += +group[id][3];
-
       group[id][2] = this.toFixed(group[id][2], 10);
       group[id][3] = this.toFixed(group[id][3], 10);
-
-      // at = at ? group[id][1] + at / (index + 1) : group[id][1];
-      // volume += group[id][3];
 
       return group[id];
     });
 
-    // this.count(at, volume);
-
-    this.emit('live_trades', output);
+    return output;
   }
 
   toFixed(number, precision) {
@@ -164,6 +170,8 @@ class Exchange extends EventEmitter {
 
   emitError(error) {
     console.error(`[${this.id}] error`, error.message || '');
+
+    this.error = error.message || 'Unknown error';
 
     this.emit('error');
   }

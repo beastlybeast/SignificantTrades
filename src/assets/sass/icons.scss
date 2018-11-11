@@ -200,3 +200,13 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-stopwatch);
   }
 }
+.icon-power-on {
+  &:before {
+    content: unicode($icon-power-on);
+  }
+}
+.icon-power-off {
+  &:before {
+    content: unicode($icon-power-off);
+  }
+}

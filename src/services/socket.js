@@ -18,8 +18,9 @@ import store from '../services/store'
 const emitter = new Vue({
 	data() {
 		return {
-			ids: [],
-			trades: [],
+			API_URL: null,
+			PROXY_URL: null,
+			
 			exchanges: [
 				new Bitmex(),
 				new Bitfinex(),
@@ -32,41 +33,60 @@ const emitter = new Vue({
 				new Okex(),
 				new Poloniex()
 			],
-			connected: [],
-			matchs: {},
-			errors: {},
+
+			trades: [],
 			timestamps: {},
-			API_URL: null,
-			PROXY_URL: null,
 			queue: [],
+
 			_pair: null
 		}
 	},
   computed: {
-    pair () {
+    pair() {
       return store.state.pair
     },
-		disabled () {
-			return store.state.disabled
+    timeframe() {
+      return store.state.timeframe
+    },
+		exchangesSettings() {
+			return store.state.exchanges
 		},
-		filters () {
-			return store.state.filters
-		},
-		actives () {
+		actives() {
 			return store.state.actives
-		}
+		},
+    showChart() {
+      return store.state.showChart
+    },
+    chartRange() {
+      return store.state.chartRange
+    },
+    showCounters() {
+      return store.state.showCounters
+    },
+    countersSteps() {
+      return store.state.countersSteps
+    },
   },
 	created() {
 		window.emitTrade = (exchange, price, amount, side, type = null) => {
-			let trade = [exchange || 'bitmex', +new Date(), price || '1', amount || 1, side ? 1 : 0, type]
+			exchange = exchange || 'bitmex';
+
+			if (price === null) {
+				price = this.getExchangeById(exchange).price;
+			}
+
+			amount = amount || 1;
+			side = side || 1;
+
+			let trade = [exchange, +new Date(), price, amount, side ? 1 : 0, type]
+
+			this.queue = this.queue.concat([trade]);
 
 			this.emitFilteredTradesAndVolumeSum([trade]);
 		}
 
 		this.exchanges.forEach(exchange => {
-			this.ids.push(exchange.id);
-
-			exchange.on('live_trades', (trades, upVolume, downVolume) => {
+			exchange.on('live_trades', (trades, isFirstTrade = false) => {
 				if (!trades || !trades.length) {
 					return;
 				}
@@ -79,15 +99,28 @@ const emitter = new Vue({
 				this.queue = this.queue.concat(trades);
 
 				this.emitFilteredTradesAndVolumeSum(trades);
+
+				if (isFirstTrade) {
+					if (this.trades.length) {
+						const base = trades.slice(0, 1)[0];
+
+						this.trades.unshift([base[0], this.trades[0][1], base[2], 0, 1]);
+
+						console.log(trades[0][0], 'isfirsttrade (base: ', base, ')');
+					} else {
+						console.log(trades[0][0], 'isfirsttrade (first actual trade in socket.trades)');
+					}
+
+					this.commitQueueAndRefreshListeners();
+				} else {
+					this.queue = this.queue.concat(trades);
+
+					this.emitFilteredTradesAndVolumeSum(trades);
+				}
 			});
 
 			exchange.on('open', event => {
 				console.log(`[socket.exchange.on.open] ${exchange.id} opened`);
-
-				const index = this.connected.indexOf(exchange.id);
-				index === -1 && this.connected.push(exchange.id);
-
-				this.errors[exchange.id] = 0;
 
 				this.$emit('connected', exchange.id);
 			});
@@ -95,20 +128,15 @@ const emitter = new Vue({
 			exchange.on('close', event => {
 				console.log(`[socket.exchange.on.close] ${exchange.id} closed`);
 
-				const index = this.connected.indexOf(exchange.id);
-				index >= 0 && this.connected.splice(index, 1);
+				this.$emit('disconnected', exchange.id);
 
-				this.$emit('connected', exchange.id);
-
-				if (exchange.shouldBeConnected && this.disabled.indexOf(exchange) === -1) {
+				if (exchange.shouldBeConnected && !this.exchangesSettings[exchange.id].disabled) {
 					exchange.reconnect(this.pair);
 				}
 			});
 
 			exchange.on('match', pair => {
 				console.log(`[socket.exchange.on.match] ${exchange.id} matched ${pair}`);
-
-				// this.matchs[exchange.id] = pair;
 			});
 
 			exchange.on('error', event => {
@@ -194,7 +222,7 @@ const emitter = new Vue({
 					this._pair = this.pair;
 				}
 
-				validExchanges = validExchanges.filter(exchange => this.disabled.indexOf(exchange.id) === -1);
+				validExchanges = validExchanges.filter(exchange => !this.exchangesSettings[exchange.id].disabled);
 
 				console.log(`[socket.connect] ${validExchanges.length} successfully matched with "${this.pair}"`);
 
@@ -221,24 +249,39 @@ const emitter = new Vue({
 
 			this.exchanges.forEach(exchange => exchange.disconnect());
 		},
-		trimTradesData(timestamp) {
-			let index;
+		clearTrades() {
+			console.log('socket.clearTrades', 'currentcount:', this.trades.length);
+			let requiredTimeframe = 0;
 
-			for (index = this.trades.length - 1; index >= 0; index--) {
-				if (this.trades[index][1] < timestamp) {
+			if (this.showChart && this.chartRange) {
+								console.log('socket.clearTrades', 'this.showChart', this.chartRange * 2);
+
+				requiredTimeframe = Math.max(requiredTimeframe, this.chartRange * 2); 
+			}
+
+			if (this.showCounters && this.countersSteps.length) {
+				console.log('socket.clearTrades', 'this.showCounters && this.countersSteps.length', this.countersSteps[this.countersSteps.length - 1]);
+				requiredTimeframe = Math.max(requiredTimeframe, this.countersSteps[this.countersSteps.length - 1]);
+			}
+
+			console.log('socket.clearTrades', 'requiredTimeframe', requiredTimeframe);
+
+			const minTimestamp = +new Date() - requiredTimeframe;
+
+			let i;
+
+			for (i = 0; i < this.trades.length; i++) {
+				if (this.trades[i][1] > minTimestamp) {
 					break;
 				}
 			}
 
-			if (index < 0) {
-				return;
-			}
+			console.log('socket.clearTrades', 'i ==', i);
+			this.trades.splice(0, i);
 
-			console.log(`[socket.trim] wipe ${index + 1} trades from memory`);
+			console.log('socket', 'clearTrades', 'finalcount:', this.trades.length);
 
-			this.trades.splice(0, ++index);
-
-			this.$emit('trim', timestamp);
+			store.commit('trimChart', minTimestamp);
 		},
 		getExchangeById(id) {
 			for (let exchange of this.exchanges) {
@@ -282,9 +325,9 @@ const emitter = new Vue({
 			from = Math.floor(from / timeframe) * timeframe;
 			to = Math.ceil(to / timeframe) * timeframe;
 
-			console.log('socket->fetchRangeIfNeeded', `\n\tcurrent time: ${new Date(now)}\n\tfrom: ${new Date(from)}\n\tto: ${new Date(to)} (${this.trades.length ? 'using first trade as base' : 'using now for reference'})`);
-
       if (this.canFetch() && (!this.trades.length || this.trades[0][1] > from)) {
+				console.log('socket->fetchRangeIfNeeded', `FETCH NEEDED\n\n\tcurrent time: ${new Date(now)}\n\tfrom: ${new Date(from)}\n\tto: ${new Date(to)} (${this.trades.length ? 'using first trade as base' : 'using now for reference'})`);
+
         promise = this.fetchHistoricalData(from, to, true);
       } else {
         promise = Promise.resolve(null);
@@ -354,6 +397,16 @@ const emitter = new Vue({
 						reject();
 					})
 			});
+		},
+		commitQueueAndRefreshListeners() {
+			console.log('socket:commitQueueAndRefreshListeners');
+			if (this.queue.length) {
+				this.trades = this.trades.concat(this.queue);
+
+				this.queue = [];
+			}
+
+			store.commit('setTimeframe', this.timeframe);
 		}
 	}
 });

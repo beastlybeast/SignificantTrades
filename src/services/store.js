@@ -16,23 +16,25 @@ const defaults = {
 		{amount: 1000000, gif: 'cash'},
 		{amount: 10000000, gif: 'explosion'},
 	],
-	exchangeThresholds: {},
+	exchanges: {
+		bithumb: {disabled: true},
+		hitbtc: {disabled: true},
+		kraken: {disabled: true},
+		coinex: {ohlc: false},
+	},
 	maxRows: 20,
 	decimalPrecision: null,
 	showCounters: true,
 	counterPrecision: 1000 * 10,
-	hideEmptyCounter: true,
+	hideIncompleteCounter: true,
 	showStats: true,
 	showChart: true,
 	statsPeriod: 1000 * 60,
-	countersSteps: [1000 * 30, 1000 * 60, 1000 * 60 * 2, 1000 * 60 * 5, 1000 * 60 * 10, 1000 * 60 * 15],
+	countersSteps: [1000 * 60, 1000 * 60 * 5, 1000 * 60 * 15, 1000 * 60 * 30, 1000 * 60 * 60, 1000 * 60 * 60 * 2, 1000 * 60 * 60 * 4],
 	avgLength: 2,
 	useWeighedAverage: false,
 	timeframe: 1000 * 10,
-	autoWipeCache: true,
-	autoWipeCacheDuration: 15,
-	disabled: ['bithumb', 'hitbtc', 'kraken'],
-	filters: [],
+	autoClearTrades: true,
 	debug: false,
 	dark: true,
 	useShades: true,
@@ -40,9 +42,9 @@ const defaults = {
 	audioIncludeInsignificants: true,
 	audioVolume: 1.5,
 	settings: [],
-	chartSignificantOrders: false,
 	chartLiquidations: false,
 	chartHeight: null,
+	chartRange: 0,
 
 	// runtime state
 	isSnaped: true,
@@ -73,8 +75,8 @@ const store = new Vuex.Store({
 		toggleStats(state, value) {
 			state.showStats = value ? true : false;
 		},
-		toggleHideEmptyCounter(state, value) {
-			state.hideEmptyCounter = value ? true : false;
+		toggleHideIncompleteCounter(state, value) {
+			state.hideIncompleteCounter = value ? true : false;
 		},
 		setCounterStep(state, payload) {
 			const step = state.countersSteps[payload.index];
@@ -110,32 +112,20 @@ const store = new Vuex.Store({
 				});
 			}
 		},
-		enableExchange(state, value) {
-			if (state.disabled.indexOf(value) !== -1) {
-				state.disabled.splice(state.disabled.indexOf(value), 1);
-			}
+		enableExchange(state, exchange) {
+			Vue.set(state.exchanges[exchange], 'disabled', false);
 		},
-		disableExchange(state, value) {
-			if (state.disabled.indexOf(value) === -1) {
-				state.disabled.push(value);
-			}
+		disableExchange(state, exchange) {
+			Vue.set(state.exchanges[exchange], 'disabled', true);
 		},
-		showExchange(state, value) {
-			if (state.filters.indexOf(value) === -1) {
-				state.filters.push(value);
-			}
+		showExchange(state, exchange) {
+			Vue.set(state.exchanges[exchange], 'hidden', false);
 		},
-		hideExchange(state, value) {
-			if (state.filters.indexOf(value) !== -1) {
-				state.filters.splice(state.filters.indexOf(value), 1);
-			}
+		hideExchange(state, exchange) {
+			Vue.set(state.exchanges[exchange], 'hidden', true);
 		},
 		toggleExchangeVisibility(state, exchange) {
-			if (state.filters.indexOf(exchange.id) !== -1) {
-				this.commit('hideExchange', exchange.id);
-			} else {
-				this.commit('showExchange', exchange.id);
-			}
+			Vue.set(state.exchanges[exchange], 'hidden', state.exchanges[exchange].hidden === true ? false : true);
 		},
 		toggleSettingsPanel(state, value) {
       const index = state.settings.indexOf(value);
@@ -152,9 +142,6 @@ const store = new Vuex.Store({
 		toggleDark(state, value) {
 			state.dark = value ? true : false;
 		},
-		toggleaudioIncludeInsignificants(state, value) {
-			state.audioIncludeInsignificants = value ? true : false;
-		},
 		setAudioVolume(state, value) {
 			state.audioVolume = value;
 		},
@@ -167,23 +154,23 @@ const store = new Vuex.Store({
 		toggleWeighedAverage(state, value) {
 			state.useWeighedAverage = value ? true : false;
 		},
-		toggleSignificantOrdersPlot(state, value) {
-			state.chartSignificantOrders = value ? true : false;
-		},
 		toggleLiquidationsPlot(state, value) {
 			state.chartLiquidations = value ? true : false;
 		},
-		toggleAutoWipeCache(state, value) {
-			state.autoWipeCache = value ? true : false;
-		},
-		setAutoWipeCacheDuration(state, value) {
-			state.autoWipeCacheDuration = Math.min(1, value || 0);
+		toggleAutoClearTrades(state, value) {
+			state.autoClearTrades = value ? true : false;
 		},
 		setExchangeThreshold(state, payload) {
-			Vue.set(state.exchangeThresholds, payload.exchange, +payload.threshold);
+			Vue.set(state.exchanges[payload.exchange], 'threshold', +payload.threshold);
+		},
+		toggleExchangeOHLC(state, exchange) {
+			Vue.set(state.exchanges[exchange], 'ohlc', state.exchanges[exchange].ohlc === true ? false : true);
 		},
 		setChartHeight(state, value) {
 			state.chartHeight = value || null;
+		},
+		setChartRange(state, value) {
+			state.chartRange = value;
 		},
 
 		// runtime commit
@@ -191,14 +178,21 @@ const store = new Vuex.Store({
 			state.isSnaped = value ? true : false;
 		},
 		reloadExchangeState(state, exchange) {
+			if (!state.exchanges[exchange]) {
+				Vue.set(state.exchanges, exchange, {});
+			}
+
       const index = state.actives.indexOf(exchange);
-      const active = state.disabled.indexOf(exchange) === -1 && state.filters.indexOf(exchange) === -1;
+      const active = !state.exchanges[exchange].disabled && !state.exchanges[exchange].hidden;
 
       if (active && index === -1) {
         state.actives.push(exchange);
       } else if (!active && index >= 0) {
         state.actives.splice(index, 1);
       }
+		},
+		trimChart(state, minTimestamp) {
+			
 		}
 	},
 })
@@ -219,7 +213,7 @@ store.subscribe((mutation, state) => {
 		case 'hideExchange':
 		case 'enableExchange':
 		case 'disableExchange':
-			console.log('store', mutation.type, ' => reloadExchangeState')
+		case 'toggleExchangeOHLC':
 			store.commit('reloadExchangeState', mutation.payload);
 		break;
 	}

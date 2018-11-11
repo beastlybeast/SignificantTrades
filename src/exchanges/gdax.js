@@ -60,7 +60,7 @@ class Gdax extends Exchange {
 		};
 
 		this.api.onclose = this.emitClose.bind(this);
-		this.api.onerror = this.emitError.bind(this);
+		this.api.onerror = this.emitError.bind(this, {message: 'Websocket error'});
 	}
 
 	disconnect() {
