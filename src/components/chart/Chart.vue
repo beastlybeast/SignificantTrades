@@ -19,10 +19,10 @@ import chartOptions from "./options.json";
 
 import Highcharts from 'highcharts/highstock';
 import Indicators from 'highcharts/indicators/indicators';
-import VBP from 'highcharts/indicators/volume-by-price';
+import EMA from 'highcharts/indicators/ema';
 
 Indicators(Highcharts);
-VBP(Highcharts);
+EMA(Highcharts);
 
 export default {
   data() {

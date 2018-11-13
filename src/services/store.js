@@ -21,6 +21,8 @@ const defaults = {
 		hitbtc: {disabled: true},
 		kraken: {disabled: true},
 		coinex: {ohlc: false},
+		okex: {ohlc: false},
+		huobi: {ohlc: false},
 	},
 	maxRows: 20,
 	decimalPrecision: null,
@@ -164,7 +166,7 @@ const store = new Vuex.Store({
 			Vue.set(state.exchanges[payload.exchange], 'threshold', +payload.threshold);
 		},
 		toggleExchangeOHLC(state, exchange) {
-			Vue.set(state.exchanges[exchange], 'ohlc', state.exchanges[exchange].ohlc === true ? false : true);
+			Vue.set(state.exchanges[exchange], 'ohlc', state.exchanges[exchange].ohlc === false ? true : false);
 		},
 		setChartHeight(state, value) {
 			state.chartHeight = value || null;
@@ -192,7 +194,7 @@ const store = new Vuex.Store({
       }
 		},
 		trimChart(state, minTimestamp) {
-			
+
 		}
 	},
 })
@@ -211,6 +213,7 @@ store.subscribe((mutation, state) => {
 	switch (mutation.type) {
 		case 'showExchange':
 		case 'hideExchange':
+		case 'toggleExchangeVisibility':
 		case 'enableExchange':
 		case 'disableExchange':
 		case 'toggleExchangeOHLC':

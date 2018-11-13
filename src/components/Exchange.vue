@@ -17,7 +17,7 @@
 				<small class="settings__exchanges__item__price" v-if="exchange.price">{{ $root.formatPrice(exchange.price) }}</small>
 			</div>
 			<div class="settings__exchanges__item__controls">
-				<button class="settings__exchanges__item__visibility" v-on:click.stop.prevent="$store.commit('toggleExchangeVisibility', exchange)"><i class="icon-eye-crossed"></i></button>
+				<button class="settings__exchanges__item__visibility" v-tippy v-bind:title="exchange.hidden ? 'Show' : 'Hide (from everything)'" v-on:click.stop.prevent="$store.commit('toggleExchangeVisibility', exchange.id)"><i class="icon-eye-crossed"></i></button>
 				<button class="settings__exchanges__item__more" v-on:click.stop.prevent="expanded = !expanded"><i class="icon-down"></i></button>
 			</div>
 		</div>
@@ -28,7 +28,7 @@
 			</div>
 			<div class="form-group mt8">
 				<label class="checkbox-control" v-tippy title="Include exchange in main candlestick chart">
-					<input type="checkbox" class="form-control" v-bind:checked="typeof settings.ohlc === 'undefined' || settings.ohlc" @change="$store.commit('toggleExchangeOHLC', exchange.id)">
+					<input type="checkbox" class="form-control" v-bind:checked="settings.ohlc !== false" @change="$store.commit('toggleExchangeOHLC', exchange.id)">
 					<div></div>
 					<span>Include in OHLC</span>
 				</label>

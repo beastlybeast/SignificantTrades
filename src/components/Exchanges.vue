@@ -2,7 +2,7 @@
 	<div id="exchanges" class="exchanges">
 		<div v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index" v-bind:class="'exchange__action-' + exchange.side">
 			<div class="exchange__name">{{ exchange.id }}</div>
-			<div class="exchange__price" v-if="exchange.price !== null">{{ $root.formatPrice(exchange.price) || `&nbsp;` }}</div>
+			<div class="exchange__price">{{ +$root.formatPrice(exchange.price) || `&nbsp;` }}</div>
 		</div>
 	</div>
 </template>
@@ -32,7 +32,7 @@ export default {
 		}
   },
   created() {
-		this._priceComparisonInterval = setInterval(this.updatePriceAction.bind(this), 10000);
+		this._priceComparisonInterval = setInterval(this.updatePriceAction.bind(this), 1000);
   },
   beforeDestroy() {
 		clearInterval(this._priceComparisonInterval);
@@ -48,8 +48,10 @@ export default {
 					storedPrices[exchange.id] = [];
 				}
 
-				storedPrices[exchange.id].push(exchange.price);
-				storedPrices[exchange.id].splice(0, storedPrices[exchange.id].length - 10);
+				if (!storedPrices[exchange.id].length || storedPrices[exchange.id][storedPrices[exchange.id].length - 1] !== exchange.price) {
+					storedPrices[exchange.id].push(exchange.price);
+					storedPrices[exchange.id].splice(0, storedPrices[exchange.id].length - 5);
+				}
 
 				socket.exchanges[index].avg = storedPrices[exchange.id].reduce((a, b) => a + b) / storedPrices[exchange.id].length;
 				socket.exchanges[index].side = exchange.price > exchange.avg ? 'up' : exchange.price < exchange.avg ? 'down' : 'neutral';

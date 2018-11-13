@@ -118,8 +118,8 @@
       }
     },
     { "type": "sma", "name": "Price SMA (14)", "lineColor": "rgba(255, 255, 255, .25)", "linkedTo": "price", "marker": { "enabled": false } },
-    { "type": "sma", "name": "SELLS SMA (14)", "lineColor": "rgba(233, 30, 99, .75)", "linkedTo": "sells", "marker": { "enabled": false }, "yAxis": 1 },
-    { "type": "sma", "name": "BUYS SMA (14)", "lineColor": "rgba(139, 195, 74, .75)", "linkedTo": "buys", "marker": { "enabled": false }, "yAxis": 1 }
+    { "type": "ema", "name": "SELLS ema (14)", "lineColor": "rgba(233, 30, 99, .75)", "linkedTo": "sells", "marker": { "enabled": false }, "yAxis": 1 },
+    { "type": "ema", "name": "BUYS ema (14)", "lineColor": "rgba(139, 195, 74, .75)", "linkedTo": "buys", "marker": { "enabled": false }, "yAxis": 1 }
   ],
   "symbols": {
     "liquidation": "url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMTYgMTYiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDE2IDE2OyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+PHN0eWxlIHR5cGU9InRleHQvY3NzIj4uc3Qwe2ZpbGw6I0ZGRkZGRjt9PC9zdHlsZT48dGl0bGU+PC90aXRsZT48ZyBpZD0iaWNvbW9vbi1pZ25vcmUiPjwvZz48cGF0aCBjbGFzcz0ic3QwIiBkPSJNOS40LDE1LjdWNi45YzAtMC4yLDAuMS0wLjMsMC4zLTAuM2wwLDBoMy42YzAuMiwwLDAuMy0wLjEsMC4zLTAuM2wwLDBWNC4xYzAtMC4yLTAuMS0wLjMtMC4zLTAuM2wwLDBIOS43Yy0wLjIsMC0wLjMtMC4xLTAuMy0wLjNsMCwwVjAuM0M5LjQsMC4xLDkuMywwLDkuMSwwbDAsMEg2LjlDNi43LDAsNi42LDAuMSw2LjYsMC4zbDAsMHYzLjJjMCwwLjItMC4xLDAuMy0wLjMsMC4zbDAsMEgyLjdjLTAuMiwwLTAuMywwLjEtMC4zLDAuM2wwLDB2Mi4yYzAsMC4yLDAuMSwwLjMsMC4zLDAuM2wwLDBoMy42YzAuMiwwLDAuMywwLjEsMC4zLDAuM2wwLDB2OC44YzAsMC4yLDAuMSwwLjMsMC4zLDAuM2wwLDBoMi4yQzkuMywxNiw5LjQsMTUuOSw5LjQsMTUuN0w5LjQsMTUuN3oiLz48L3N2Zz4=)"

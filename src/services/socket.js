@@ -86,7 +86,7 @@ const emitter = new Vue({
 		}
 
 		this.exchanges.forEach(exchange => {
-			exchange.on('live_trades', (trades, isFirstTrade = false) => {
+			exchange.on('live_trades', (trades) => {
 				if (!trades || !trades.length) {
 					return;
 				}
@@ -95,28 +95,10 @@ const emitter = new Vue({
 
 				trades = trades
 					.sort((a, b) => a[1] - b[1]);
-
+					
 				this.queue = this.queue.concat(trades);
 
 				this.emitFilteredTradesAndVolumeSum(trades);
-
-				if (isFirstTrade) {
-					if (this.trades.length) {
-						const base = trades.slice(0, 1)[0];
-
-						this.trades.unshift([base[0], this.trades[0][1], base[2], 0, 1]);
-
-						console.log(trades[0][0], 'isfirsttrade (base: ', base, ')');
-					} else {
-						console.log(trades[0][0], 'isfirsttrade (first actual trade in socket.trades)');
-					}
-
-					this.commitQueueAndRefreshListeners();
-				} else {
-					this.queue = this.queue.concat(trades);
-
-					this.emitFilteredTradesAndVolumeSum(trades);
-				}
 			});
 
 			exchange.on('open', event => {
