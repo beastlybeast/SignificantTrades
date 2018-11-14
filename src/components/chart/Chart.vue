@@ -43,7 +43,7 @@ export default {
       'isSnaped',
       'chartHeight',
       'chartRange',
-      'chartLiquidations',
+      'chartLiquidations'
 		])
   },
   created() {
@@ -54,7 +54,7 @@ export default {
     if (Highcharts.VMLRenderer) {
       Highcharts.VMLRenderer.prototype.symbols.plus = Highcharts.SVGRenderer.prototype.symbols.plus;
     }
-    
+
     Highcharts.wrap(Highcharts.Chart.prototype, 'pan', this.doPan(this));
 
     socket.$on('trades.queued', this.onTrades);
@@ -71,18 +71,19 @@ export default {
           break;
         case 'reloadExchangeState':
         case 'chartLiquidations':
+        case 'toggleLiquidationsPlot':
           // this.buildExchangesSeries();
           this.setTimeframe(this.timeframe);
           break;
         case 'trimChart':
-          
+
           break;
       }
     });
   },
 	mounted() {
     this.$refs.chartContainer.style.height = this.getChartSize().height;
-      
+
     window.setTimeout(() => this.createChart());
 
     this._doResize = this.doResize.bind(this);
@@ -231,14 +232,17 @@ export default {
             switch (+trades[i][5]) {
               case 1:
                 if (this.chartLiquidations) {
-                  this.tickData.markers.push({
+                  this.tickData.liquidations += trades[i][3] * trades[i][2];
+
+                  /* this.tickData.markers.push({
                     x: trades[i][1],
                     label: `${app.getAttribute('data-symbol')}${this.$root.formatAmount(trades[i][2] * trades[i][3], 1)} liquidated <b>${trades[i][4] == 1 ? 'SHORT' : 'LONG'}</b>`,
                     symbol: 'rip'
-                  });
+                  }); */
                 }
                 break;
             }
+
             continue;
           }
 
@@ -292,7 +296,7 @@ export default {
       for (let i = 0; i < ticks.length; i++) {
         this.addTickToSeries(ticks[i], live, i == ticks.length - 1);
       }
-      
+
       this.chart.redraw();
 
       this.tickData.added = true;
@@ -305,6 +309,7 @@ export default {
         ohlc: this.chart.series[0].points[this.chart.series[0].points.length - 1],
         buys: this.chart.series[1].points[this.chart.series[1].points.length - 1],
         sells: this.chart.series[2].points[this.chart.series[2].points.length - 1],
+        liquidations: this.chart.series[3].points[this.chart.series[3].points.length - 1],
       };
     },
     createTick(timestamp = null) {
@@ -332,6 +337,7 @@ export default {
         this.tickData.high = null;
         this.tickData.low = null;
         this.tickData.close = 0;
+        this.tickData.liquidations = 0;
         this.tickData.buys = 0;
         this.tickData.sells = 0;
         this.tickData.buysCount = 0;
@@ -346,6 +352,7 @@ export default {
           high: null,
           low: null,
           close: null,
+          liquidations: 0,
           buys: 0,
           sells: 0,
           buysCount: 0,
@@ -359,9 +366,17 @@ export default {
       this.chart.series[1].addPoint(tick.buys, live);
       this.chart.series[2].addPoint(tick.sells, live);
 
+      if (this.chartLiquidations) {
+        this.chart.series[3].addPoint(tick.liquidations, live);
+      }
+
       /* for (let exchange of this.actives) {
         this.chart.series[this.actives.indexOf(exchange) + 4] && this.chart.series[this.actives.indexOf(exchange) + 4].addPoint(tick.exchanges[exchange]);
       } */
+
+      if (tick.markers.length) {
+        this.processTickMarkers(tick);
+      }
 
       if (snap && this.isSnaped) {
         this.snapRight(live);
@@ -369,6 +384,10 @@ export default {
     },
     updateCurrentTick(tick, live = false) {
       const tickPoints = this.getCurrentTickPoints();
+
+      if (this.chartLiquidations) {
+        tickPoints.liquidations.update(tick.liquidations[1], live);
+      }
 
       tickPoints.buys.update(tick.buys[1], live);
       tickPoints.sells.update(tick.sells[1], live);
@@ -383,7 +402,7 @@ export default {
         return;
       }
 
-      tick.markers.forEach(marker => 
+      tick.markers.forEach(marker =>
         this.createMarker(marker.x || tick.ohlc[0], marker.y || tick.ohlc[4], marker.label, marker.symbol)
       )
     },
@@ -400,7 +419,7 @@ export default {
         name: label
       };
 
-      this.chart.series[3].addPoint(point);
+      this.chart.series[4].addPoint(point);
     },
 
     formatTickData(tickData) {
@@ -420,11 +439,12 @@ export default {
       return {
         buys: [tickData.timestamp, tickData.buys],
         sells: [tickData.timestamp, tickData.sells],
+        liquidations: [tickData.timestamp, tickData.liquidations],
         ohlc: [
-          tickData.timestamp, 
-          this.$root.formatPrice(ohlc.open), 
-          this.$root.formatPrice(ohlc.high), 
-          this.$root.formatPrice(ohlc.low), 
+          tickData.timestamp,
+          this.$root.formatPrice(ohlc.open),
+          this.$root.formatPrice(ohlc.high),
+          this.$root.formatPrice(ohlc.low),
           this.$root.formatPrice(ohlc.close)
         ],
         markers: tickData.markers,
@@ -537,7 +557,7 @@ export default {
         this._panTimeout = setTimeout(() => {
           self.$store.commit('toggleSnap', !self.isPanned());
         }, 200);
-        
+
         return proceed.call(self.chart, event, arg);
       };
     },
@@ -628,7 +648,7 @@ export default {
     }*/,
     isPanned() {
       return !this.chart || !this.chart.series.length || (
-        this.chart.series[0].points.length 
+        this.chart.series[0].points.length
         && this.chart.series[0].xData.length
         && this.chart.series[0].points[this.chart.series[0].points.length - 1].x < this.chart.series[0].xData[this.chart.series[0].xData.length - 1]
       )

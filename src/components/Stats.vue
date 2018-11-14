@@ -1,9 +1,6 @@
 <template>
 	<div id="stats" class="stats">
-    <div class="stats__infos" v-if="periodLabel">
-      <i>in the last</i>
-      <div>{{ periodLabel }}</div>
-    </div>
+    <div class="stats__infos"></div>
     <ul class="stats__items">
       <li>
         <div class="stats__label">TRADES</div>
@@ -162,7 +159,7 @@ export default {
   .stats__label {
     opacity: .5;
     font-size: .75em;
-    padding: 1em 1em .25em;
+    padding: .75em 1em .25em;
   }
 
   .stats__value {

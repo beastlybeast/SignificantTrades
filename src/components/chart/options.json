@@ -100,22 +100,14 @@
       "yAxis": 1
     },
     {
-      "id": "misc",
-      "type": "scatter",
-      "yAxis": 0,
+      "id": "liquidations",
+      "type": "areaspline",
+      "stacking": "area",
+      "name": "LIQUIDATIONS",
+      "color": "rgba(140, 97, 245, 1)",
       "data": [],
-      "marker": {
-        "enabled": true,
-        "lineWidth": 2,
-        "lineColor": "white",
-        "states": {
-          "hover": {
-            "fillColor": "white",
-            "lineColor": "rgba(255, 255, 255, .2)",
-            "lineWidth": 10
-          }
-        }
-      }
+      "fillColor": { "linearGradient": { "x1": 0, "y1": 0, "x2": 0, "y2": 1 }, "stops": [[0, "rgba(140, 97, 245, .5)"], [1, "rgba(140, 97, 245, .4)"]] },
+      "yAxis": 1
     },
     { "type": "sma", "name": "Price SMA (14)", "lineColor": "rgba(255, 255, 255, .25)", "linkedTo": "price", "marker": { "enabled": false } },
     { "type": "ema", "name": "SELLS ema (14)", "lineColor": "rgba(233, 30, 99, .75)", "linkedTo": "sells", "marker": { "enabled": false }, "yAxis": 1 },
