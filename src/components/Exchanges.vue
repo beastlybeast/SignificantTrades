@@ -32,7 +32,7 @@ export default {
 		}
   },
   created() {
-		this._priceComparisonInterval = setInterval(this.updatePriceAction.bind(this), 1000);
+		this._priceComparisonInterval = setInterval(this.updatePriceAction.bind(this), 2000);
   },
   beforeDestroy() {
 		clearInterval(this._priceComparisonInterval);

@@ -76,6 +76,7 @@
 				> li {
 					flex-basis: 50%;
 					flex-grow: 1;
+					align-items: flex-end;
 
 					&:nth-child(-n+2) {
 						.stats__value {

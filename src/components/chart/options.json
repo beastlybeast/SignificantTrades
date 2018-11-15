@@ -11,6 +11,7 @@
     "tickWidth": 0,
     "lineColor": "transparent",
     "tickmarkPlacement": "onbetween",
+    "endOnTick": false,
     "labels": {
       "y": 15
     }
@@ -45,7 +46,10 @@
   },
   "yAxis": [
     {
-      "opposite": false,
+      "top": "0%",
+      "height": "95%",
+      "startOnTick": false,
+      "endOnTick": false,
       "gridLineColor": "rgba(255, 255, 255, .1)",
       "gridLineWidth": 2,
       "minorGridLineColor": "rgba(255, 255, 255, .05)",
@@ -53,9 +57,19 @@
       "tickPosition": "outside",
       "showFirstLabel": false,
       "showLastLabel": false,
-      "labels": { "align": "left", "style": { "color": "rgba(255, 255, 255, .5)" }, "x": 5, "y": -8 }
+      "labels": {
+        "align": "right",
+        "style": { "color": "rgba(255, 255, 255, .5)" },
+        "x": -5,
+        "y": -8
+      }
     },
-    { "visible": false, "labels": { "enabled": false }, "top": "50%", "height": "50%", "gridLineColor": "transparent" }
+    {
+      "visible": false,
+      "top": "50%",
+      "height": "50%",
+      "gridLineColor": "transparent"
+    }
   ],
   "tooltip": {
     "split": true,
@@ -101,8 +115,7 @@
     },
     {
       "id": "liquidations",
-      "type": "areaspline",
-      "stacking": "area",
+      "type": "column",
       "name": "LIQUIDATIONS",
       "color": "rgba(140, 97, 245, 1)",
       "data": [],

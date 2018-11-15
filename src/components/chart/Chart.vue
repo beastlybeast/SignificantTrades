@@ -98,6 +98,8 @@ export default {
 
     window.addEventListener('mouseup', this._stopDrag, false);
 
+    // this.$el.addEventListener('wheel', this.doZoom);
+
     // this.buildExchangesSeries();
 
     this.setTimeframe(this.timeframe);
@@ -118,6 +120,8 @@ export default {
     window.removeEventListener('resize', this._doResize);
     window.removeEventListener('mousemove', this._doDrag);
     window.removeEventListener('mouseup', this._stopDrag);
+
+    // this.$el.removeEventListener('wheel', this.doZoom);
 
     this.onStoreMutation();
   },
@@ -550,6 +554,36 @@ export default {
       this._resizeTimeout = setTimeout(this.updateChartHeight.bind(this), 250);
     },
 
+    doZoom(event, two = false) {
+      this.timestamp = +new Date();
+
+      if (!this.chart.series[0].xData.length) {
+        return;
+      }
+
+      event.preventDefault();
+      let axisMin = this.chart.xAxis[0].min;
+      let axisMax = this.chart.xAxis[0].max;
+
+      if (event.deltaX || event.deltaZ || !event.deltaY) {
+        return;
+      }
+
+      const multiplier = (event.deltaY > 0 ? 1 : -1);
+
+      let range = (axisMax - axisMin) * .05;
+
+      this.chart.xAxis[0].setExtremes(axisMin - range * multiplier, axisMax + range * multiplier);
+
+      axisMin = this.chart.yAxis[0].min;
+      axisMax = this.chart.yAxis[0].max;
+
+      range = (axisMax - axisMin) * .02;
+
+      this.chart.yAxis[0].setExtremes(axisMin - range * multiplier, axisMax + range * multiplier);
+
+    },
+
     doPan(self) {
       return function(proceed, event, arg, c) {
         clearTimeout(this._panTimeout);
@@ -660,7 +694,9 @@ export default {
       this.$store.commit('setChartRange', range);
 
       if (this.chart) {
-        this.chart.xAxis[0].setExtremes(now - this.chartRange, now, true);
+        const margin = this.chartRange * .1;
+
+        this.chart.xAxis[0].setExtremes(now - this.chartRange, now + margin, true);
       }
     }
   }
