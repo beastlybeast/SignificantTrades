@@ -2,7 +2,7 @@
 	<div id="exchanges" class="exchanges">
 		<div v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index" v-bind:class="'exchange__action-' + exchange.side">
 			<div class="exchange__name">{{ exchange.id }}</div>
-			<div class="exchange__price">{{ +$root.formatPrice(exchange.price) || `&nbsp;` }}</div>
+			<div class="exchange__price" v-html="exchange.price ? $root.formatPrice(exchange.price) : `&nbsp;`"></div>
 		</div>
 	</div>
 </template>
@@ -91,15 +91,17 @@ export default {
 		}
 
 		&.exchange__action-up {
-			background-color: $green;
+			background-color: rgba(lighten($green, 20%), .5);
+			color: darken($green, 20%);
 		}
 
 		&.exchange__action-down {
-			background-color: $red;
+			background-color: rgba(lighten($red, 20%), .5);
+			color: darken($red, 20%);
 		}
 
 		&.exchange__action-neutral {
-			background-color: rgba(white, .4);
+			background-color: rgba(black, .2);
 		}
 	}
 }

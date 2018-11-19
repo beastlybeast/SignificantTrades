@@ -86,16 +86,23 @@
           <div class="settings__column__fill">
             <div class="form-group mb8">
               <label class="checkbox-control checkbox-control-input flex-left" v-tippy title="Shows liquidations on the chart">
+                <input type="checkbox" class="form-control" v-bind:checked="chartPadding" @change="$store.commit('setChartPadding', $event.target.checked ? .05 : 0)">
+                <div></div>
+                <span v-on:click.stop.prevent>Add <editable :content="(chartPadding * 100).toFixed(2)" @output="$store.commit('setChartPadding', ($event || 0) / 100)"></editable>% margin on the right</span>
+              </label>
+            </div>
+            <div class="form-group mb8">
+              <label class="checkbox-control checkbox-control-input flex-left" v-tippy title="Shows liquidations on the chart">
                 <input type="checkbox" class="form-control" v-bind:checked="chartLiquidations" @change="$store.commit('toggleLiquidationsPlot', $event.target.checked)">
                 <div></div>
-                <span>Highlight liquidations <i class="icon-rip"></i></span>
+                <span>Liquidations <i class="icon-rip"></i></span>
               </label>
             </div>
             <div class="form-group mb8">
               <label class="checkbox-control checkbox-control-input flex-left" v-tippy title="Wipe invisible data after a while to free memory and speed up the app">
                 <input type="checkbox" class="form-control" v-bind:checked="autoClearTrades" @change="$store.commit('toggleAutoClearTrades', $event.target.checked)">
                 <div></div>
-                <span>Trim invisible data</span>
+                <span>Auto cleanup</span>
               </label>
             </div>
           </div>
@@ -185,6 +192,7 @@ export default {
       'avgLength',
       'useWeighedAverage',
       'chartLiquidations',
+      'chartPadding',
       'autoClearTrades',
       'dark',
       'settings',
@@ -268,7 +276,6 @@ export default {
 
     + .app__wrapper {
       transform: scale(1.4);
-      filter: blur(5px);
     }
 
     .stack__scroller {

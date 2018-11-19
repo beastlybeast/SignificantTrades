@@ -119,6 +119,10 @@ const emitter = new Vue({
 
 			exchange.on('match', pair => {
 				console.log(`[socket.exchange.on.match] ${exchange.id} matched ${pair}`);
+				store.commit('setExchangeMatch', {
+					exchange: exchange.id,
+					match: pair
+				})
 			});
 
 			exchange.on('error', event => {
@@ -173,7 +177,8 @@ const emitter = new Vue({
 				this.pair = pair;
 			}
 
-			this.trades = [];
+			this.trades = this.queue = [];
+			this.timestamps = {};
 
 			console.log(`[socket.connect] connecting to "${this.pair}"`);
 

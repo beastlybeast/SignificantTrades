@@ -32,6 +32,7 @@ const defaults = {
 	showStats: true,
 	showChart: true,
 	statsPeriod: 1000 * 60,
+	chartPadding: .075,
 	countersSteps: [1000 * 60, 1000 * 60 * 5, 1000 * 60 * 15, 1000 * 60 * 30, 1000 * 60 * 60, 1000 * 60 * 60 * 2, 1000 * 60 * 60 * 4],
 	avgLength: 2,
 	useWeighedAverage: false,
@@ -44,7 +45,7 @@ const defaults = {
 	audioIncludeInsignificants: true,
 	audioVolume: 1.5,
 	settings: [],
-	chartLiquidations: false,
+	chartLiquidations: true,
 	chartHeight: null,
 	chartRange: 0,
 
@@ -165,6 +166,9 @@ const store = new Vuex.Store({
 		setExchangeThreshold(state, payload) {
 			Vue.set(state.exchanges[payload.exchange], 'threshold', +payload.threshold);
 		},
+		setExchangeMatch(state, payload) {
+			Vue.set(state.exchanges[payload.exchange], 'match', payload.match);
+		},
 		toggleExchangeOHLC(state, exchange) {
 			Vue.set(state.exchanges[exchange], 'ohlc', state.exchanges[exchange].ohlc === false ? true : false);
 		},
@@ -173,6 +177,9 @@ const store = new Vuex.Store({
 		},
 		setChartRange(state, value) {
 			state.chartRange = value;
+		},
+		setChartPadding(state, value) {
+			state.chartPadding = value;
 		},
 
 		// runtime commit
@@ -185,7 +192,7 @@ const store = new Vuex.Store({
 			}
 
       const index = state.actives.indexOf(exchange);
-      const active = !state.exchanges[exchange].disabled && !state.exchanges[exchange].hidden;
+      const active = state.exchanges[exchange].match && !state.exchanges[exchange].disabled && !state.exchanges[exchange].hidden;
 
       if (active && index === -1) {
         state.actives.push(exchange);
@@ -208,7 +215,14 @@ store.subscribe((mutation, state) => {
 		}
 	}
 
-  localStorage.setItem('settings', JSON.stringify(copy));
+	if ([
+		'reloadExchangeState',
+		'setExchangeMatch',
+		'toggleSnap'
+	].indexOf(mutation.type) === -1) {
+		console.info('save store in localstorage');
+		localStorage.setItem('settings', JSON.stringify(copy));
+	}
 
 	switch (mutation.type) {
 		case 'showExchange':
@@ -217,6 +231,7 @@ store.subscribe((mutation, state) => {
 		case 'enableExchange':
 		case 'disableExchange':
 		case 'toggleExchangeOHLC':
+		case 'setExchangeMatch':
 			store.commit('reloadExchangeState', mutation.payload);
 		break;
 	}

@@ -5,27 +5,27 @@
       <li>
         <div class="stats__label">TRADES</div>
         <div class="stats__value">
-          {{rate.live}}
+          {{$root.formatAmount(rate.live)}}
           <sup>({{rate.side}}{{(100 - (rate.average / rate.live) * 100).toFixed()}}%)</sup>
         </div>
       </li>
       <li>
         <div class="stats__label">BUYS</div>
         <div class="stats__value">
-          <span class="icon-commodity"></span> {{up.live.toFixed()}}
+          <span class="icon-commodity"></span> {{$root.formatAmount(up.live)}}
           <sup>({{up.side}}{{(100 - (up.average / up.live) * 100).toFixed()}}%)</sup>
         </div>
       </li>
       <li>
         <div class="stats__label">SELLS</div>
         <div class="stats__value">
-          <span class="icon-commodity"></span> {{down.live.toFixed()}}
+          <span class="icon-commodity"></span> {{$root.formatAmount(down.live)}}
           <sup>({{down.side}}{{(100 - (down.average / down.live) * 100).toFixed()}}%)</sup>
         </div>
       </li>
       <li>
         <div class="stats__label">VOL</div>
-        <div class="stats__value"><span class="icon-commodity"></span> {{(up.live + down.live).toFixed()}}</div>
+        <div class="stats__value"><span class="icon-commodity"></span> {{$root.formatAmount(up.live + down.live)}}</div>
       </li>
     </ul>
 	</div>
@@ -153,7 +153,6 @@ export default {
 @import '../assets/sass/variables';
 
 .stats {
-  background-color: rgba(white, .05);
   position: relative;
 
   .stats__label {
@@ -218,7 +217,6 @@ export default {
       position: absolute;
       content: unicode($icon-stopwatch);
       font-family: 'icon';
-      color: white;
       opacity: .1;
       pointer-events: none;
       font-size: 140px;

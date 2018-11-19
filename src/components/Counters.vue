@@ -327,16 +327,6 @@ export default {
     padding: .25em;
   }
 
-  &:nth-child(odd) {
-    .counter__up {
-      background-color: desaturate($green, 5) - 7.5%;
-    }
-
-    .counter__down {
-      background-color: desaturate($red, 5) - 7.5%;
-    }
-  }
-
   &:hover {
     .counter__delete {
       flex-basis: 2.35em;
@@ -349,6 +339,7 @@ export default {
   }
 
   .counter__delete {
+    color: white;
     background-color: rgba(black, .8);
     transition: flex-basis .2s $easeOutExpo;
     font-size: .8em;
@@ -375,38 +366,13 @@ export default {
   white-space: nowrap;
   text-align: left;
   flex-shrink: 0;
-  background-color: rgba(white, .1);
+  background-color: rgba(black, .05);
   transition: padding .2s $easeOutExpo;
   position: relative;
 
   [contenteditable] {
     padding: 4px;
     font-size: .8em;
-
-    &:after {
-      content: unicode($icon-edit);
-      font-family: 'icon';
-      font-size: .8em;
-      display: inline-block;
-      position: absolute;
-      right: 0;
-
-      transition: transform .2s $easeElastic;
-      transform: translate(100%) rotateZ(45deg);
-      opacity: 0;
-      color: white;
-
-      pointer-events: none;
-    }
-  }
-
-  &:hover {
-    padding-right: .5em;
-
-    [contenteditable]:after {
-      transform: translate(-50%);
-      opacity: .6;
-    }
   }
 }
 
@@ -427,7 +393,8 @@ export default {
 
 .counter__up {
   text-align: left;
-  background-color: desaturate($green, 5);
+  background-color: rgba(lighten($green, 10%), .75);
+  color: darken($green, 10%);
 
   &:before {
     left: .25em;
@@ -436,7 +403,8 @@ export default {
 
 .counter__down {
   text-align: right;
-  background-color: $red;
+  background-color: rgba(lighten($red, 10%), .75);
+  color: darken($red, 10%);
 
   &:before {
     right: .25em;

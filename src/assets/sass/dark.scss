@@ -16,10 +16,6 @@ body.theme-dark {
     background-color: $dark;
   }
 
-  .settings__container + .app__wrapper {
-    filter: none;
-  }
-
   .stack__container {
     .stack__wrapper code {
       background-color: rgba(white, 0.1);
@@ -57,85 +53,39 @@ body.theme-dark {
       color: white;
     }
   }
-}
 
-#app {
-  width: 100%;
-  overflow: hidden;
-  position: relative;
-  min-height: 100%;
-}
+  #exchanges {
+    .exchange__action-up {
+      background-color: $green;
+      color: white;
+    }
 
-.app__wrapper {
-  height: 100%;
-  transition: transform .3s $easeOutExpo;
-}
+    .exchange__action-down {
+      background-color: $red;
+      color: white;
+    }
 
-.app__component {
-  
-}
-
-.stack__container {
-  transform: none;
-  overflow: hidden;
-  max-height: 1000px;
-  font-size: 12px;
-  z-index: 1;
-
-  @media screen and (min-width: 500px) {
-    .stack__backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-
-      display: block;
-      background-color: rgba(white, 0.5);
-      pointer-events: none;
+    .exchange__action-neutral {
+      background-color: rgba(white, .4);
+      color: rgba(white, .75);
     }
   }
 
-  .stack__scroller {
-    overflow: auto;
-    position: relative;
-    max-height: 100%;
+  .counter__up {
+    background-color: desaturate($green, 5);
+    color: white;
   }
 
-  .stack__toggler {
-    position: absolute;
-    right: 0;
-    top: 0;
-    font-size: 18px;
-    opacity: 0.2;
-    padding: 8px;
-    z-index: 1;
-
-    &:hover {
-      opacity: 1;
-    }
+  .counter__down {
+    background-color: $red;
+    color: white;
   }
 
-  .stack__wrapper {
-    padding: 8px 10px;
-    position: relative;
+  #stats {
+    background-color: rgba(white, .05);
 
-    p {
-      margin: 0 0 2px;
-
-      &:last-child {
-        margin: 0;
-      }
-    }
-
-    code {
-      background-color: rgba(black, 0.1);
-      font-weight: 400;
-      padding: 3px 4px;
-      line-height: 1;
-      display: inline-block;
-      position: relative;
-      letter-spacing: -0.5px;
+    .stats__infos:before {
+      color: white;
     }
   }
 }

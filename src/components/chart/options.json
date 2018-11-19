@@ -1,27 +1,23 @@
 {
   "time": { "useUTC": false },
-  "chart": { "backgroundColor": "transparent", "spacing": 0, "spacingBottom": 10, "animation": false },
+  "chart": {
+    "backgroundColor": "transparent",
+    "spacing": 0,
+    "spacingBottom": 10,
+    "animation": false
+  },
   "exporting": { "enabled": false },
   "navigator": { "enabled": false },
   "scrollbar": { "enabled": false },
   "credits": { "enabled": false },
   "rangeSelector": { "enabled": false },
   "title": { "enabled": false },
-  "xAxis": {
-    "tickWidth": 0,
-    "lineColor": "transparent",
-    "tickmarkPlacement": "onbetween",
-    "endOnTick": false,
-    "labels": {
-      "y": 15
-    }
-  },
   "plotOptions": {
     "series": {
       "dataGrouping": {
         "enabled": false
       },
-      "pointPadding": 0.15,
+      "pointPadding": 0.18,
       "groupPadding": 0,
       "marker": { "states": { "hover": { "enabled": false, "radiusPlus": 2, "lineWidthPlus": 1 } } }
     },
@@ -44,53 +40,64 @@
       }
     }
   },
+  "tooltip": {
+    "split": true,
+    "hideDelay": 0,
+    "borderWidth": 0,
+    "shadow": false,
+    "valueDecimals": 2,
+    "padding": 4,
+    "backgroundColor": "rgba(0, 0, 0, .5)",
+    "style": { "color": "rgba(255, 255, 255, 1)" }
+  },
+  "xAxis": {
+    "tickWidth": 0,
+    "lineColor": "transparent",
+    "crosshair": {
+      "width": 1.5, "dashStyle": "dash"
+    },
+    "labels": {
+      "y": 15
+    }
+  },
   "yAxis": [
     {
+      "type": "logarithmic",
       "top": "0%",
       "height": "95%",
       "startOnTick": false,
       "endOnTick": false,
-      "gridLineColor": "rgba(255, 255, 255, .1)",
       "gridLineWidth": 2,
-      "minorGridLineColor": "rgba(255, 255, 255, .05)",
       "minorGridLineWidth": 1,
       "tickPosition": "outside",
       "showFirstLabel": false,
       "showLastLabel": false,
+      "crosshair": {
+        "width": 1.5, "dashStyle": "dash"
+      },
       "labels": {
         "align": "right",
-        "style": { "color": "rgba(255, 255, 255, .5)" },
         "x": -5,
         "y": -8
       }
     },
     {
       "visible": false,
-      "top": "50%",
-      "height": "50%",
-      "gridLineColor": "transparent"
+      "top": "70%",
+      "height": "30%"
+    },
+    {
+      "visible": false,
+      "top": "70%",
+      "height": "30%"
     }
   ],
-  "tooltip": {
-    "split": true,
-    "hideDelay": 0,
-    "borderWidth": 0,
-    "shadow": false,
-    "padding": 4,
-    "backgroundColor": "rgba(0, 0, 0, .5)",
-    "style": { "color": "rgba(255, 255, 255, 1)" },
-    "crosshairs": [{ "width": 1.5, "dashStyle": "dash", "color": "rgba(255, 255, 255, .1)" }]
-  },
   "series": [
     {
       "id": "price",
       "type": "candlestick",
       "name": "BTCUSD",
       "data": [],
-      "lineColor": "rgba(244, 67, 54, 1)",
-      "color": "rgba(244, 67, 54, .85)",
-      "upLineColor": "rgba(139, 195, 74, 1)",
-      "upColor": "rgba(139, 195, 74, .85)",
       "lineWidth": 1
     },
     {
@@ -99,8 +106,6 @@
       "stacking": "area",
       "name": "BUYS",
       "data": [],
-      "color": "rgba(139, 195, 74, 1)",
-      "fillColor": { "linearGradient": { "x1": 0, "y1": 0, "x2": 0, "y2": 1 }, "stops": [[0, "rgba(139, 195, 74, .5)"], [1, "rgba(139, 195, 74, .4)"]] },
       "yAxis": 1
     },
     {
@@ -110,23 +115,58 @@
       "name": "SELLS",
       "color": "rgba(233, 30, 99, 1)",
       "data": [],
-      "fillColor": { "linearGradient": { "x1": 0, "y1": 0, "x2": 0, "y2": 1 }, "stops": [[0, "rgba(233, 30, 99, .5)"], [1, "rgba(233, 30, 99, .4)"]] },
       "yAxis": 1
     },
     {
       "id": "liquidations",
       "type": "column",
       "name": "LIQUIDATIONS",
-      "color": "rgba(140, 97, 245, 1)",
       "data": [],
       "fillColor": { "linearGradient": { "x1": 0, "y1": 0, "x2": 0, "y2": 1 }, "stops": [[0, "rgba(140, 97, 245, .5)"], [1, "rgba(140, 97, 245, .4)"]] },
       "yAxis": 1
     },
-    { "type": "sma", "name": "Price SMA (14)", "lineColor": "rgba(255, 255, 255, .25)", "linkedTo": "price", "marker": { "enabled": false } },
-    { "type": "ema", "name": "SELLS ema (14)", "lineColor": "rgba(233, 30, 99, .75)", "linkedTo": "sells", "marker": { "enabled": false }, "yAxis": 1 },
-    { "type": "ema", "name": "BUYS ema (14)", "lineColor": "rgba(139, 195, 74, .75)", "linkedTo": "buys", "marker": { "enabled": false }, "yAxis": 1 }
+    { "type": "sma", "name": "Price SMA (14)", "linkedTo": "price", "marker": { "enabled": false } },
+    { "type": "sma", "name": "SELLS ema (14)", "linkedTo": "sells", "marker": { "enabled": false }, "yAxis": 2 },
+    { "type": "sma", "name": "BUYS ema (14)", "linkedTo": "buys", "marker": { "enabled": false }, "yAxis": 2 }
   ],
-  "symbols": {
-    "liquidation": "url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IiB2aWV3Qm94PSIwIDAgMTYgMTYiIHN0eWxlPSJlbmFibGUtYmFja2dyb3VuZDpuZXcgMCAwIDE2IDE2OyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+PHN0eWxlIHR5cGU9InRleHQvY3NzIj4uc3Qwe2ZpbGw6I0ZGRkZGRjt9PC9zdHlsZT48dGl0bGU+PC90aXRsZT48ZyBpZD0iaWNvbW9vbi1pZ25vcmUiPjwvZz48cGF0aCBjbGFzcz0ic3QwIiBkPSJNOS40LDE1LjdWNi45YzAtMC4yLDAuMS0wLjMsMC4zLTAuM2wwLDBoMy42YzAuMiwwLDAuMy0wLjEsMC4zLTAuM2wwLDBWNC4xYzAtMC4yLTAuMS0wLjMtMC4zLTAuM2wwLDBIOS43Yy0wLjIsMC0wLjMtMC4xLTAuMy0wLjNsMCwwVjAuM0M5LjQsMC4xLDkuMywwLDkuMSwwbDAsMEg2LjlDNi43LDAsNi42LDAuMSw2LjYsMC4zbDAsMHYzLjJjMCwwLjItMC4xLDAuMy0wLjMsMC4zbDAsMEgyLjdjLTAuMiwwLTAuMywwLjEtMC4zLDAuM2wwLDB2Mi4yYzAsMC4yLDAuMSwwLjMsMC4zLDAuM2wwLDBoMy42YzAuMiwwLDAuMywwLjEsMC4zLDAuM2wwLDB2OC44YzAsMC4yLDAuMSwwLjMsMC4zLDAuM2wwLDBoMi4yQzkuMywxNiw5LjQsMTUuOSw5LjQsMTUuN0w5LjQsMTUuN3oiLz48L3N2Zz4=)"
+  "themes": {
+    "bright": {
+      "labels": "rgba(0, 0, 0, .2)",
+      "up": "rgba(78, 186, 134, .85)",
+      "upLine": "rgba(78, 186, 134, 1)",
+      "down": "rgba(237, 75, 89, .85)",
+      "downLine": "rgba(237, 75, 89, 1)",
+      "buysLine": "rgba(139, 195, 74, 1)",
+      "buysGradient": ["rgba(139, 195, 74, .5)", "rgba(139, 195, 74, .4)"],
+      "sellsLine": "rgba(233, 30, 99, 1)",
+      "sellsGradient": ["rgba(233, 30, 99, .5)", "rgba(233, 30, 99, .4)"],
+      "liquidations": "rgba(140, 97, 245, 1)",
+      "priceMA": "rgba(0, 0, 0, .25)",
+      "buysMA": "rgba(139, 195, 74, .75)",
+      "sellsMA": "rgba(233, 30, 99, .75)",
+      "tooltipBackground": "rgba(0, 0, 0, .5)",
+      "tooltipColor": "rgba(255, 255, 255, 1)",
+      "crosshair": "rgba(0, 0, 0, .4)",
+      "gridline": "rgba(0, 0, 0, .1)"
+    },
+    "dark": {
+      "labels": "rgba(255, 255, 255, .2)",
+      "up": "rgba(139, 195, 74, .85)",
+      "upLine": "rgba(139, 195, 74, 1)",
+      "down": "rgba(244, 67, 54, .85)",
+      "downLine": "rgba(244, 67, 54, 1)",
+      "buysLine": "rgba(139, 195, 74, 1)",
+      "buysGradient": ["rgba(139, 195, 74, .5)", "rgba(139, 195, 74, .4)"],
+      "sellsLine": "rgba(233, 30, 99, 1)",
+      "sellsGradient": ["rgba(233, 30, 99, .5)", "rgba(233, 30, 99, .4)"],
+      "liquidations": "rgba(140, 97, 245, 1)",
+      "priceMA": "rgba(255, 255, 255, .25)",
+      "buysMA": "rgba(139, 195, 74, 1)",
+      "sellsMA": "rgba(216, 27, 96, 1)",
+      "tooltipBackground": "rgba(0, 0, 0, .5)",
+      "tooltipColor": "rgba(255, 255, 255, 1)",
+      "crosshair": "rgba(255, 255, 255, .1)",
+      "gridline": "rgba(255, 255, 255, .1)"
+    }
   }
 }

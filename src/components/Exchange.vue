@@ -14,7 +14,7 @@
 			<div class="settings__exchanges__item__identity">
 				<div class="settings__exchanges__item__name">{{ exchange.id }}</div>
 				<small class="settings__exchanges__item__error" v-if="exchange.error">{{ exchange.error }}</small>
-				<small class="settings__exchanges__item__price" v-if="exchange.price">{{ $root.formatPrice(exchange.price) }}</small>
+				<small class="settings__exchanges__item__price" v-if="exchange.price" v-html="$root.formatPrice(exchange.price)"></small>
 			</div>
 			<div class="settings__exchanges__item__controls">
 				<button class="settings__exchanges__item__visibility" v-tippy v-bind:title="exchange.hidden ? 'Show' : 'Hide (from everything)'" v-on:click.stop.prevent="$store.commit('toggleExchangeVisibility', exchange.id)"><i class="icon-eye-crossed"></i></button>

@@ -38,12 +38,14 @@ export default {
   computed: {
     ...mapState([
       'timeframe',
+      'dark',
       'actives',
       'exchanges',
       'isSnaped',
       'chartHeight',
       'chartRange',
-      'chartLiquidations'
+      'chartLiquidations',
+      'chartPadding'
 		])
   },
   created() {
@@ -52,7 +54,7 @@ export default {
     };
 
     if (Highcharts.VMLRenderer) {
-      Highcharts.VMLRenderer.prototype.symbols.plus = Highcharts.SVGRenderer.prototype.symbols.plus;
+      Highcharts.VMLRenderer.prototype.symbols.rip = Highcharts.SVGRenderer.prototype.symbols.rip;
     }
 
     Highcharts.wrap(Highcharts.Chart.prototype, 'pan', this.doPan(this));
@@ -72,12 +74,17 @@ export default {
         case 'reloadExchangeState':
         case 'chartLiquidations':
         case 'toggleLiquidationsPlot':
+        case 'setChartPadding':
           // this.buildExchangesSeries();
           this.setTimeframe(this.timeframe);
           break;
         case 'trimChart':
 
           break;
+        case 'toggleDark':
+          this.createChart();
+          this.setTimeframe(this.timeframe);
+        break;
       }
     });
   },
@@ -105,11 +112,7 @@ export default {
     this.setTimeframe(this.timeframe);
 	},
   beforeDestroy() {
-    if (this.chart) {
-      this.chart.destroy();
-
-      delete this.chart;
-    }
+    this.destroyChart();
 
     socket.$off('trades.queued', this.onTrades);
 
@@ -127,9 +130,11 @@ export default {
   },
   methods: {
     createChart() {
-      const options = JSON.parse(JSON.stringify(chartOptions));
+      this.destroyChart();
 
-      console.log('new chart');
+      const options = this.getChartOptions();
+
+      console.log('new c hart');
       this.chart = Highcharts.stockChart(this.$el.querySelector('.chart__canvas'), options);
 
       this.updateChartHeight();
@@ -138,10 +143,20 @@ export default {
         this.setRange(this.chartRange);
       }
     },
+    destroyChart() {
+      if (!this.chart) {
+        return;
+      }
+
+      console.log('destroy chart');
+      
+      this.chart.destroy();
+      delete this.chart;
+    },
     setTimeframe(timeframe) {
       console.log('setTimeframe', timeframe);
 
-      const count = ((this.chart ? this.chart.chartWidth : this.$refs.chartContainer.offsetWidth) - 20 * .1) / 10;
+      const count = ((this.chart ? this.chart.chartWidth : this.$refs.chartContainer.offsetWidth) * (1 - this.chartPadding) - 20 * .1) / 10;
       const range = timeframe * 2 * count;
 
       const now = +new Date();
@@ -446,10 +461,10 @@ export default {
         liquidations: [tickData.timestamp, tickData.liquidations],
         ohlc: [
           tickData.timestamp,
-          this.$root.formatPrice(ohlc.open),
-          this.$root.formatPrice(ohlc.high),
-          this.$root.formatPrice(ohlc.low),
-          this.$root.formatPrice(ohlc.close)
+          (ohlc.open),
+          (ohlc.high),
+          (ohlc.low),
+          (ohlc.close)
         ],
         markers: tickData.markers,
         // exchanges: exchanges,
@@ -586,6 +601,10 @@ export default {
 
     doPan(self) {
       return function(proceed, event, arg, c) {
+        if (!self.chart) {
+          return;
+        }
+
         clearTimeout(this._panTimeout);
 
         this._panTimeout = setTimeout(() => {
@@ -614,12 +633,11 @@ export default {
     },
 
     snapRight(redraw = false) {
-      const axis = this.chart.xAxis[0].getExtremes();
       const now = +new Date();
-      const diff = now - axis.max;
+      const margin = this.chartRange * this.chartPadding;
+      
+      this.chart.xAxis[0].setExtremes(now - this.chartRange + margin, now + margin, redraw);
 
-      console.log('set extremes', axis.min + diff, axis.max + diff);
-      this.chart.xAxis[0].setExtremes(axis.min + diff, axis.max + diff, redraw);
     },
 
     buildExchangesSeries() {
@@ -694,10 +712,49 @@ export default {
       this.$store.commit('setChartRange', range);
 
       if (this.chart) {
-        const margin = this.chartRange * .1;
+        const margin = this.chartRange * this.chartPadding;
+        
+        this.chart.xAxis[0].update({
+            overscroll: margin
+        });
 
-        this.chart.xAxis[0].setExtremes(now - this.chartRange, now + margin, true);
+        this.chart.xAxis[0].setExtremes(now - this.chartRange + margin, now + margin, true);
       }
+    },
+    getChartOptions() {
+      const options = JSON.parse(JSON.stringify(chartOptions));
+      const theme = options.themes[this.dark ? 'dark' : 'bright'];
+      
+      options.xAxis.labels.color = theme.labels;
+      options.xAxis.crosshair.color = theme.crosshair;
+      options.yAxis[0].labels.color = theme.labels;
+      options.yAxis[0].gridLineColor = theme.gridline;
+      options.yAxis[0].crosshair.color = theme.crosshair;
+      options.series[1].gridLineColor = theme.gridline;
+      options.series[0].upColor = theme.up;
+      options.series[0].upLineColor = theme.upLine;
+      options.series[0].color = theme.down;
+      options.series[0].lineColor = theme.downLine;
+      options.series[1].color = theme.buysLine;
+      options.series[1].fillColor = {
+        linearGradient: {
+          x1: 0, y1: 0, x2: 0, y2: 1
+        },
+        stops: [[0, theme.buysGradient[0]], [1, theme.buysGradient[1]]]
+      };
+      options.series[2].color = theme.sellsLine;
+      options.series[2].fillColor = {
+        linearGradient: {
+          x1: 0, y1: 0, x2: 0, y2: 1
+        },
+        stops: [[0, theme.sellsGradient[0]], [1, theme.sellsGradient[1]]]
+      };
+      options.series[3].color = theme.liquidations;
+      options.series[4].lineColor = theme.priceMA;
+      options.series[5].lineColor = theme.sellsMA;
+      options.series[6].lineColor = theme.buysMA;
+
+      return options;
     }
   }
 };

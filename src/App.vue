@@ -95,6 +95,9 @@ export default {
         case 'toggleDark':
           this.toggleDark(mutation.payload);
         break;
+        case 'setPair':
+          socket.connectExchanges(mutation.payload);
+        break;
       }
     });
 

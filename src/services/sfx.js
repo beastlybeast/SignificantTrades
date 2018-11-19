@@ -1,5 +1,6 @@
 import Tuna from 'tunajs'
-import options from '../services/options'
+
+import store from '../services/store'
 
 class Sfx {
 
@@ -85,7 +86,7 @@ class Sfx {
 		oscillator.connect(gain);
 		length *= 1.1;
 
-		gain.gain.value = Math.max(.04, Math.min(2, value)) * options.audioVolume;
+		gain.gain.value = Math.max(.04, Math.min(2, value)) * store.state.audioVolume;
 
 		gain.gain.setValueAtTime(gain.gain.value, time)
 		gain.gain.exponentialRampToValueAtTime(0.001, time + length);
