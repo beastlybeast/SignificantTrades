@@ -1,10 +1,6 @@
 <template>
 	<div id="chart">
 		<div class="chart__container" ref="chartContainer" v-bind:class="{fetching: fetching}" v-bind:style="{ height: chartHeight }">
-			<!-- <div class="chart__range">
-				<div>{{ rangeFrom }}</div>
-				<div>{{ rangeTo }}</div>
-			</div> -->
 			<div class="chart__canvas"></div>
 		</div>
 		<div class="chart__height-handler" ref="chartHeightHandler" v-on:mousedown="startResize" v-on:dblclick.stop.prevent="resetHeight"></div>
@@ -20,9 +16,11 @@ import chartOptions from "./options.json";
 import Highcharts from 'highcharts/highstock';
 import Indicators from 'highcharts/indicators/indicators';
 import EMA from 'highcharts/indicators/ema';
+import CMF from 'highcharts/indicators/cmf';
 
 Indicators(Highcharts);
 EMA(Highcharts);
+CMF(Highcharts);
 
 export default {
   data() {
@@ -284,10 +282,10 @@ export default {
             this.tickData.exchanges[trades[i][0]].low = Math.min(this.tickData.exchanges[trades[i][0]].low, +trades[i][2]);
             this.tickData.exchanges[trades[i][0]].close = +trades[i][2];
             this.tickData.exchanges[trades[i][0]].size += +trades[i][3];
-          }
 
-          this.tickData[(trades[i][4] > 0 ? 'buys' : 'sells') + 'Count']++;
-          this.tickData[trades[i][4] > 0 ? 'buys' : 'sells'] += trades[i][3] * trades[i][2];
+            this.tickData[(trades[i][4] > 0 ? 'buys' : 'sells') + 'Count']++;
+            this.tickData[trades[i][4] > 0 ? 'buys' : 'sells'] += trades[i][3] * trades[i][2];
+          }
         }
 
         if (i) {

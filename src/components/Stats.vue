@@ -12,14 +12,14 @@
       <li>
         <div class="stats__label">BUYS</div>
         <div class="stats__value">
-          <span class="icon-commodity"></span> {{$root.formatAmount(up.live)}}
+          <span class="icon-commodity"></span> {{$root.formatAmount(up.live, 1)}}
           <sup>({{up.side}}{{(100 - (up.average / up.live) * 100).toFixed()}}%)</sup>
         </div>
       </li>
       <li>
         <div class="stats__label">SELLS</div>
         <div class="stats__value">
-          <span class="icon-commodity"></span> {{$root.formatAmount(down.live)}}
+          <span class="icon-commodity"></span> {{$root.formatAmount(down.live, 1)}}
           <sup>({{down.side}}{{(100 - (down.average / down.live) * 100).toFixed()}}%)</sup>
         </div>
       </li>
@@ -68,7 +68,7 @@ export default {
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
-        case 'statsPeriod':
+        case 'setStatsPeriod':
           this.rebuildStats();
           break;
       }
@@ -154,6 +154,7 @@ export default {
 
 .stats {
   position: relative;
+  background-color: rgba(white, .05);
 
   .stats__label {
     opacity: .5;
@@ -187,6 +188,13 @@ export default {
 
     sup {
       font-size: 75%;
+      display: none;
+    }
+
+    @media screen and (min-width: 768px) {
+      sup {
+        display: inline-block;
+      }
     }
   }
 
@@ -222,6 +230,7 @@ export default {
       font-size: 140px;
       bottom: 0;
       left: -60%;
+      color: white;
     }
 
     @media screen and (min-width: 1200px) {

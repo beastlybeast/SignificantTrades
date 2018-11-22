@@ -53,6 +53,7 @@ export default {
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
+        case 'setTimeframe':
         case 'setCounterStep':
         case 'replaceCounterSteps':
         case 'reloadExchangeState':
@@ -125,23 +126,19 @@ export default {
         let upVolume = 0;
         let downVolume = 0;
 
-        let expiredUntilIndex = -1;
+        let i;
 
-        for (let i = 0; i < this.counters[stepIndex].length; i++) {
-          if (expiredUntilIndex === -1) {
-            upVolume += this.counters[stepIndex][i][1];
-            downVolume += this.counters[stepIndex][i][2];
-          }
-
-          if (this.counters[stepIndex][i][0] < now - step) {
-            expiredUntilIndex = i;
-
+        for (i = 0; i < this.counters[stepIndex].length; i++) {
+          if (this.counters[stepIndex][i][0] - 10 > now - step) {
             break;
           }
+          
+          upVolume += this.counters[stepIndex][i][1];
+          downVolume += this.counters[stepIndex][i][2];
         }
 
-        if (expiredUntilIndex >= 0) {
-          const expired = this.counters[stepIndex].splice(0, expiredUntilIndex + 1);
+        if (i > 0) {
+          const expired = this.counters[stepIndex].splice(0, i);
 
           this.strictSums[stepIndex][0] -= upVolume;
           this.strictSums[stepIndex][1] -= downVolume;
@@ -151,8 +148,8 @@ export default {
             this.strictSums[stepIndex + 1][0] += upVolume;
             this.strictSums[stepIndex + 1][1] += downVolume;
 
-            if (this.complete < stepIndex) {
-              this.complete = stepIndex;
+            if (this.completed < stepIndex) {
+              this.completed = stepIndex;
             }
           }
         }
@@ -366,9 +363,10 @@ export default {
   white-space: nowrap;
   text-align: left;
   flex-shrink: 0;
-  background-color: rgba(black, .05);
+  background-color: #222;
   transition: padding .2s $easeOutExpo;
   position: relative;
+  color: white;
 
   [contenteditable] {
     padding: 4px;
@@ -393,8 +391,8 @@ export default {
 
 .counter__up {
   text-align: left;
-  background-color: rgba(lighten($green, 10%), .75);
-  color: darken($green, 10%);
+    background-color: desaturate($green, 5);
+    color: white;
 
   &:before {
     left: .25em;
@@ -403,8 +401,8 @@ export default {
 
 .counter__down {
   text-align: right;
-  background-color: rgba(lighten($red, 10%), .75);
-  color: darken($red, 10%);
+    background-color: $red;
+    color: white;
 
   &:before {
     right: .25em;

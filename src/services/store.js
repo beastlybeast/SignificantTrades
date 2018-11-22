@@ -78,6 +78,19 @@ const store = new Vuex.Store({
 		toggleStats(state, value) {
 			state.showStats = value ? true : false;
 		},
+		setStatsPeriod(state, value) {
+			let period;
+
+      if (/[\d.]+s/.test(value)) {
+        period = parseFloat(value) * 1000;
+      } else if (/[\d.]+h/.test(value)) {
+        period = parseFloat(value) * 1000 * 60 * 60;
+      } else {
+        period = parseFloat(value) * 1000 * 60;
+      }
+
+			state.statsPeriod = period;
+		},
 		toggleHideIncompleteCounter(state, value) {
 			state.hideIncompleteCounter = value ? true : false;
 		},

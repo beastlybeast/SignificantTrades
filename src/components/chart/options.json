@@ -126,8 +126,8 @@
       "yAxis": 1
     },
     { "type": "sma", "name": "Price SMA (14)", "linkedTo": "price", "marker": { "enabled": false } },
-    { "type": "sma", "name": "SELLS ema (14)", "linkedTo": "sells", "marker": { "enabled": false }, "yAxis": 2 },
-    { "type": "sma", "name": "BUYS ema (14)", "linkedTo": "buys", "marker": { "enabled": false }, "yAxis": 2 }
+    { "type": "ema", "name": "SELLS ema (14)", "params": { "period": 14 }, "linkedTo": "sells", "marker": { "enabled": false }, "yAxis": 2 },
+    { "type": "ema", "name": "BUYS ema (14)", "params": { "period": 14 }, "linkedTo": "buys", "marker": { "enabled": false }, "yAxis": 2 }
   ],
   "themes": {
     "bright": {

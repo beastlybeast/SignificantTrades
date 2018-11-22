@@ -56,6 +56,18 @@
             <input type="range" min="0" max="5" step=".1" v-bind:value="audioVolume" @change="$store.commit('setAudioVolume', $event.target.value)">
           </div>
         </div>
+        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'stats')" v-bind:class="{closed: settings.indexOf('stats') > -1}">Stats <i class="icon-up"></i></div>
+        <div class="settings__counters settings__activable settings__column" v-bind:class="{active: showStats}">
+          <div class="form-group settings__column__tight">
+            <label class="checkbox-control checkbox-on-off checkbox-control-input flex-right" v-tippy title="Enable stats">
+              <input type="checkbox" class="form-control" v-bind:checked="showStats" @change="$store.commit('toggleStats', $event.target.checked)">
+              <div></div>
+            </label>
+          </div>
+          <div class="form-group settings__column__fill">
+            <input type="string" placeholder="ms" class="form-control" v-bind:value="statsPeriodStringified" @change="$store.commit('setStatsPeriod', $event.target.value)">
+          </div>
+        </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'counters')" v-bind:class="{closed: settings.indexOf('counters') > -1}">Counter <i class="icon-up"></i></div>
         <div class="settings__counters settings__activable settings__column" v-bind:class="{active: showCounters}">
           <div class="form-group settings__column__tight">
@@ -85,14 +97,14 @@
           </div>
           <div class="settings__column__fill">
             <div class="form-group mb8">
-              <label class="checkbox-control checkbox-control-input flex-left" v-tippy title="Shows liquidations on the chart">
+              <label class="checkbox-control checkbox-control-input flex-left" v-tippy title="Pad chart">
                 <input type="checkbox" class="form-control" v-bind:checked="chartPadding" @change="$store.commit('setChartPadding', $event.target.checked ? .05 : 0)">
                 <div></div>
                 <span v-on:click.stop.prevent>Add <editable :content="(chartPadding * 100).toFixed(2)" @output="$store.commit('setChartPadding', ($event || 0) / 100)"></editable>% margin on the right</span>
               </label>
             </div>
             <div class="form-group mb8">
-              <label class="checkbox-control checkbox-control-input flex-left" v-tippy title="Shows liquidations on the chart">
+              <label class="checkbox-control checkbox-control-input flex-left" v-tippy title="Shows liquidations">
                 <input type="checkbox" class="form-control" v-bind:checked="chartLiquidations" @change="$store.commit('toggleLiquidationsPlot', $event.target.checked)">
                 <div></div>
                 <span>Liquidations <i class="icon-rip"></i></span>
@@ -179,6 +191,8 @@ export default {
       'maxRows',
       'decimalPrecision',
       'showCounters',
+      'showStats',
+      'statsPeriod',
       'counterPrecision',
       'hideIncompleteCounter',
       'countersSteps',
@@ -203,6 +217,7 @@ export default {
   },
   created() {
     this.stringifyCounters();
+    this.stringifyStatsPeriod();
   },
   beforeUpdate(a, b, c) {
     console.log('SETTINGS: before update');
@@ -211,6 +226,9 @@ export default {
     console.log('SETTINGS: updated');
   },
   methods: {
+    stringifyStatsPeriod() {
+      this.statsPeriodStringified = this.$root.ago(+new Date() - this.statsPeriod);
+    },
     stringifyCounters() {
       const now = +new Date();
       this.countersStepsStringified = this.countersSteps.map(a => this.$root.ago(now - a)).join(', ');
@@ -245,6 +263,7 @@ export default {
       this.$store.commit('replaceCounterSteps', counters);
 
       this.stringifyCounters();
+      this.stringifyStatsPeriod();
     },
     reset() {
       window.localStorage && window.localStorage.clear();

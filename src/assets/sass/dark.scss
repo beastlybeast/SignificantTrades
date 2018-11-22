@@ -71,21 +71,10 @@ body.theme-dark {
     }
   }
 
-  .counter__up {
-    background-color: desaturate($green, 5);
-    color: white;
-  }
-
-  .counter__down {
-    background-color: $red;
-    color: white;
-  }
-
-  #stats {
-    background-color: rgba(white, .05);
-
-    .stats__infos:before {
-      color: white;
+  #counters {
+    .counter__index {
+      background-color: rgba(black, .2);
     }
   }
+
 }

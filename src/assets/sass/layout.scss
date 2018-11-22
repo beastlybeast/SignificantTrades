@@ -3,7 +3,7 @@
   overflow: hidden;
   position: relative;
   min-height: 100%;
-	
+
 	@media screen and (min-width: 768px) {
 		height: 100vh;
 	}
@@ -152,6 +152,7 @@
 
 			#stats .stats__items {
 				flex-wrap: wrap;
+				margin: 0 0 0 20%;
 
 				> li {
 					flex-basis: 50%;
@@ -175,7 +176,14 @@
 			#trades {
 				flex-grow: 1;
 				overflow: auto;
+				font-size: .8em;
 			}
+		}
+	}
+
+	@media screen and (min-width: 992px) {
+		.app__right #trades {
+			font-size: 1.1em;
 		}
 	}
 
@@ -197,14 +205,6 @@
 	@media screen and (min-width: 1600px) {
 		.app__right {
 			font-size: 1.2em;
-		}
-	}
-
-	@media screen and (min-width: 1200px) {
-		#stats {
-			.stats__items {
-				margin-left: 20%;
-			}
 		}
 	}
 }
