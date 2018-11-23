@@ -109,8 +109,9 @@ export default {
 
 header.header {
   display: flex;
-  color: #222;
   align-items: center;
+  color: white;
+  background-color: #03A9F4;
 
   .header__title {
     width: 100%;
@@ -134,7 +135,7 @@ header.header {
   button {
     border: 0;
     background: none;
-    color: #222;
+    color: inherit;
     padding: 6px 10px 5px;
     font-size: 20px;
     position: relative;

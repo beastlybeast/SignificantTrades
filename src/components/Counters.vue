@@ -186,6 +186,10 @@ export default {
       return stacks;
     },
     populateCounters(stacks) {
+      if (!stacks || !stacks.length) {
+        return;
+      }
+
       const now = +new Date();
       
       let last = 0;
@@ -324,6 +328,12 @@ export default {
     padding: .25em;
   }
 
+  background-color: rgba(black, .05);
+
+  &:nth-child(odd) {
+    background-color: rgba(black, .025);
+  }
+
   &:hover {
     .counter__delete {
       flex-basis: 2.35em;
@@ -363,10 +373,8 @@ export default {
   white-space: nowrap;
   text-align: left;
   flex-shrink: 0;
-  background-color: #222;
   transition: padding .2s $easeOutExpo;
   position: relative;
-  color: white;
 
   [contenteditable] {
     padding: 4px;
@@ -380,6 +388,9 @@ export default {
   font-family: monospace;
   transition: flex-basis .4s $easeOutExpo;
 
+  border-bottom: 4px solid transparent;
+  margin-bottom: 6px;
+
   &:before {
     content: attr(data-amount);
     position: absolute;
@@ -391,8 +402,8 @@ export default {
 
 .counter__up {
   text-align: left;
-    background-color: desaturate($green, 5);
-    color: white;
+  color: desaturate($green, 5);
+  border-color: desaturate($green, 5);
 
   &:before {
     left: .25em;
@@ -401,8 +412,10 @@ export default {
 
 .counter__down {
   text-align: right;
-    background-color: $red;
-    color: white;
+  color: $red;
+  border-color: $red;
+  margin-bottom: 6px;
+  margin-right: 6px;
 
   &:before {
     right: .25em;

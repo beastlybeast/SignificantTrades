@@ -227,14 +227,20 @@ export default {
       font-family: 'icon';
       opacity: .1;
       pointer-events: none;
-      font-size: 140px;
+      font-size: 120px;
       bottom: 0;
       left: -60%;
-      color: white;
+      color: black;
     }
 
-    @media screen and (min-width: 1200px) {
+    @media screen and (min-width: 768px) {
       display: flex;
+    }
+
+    @media screen and (min-width: 992px) {
+      &:before {
+        font-size: 140px;
+      }
     }
   }
 }

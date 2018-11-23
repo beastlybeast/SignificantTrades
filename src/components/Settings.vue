@@ -97,24 +97,38 @@
           </div>
           <div class="settings__column__fill">
             <div class="form-group mb8">
-              <label class="checkbox-control checkbox-control-input flex-left" v-tippy title="Pad chart">
+              <label class="checkbox-control flex-left" v-tippy title="Pad chart">
                 <input type="checkbox" class="form-control" v-bind:checked="chartPadding" @change="$store.commit('setChartPadding', $event.target.checked ? .05 : 0)">
                 <div></div>
                 <span v-on:click.stop.prevent>Add <editable :content="(chartPadding * 100).toFixed(2)" @output="$store.commit('setChartPadding', ($event || 0) / 100)"></editable>% margin on the right</span>
               </label>
             </div>
             <div class="form-group mb8">
-              <label class="checkbox-control checkbox-control-input flex-left" v-tippy title="Shows liquidations">
-                <input type="checkbox" class="form-control" v-bind:checked="chartLiquidations" @change="$store.commit('toggleLiquidationsPlot', $event.target.checked)">
+              <label class="checkbox-control flex-left" v-tippy title="Toggle candlestick">
+                <input type="checkbox" class="form-control" v-bind:checked="chartCandlestick" @change="$store.commit('toggleCandlestick', $event.target.checked)">
                 <div></div>
-                <span>Liquidations <i class="icon-rip"></i></span>
+                <span>Enable candlestick</span>
               </label>
             </div>
             <div class="form-group mb8">
-              <label class="checkbox-control checkbox-control-input flex-left" v-tippy title="Wipe invisible data after a while to free memory and speed up the app">
+              <label class="checkbox-control flex-left" v-tippy title="Toggle liquidations">
+                <input type="checkbox" class="form-control" v-bind:checked="chartLiquidations" @change="$store.commit('toggleLiquidations', $event.target.checked)">
+                <div></div>
+                <span>Show liquidations</span>
+              </label>
+            </div>
+            <div class="form-group mb8">
+              <label class="checkbox-control flex-left" v-tippy title="Toggle SMA(length)<br>on buys / sells series">
+                <input type="checkbox" class="form-control" v-bind:checked="chartVolumeAverage" @change="$store.commit('toggleVolumeAverage', $event.target.checked)">
+                <div></div>
+                <span v-on:click.stop.prevent>Volume averages <editable :content="chartVolumeAverageLength" @output="$store.commit('setVolumeAverageLength', $event)"></editable></span>
+              </label>
+            </div>
+            <div class="form-group mb8">
+              <label class="checkbox-control flex-left" v-tippy title="Wipe invisible data after a while to free memory and speed up the app">
                 <input type="checkbox" class="form-control" v-bind:checked="autoClearTrades" @change="$store.commit('toggleAutoClearTrades', $event.target.checked)">
                 <div></div>
-                <span>Auto cleanup</span>
+                <span>Auto clean</span>
               </label>
             </div>
           </div>
@@ -207,6 +221,9 @@ export default {
       'useWeighedAverage',
       'chartLiquidations',
       'chartPadding',
+      'chartCandlestick',
+      'chartVolumeAverage',
+      'chartVolumeAverageLength',
       'autoClearTrades',
       'dark',
       'settings',
@@ -300,7 +317,7 @@ export default {
     .stack__scroller {
       width: 320px;
       height: 100%;
-      background: rgba(#222, .8);
+      background: rgba(62, 33, 97, 0.88);
     }
 
     .stack__wrapper {

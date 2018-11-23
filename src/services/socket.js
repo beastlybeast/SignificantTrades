@@ -20,7 +20,7 @@ const emitter = new Vue({
 		return {
 			API_URL: null,
 			PROXY_URL: null,
-			
+
 			exchanges: [
 				new Bitmex(),
 				new Bitfinex(),
@@ -95,7 +95,7 @@ const emitter = new Vue({
 
 				trades = trades
 					.sort((a, b) => a[1] - b[1]);
-					
+
 				this.queue = this.queue.concat(trades);
 
 				this.emitFilteredTradesAndVolumeSum(trades);
@@ -243,12 +243,7 @@ const emitter = new Vue({
 			if (this.showChart && this.chartRange) {
 								console.log('socket.clearTrades', 'this.showChart', this.chartRange * 2);
 
-				requiredTimeframe = Math.max(requiredTimeframe, this.chartRange * 2); 
-			}
-
-			if (this.showCounters && this.countersSteps.length) {
-				console.log('socket.clearTrades', 'this.showCounters && this.countersSteps.length', this.countersSteps[this.countersSteps.length - 1]);
-				requiredTimeframe = Math.max(requiredTimeframe, this.countersSteps[this.countersSteps.length - 1]);
+				requiredTimeframe = Math.max(requiredTimeframe, this.chartRange * 2);
 			}
 
 			console.log('socket.clearTrades', 'requiredTimeframe', requiredTimeframe);
@@ -268,7 +263,7 @@ const emitter = new Vue({
 
 			console.log('socket', 'clearTrades', 'finalcount:', this.trades.length);
 
-			store.commit('trimChart', minTimestamp);
+			this.$emit('clean', minTimestamp)
 		},
 		getExchangeById(id) {
 			for (let exchange of this.exchanges) {
@@ -300,7 +295,7 @@ const emitter = new Vue({
 			this.$emit(event, output, upVolume, downVolume);
 		},
 		canFetch() {
-			return this.API_URL && /btcusd/i.test(this.pair);
+			return false;
 		},
 		fetchRangeIfNeeded(range, timeframe) {
 			const now = +new Date();
@@ -312,7 +307,7 @@ const emitter = new Vue({
 			from = Math.floor(from / timeframe) * timeframe;
 			to = Math.ceil(to / timeframe) * timeframe;
 
-      if (this.canFetch() && (!this.trades.length || this.trades[0][1] > from)) {
+      if (to - from >= 60000 && this.canFetch() && (!this.trades.length || this.trades[0][1] > from)) {
 				console.log('socket->fetchRangeIfNeeded', `FETCH NEEDED\n\n\tcurrent time: ${new Date(now)}\n\tfrom: ${new Date(from)}\n\tto: ${new Date(to)} (${this.trades.length ? 'using first trade as base' : 'using now for reference'})`);
 
         promise = this.fetchHistoricalData(from, to, true);

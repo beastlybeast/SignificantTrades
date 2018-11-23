@@ -152,7 +152,11 @@
 
 			#stats .stats__items {
 				flex-wrap: wrap;
-				margin: 0 0 0 20%;
+				margin: 0 0 0 10%;
+
+				@media screen and (min-width: 992px) {
+					margin: 0 0 0 20%;
+				}
 
 				> li {
 					flex-basis: 50%;

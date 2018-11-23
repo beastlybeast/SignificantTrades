@@ -54,6 +54,12 @@ body.theme-dark {
     }
   }
 
+  #stats {
+    .stats__infos:before {
+      color: white;
+    }
+  }
+
   #exchanges {
     .exchange__action-up {
       background-color: $green;
@@ -73,7 +79,28 @@ body.theme-dark {
 
   #counters {
     .counter__index {
+      color: white;
       background-color: rgba(black, .2);
+    }
+
+    .counter__item {
+      background: none;
+    }
+
+    .counter__up,
+    .counter__down {
+      margin: 0;
+      border: 0;
+    }
+
+    .counter__up {
+      background-color: desaturate($green, 5);
+      color: white;
+    }
+
+    .counter__down {
+      background-color: $red;
+      color: white;
     }
   }
 

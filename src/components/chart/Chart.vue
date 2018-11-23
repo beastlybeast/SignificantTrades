@@ -43,6 +43,7 @@ export default {
       'chartHeight',
       'chartRange',
       'chartLiquidations',
+      'chartCandlestick',
       'chartPadding'
 		])
   },
@@ -61,25 +62,25 @@ export default {
 
     socket.$on('pairing', this.onPairing);
 
+    socket.$on('clean', this.onClean);
+
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
         case 'setTimeframe':
-          this.setTimeframe(mutation.payload);
+          this.setTimeframe(mutation.payload, true);
           break;
         case 'toggleSnap':
           mutation.payload && this.snapRight(true);
           break;
         case 'reloadExchangeState':
-        case 'chartLiquidations':
-        case 'toggleLiquidationsPlot':
+        case 'toggleLiquidations':
         case 'setChartPadding':
+          console.log('mutation.type', mutation.type, ' => ', 'trigger this.setTimeframe(' + this.timeframe + ')');
           // this.buildExchangesSeries();
           this.setTimeframe(this.timeframe);
           break;
-        case 'trimChart':
-
-          break;
         case 'toggleDark':
+        case 'toggleCandlestick':
           this.createChart();
           this.setTimeframe(this.timeframe);
         break;
@@ -107,16 +108,16 @@ export default {
 
     // this.buildExchangesSeries();
 
-    this.setTimeframe(this.timeframe);
+    this.setTimeframe(this.timeframe, true);
 	},
   beforeDestroy() {
     this.destroyChart();
 
     socket.$off('trades.queued', this.onTrades);
 
-    socket.$off('historical', this.onFetch);
-
     socket.$off('pairing', this.onPairing);
+
+    socket.$off('clean', this.onClean);
 
     window.removeEventListener('resize', this._doResize);
     window.removeEventListener('mousemove', this._doDrag);
@@ -147,11 +148,11 @@ export default {
       }
 
       console.log('destroy chart');
-      
+
       this.chart.destroy();
       delete this.chart;
     },
-    setTimeframe(timeframe) {
+    setTimeframe(timeframe, snap = false) {
       console.log('setTimeframe', timeframe);
 
       const count = ((this.chart ? this.chart.chartWidth : this.$refs.chartContainer.offsetWidth) * (1 - this.chartPadding) - 20 * .1) / 10;
@@ -160,7 +161,7 @@ export default {
       const now = +new Date();
 
       socket.fetchRangeIfNeeded(range, timeframe).then(trades => {
-        this.setRange(range / 2);
+        this.setRange(range / 2, snap);
 
         // this.stopTickInterval();
 
@@ -218,6 +219,7 @@ export default {
 
       if (this.isPanned()) {
         this.queue = this.queue.concat(trades);
+        console.log('isPanned, add to queue (in queue:', this.queue.length, 'trades)');
 
         return;
       } else if (this.queue.length) {
@@ -294,9 +296,7 @@ export default {
 
         ticks.push(this.formatTickData(this.tickData));
       }
-      if (live) {
-        console.info('livemode');
-      }
+
       if (ticks.length && ticks[0].added) {
         this.updateCurrentTick(ticks[0], live);
         // let serie;
@@ -387,7 +387,7 @@ export default {
         this.chart.series[3].addPoint(tick.liquidations, live);
       }
 
-      /* for (let exchange of this.actives) {
+      /* for (let exchange of this.actives) { 
         this.chart.series[this.actives.indexOf(exchange) + 4] && this.chart.series[this.actives.indexOf(exchange) + 4].addPoint(tick.exchanges[exchange]);
       } */
 
@@ -396,6 +396,7 @@ export default {
       }
 
       if (snap && this.isSnaped) {
+        console.log('addtick -> isSnaped -> snapRight');
         this.snapRight(live);
       }
     },
@@ -633,7 +634,8 @@ export default {
     snapRight(redraw = false) {
       const now = +new Date();
       const margin = this.chartRange * this.chartPadding;
-      
+
+      console.log('snap right');
       this.chart.xAxis[0].setExtremes(now - this.chartRange + margin, now + margin, redraw);
 
     },
@@ -703,26 +705,26 @@ export default {
         && this.chart.series[0].points[this.chart.series[0].points.length - 1].x < this.chart.series[0].xData[this.chart.series[0].xData.length - 1]
       )
     },
-    setRange(range) {
-      const now = +new Date();
-
-      console.log('save range', range);
+    setRange(range, snap = false) {
+      console.log('set range', range, '(+ save in localstorage');
       this.$store.commit('setChartRange', range);
 
       if (this.chart) {
+        const at = snap || !this.tickData ? +new Date() : this.tickData.timestamp;
+        console.log('=> setextremes at', at, '- range (this.chartRange + margin)', this.chartRange + margin);
         const margin = this.chartRange * this.chartPadding;
-        
+
         this.chart.xAxis[0].update({
             overscroll: margin
         });
 
-        this.chart.xAxis[0].setExtremes(now - this.chartRange + margin, now + margin, true);
+        this.chart.xAxis[0].setExtremes(at - this.chartRange + margin, at + margin, true);
       }
     },
     getChartOptions() {
       const options = JSON.parse(JSON.stringify(chartOptions));
       const theme = options.themes[this.dark ? 'dark' : 'bright'];
-      
+
       options.xAxis.labels.color = theme.labels;
       options.xAxis.crosshair.color = theme.crosshair;
       options.yAxis[0].labels.color = theme.labels;
@@ -752,7 +754,13 @@ export default {
       options.series[5].lineColor = theme.sellsMA;
       options.series[6].lineColor = theme.buysMA;
 
+      options.series[0].type = this.chartCandlestick ? 'candlestick' : 'spline';
+
       return options;
+    },
+    onClean(min) {
+      console.log('on cleasn ? set timeframe');
+      this.setTimeframe(this.timeframe)
     }
   }
 };

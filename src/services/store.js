@@ -6,7 +6,24 @@ Vue.use(Vuex);
 const EPHEMERAL_PROPERTIES = [
 	'isSnaped',
 	'actives'
-]
+];
+
+let QUERY_STRING;
+
+try {
+	QUERY_STRING = JSON.parse('{"' + decodeURI(location.search.substring(1))
+	.replace(/"/g, '\\"')
+	.replace(/&/g, '","')
+	.replace(/=/g,'":"') + '"}');
+} catch (error) {
+	QUERY_STRING = {};
+}
+
+for (let name in QUERY_STRING) {
+	try {
+		QUERY_STRING[name] = JSON.parse(QUERY_STRING[name]);
+	} catch (error) {}
+}
 
 const defaults = {
 	pair: 'BTCUSD',
@@ -23,6 +40,11 @@ const defaults = {
 		coinex: {ohlc: false},
 		okex: {ohlc: false},
 		huobi: {ohlc: false},
+		gdax: {threshold: .50},
+		bitfinex: {threshold: .75},
+		binance: {threshold: .75},
+		huobi: {threshold: .66},
+		okex: {threshold: .80}
 	},
 	maxRows: 20,
 	decimalPrecision: null,
@@ -48,6 +70,9 @@ const defaults = {
 	chartLiquidations: true,
 	chartHeight: null,
 	chartRange: 0,
+	chartCandlestick: true,
+	chartVolumeAverage: true,
+	chartVolumeAverageLength: 14,
 
 	// runtime state
 	isSnaped: true,
@@ -55,7 +80,7 @@ const defaults = {
 }
 
 const store = new Vuex.Store({
-	state: Object.assign({}, defaults, JSON.parse(localStorage.getItem('settings')) || {}),
+	state: Object.assign({}, defaults, JSON.parse(localStorage.getItem('settings')) || {}, QUERY_STRING),
 	mutations: {
 		setPair(state, value) {
 			state.pair = value.toString().toUpperCase();
@@ -170,8 +195,17 @@ const store = new Vuex.Store({
 		toggleWeighedAverage(state, value) {
 			state.useWeighedAverage = value ? true : false;
 		},
-		toggleLiquidationsPlot(state, value) {
+		toggleLiquidations(state, value) {
 			state.chartLiquidations = value ? true : false;
+		},
+		toggleCandlestick(state, value) {
+			state.chartCandlestick = value ? true : false;
+		},
+		toggleVolumeAverage(state, value) {
+			state.chartVolumeAverage = value ? true : false;
+		},
+		setVolumeAverageLength(state, value) {
+			state.chartVolumeAverageLength = parseInt(value) || 14;
 		},
 		toggleAutoClearTrades(state, value) {
 			state.autoClearTrades = value ? true : false;
@@ -180,6 +214,7 @@ const store = new Vuex.Store({
 			Vue.set(state.exchanges[payload.exchange], 'threshold', +payload.threshold);
 		},
 		setExchangeMatch(state, payload) {
+			console.log('setExchangeMatch', payload, state.exchanges[payload.exchange]);
 			Vue.set(state.exchanges[payload.exchange], 'match', payload.match);
 		},
 		toggleExchangeOHLC(state, exchange) {
@@ -206,15 +241,12 @@ const store = new Vuex.Store({
 
       const index = state.actives.indexOf(exchange);
       const active = state.exchanges[exchange].match && !state.exchanges[exchange].disabled && !state.exchanges[exchange].hidden;
-
+			console.log('reloadExchangeState', exchange, 'match:', state.exchanges[exchange].match, 'enabled:', !state.exchanges[exchange].disabled, 'visible:', !state.exchanges[exchange].hidden);
       if (active && index === -1) {
         state.actives.push(exchange);
       } else if (!active && index >= 0) {
         state.actives.splice(index, 1);
       }
-		},
-		trimChart(state, minTimestamp) {
-
 		}
 	},
 })
@@ -245,6 +277,10 @@ store.subscribe((mutation, state) => {
 		case 'disableExchange':
 		case 'toggleExchangeOHLC':
 		case 'setExchangeMatch':
+			if (mutation.type === 'setExchangeMatch') {
+				console.log('setExchangeMatch => trigger reloadExchangeState', mutation.payload);
+			}
+
 			store.commit('reloadExchangeState', mutation.payload);
 		break;
 	}
