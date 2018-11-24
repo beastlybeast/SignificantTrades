@@ -576,12 +576,12 @@ export default {
         if (!self.chart) {
           return;
         }
+        
+        const isPanned = self.isPanned();
 
-        clearTimeout(this._panTimeout);
-
-        this._panTimeout = setTimeout(() => {
-          self.$store.commit('toggleSnap', !self.isPanned());
-        }, 100);
+        if (!isPanned !== self.isSnaped) {
+          self.$store.commit('toggleSnap', !isPanned);
+        }
 
         return proceed.call(self.chart, event, arg);
       };
@@ -661,11 +661,11 @@ export default {
       }, timeToFirstTick - now);
     }*/,
     isPanned() {
-      if (!this.chart || !this.chart.series.length || !this.chart.xAxis.length) {
+      if (!this.chart || !this.chart.series.length) {
         return true;
       }
-          
-      return this.chart.xAxis[0].max < this.chart.series[0].xData[this.chart.series[0].xData.length - 1] + this.chartRange * this.chartPadding;
+      
+      return this.tickData && this.chart.series[0].points.length && this.chart.series[0].points[this.chart.series[0].points.length - 1].x < this.tickData.timestamp
     },
     setRange(range) {
       this.$store.commit('setChartRange', range);

@@ -23,7 +23,7 @@
           <sup>({{down.side}}{{(100 - (down.average / down.live) * 100).toFixed()}}%)</sup>
         </div>
       </li>
-      <li v-tippy v-bind:title="`Total volume the last ${periodLabel}`">
+      <li v-tippy v-bind:title="`Total volume in the last ${periodLabel}`">
         <div class="stats__label">VOL</div>
         <div class="stats__value"><span class="icon-commodity"></span> {{$root.formatAmount(up.live + down.live, 1)}}</div>
       </li>
