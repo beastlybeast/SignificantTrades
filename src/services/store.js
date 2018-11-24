@@ -206,7 +206,6 @@ const store = new Vuex.Store({
 			Vue.set(state.exchanges[payload.exchange], 'threshold', +payload.threshold);
 		},
 		setExchangeMatch(state, payload) {
-			console.log('setExchangeMatch', payload, state.exchanges[payload.exchange]);
 			Vue.set(state.exchanges[payload.exchange], 'match', payload.match);
 		},
 		toggleExchangeOHLC(state, exchange) {
@@ -228,14 +227,12 @@ const store = new Vuex.Store({
 		},
 		reloadExchangeState(state, exchange) {
 			if (!exchange) {
-				console.info('reloadExchangeState FAILED', 'cannot refresh unknown exchange state (exchange null)');
 				return;
 			}
 
 			if (typeof exchange === 'object' && exchange.exchange) {
 				exchange = exchange.exchange;
 			} else if (typeof exchange !== 'string') {
-				console.info('reloadExchangeState FAILED', 'cannot refresh unknown exchange state (unconventional argument', exchange, ')');
 				return;
 			}
 
@@ -245,7 +242,7 @@ const store = new Vuex.Store({
 
       const index = state.actives.indexOf(exchange);
       const active = state.exchanges[exchange].match && !state.exchanges[exchange].disabled && !state.exchanges[exchange].hidden;
-			console.log('reloadExchangeState', exchange, 'match:', state.exchanges[exchange].match, 'enabled:', !state.exchanges[exchange].disabled, 'visible:', !state.exchanges[exchange].hidden);
+
       if (active && index === -1) {
         state.actives.push(exchange);
       } else if (!active && index >= 0) {
@@ -269,7 +266,6 @@ store.subscribe((mutation, state) => {
 		'setExchangeMatch',
 		'toggleSnap'
 	].indexOf(mutation.type) === -1) {
-		console.info('save store in localstorage');
 		localStorage.setItem('settings', JSON.stringify(copy));
 	}
 
@@ -281,10 +277,6 @@ store.subscribe((mutation, state) => {
 		case 'disableExchange':
 		case 'toggleExchangeOHLC':
 		case 'setExchangeMatch':
-			if (mutation.type === 'setExchangeMatch') {
-				console.log('setExchangeMatch => trigger reloadExchangeState', mutation.payload);
-			}
-
 			store.commit('reloadExchangeState', mutation.payload);
 		break;
 	}

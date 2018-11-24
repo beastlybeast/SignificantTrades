@@ -219,13 +219,11 @@ export default {
     toggleAutoClearTrades(isAutoWipeCacheEnabled) {
       clearInterval(this._autoWipeCacheInterval);
 
-      console.log('toggleAutoClearTrades', isAutoWipeCacheEnabled);
-
       if (!isAutoWipeCacheEnabled) {
         return;
       }
 
-      this._autoWipeCacheInterval = setInterval(socket.clearTrades.bind(socket), 1000 * 60 * 5);
+      this._autoWipeCacheInterval = setInterval(socket.clean.bind(socket), 1000 * 60 * 5);
     },
     updatePrice() {
       let price = 0;

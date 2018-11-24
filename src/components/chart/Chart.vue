@@ -47,19 +47,9 @@ export default {
 		])
   },
   created() {
-    Highcharts.SVGRenderer.prototype.symbols.rip = function(x, y, w, h) {
-      return ['M', x + 2, y + h / 3, 'L', x + w - 2, y + h / 3, 'M', x + w / 2, y, 'L', x + w / 2, y + h, 'z'];
-    };
-
-    if (Highcharts.VMLRenderer) {
-      Highcharts.VMLRenderer.prototype.symbols.rip = Highcharts.SVGRenderer.prototype.symbols.rip;
-    }
-
     Highcharts.wrap(Highcharts.Chart.prototype, 'pan', this.doPan(this));
-    window.H = Highcharts;
-    socket.$on('trades.queued', this.onTrades);
 
-    socket.$on('pairing', this.onPairing);
+    socket.$on('trades.queued', this.onTrades);
 
     socket.$on('clean', this.onClean);
 
@@ -74,8 +64,6 @@ export default {
         case 'reloadExchangeState':
         case 'toggleLiquidations':
         case 'setChartPadding':
-          console.log('mutation.type', mutation.type, ' => ', 'trigger this.setTimeframe(' + this.timeframe + ')');
-          // this.buildExchangesSeries();
           this.setTimeframe(this.timeframe);
           break;
         case 'toggleDark':
@@ -95,6 +83,8 @@ export default {
     });
   },
 	mounted() {
+    console.log(`[chart.mounted]`);
+
     this.$refs.chartContainer.style.height = this.getChartSize().height;
 
     window.setTimeout(() => this.createChart());
@@ -122,8 +112,6 @@ export default {
 
     socket.$off('trades.queued', this.onTrades);
 
-    socket.$off('pairing', this.onPairing);
-
     socket.$off('clean', this.onClean);
 
     window.removeEventListener('resize', this._doResize);
@@ -140,7 +128,6 @@ export default {
 
       const options = this.getChartOptions();
 
-      console.log('new c hart');
       this.chart = Highcharts.stockChart(this.$el.querySelector('.chart__canvas'), options);
 
       this.updateChartHeight();
@@ -154,13 +141,11 @@ export default {
         return;
       }
 
-      console.log('destroy chart');
-
       this.chart.destroy();
       delete this.chart;
     },
     setTimeframe(timeframe, snap = false) {
-      console.log('setTimeframe', timeframe);
+      console.log(`[chart.setTimeframe]`, timeframe);
 
       const count = ((this.chart ? this.chart.chartWidth : this.$refs.chartContainer.offsetWidth) * (1 - this.chartPadding) - 20 * .1) / 10;
       const range = timeframe * 2 * count;
@@ -171,8 +156,6 @@ export default {
         this.setRange(range / 2, snap);
 
         // this.stopTickInterval();
-
-        console.log('(chart redraw)', socket.trades.length, 'trades, ', 'timeframe: ' + this.timeframe, '(range: ' + this.chartRange + ')');
 
         if (this.chart) {
           for (let serie of this.chart.series) {
@@ -195,19 +178,6 @@ export default {
         // this.startTickInterval(); // will fill the gaps when low trades volume & low timeframe
       })
     },
-    onPairing(pair, canFetch) {
-      /* this.chart.series[1].update({
-        tooltip: {
-          valuePrefix: app.getAttribute('data-symbol')
-        }
-      });
-
-      this.chart.series[2].update({
-        tooltip: {
-          valuePrefix: app.getAttribute('data-symbol')
-        }
-      }); */
-    },
     onTrades(trades) {
       this.tickTrades(trades);
     },
@@ -226,11 +196,8 @@ export default {
 
       if (this.isPanned()) {
         this.queue = this.queue.concat(trades);
-        console.log('isPanned, add to queue (in queue:', this.queue.length, 'trades)');
-
         return;
       } else if (this.queue.length) {
-        console.log('apply queued', this.queue.length);
         trades = this.queue.splice(0, this.queue.length).concat(trades);
       }
 
@@ -403,7 +370,6 @@ export default {
       }
 
       if (snap && this.isSnaped) {
-        console.log('addtick -> isSnaped -> snapRight');
         this.snapRight(live);
       }
     },
@@ -623,7 +589,6 @@ export default {
 
     doDrag(event) {
       if (!isNaN(this.resizing)) {
-        console.log('doDrag', 'origin:', this.resizing, this.chart.chartHeight + (event.pageY - this.resizing));
         this.updateChartHeight(this.chart.chartHeight + (event.pageY - this.resizing));
 
         this.resizing = event.pageY;
@@ -642,9 +607,7 @@ export default {
       const now = +new Date();
       const margin = this.chartRange * this.chartPadding;
 
-      console.log('snap right');
       this.chart.xAxis[0].setExtremes(now - this.chartRange + margin, now + margin, redraw);
-
     },
 
     buildExchangesSeries() {
@@ -672,8 +635,6 @@ export default {
 
     /*stopTickInterval() {
 
-      console.log('STOP TICK INTERVAL / TIMEOUT');
-
       clearTimeout(this._tickTimeout);
       clearInterval(this._tickInterval);
     },*/
@@ -681,16 +642,10 @@ export default {
       const now = +new Date();
       const timeToFirstTick = Math.ceil(now / this.timeframe) * this.timeframe;
 
-      console.log('tickInterval: schedule first tick in ', (timeToFirstTick - now) + 'ms');
-
       this.createAndAppendEmptyTick();
 
       this._tickTimeout = setTimeout(() => {
-        console.log('create first tick');
-
-        console.log('start interval every', (this.timeframe) + 'ms');
         this._tickInterval = setInterval(() => {
-          console.log('interval -> tick');
           this.createTick();
 
           const tick = this.formatTickData(this.tickData);
@@ -713,14 +668,13 @@ export default {
       return this.chart.xAxis[0].max < this.chart.series[0].xData[this.chart.series[0].xData.length - 1] + this.chartRange * this.chartPadding;
     },
     setRange(range) {
-      console.log('set range', range, '(+ save in localstorage)');
       this.$store.commit('setChartRange', range);
 
       if (this.chart) {
+        console.log(`[chart.setRange]`, this.chartRange, this.chartPadding ? `with ${(this.chartPadding * 100).toFixed(2)})% margin` : '');
+
         const margin = this.chartRange * this.chartPadding;
         const now = +new Date();
-
-        console.log('=> setextremes at', now - this.chartRange + margin, now + margin);
 
         this.chart.xAxis[0].update({
             overscroll: margin
@@ -769,7 +723,6 @@ export default {
       return options;
     },
     onClean(min) {
-      console.log('on cleasn ? set timeframe');
       this.setTimeframe(this.timeframe)
     }
   }

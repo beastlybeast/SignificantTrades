@@ -227,12 +227,6 @@ export default {
     this.stringifyCounters();
     this.stringifyStatsPeriod();
   },
-  beforeUpdate(a, b, c) {
-    console.log('SETTINGS: before update');
-  },
-  updated(a, b, c) {
-    console.log('SETTINGS: updated');
-  },
   methods: {
     stringifyStatsPeriod() {
       this.statsPeriodStringified = this.$root.ago(+new Date() - this.statsPeriod);

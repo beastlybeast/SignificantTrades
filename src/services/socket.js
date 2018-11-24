@@ -154,8 +154,6 @@ const emitter = new Vue({
 				console.info(`[sockets] PROXY_URL = ${this.PROXY_URL}`);
 			}
 
-			console.log(this.exchanges);
-
 			this.connectExchanges();
 
 			setInterval(() => {
@@ -236,19 +234,18 @@ const emitter = new Vue({
 
 			this.exchanges.forEach(exchange => exchange.disconnect());
 		},
-		clearTrades() {
-			console.log('socket.clearTrades', 'currentcount:', this.trades.length);
+		clean() {
 			let requiredTimeframe = 0;
 
 			if (this.showChart && this.chartRange) {
-								console.log('socket.clearTrades', 'this.showChart', this.chartRange * 2);
-
 				requiredTimeframe = Math.max(requiredTimeframe, this.chartRange * 2);
 			}
 
-			console.log('socket.clearTrades', 'requiredTimeframe', requiredTimeframe);
+			console.log('socket.clean', 'requiredTimeframe', requiredTimeframe);
 
 			const minTimestamp = +new Date() - requiredTimeframe;
+
+			console.log(`[socket.clean] remove trades older than ${new Date(minTimestamp)}`);
 
 			let i;
 
@@ -258,10 +255,7 @@ const emitter = new Vue({
 				}
 			}
 
-			console.log('socket.clearTrades', 'i ==', i);
 			this.trades.splice(0, i);
-
-			console.log('socket', 'clearTrades', 'finalcount:', this.trades.length);
 
 			this.$emit('clean', minTimestamp)
 		},
@@ -308,7 +302,7 @@ const emitter = new Vue({
 			to = Math.ceil(to / timeframe) * timeframe;
 
       if (to - from >= 60000 && this.canFetch() && (!this.trades.length || this.trades[0][1] > from)) {
-				console.log('socket->fetchRangeIfNeeded', `FETCH NEEDED\n\n\tcurrent time: ${new Date(now)}\n\tfrom: ${new Date(from)}\n\tto: ${new Date(to)} (${this.trades.length ? 'using first trade as base' : 'using now for reference'})`);
+				console.info(`[socket.fetchRangeIfNeeded]`, `FETCH NEEDED\n\n\tcurrent time: ${new Date(now)}\n\tfrom: ${new Date(from)}\n\tto: ${new Date(to)} (${this.trades.length ? 'using first trade as base' : 'using now for reference'})`);
 
         promise = this.fetchHistoricalData(from, to, true);
       } else {

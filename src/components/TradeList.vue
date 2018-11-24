@@ -258,8 +258,6 @@ export default {
       });
     },
     fetchGifByKeyword(keyword, index) {
-      console.log('fetchGifByKeyword', keyword, index);
-
       if (!keyword) {
         if (this.gifs[index]) {
           delete this.gifs[index];
