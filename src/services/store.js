@@ -56,8 +56,6 @@ const defaults = {
 	statsPeriod: 1000 * 60,
 	chartPadding: .075,
 	countersSteps: [1000 * 60, 1000 * 60 * 5, 1000 * 60 * 15, 1000 * 60 * 30, 1000 * 60 * 60, 1000 * 60 * 60 * 2, 1000 * 60 * 60 * 4],
-	avgLength: 2,
-	useWeighedAverage: false,
 	timeframe: 1000 * 10,
 	autoClearTrades: true,
 	debug: false,
@@ -189,12 +187,6 @@ const store = new Vuex.Store({
 		setTimeframe(state, value) {
 			state.timeframe = value;
 		},
-		setAverageLength(state, value) {
-			state.avgLength = Math.min(100, Math.max(0, value));
-		},
-		toggleWeighedAverage(state, value) {
-			state.useWeighedAverage = value ? true : false;
-		},
 		toggleLiquidations(state, value) {
 			state.chartLiquidations = value ? true : false;
 		},
@@ -235,6 +227,18 @@ const store = new Vuex.Store({
 			state.isSnaped = value ? true : false;
 		},
 		reloadExchangeState(state, exchange) {
+			if (!exchange) {
+				console.info('reloadExchangeState FAILED', 'cannot refresh unknown exchange state (exchange null)');
+				return;
+			}
+
+			if (typeof exchange === 'object' && exchange.exchange) {
+				exchange = exchange.exchange;
+			} else if (typeof exchange !== 'string') {
+				console.info('reloadExchangeState FAILED', 'cannot refresh unknown exchange state (unconventional argument', exchange, ')');
+				return;
+			}
+
 			if (!state.exchanges[exchange]) {
 				Vue.set(state.exchanges, exchange, {});
 			}

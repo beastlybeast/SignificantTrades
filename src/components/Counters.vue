@@ -2,7 +2,7 @@
 	<div id="counters" class="counters">
     <ul>
       <li v-for="(sum, index) of stackedSums" :key="`sum-${index}`" v-if="!hideIncompleteCounter || index <= completed" class="counters__item">
-        <div class="counter__index">
+        <div class="counter__index" v-tippy="{placement: 'left'}" title="Edit interval" >
           <editable :content="labels[index]" @output="updateCounterStep(index, $event)"></editable>
         </div>
         <div class="counter__up" v-bind:style="{ flexBasis: (sum[0] / (sum[0] + sum[1]) * 100) + '%' }" :data-amount="$root.formatAmount(sum[0], 2)"></div>

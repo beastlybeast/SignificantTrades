@@ -16,7 +16,7 @@ Vue.use(VueTippy, {
 });
 
 Vue.component('editable', {
-	template: `<div contenteditable="true" @keydown.enter.prevent @input="changed=true" @focus="changed=false" @blur="handle"></div>`,
+	template: `<div contenteditable="true" @keydown="onKeyDown" @input="changed=true" @focus="changed=false" @blur="handle"></div>`,
 	props: ['content'],
   data() {
     return {
@@ -41,6 +41,20 @@ Vue.component('editable', {
 			}
 
 			this.changed && this.$emit('output', $event.target.innerText);
+		},
+		onKeyDown($event) {
+			if ($event.which === 13) {
+				event.preventDefault();
+				return;
+			}
+
+			if (!isNaN($event.target.innerText)) {
+				if ($event.which === 38) {
+					this.$emit('output', +$event.target.innerText + 1);
+				} else if ($event.which === 40) {
+					this.$emit('output', +$event.target.innerText - 1);
+				}
+			}
 		}
 	}
 });

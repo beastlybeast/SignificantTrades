@@ -2,30 +2,30 @@
 	<div id="stats" class="stats">
     <div class="stats__infos"></div>
     <ul class="stats__items">
-      <li>
+      <li v-tippy v-bind:title="`Number of trades in the last ${periodLabel}`">
         <div class="stats__label">TRADES</div>
         <div class="stats__value">
           {{$root.formatAmount(rate.live)}}
           <sup>({{rate.side}}{{(100 - (rate.average / rate.live) * 100).toFixed()}}%)</sup>
         </div>
       </li>
-      <li>
+      <li v-tippy v-bind:title="`Buys in the last ${periodLabel}`">
         <div class="stats__label">BUYS</div>
         <div class="stats__value">
           <span class="icon-commodity"></span> {{$root.formatAmount(up.live, 1)}}
           <sup>({{up.side}}{{(100 - (up.average / up.live) * 100).toFixed()}}%)</sup>
         </div>
       </li>
-      <li>
+      <li v-tippy v-bind:title="`Sells in the last ${periodLabel}`">
         <div class="stats__label">SELLS</div>
         <div class="stats__value">
           <span class="icon-commodity"></span> {{$root.formatAmount(down.live, 1)}}
           <sup>({{down.side}}{{(100 - (down.average / down.live) * 100).toFixed()}}%)</sup>
         </div>
       </li>
-      <li>
+      <li v-tippy v-bind:title="`Total volume the last ${periodLabel}`">
         <div class="stats__label">VOL</div>
-        <div class="stats__value"><span class="icon-commodity"></span> {{$root.formatAmount(up.live + down.live)}}</div>
+        <div class="stats__value"><span class="icon-commodity"></span> {{$root.formatAmount(up.live + down.live, 1)}}</div>
       </li>
     </ul>
 	</div>

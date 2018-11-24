@@ -165,7 +165,7 @@
       "sellsMA": "rgba(216, 27, 96, 1)",
       "tooltipBackground": "rgba(0, 0, 0, .5)",
       "tooltipColor": "rgba(255, 255, 255, 1)",
-      "crosshair": "rgba(255, 255, 255, .1)",
+      "crosshair": "rgba(255, 255, 255, .4)",
       "gridline": "rgba(255, 255, 255, .1)"
     }
   }

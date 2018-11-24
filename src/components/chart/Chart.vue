@@ -29,7 +29,6 @@ export default {
 			chart: null,
       tick: null,
       cursor: null,
-      range: 0,
       queue: []
     };
   },
@@ -57,7 +56,7 @@ export default {
     }
 
     Highcharts.wrap(Highcharts.Chart.prototype, 'pan', this.doPan(this));
-
+    window.H = Highcharts;
     socket.$on('trades.queued', this.onTrades);
 
     socket.$on('pairing', this.onPairing);
@@ -83,6 +82,14 @@ export default {
         case 'toggleCandlestick':
           this.createChart();
           this.setTimeframe(this.timeframe);
+        break;
+        case 'toggleVolumeAverage':
+          this.chart.series[5].update({visible: mutation.payload});
+          this.chart.series[6].update({visible: mutation.payload});
+        break;
+        case 'setVolumeAverageLength':
+          this.chart.series[5].update({params: {period: mutation.payload || 14}});
+          this.chart.series[6].update({params: {period: mutation.payload || 14}});
         break;
       }
     });
@@ -608,7 +615,7 @@ export default {
 
         this._panTimeout = setTimeout(() => {
           self.$store.commit('toggleSnap', !self.isPanned());
-        }, 200);
+        }, 100);
 
         return proceed.call(self.chart, event, arg);
       };
@@ -699,26 +706,27 @@ export default {
       }, timeToFirstTick - now);
     }*/,
     isPanned() {
-      return !this.chart || !this.chart.series.length || (
-        this.chart.series[0].points.length
-        && this.chart.series[0].xData.length
-        && this.chart.series[0].points[this.chart.series[0].points.length - 1].x < this.chart.series[0].xData[this.chart.series[0].xData.length - 1]
-      )
+      if (!this.chart || !this.chart.series.length || !this.chart.xAxis.length) {
+        return true;
+      }
+          
+      return this.chart.xAxis[0].max < this.chart.series[0].xData[this.chart.series[0].xData.length - 1] + this.chartRange * this.chartPadding;
     },
-    setRange(range, snap = false) {
-      console.log('set range', range, '(+ save in localstorage');
+    setRange(range) {
+      console.log('set range', range, '(+ save in localstorage)');
       this.$store.commit('setChartRange', range);
 
       if (this.chart) {
-        const at = snap || !this.tickData ? +new Date() : this.tickData.timestamp;
-        console.log('=> setextremes at', at, '- range (this.chartRange + margin)', this.chartRange + margin);
         const margin = this.chartRange * this.chartPadding;
+        const now = +new Date();
+
+        console.log('=> setextremes at', now - this.chartRange + margin, now + margin);
 
         this.chart.xAxis[0].update({
             overscroll: margin
         });
 
-        this.chart.xAxis[0].setExtremes(at - this.chartRange + margin, at + margin, true);
+        this.chart.xAxis[0].setExtremes(now - this.chartRange + margin, now + margin, true);
       }
     },
     getChartOptions() {
@@ -755,6 +763,8 @@ export default {
       options.series[6].lineColor = theme.buysMA;
 
       options.series[0].type = this.chartCandlestick ? 'candlestick' : 'spline';
+      options.series[0].lineColor = this.chartCandlestick ? options.series[0].downLine : 'white';
+      options.series[0].lineWidth = this.chartCandlestick ? 1 : 2;
 
       return options;
     },

@@ -178,13 +178,6 @@ export default {
     return {
       expanded: [],
       help: {
-        avgLength: `
-          Define how many periods are used to smooth the chart<br>
-          <ol>
-            <li>Exchange prices are averaged <strong>within</strong> the tick first (using weighed average in that timeframe if enabled, if not then the close value is used)</li>
-            <li>If cumulated periods are > 1 then the price is averaged (using weighed or simple average) using the number of periods you choosed right there (2 by default)</li>
-          </ol>
-        `,
         timeframe: `
           Define how much trades we stack together in the chart, type a amount of seconds or % of the visible range<br>
           <ul>
@@ -217,8 +210,6 @@ export default {
       'audioIncludeInsignificants',
       'audioVolume',
       'timeframe',
-      'avgLength',
-      'useWeighedAverage',
       'chartLiquidations',
       'chartPadding',
       'chartCandlestick',
