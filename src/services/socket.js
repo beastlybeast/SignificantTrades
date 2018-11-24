@@ -289,7 +289,7 @@ const emitter = new Vue({
 			this.$emit(event, output, upVolume, downVolume);
 		},
 		canFetch() {
-			return false;
+			return this.API_URL && /btcusd/i.test(this.pair);
 		},
 		fetchRangeIfNeeded(range, timeframe) {
 			const now = +new Date();
