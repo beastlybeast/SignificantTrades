@@ -104,10 +104,9 @@ export default {
       }
     },
     processTrade(trade, delay) {
-      // setTimeout(() => {
       const size = trade[2] * trade[3];
 
-      const multiplier = typeof this.exchanges[trade[0]].thresholds !== 'undefined' ? +this.exchanges[trade[0]].thresholds : 1;
+      const multiplier = typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1;
 
       if (trade[5] === 1) {
         this.sfx && this.sfx.liquidation();
@@ -170,7 +169,7 @@ export default {
       let background, color;
       let amount = trade[2] * trade[3];
 
-      const multiplier = typeof this.exchanges[trade[0]].thresholds !== 'undefined' ? +this.exchanges[trade[0]].thresholds : 1;
+      const multiplier = typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1;
 
       if (trade[4]) {
         classname.push('buy');

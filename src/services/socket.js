@@ -14,6 +14,7 @@ import Okex from '../exchanges/okex'
 import Poloniex from '../exchanges/poloniex'
 
 import store from '../services/store'
+import Liquid from '../exchanges/liquid';
 
 const emitter = new Vue({
 	data() {
@@ -31,7 +32,8 @@ const emitter = new Vue({
 				new Bitstamp(),
 				new Hitbtc(),
 				new Okex(),
-				new Poloniex()
+				new Poloniex(),
+				new Liquid()
 			],
 
 			trades: [],

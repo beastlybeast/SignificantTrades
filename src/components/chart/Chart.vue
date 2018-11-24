@@ -520,7 +520,7 @@ export default {
 
       return {
         width: w,
-        height: this.chartHeight > 0 ? this.chartHeight : +Math.min(w / 3, Math.max(100, h / 3)).toFixed()
+        height: this.chartHeight > 0 ? this.chartHeight : +Math.min(w / 2, Math.max(300, h / 3)).toFixed()
       };
     },
     createAndAppendEmptyTick() {

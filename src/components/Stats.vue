@@ -61,6 +61,7 @@ export default {
   computed: {
     ...mapState([
 			'statsPeriod',
+      'actives',
     ])
   },
   created() {
@@ -109,9 +110,9 @@ export default {
       this.timestamp = now - this.statsPeriod;
       this.rate.average = this.up.average = this.down.average = null;
       this.rate.count = this.up.count = this.down.count = 0;
-
+ 
       socket.trades
-        .filter(trade => trade[1] >= now - this.statsPeriod)
+        .filter(trade => this.actives.indexOf(trade[0]) !== -1 && trade[1] >= now - this.statsPeriod)
         .forEach(trade => {
           this.rate.count++;
           this[+trade[4] ? 'up' : 'down'].count += +trade[3];
