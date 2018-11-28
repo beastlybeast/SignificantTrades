@@ -1,9 +1,11 @@
 <template>
 	<div id="chart">
 		<div class="chart__container" ref="chartContainer" v-bind:class="{fetching: fetching}" v-bind:style="{ height: chartHeight }">
-			<div class="chart__canvas"></div>
+      <div class="chart__scale-handler" ref="chartScaleHandler" v-on:mousedown="startScale" v-on:dblclick.stop.prevent="resetScale"></div>
+      <div class="chart__height-handler" ref="chartHeightHandler" v-on:mousedown="startResize" v-on:dblclick.stop.prevent="resetHeight"></div>
+
+      <div class="chart__canvas"></div>
 		</div>
-		<div class="chart__height-handler" ref="chartHeightHandler" v-on:mousedown="startResize" v-on:dblclick.stop.prevent="resetHeight"></div>
 	</div>
 </template>
 
@@ -29,7 +31,8 @@ export default {
 			chart: null,
       tick: null,
       cursor: null,
-      queue: []
+      queuedTrades: [],
+      queuedTicks: [],
     };
   },
   computed: {
@@ -60,6 +63,9 @@ export default {
           break;
         case 'toggleSnap':
           mutation.payload && this.snapRight(true);
+          break;
+        case 'setExchangeMatch':
+          this.updateChartHeight();
           break;
         case 'reloadExchangeState':
         case 'toggleLiquidations':
@@ -155,8 +161,6 @@ export default {
       socket.fetchRangeIfNeeded(range, timeframe).then(trades => {
         this.setRange(range / 2, snap);
 
-        // this.stopTickInterval();
-
         if (this.chart) {
           for (let serie of this.chart.series) {
             serie.setData([], false);
@@ -167,44 +171,123 @@ export default {
           this.chart.redraw();
         }
 
-        if (!socket.trades.length) {
+        if (!socket.ticks.length && !socket.trades.length) {
           return;
         }
 
-        this.cursor = Math.floor(socket.trades[0][1] / this.timeframe) * this.timeframe;
+        this.cursor = Math.floor(
+          (Math.min(socket.ticks[0] ? +new Date(socket.ticks[0].time) : Infinity, socket.trades[0] ? socket.trades[0][1] : Infinity)  / this.timeframe)
+        ) * this.timeframe;
 
+        console.log('tickHistoricals, tickTrades...', 'from ' + new Date(this.cursor).toLocaleTimeString());
+
+        this.tickHistoricals(socket.ticks);
         this.tickTrades(socket.trades);
-
-        // this.startTickInterval(); // will fill the gaps when low trades volume & low timeframe
       })
     },
     onTrades(trades) {
       this.tickTrades(trades);
     },
+    tickHistoricals(ticks) {
+      if (!ticks.length) {
+        return;
+      }
+
+      if (!this.chart) {
+        this.queuedTicks = this.queuedTicks.concat(ticks);
+
+        return;
+      } else if (this.queuedTicks.length) {
+        ticks = ticks.concat(this.queuedTicks.splice(0, this.queuedTicks.length));
+      }
+      debugger;
+      console.info('tickHistoricals', ticks.length);
+
+      const ticks = {};
+
+
+
+      const averagedTicks = {};
+
+      const count = 0;
+
+      for (let i = 0; i < ticks.length; i++) {
+        if (!averagedTicks[ticks[i].time]) {
+          averagedTicks[ticks[i].time] = {
+            buys: 0,
+            sells: 0,
+            liquidations: 0,
+            exchanges: {}
+          };
+
+          const 
+
+          if (count++) {
+            this.addTickToSeries({
+              ohlc: this.getTickDataAveraged(averagedTicks[ticks[i].time]),
+              buys: [timestamp, averagedTicks[ticks[i].time].buys],
+              sells: [timestamp, averagedTicks[ticks[i].time].sells],
+              liquidations: [timestamp, averagedTicks[ticks[i].time].liquidations]
+            });
+          }
+        }
+
+        averagedTicks[ticks[i].time].buys += ticks[i].buys;
+        averagedTicks[ticks[i].time].sells += ticks[i].sells;
+        averagedTicks[ticks[i].time].liquidations += ticks[i].liquidations;
+
+        // TODO CONTINUE WORK HERE!!!
+        
+        averagedTicks[ticks[i].time].exchanges += ticks[i].liquidations;
+
+        averagedTicks[ticks[i].time]
+
+        const timestamp = +new Date(ticks[i].time);
+      }
+
+      this.chart.redraw();
+    },
     tickTrades(trades, live = false) {
       const ticks = [];
 
+      // first we trim trades
+      // - equal or higer than current tick
+      // - only from actives exchanges (enabled, matched and visible exchange)
       trades = trades
         .filter(a =>
             a[1] >= this.cursor // only process trades >= current tick time
             && this.actives.indexOf(a[0]) !== -1 // only process trades from enabled exchanges (client side)
         );
-
+    
       if (!trades || !trades.length) {
         return;
       }
 
+      // chart doesn't allow edit on invisible ticks when it is panned
+      // we just process them when will get there
       if (this.isPanned()) {
-        this.queue = this.queue.concat(trades);
+
+        this.queuedTrades = this.queuedTrades.concat(trades);
+
         return;
-      } else if (this.queue.length) {
-        trades = this.queue.splice(0, this.queue.length).concat(trades);
+
+      } else if (this.queuedTrades.length) {
+
+        // right here
+        trades = this.queuedTrades.splice(0, this.queuedTrades.length).concat(trades);
+
+        if (this.queuedTicks.length) {
+          this.tickHistoricals(this.queuedTicks.splice(0, this.queuedTicks.length));
+        }
       }
 
-      // define range rounded to the timeframe
+      console.log('tickTrades', trades.length);
+
+      // define range rounded to the current timeframe
       const from = Math.floor(trades[0][1] / this.timeframe) * this.timeframe;
       const to = Math.ceil(+new Date() / this.timeframe) * this.timeframe;
 
+      // loop through ticks in range
       for (let t = from; t < to; t += this.timeframe) {
         let i;
 
@@ -365,7 +448,7 @@ export default {
         this.chart.series[this.actives.indexOf(exchange) + 4] && this.chart.series[this.actives.indexOf(exchange) + 4].addPoint(tick.exchanges[exchange]);
       } */
 
-      if (tick.markers.length) {
+      if (tick.markers && tick.markers.length) {
         this.processTickMarkers(tick);
       }
 
@@ -500,6 +583,14 @@ export default {
       this.updateChartHeight();
     },
 
+    startScale(event) {
+      if (event.which === 3) {
+        return;
+      }
+
+      this.scaling = event.pageY;
+    },
+
     updateChartHeight(height = null) {
       const size = this.getChartSize();
 
@@ -512,6 +603,29 @@ export default {
         height || size.height,
         false
       );
+    },
+
+    resetScale(event) {
+      delete this.scaling;
+
+      this.updateChartScale(null);
+    },
+
+    updateChartScale(scale) {
+      let min = this.chart.yAxis[0].min;
+      let max = this.chart.yAxis[0].max;
+
+      if (scale === null) {
+        min = max = null;
+      } else if (scale) {
+        min -= scale;
+        max += scale;
+      }
+
+      this.chart.yAxis[0].update({
+        min: min,
+        max: max
+      })
     },
 
     getChartSize() {
@@ -592,15 +706,23 @@ export default {
         this.updateChartHeight(this.chart.chartHeight + (event.pageY - this.resizing));
 
         this.resizing = event.pageY;
+      } else if (!isNaN(this.scaling)) {
+        this.updateChartScale((event.pageY - this.scaling) / 10, true);
+
+        this.scaling = event.pageY;
       }
     },
 
     stopDrag(event) {
       if (this.resizing) {
         this.$store.commit('setChartHeight', this.chart.chartHeight);
+
+        delete this.resizing;
       }
 
-      delete this.resizing;
+      if (this.scaling) {        
+        delete this.scaling;
+      }
     },
 
     snapRight(redraw = false) {
@@ -686,17 +808,23 @@ export default {
     getChartOptions() {
       const options = JSON.parse(JSON.stringify(chartOptions));
       const theme = options.themes[this.dark ? 'dark' : 'bright'];
-
+      
+      // time axis
       options.xAxis.labels.color = theme.labels;
       options.xAxis.crosshair.color = theme.crosshair;
+
+      // price axis
       options.yAxis[0].labels.color = theme.labels;
       options.yAxis[0].gridLineColor = theme.gridline;
       options.yAxis[0].crosshair.color = theme.crosshair;
-      options.series[1].gridLineColor = theme.gridline;
+
+      // candlesticks
       options.series[0].upColor = theme.up;
       options.series[0].upLineColor = theme.upLine;
       options.series[0].color = theme.down;
       options.series[0].lineColor = theme.downLine;
+
+      // buys
       options.series[1].color = theme.buysLine;
       options.series[1].fillColor = {
         linearGradient: {
@@ -704,6 +832,8 @@ export default {
         },
         stops: [[0, theme.buysGradient[0]], [1, theme.buysGradient[1]]]
       };
+
+      // sells
       options.series[2].color = theme.sellsLine;
       options.series[2].fillColor = {
         linearGradient: {
@@ -711,9 +841,17 @@ export default {
         },
         stops: [[0, theme.sellsGradient[0]], [1, theme.sellsGradient[1]]]
       };
+
+      // liquidations bars
       options.series[3].color = theme.liquidations;
+
+      // price MA
       options.series[4].lineColor = theme.priceMA;
+
+      // sells EMA
       options.series[5].lineColor = theme.sellsMA;
+
+      // buys EMA
       options.series[6].lineColor = theme.buysMA;
 
       options.series[0].type = this.chartCandlestick ? 'candlestick' : 'spline';
@@ -775,14 +913,26 @@ export default {
   }
 }
 
+.chart__scale-handler,
 .chart__height-handler {
   position: absolute;
-  height: 8px;
-  left: 0;
-  margin-top: -4px;
+  bottom: 0;
+  z-index: 2;
+}
+
+.chart__scale-handler {
   right: 0;
-  z-index: 1;
+  top: 0;
+  width: 7%;
   cursor: ns-resize;
+}
+
+.chart__height-handler {
+  left: 0;
+  right: 0;
+  height: 8px;
+  margin-top: -4px;
+  cursor: row-resize;
 
   @media screen and (min-width: 768px) {
     display: none;

@@ -42,6 +42,8 @@ export default {
   created() {
     const now = +new Date();
 
+    window.cntr = this;
+
     if (this.counters.length < this.countersSteps.length) {
       for (let i = this.counters.length; i < this.countersSteps.length; i++) {
         this.labels.push(this.$root.ago(now - this.countersSteps[i]));
@@ -268,6 +270,8 @@ export default {
       if (socket.trades.length) {
         this.populateCounters(this.stackTrades(socket.trades));
       }
+
+      console.log(`[counters.rebuild]\n`, this.counters.map((a, index) => `\t- Counter ${this.labels[index]} got ${a.length} stacks`).join("\n"));
 
       this.countersRefreshCycleInterval = window.setInterval(this.updateCounters.bind(this), this.counterPrecision);
     },

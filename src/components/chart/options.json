@@ -62,9 +62,9 @@
   },
   "yAxis": [
     {
-      "type": "logarithmic",
       "top": "0%",
       "height": "95%",
+      "tickPixelInterval": 40,
       "startOnTick": false,
       "endOnTick": false,
       "gridLineWidth": 2,

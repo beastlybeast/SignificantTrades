@@ -20,6 +20,7 @@ const emitter = new Vue({
 	data() {
 		return {
 			API_URL: null,
+			API_SUPPORTED_PAIRS: null,
 			PROXY_URL: null,
 
 			exchanges: [
@@ -37,6 +38,7 @@ const emitter = new Vue({
 			],
 
 			trades: [],
+			ticks: [],
 			timestamps: {},
 			queue: [],
 
@@ -145,10 +147,15 @@ const emitter = new Vue({
 	methods: {
 		initialize() {
 			console.log(`[sockets] initializing ${this.exchanges.length} exchange(s)`);
-
+	
 			if (process.env.API_URL) {
 				this.API_URL = process.env.API_URL;
 				console.info(`[sockets] API_URL = ${this.API_URL}`);
+
+				if (process.env.API_SUPPORTED_PAIRS) {
+					this.API_SUPPORTED_PAIRS = process.env.API_SUPPORTED_PAIRS.map(a => a.toUpperCase());
+					console.info(`[sockets] API_SUPPORTED_PAIRS = ${this.API_SUPPORTED_PAIRS}`);
+				}
 			}
 
 			if (process.env.PROXY_URL) {
@@ -174,7 +181,7 @@ const emitter = new Vue({
 			this.disconnectExchanges();
 
 			if (pair) {
-				this.pair = pair;
+				this.pair = pair.toUpperCase();
 			}
 
 			this.trades = this.queue = [];
@@ -251,6 +258,14 @@ const emitter = new Vue({
 
 			let i;
 
+			for (i = 0; i < this.ticks.length; i++) {
+				if (this.ticks[i][1] > minTimestamp) {
+					break;
+				}
+			}
+
+			this.ticks.splice(0, i);
+
 			for (i = 0; i < this.trades.length; i++) {
 				if (this.trades[i][1] > minTimestamp) {
 					break;
@@ -291,9 +306,34 @@ const emitter = new Vue({
 			this.$emit(event, output, upVolume, downVolume);
 		},
 		canFetch() {
-			return this.API_URL && /btcusd/i.test(this.pair);
+			return this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1);
+		},
+		getApiUrl(from, to, timeframe, pair = null, exchanges = null) {
+			console.log('getApiUrl', from, to, timeframe, pair, exchanges);
+
+			let url = this.API_URL;
+
+			if (!pair) {
+				pair = this.pair;
+			}
+
+			if (!exchanges) {
+				exchanges = this.actives;
+			}
+
+			url = url.replace(/\{from\}/, from);
+			url = url.replace(/\{to\}/, to);
+			url = url.replace(/\{timeframe\}/, timeframe);
+			url = url.replace(/\{pair\}/, this.pair.toLowerCase());
+			url = url.replace(/\{exchanges\}/, exchanges.join(','));
+
+			return url;
 		},
 		fetchRangeIfNeeded(range, timeframe) {
+			if (!this.canFetch()) {
+				return Promise.resolve(null);
+			}
+
 			const now = +new Date();
 
       let promise;
@@ -303,22 +343,29 @@ const emitter = new Vue({
 			from = Math.floor(from / timeframe) * timeframe;
 			to = Math.ceil(to / timeframe) * timeframe;
 
-      if (to - from >= 60000 && this.canFetch() && (!this.trades.length || this.trades[0][1] > from)) {
+			const minData = Math.min(
+				this.trades.length ? this.trades[0][1] : Infinity,
+				this.ticks.length ? this.ticks[0][0] : Infinity
+			);
+
+			console.log(`[socket.fetchRangeIfNeeded] minData: ${minData}, from: ${from}, to: ${to}`);
+
+      if (to - from >= 60000 && from < minData) {
 				console.info(`[socket.fetchRangeIfNeeded]`, `FETCH NEEDED\n\n\tcurrent time: ${new Date(now)}\n\tfrom: ${new Date(from)}\n\tto: ${new Date(to)} (${this.trades.length ? 'using first trade as base' : 'using now for reference'})`);
 
-        promise = this.fetchHistoricalData(from, to, true);
+        promise = this.fetchHistoricalData(from, to, timeframe);
       } else {
         promise = Promise.resolve(null);
       }
 
 			return promise;
 		},
-		fetchHistoricalData(from, to) {
+		fetchHistoricalData(from, to, timeframe) {
 			if (!from || !to || !this.canFetch()) {
 				return Promise.resolve();
 			}
 
-			const url = `${process.env.API_URL ? process.env.API_URL : ''}${parseInt(from)}/${parseInt(to)}`;
+			const url = this.getApiUrl(from, to, timeframe);
 
 			if (this.lastFetchUrl === url) {
 				return Promise.resolve();
@@ -335,34 +382,37 @@ const emitter = new Vue({
 					})
 				})
 					.then(response => {
-						let fetchedTrades = response.data;
+						if (!response || !response.data.length) {
+							return resolve([]);
+						}
 
-						const count = this.trades.length;
+						const ticks = response.data;
+						const count = this.ticks.length;
 
-						if (!this.trades.length) {
-							console.log(`[fetch] set socket.trades (${this.trades} trades)`);
+						if (!this.ticks.length) {
+							console.log(`[fetch] set socket.ticks (${ticks.length} trades)`);
 
-							this.trades = fetchedTrades;
+							this.ticks = ticks;
 						} else {
-							const prepend = fetchedTrades.filter(trade => trade[1] <= this.trades[0][1]);
-							const append = fetchedTrades.filter(trade => trade[1] >= this.trades[this.trades.length - 1][1]);
+							const prepend = ticks.filter(trade => trade[1] <= this.ticks[0][1]);
+							const append = ticks.filter(trade => trade[1] >= this.ticks[this.trades.length - 1][1]);
 
 							if (prepend.length) {
-								console.log(`[fetch] prepend ${prepend.length} trades`);
-								this.trades = prepend.concat(this.trades);
+								console.log(`[fetch] prepend ${prepend.length} ticks`);
+								this.ticks = prepend.concat(this.ticks);
 							}
 
 							if (append.length) {
-								console.log(`[fetch] append ${append.length} trades`);
-								this.trades = this.trades.concat(append);
+								console.log(`[fetch] append ${append.length} ticks`);
+								this.ticks = this.ticks.concat(append);
 							}
 						}
 
-						if (count !== this.trades.length) {
-							this.$emit('historical', fetchedTrades, from, to);
+						if (count !== this.ticks.length) {
+							this.$emit('historical', ticks, from, to);
 						}
 
-						resolve(fetchedTrades);
+						resolve(ticks);
 					})
 					.catch(err => {
 						err && this.$emit('alert', {
