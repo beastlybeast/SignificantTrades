@@ -8,6 +8,7 @@
   >
 		<Settings v-if="showSettings" @close="showSettings = false"/>
 		<div class="app__wrapper">
+      <div class="indeterminate-loading-bar" v-if="isLoading"></div>
 			<Alerts/>
 			<Header
         :price="price"
@@ -62,7 +63,8 @@ export default {
       symbol: '$',
 
       showSettings: false,
-      showStatistics: false
+      showStatistics: false,
+      isLoading: false
     };
   },
   computed: {
@@ -82,6 +84,16 @@ export default {
     this.$root.formatAmount = this.formatAmount.bind(this);
     this.$root.padNumber = this.padNumber.bind(this);
     this.$root.ago = this.ago.bind(this);
+
+    socket.$on('fetchStart', value => {
+      this.isLoading = true;
+      console.log('isLoading', this.isLoading);
+    });
+
+    socket.$on('fetchEnd', value => {
+      this.isLoading = false;
+      console.log('isLoading', this.isLoading);
+    });
 
     socket.$on('pairing', value => {
       this.updatePairCurrency(this.pair);
@@ -278,6 +290,7 @@ export default {
 @import './assets/sass/icons';
 @import './assets/sass/currency';
 @import './assets/sass/tooltip';
+@import './assets/sass/progress';
 
 @import './assets/sass/dark';
 </style>

@@ -1,0 +1,68 @@
+.indeterminate-loading-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 4px;
+  width: 100%;
+  background-color: rgba(0, 0, 0, 0.2);
+  background-clip: padding-box;
+  overflow: hidden;
+  display: block;
+  z-index: 1;
+
+	&:after,
+	&:before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		bottom: 0;
+		display: block;
+		background-clip: padding-box;
+	}
+
+	&:before {
+		background-color: rgba(black, .75);
+		animation: indeterminate-loading-bar-slow 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+	}
+
+	&:after {
+		background-color: rgba(white, 1);
+		animation: indeterminate-loading-bar-fast 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
+		animation-delay: 1.15s;
+	}
+}
+
+@keyframes indeterminate-loading-bar-slow {
+  0% {
+    left: -35%;
+    right: 100%;
+  }
+
+  60% {
+    left: 100%;
+    right: -90%;
+  }
+
+  100% {
+    left: 100%;
+    right: -90%;
+  }
+}
+
+@keyframes indeterminate-loading-bar-fast {
+  0% {
+    left: -200%;
+    right: 100%;
+  }
+
+  60% {
+    left: 107%;
+    right: -8%;
+  }
+
+  100% {
+    left: 107%;
+    right: -8%;
+  }
+}

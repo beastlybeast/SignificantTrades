@@ -259,7 +259,7 @@ const emitter = new Vue({
 			let i;
 
 			for (i = 0; i < this.ticks.length; i++) {
-				if (this.ticks[i][1] > minTimestamp) {
+				if (this.ticks[i].timestamp > minTimestamp) {
 					break;
 				}
 			}
@@ -306,7 +306,7 @@ const emitter = new Vue({
 			this.$emit(event, output, upVolume, downVolume);
 		},
 		canFetch() {
-			return this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1);
+			return !this.fetching && this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1);
 		},
 		getApiUrl(from, to, timeframe, pair = null, exchanges = null) {
 			console.log('getApiUrl', from, to, timeframe, pair, exchanges);
@@ -345,7 +345,7 @@ const emitter = new Vue({
 
 			const minData = Math.min(
 				this.trades.length ? this.trades[0][1] : Infinity,
-				this.ticks.length ? this.ticks[0][0] : Infinity
+				this.ticks.length ? this.ticks[0].timestamp : Infinity
 			);
 
 			console.log(`[socket.fetchRangeIfNeeded] minData: ${minData}, from: ${from}, to: ${to}`);
@@ -362,6 +362,14 @@ const emitter = new Vue({
 		},
 		fetchHistoricalData(from, to, timeframe) {
 			if (!from || !to || !this.canFetch()) {
+				if (this.fetching) {
+					this.$emit('alert', {
+						id: `already_fetching`,
+						type: 'info',
+						title: `Enhance your calm`
+					});
+				}
+
 				return Promise.resolve();
 			}
 
@@ -372,6 +380,9 @@ const emitter = new Vue({
 			}
 
 			this.lastFetchUrl = url;
+			this.fetching = true;
+
+			this.$emit('fetchStart', to - from);
 
 			return new Promise((resolve, reject) => {
 				Axios.get(url, {
@@ -386,14 +397,23 @@ const emitter = new Vue({
 							return resolve([]);
 						}
 
-						const ticks = response.data;
+						const ticks = response.data.map(tick => {
+							tick.timestamp = +new Date(tick.time);
+							delete tick.time;
+
+							return tick;
+						});
+
 						const count = this.ticks.length;
 
-						if (!this.ticks.length) {
+						//if (!this.ticks.length) {
 							console.log(`[fetch] set socket.ticks (${ticks.length} trades)`);
 
 							this.ticks = ticks;
-						} else {
+
+							// TODO APPEND / PREPEND TICK !!
+
+						/*} else {
 							const prepend = ticks.filter(trade => trade[1] <= this.ticks[0][1]);
 							const append = ticks.filter(trade => trade[1] >= this.ticks[this.trades.length - 1][1]);
 
@@ -406,7 +426,7 @@ const emitter = new Vue({
 								console.log(`[fetch] append ${append.length} ticks`);
 								this.ticks = this.ticks.concat(append);
 							}
-						}
+						}*/
 
 						if (count !== this.ticks.length) {
 							this.$emit('historical', ticks, from, to);
@@ -423,6 +443,11 @@ const emitter = new Vue({
 						});
 
 						reject();
+					})
+					.then(() => {
+						this.fetching = false;
+
+						this.$emit('fetchEnd');
 					})
 			});
 		},
