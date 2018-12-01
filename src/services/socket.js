@@ -358,7 +358,7 @@ const emitter = new Vue({
 			let from = now - range;
 			let to = minData;
 
-			from = Math.floor(from / timeframe) * timeframe;
+			from = Math.ceil(from / timeframe) * timeframe;
 			to = Math.ceil(to / timeframe) * timeframe;
 
 			console.log(`[socket.fetchRangeIfNeeded] minData: ${new Date(minData).toLocaleString()}, from: ${new Date(from).toLocaleString()}, to: ${to}`, this._fetchedMax ? '(FETCHED MAX)' : '');

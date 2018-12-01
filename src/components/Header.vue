@@ -11,10 +11,6 @@
           <li @click="setTimeframe(1000 * 60)">1m</li>
           <li @click="setTimeframe(1000 * 60 * 5)">5m</li>
           <li @click="setTimeframe(1000 * 60 * 15)">15m</li>
-          <li @click="setTimeframe(1000 * 60 * 30)">30m</li>
-          <li @click="setTimeframe(1000 * 60 * 60)">1h</li>
-          <li @click="setTimeframe(1000 * 60 * 60 * 2)">2h</li>
-          <li @click="setTimeframe(1000 * 60 * 60 * 4)">4h</li>
         </ul>
       </button>
       <button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}"><span class="icon-external-link"></span></button>
