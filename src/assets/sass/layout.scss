@@ -160,6 +160,7 @@
 
 				> li {
 					flex-basis: 50%;
+					max-width: 50%;
 					flex-grow: 1;
 					align-items: flex-end;
 
@@ -187,7 +188,7 @@
 
 	@media screen and (min-width: 992px) {
 		.app__right #trades {
-			font-size: 1.1em;
+			font-size: 1em;
 		}
 	}
 

@@ -42,7 +42,8 @@ const emitter = new Vue({
 			timestamps: {},
 			queue: [],
 
-			_pair: null
+			_pair: null,
+			_fetchedMax: false
 		}
 	},
   computed: {
@@ -184,7 +185,7 @@ const emitter = new Vue({
 				this.pair = pair.toUpperCase();
 			}
 
-			this.trades = this.queue = [];
+			this.trades = this.queue = this.ticks = [];
 			this.timestamps = {};
 
 			console.log(`[socket.connect] connecting to "${this.pair}"`);
@@ -244,24 +245,31 @@ const emitter = new Vue({
 			this.exchanges.forEach(exchange => exchange.disconnect());
 		},
 		clean() {
+			if (this.fetching) {
+				return;
+			}
+
 			let requiredTimeframe = 0;
 
 			if (this.showChart && this.chartRange) {
 				requiredTimeframe = Math.max(requiredTimeframe, this.chartRange * 2);
 			}
 
-			console.log('socket.clean', 'requiredTimeframe', requiredTimeframe);
+			const minTimestamp = Math.ceil((+new Date() - requiredTimeframe) / this.timeframe) * this.timeframe;
 
-			const minTimestamp = +new Date() - requiredTimeframe;
-
-			console.log(`[socket.clean] remove trades older than ${new Date(minTimestamp)}`);
+			console.log(`[socket.clean] remove trades older than ${new Date(minTimestamp).toLocaleString()}`);
 
 			let i;
 
 			for (i = 0; i < this.ticks.length; i++) {
-				if (this.ticks[i].timestamp > minTimestamp) {
+				if (this.ticks[i].timestamp >= minTimestamp) {
 					break;
 				}
+			}
+
+			if (i && this.ticks.length) {
+				console.log('remove', i, 'ticks', `(${new Date(this.ticks[0].timestamp).toLocaleString()} to ${new Date(this.ticks[i - 1].timestamp).toLocaleString()})`);
+				this._fetchedMax = false;
 			}
 
 			this.ticks.splice(0, i);
@@ -306,7 +314,7 @@ const emitter = new Vue({
 			this.$emit(event, output, upVolume, downVolume);
 		},
 		canFetch() {
-			return !this.fetching && this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1);
+			return !this._fetching && this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1);
 		},
 		getApiUrl(from, to, timeframe, pair = null, exchanges = null) {
 			console.log('getApiUrl', from, to, timeframe, pair, exchanges);
@@ -329,40 +337,45 @@ const emitter = new Vue({
 
 			return url;
 		},
-		fetchRangeIfNeeded(range, timeframe) {
+		fetchRangeIfNeeded(range, timeframe, clear = false) {
+			if (clear) {
+				this.ticks.splice(0, this.ticks.length);
+				this._fetchedMax = false;
+			}
+			
 			if (!this.canFetch()) {
 				return Promise.resolve(null);
 			}
 
 			const now = +new Date();
 
+			const minData = Math.min(
+				this.trades.length ? this.trades[0][1] : now,
+				this.ticks.length ? this.ticks[0].timestamp : now
+			);
+
       let promise;
 			let from = now - range;
-			let to = !this.trades.length ? now : this.trades[0][1];
+			let to = minData;
 
 			from = Math.floor(from / timeframe) * timeframe;
 			to = Math.ceil(to / timeframe) * timeframe;
 
-			const minData = Math.min(
-				this.trades.length ? this.trades[0][1] : Infinity,
-				this.ticks.length ? this.ticks[0].timestamp : Infinity
-			);
+			console.log(`[socket.fetchRangeIfNeeded] minData: ${new Date(minData).toLocaleString()}, from: ${new Date(from).toLocaleString()}, to: ${to}`, this._fetchedMax ? '(FETCHED MAX)' : '');
 
-			console.log(`[socket.fetchRangeIfNeeded] minData: ${minData}, from: ${from}, to: ${to}`);
-
-      if (to - from >= 60000 && from < minData) {
-				console.info(`[socket.fetchRangeIfNeeded]`, `FETCH NEEDED\n\n\tcurrent time: ${new Date(now)}\n\tfrom: ${new Date(from)}\n\tto: ${new Date(to)} (${this.trades.length ? 'using first trade as base' : 'using now for reference'})`);
+      if (!this._fetchedMax && to - from >= 60000 && from < minData) {
+				console.info(`[socket.fetchRangeIfNeeded]`, `FETCH NEEDED\n\n\tcurrent time: ${new Date(now).toLocaleString()}\n\tfrom: ${new Date(from).toLocaleString()}\n\tto: ${new Date(to).toLocaleString()} (${this.trades.length ? 'using first trade as base' : 'using now for reference'})`);
 
         promise = this.fetchHistoricalData(from, to, timeframe);
       } else {
-        promise = Promise.resolve(null);
+        promise = Promise.resolve();
       }
 
 			return promise;
 		},
 		fetchHistoricalData(from, to, timeframe) {
 			if (!from || !to || !this.canFetch()) {
-				if (this.fetching) {
+				if (this._fetching) {
 					this.$emit('alert', {
 						id: `already_fetching`,
 						type: 'info',
@@ -380,12 +393,13 @@ const emitter = new Vue({
 			}
 
 			this.lastFetchUrl = url;
-			this.fetching = true;
+			this._fetching = true;
 
 			this.$emit('fetchStart', to - from);
 
 			return new Promise((resolve, reject) => {
 				Axios.get(url, {
+					method: 'POST',
 					onDownloadProgress: e => this.$emit('fetchProgress', {
 						loaded: e.loaded,
 						total: e.total,
@@ -393,46 +407,52 @@ const emitter = new Vue({
 					})
 				})
 					.then(response => {
-						if (!response || !response.data.length) {
-							return resolve([]);
+						if (!response.data || !response.data.format || !response.data.results.length) {
+							return resolve();
 						}
 
-						const ticks = response.data.map(tick => {
-							tick.timestamp = +new Date(tick.time);
-							delete tick.time;
+						const format = response.data.format;
+						const results = response.data.results;
 
-							return tick;
+						switch (format) {
+							case 'trade':
+								if (!this.trades.length) {
+									console.log(`[socket.fetch] Set socket.trades (${results.length} trades)`);
+
+									this.trades = results;
+								} else {
+									const prepend = results.filter(trade => trade[1] <= this.trades[0][1]);
+									const append = results.filter(trade => trade[1] >= this.trades[this.trades.length - 1][1]);
+
+									if (prepend.length) {
+										console.log(`[fetch] prepend ${prepend.length} ticks`);
+										this.trades = prepend.concat(this.trades);
+									}
+
+									if (append.length) {
+										console.log(`[fetch] append ${append.length} ticks`);
+										this.trades = this.trades.concat(append);
+									}
+								}
+							break;
+							case 'tick':
+								this.ticks = results;
+
+								if (results[0].timestamp > from) {
+									console.log('[socket.fetch] fetched max');
+									this._fetchedMax = true;
+								}
+							break;
+						}
+
+						this.$emit('historical', results, format, from, to);
+
+						resolve({
+							format: format,
+							results: results,
+							from: from,
+							to: to
 						});
-
-						const count = this.ticks.length;
-
-						//if (!this.ticks.length) {
-							console.log(`[fetch] set socket.ticks (${ticks.length} trades)`);
-
-							this.ticks = ticks;
-
-							// TODO APPEND / PREPEND TICK !!
-
-						/*} else {
-							const prepend = ticks.filter(trade => trade[1] <= this.ticks[0][1]);
-							const append = ticks.filter(trade => trade[1] >= this.ticks[this.trades.length - 1][1]);
-
-							if (prepend.length) {
-								console.log(`[fetch] prepend ${prepend.length} ticks`);
-								this.ticks = prepend.concat(this.ticks);
-							}
-
-							if (append.length) {
-								console.log(`[fetch] append ${append.length} ticks`);
-								this.ticks = this.ticks.concat(append);
-							}
-						}*/
-
-						if (count !== this.ticks.length) {
-							this.$emit('historical', ticks, from, to);
-						}
-
-						resolve(ticks);
 					})
 					.catch(err => {
 						err && this.$emit('alert', {
@@ -445,7 +465,7 @@ const emitter = new Vue({
 						reject();
 					})
 					.then(() => {
-						this.fetching = false;
+						this._fetching = false;
 
 						this.$emit('fetchEnd');
 					})

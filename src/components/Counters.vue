@@ -89,21 +89,11 @@ export default {
         this.$set(this.stackedSums[index], 1, this.stackedSums[index][1] + downVolume);
       }
     },
-    onFetch(trades, willReplace) {
-			if (willReplace) {
-        for (let index = 0; index < this.counters.length; index++) {
-          this.counters[index] = [];
-          this.strictSums[index] = [0, 0];
-          this.$set(this.stackedSums[index], 0, 0);
-          this.$set(this.stackedSums[index], 1, 0);
-        }
-      }
-
+    onFetch(ticks) {
+      const trades = this.getTicksTrades();
       const stacks = this.stackTrades(trades);
 
-      if (stacks.length) {
-        this.populateCounters(stacks);
-      }
+      this.populateCounters(stacks);
     },
 		updateCounters() {
       if (!this.counters.length) {
@@ -267,9 +257,10 @@ export default {
         this.stackedSums.push([0, 0]);
       }
 
-      if (socket.trades.length) {
-        this.populateCounters(this.stackTrades(socket.trades));
-      }
+      const trades = this.getTicksTrades();
+      const stacks = this.stackTrades(trades);
+      
+      this.populateCounters(stacks);
 
       console.log(`[counters.rebuild]\n`, this.counters.map((a, index) => `\t- Counter ${this.labels[index]} got ${a.length} stacks`).join("\n"));
 
@@ -283,6 +274,38 @@ export default {
       }
 
       this.$store.commit('setCounterStep', {index: index, value: null});
+    },
+    getTicksTrades() {
+      return socket.ticks.reduce((prev, curr) => {
+        const ratio = {
+          buys: (curr.buys / (curr.sells + curr.buys)),
+          sells: (curr.sells / (curr.sells + curr.buys)),
+        }
+
+        if (curr.buys > 0) {
+          prev.push([
+            curr.exchange, 
+            curr.timestamp, 
+            curr.close, 
+            ratio.buys * curr.volume, 
+            true,
+            ratio.buys * curr.records
+          ])
+        }
+
+        if (curr.sells > 0) {
+          prev.push([
+            curr.exchange, 
+            curr.timestamp, 
+            curr.close, 
+            ratio.sells * curr.volume, 
+            false,
+            ratio.sells * curr.records
+          ])
+        }
+
+        return prev;
+      }, []).concat(socket.trades);
     }
   },
 };

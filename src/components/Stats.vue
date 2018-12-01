@@ -167,7 +167,7 @@ export default {
     text-align: right;
     font-weight: 600;
     white-space: nowrap;
-    padding: .25em 1em .75em;
+    padding: .25em 1em .75em 0;
   }
 
   .stats__items {
@@ -184,7 +184,6 @@ export default {
       flex-grow: 0;
       flex-direction: column;
       flex-basis: auto;
-      overflow: hidden;
     }
 
     sup {

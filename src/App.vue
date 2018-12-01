@@ -8,7 +8,6 @@
   >
 		<Settings v-if="showSettings" @close="showSettings = false"/>
 		<div class="app__wrapper">
-      <div class="indeterminate-loading-bar" v-if="isLoading"></div>
 			<Alerts/>
 			<Header
         :price="price"
@@ -290,7 +289,6 @@ export default {
 @import './assets/sass/icons';
 @import './assets/sass/currency';
 @import './assets/sass/tooltip';
-@import './assets/sass/progress';
 
 @import './assets/sass/dark';
 </style>

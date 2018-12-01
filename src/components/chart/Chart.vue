@@ -33,6 +33,8 @@ export default {
       cursor: null,
       queuedTrades: [],
       queuedTicks: [],
+
+      _timeframe: null,
     };
   },
   computed: {
@@ -59,7 +61,8 @@ export default {
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
         case 'setTimeframe':
-          this.setTimeframe(mutation.payload, true, true);
+          this.setTimeframe(mutation.payload, true, this._timeframe !== this.timeframe);
+          this._timeframe = parseInt(this.timeframe);
           break;
         case 'toggleSnap':
           mutation.payload && this.snapRight(true);
@@ -87,6 +90,8 @@ export default {
         break;
       }
     });
+
+    this._timeframe = parseInt(this.timeframe);
   },
 	mounted() {
     console.log(`[chart.mounted]`);
@@ -141,6 +146,22 @@ export default {
       if (this.chartRange) {
         this.setRange(this.chartRange);
       }
+
+      if (this.queuedTicks.length) {
+        // console.log(`[chart.createChart] tick queued historicals`, this.queuedTicks.length);
+
+        this.tickHistoricals(this.queuedTicks.splice(0, this.queuedTicks.length));
+
+        this.chart.redraw();
+      }
+
+      if (this.queuedTrades.length) {
+        // console.log(`[chart.createChart] tick queued trades`, this.queuedTrades.length);
+
+        this.tickTrades(this.queuedTrades.splice(0, this.queuedTrades.length));
+
+        this.chart.redraw();
+      }
     },
     destroyChart() {
       if (!this.chart) {
@@ -158,14 +179,18 @@ export default {
 
       const now = +new Date();
 
-      if (clear) {
-        socket.ticks.splice(0, socket.ticks.length);
-      }
+      socket.fetchRangeIfNeeded(range, timeframe, clear).then(response => {
+        if (response) {
+          console.log(`[chart.setTimeframe] done fetching (${response.results.length} new ${response.format}(s))`)
+        } else {
+          console.log(`[chart.setTimeframe] did not fetch anything new`);
+        }
 
-      socket.fetchRangeIfNeeded(range, timeframe).then(trades => {
-        this.setRange(range / 2, snap);
+        this.setRange(range, snap);
 
         if (this.chart) {
+          console.log(`[chart.setTimeframe] prepare and clean chart for printing`);
+
           for (let serie of this.chart.series) {
             serie.setData([], false);
           }
@@ -176,42 +201,60 @@ export default {
         }
 
         if (!socket.ticks.length && !socket.trades.length) {
+          // console.log(`[chart.setTimeframe] nothing to print`);
           return;
         }
 
         this.cursor = Math.floor(
-          (Math.min(socket.ticks[0] ? +new Date(socket.ticks[0].time) : Infinity, socket.trades[0] ? socket.trades[0][1] : Infinity)  / this.timeframe)
+          (Math.min(socket.ticks[0] ? socket.ticks[0].timestamp : Infinity, socket.trades[0] ? socket.trades[0][1] : Infinity)  / this.timeframe)
         ) * this.timeframe;
 
-        console.log('tickHistoricals, tickTrades...', 'from ' + new Date(this.cursor).toLocaleTimeString());
+        // console.log(`[chart.setTimeframe] Send data to printers\n\tticks:`, socket.ticks, `\n\ttrades:`, socket.trades);
 
         this.tickHistoricals(socket.ticks);
+
         this.tickTrades(socket.trades);
+
+        this.setRange(range / 2, snap);
       })
     },
     onTrades(trades) {
-      this.tickTrades(trades);
+      if (this.chart && this.queuedTicks.length) {
+        const queuedTicks = this.queuedTicks.splice(0, this.queuedTicks.length);
+
+        if (!this.chart.series[0].xData.length) {
+          // console.log(`[chart.onTrades] print ${queuedTicks.length} queued historicals ticks`);
+          this.tickHistoricals(queuedTicks);
+        } else {
+          // console.log(`[chart.onTrades] remove ${queuedTicks.length} queued historical ticks as live trades have already been printed`);
+        }
+      }
+      
+      // console.log('[onTrades]');
+
+      this.tickTrades(trades, true);
     },
     tickHistoricals(ticks) {
-      if (!ticks.length) {
-        return;
-      }
-
       if (!this.chart) {
         this.queuedTicks = this.queuedTicks.concat(ticks);
 
         return;
       } else if (this.queuedTicks.length) {
-        debugger;
         ticks = ticks.concat(this.queuedTicks.splice(0, this.queuedTicks.length));
       }
-      debugger;
-      console.info('tickHistoricals', ticks.length);
 
-      ticks = ticks.filter(tick => this.actives.indexOf(tick.exchange) !== -1 && this.exchanges[tick.exchange] && this.exchanges[tick.exchange].ohlc !== false)
-      .sort((a, b) => a.timestamp - b.timestamp);
+      ticks = ticks.filter(tick => 
+        this.actives.indexOf(tick.exchange) !== -1 
+        && this.exchanges[tick.exchange] && this.exchanges[tick.exchange].ohlc !== false
+      );
+      
+      if (!ticks.length) {
+        return;
+      }
 
       this.createTick(ticks[0].timestamp)
+
+      const formatedTicks = [];
 
       ticks.forEach((tick, index) => {
         this.tickData.buys += tick.buys;
@@ -226,7 +269,10 @@ export default {
         }
         
         if (!ticks[index + 1] || this.tickData.timestamp !== ticks[index + 1].timestamp) {
-          this.addTickToSeries(this.formatTickData(this.tickData));
+          const formatedTick = this.formatTickData(this.tickData);
+          this.addTickToSeries(formatedTick);
+
+          formatedTicks.push(formatedTick);
           
           if (ticks[index + 1]) {
             this.createTick(ticks[index + 1].timestamp);
@@ -234,22 +280,21 @@ export default {
         }
       });
 
+      // console.log('[chart.tickHistoricals] Finished drawing', formatedTicks.length, 'candles', formatedTicks);
+
+      // if (formatedTicks.length) {
+      //   console.log('[chart.tickHistoricals] Last printed candle', new Date(formatedTicks[formatedTicks.length - 1].ohlc[0]).toLocaleString(), formatedTicks[formatedTicks.length - 1]);
+      // }
+
+      this.tickData.added = true;
+
       this.chart.redraw();
     },
     tickTrades(trades, live = false) {
       const ticks = [];
-
-      // first we trim trades
-      // - equal or higer than current tick
-      // - only from actives exchanges (enabled, matched and visible exchange)
-      trades = trades
-        .filter(a =>
-            a[1] >= this.cursor // only process trades >= current tick time
-            && this.actives.indexOf(a[0]) !== -1 // only process trades from enabled exchanges (client side)
-        );
     
       if (!trades || !trades.length) {
-        return;
+        trades = [];
       }
 
       // chart doesn't allow edit on invisible ticks when it is panned
@@ -265,10 +310,22 @@ export default {
         // right here
         trades = this.queuedTrades.splice(0, this.queuedTrades.length).concat(trades);
 
-        if (this.queuedTicks.length) {
-          this.tickHistoricals(this.queuedTicks.splice(0, this.queuedTicks.length));
-        }
       }
+
+      // first we trim trades
+      // - equal or higer than current tick
+      // - only from actives exchanges (enabled, matched and visible exchange)
+      trades = trades
+        .filter(a =>
+            a[1] >= this.cursor // only process trades >= current tick time
+            && this.actives.indexOf(a[0]) !== -1 // only process trades from enabled exchanges (client side)
+        );
+    
+      if (!trades.length) {
+        return;
+      }
+
+      // console.log('[chart.tickTrades]', trades.length, live ? 'LIVE' : '');
 
       // define range rounded to the current timeframe
       const from = Math.floor(trades[0][1] / this.timeframe) * this.timeframe;
@@ -340,19 +397,14 @@ export default {
       }
 
       if (ticks.length && ticks[0].added) {
+        // console.log('[chart.tickTrades] Updating candle', new Date(ticks[0].ohlc[0]).toLocaleString(), ticks[0]);
         this.updateCurrentTick(ticks[0], live);
-        // let serie;
-
-        /* for (let exchange of this.actives) {
-          serie = this.chart.series[this.actives.indexOf(exchange) + 4];
-
-          serie && ticks[0].exchanges[exchange] && serie.points[serie.points.length - 1].update(ticks[0].exchanges[exchange][1], false);
-        } */
 
         ticks.splice(0, 1);
       }
 
       for (let i = 0; i < ticks.length; i++) {
+        // console.log('[chart.tickTrades] Printing new candle', new Date(ticks[i].ohlc[0]).toLocaleString(), ticks[i]);
         this.addTickToSeries(ticks[i], live, i === ticks.length - 1);
       }
 
@@ -420,12 +472,12 @@ export default {
       }
     },
     addTickToSeries(tick, live = false, snap = false) {
-      this.chart.series[0].addPoint(tick.ohlc, live);
-      this.chart.series[1].addPoint(tick.buys, live);
-      this.chart.series[2].addPoint(tick.sells, live);
+      this.chart.series[0].addPoint(tick.ohlc, false);
+      this.chart.series[1].addPoint(tick.buys, false);
+      this.chart.series[2].addPoint(tick.sells, false);
 
       if (this.chartLiquidations) {
-        this.chart.series[3].addPoint(tick.liquidations, live);
+        this.chart.series[3].addPoint(tick.liquidations, false);
       }
 
       if (tick.markers && tick.markers.length) {
@@ -437,15 +489,30 @@ export default {
       }
     },
     updateCurrentTick(tick, live = false) {
+      // console.log(`s
+      //   \txData: ${this.chart.series[0].xData.length} 
+      //     (${this.chart.series[0].xData.length ? new Date(this.chart.series[0].xData[this.chart.series[0].xData.length - 1]).toLocaleString() : 'N/A'}) 
+      //   points: ${this.chart.series[0].points.length} 
+      //     (${this.chart.series[0].points.length ? new Date(this.chart.series[0].points[this.chart.series[0].points.length - 1].x).toLocaleString() : 'N/A'})`);
+      
+      // if (!live) {
+      //   for (let i = 0; i < Math.max(this.chart.series[0].xData.length, this.chart.series[0].points.length); i++) {
+      //     console.log(
+      //       this.chart.series[0].xData[i] ? new Date(this.chart.series[0].xData[i]).toLocaleString() : 'N/A',
+      //       this.chart.series[0].points[i] ? new Date(this.chart.series[0].points[i].x).toLocaleString() : 'N/A',
+      //     )
+      //   }
+      // }
+
       const tickPoints = this.getCurrentTickPoints();
 
       if (this.chartLiquidations) {
-        tickPoints.liquidations.update(tick.liquidations[1], live);
+        tickPoints.liquidations.update(tick.liquidations[1], false);
       }
 
-      tickPoints.buys.update(tick.buys[1], live);
-      tickPoints.sells.update(tick.sells[1], live);
-      tickPoints.ohlc.update(tick.ohlc, live);
+      tickPoints.buys.update(tick.buys[1], false);
+      tickPoints.sells.update(tick.sells[1], false);
+      tickPoints.ohlc.update(tick.ohlc, false);
 
       if (tick.markers.length) {
         this.processTickMarkers(tick);

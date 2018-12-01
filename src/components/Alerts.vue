@@ -76,7 +76,7 @@ export default {
 
 .alerts {
   position: absolute;
-  z-index: 1;
+  z-index: 3;
   display: flex;
   margin: 20px;
   left: 0;

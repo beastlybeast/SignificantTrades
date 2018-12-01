@@ -6,6 +6,13 @@ body.theme-dark {
     background-color: lighten($dark, 10%);
     color: white;
 
+    &.loading {
+      &:before,
+      &:after {
+        background-color: lighten($dark, 30%);
+      }
+    }
+
     button {
       color: white;
     }

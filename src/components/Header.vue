@@ -1,24 +1,26 @@
 <template>
-	<header id="header" class="header">
-		<div class="header__title"> <span class="pair" v-if="pair">{{pair}}</span> <span class="icon-currency"></span> <span v-html="price || 'SignificantTrades'"></span></div>
-    <button></button>
-		<button type="button" class="header__timeframe" v-bind:title="fetchLabel" v-tippy="{placement: 'left'}">
-      {{timeframeLabel}}
-      <ul class="dropdown">
-        <li @click="setTimeframe(1000 * 10)">10s</li>
-        <li @click="setTimeframe(1000 * 30)">30s</li>
-        <li @click="setTimeframe(1000 * 60)">1m</li>
-        <li @click="setTimeframe(1000 * 60 * 5)">5m</li>
-        <li @click="setTimeframe(1000 * 60 * 15)">15m</li>
-        <li @click="setTimeframe(1000 * 60 * 30)">30m</li>
-        <li @click="setTimeframe(1000 * 60 * 60)">1h</li>
-        <li @click="setTimeframe(1000 * 60 * 60 * 2)">2h</li>
-        <li @click="setTimeframe(1000 * 60 * 60 * 4)">4h</li>
-      </ul>
-		</button>
-    <button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}"><span class="icon-external-link"></span></button>
-		<button type="button" v-on:click="$store.commit('toggleSnap', !isSnaped)" v-bind:title="isSnaped ? 'Disable auto snap' : 'Auto snap chart to the latest candle'" v-tippy="{placement: 'bottom'}"><span class="icon-play" v-bind:class="{snaped: isSnaped}"></span></button>
-		<button type="button" v-on:click="$emit('toggleSettings')"><span class="icon-cog"></span></button>
+	<header id="header" class="header" v-bind:class="{ loading: isLoading }">
+    <div class="header__wrapper">
+      <div class="header__title"> <span class="pair" v-if="pair">{{pair}}</span> <span class="icon-currency"></span> <span v-html="price || 'SignificantTrades'"></span></div>
+      <button></button>
+      <button type="button" class="header__timeframe" v-bind:title="fetchLabel" v-tippy="{placement: 'left'}">
+        {{timeframeLabel}}
+        <ul class="dropdown">
+          <li @click="setTimeframe(1000 * 10)">10s</li>
+          <li @click="setTimeframe(1000 * 30)">30s</li>
+          <li @click="setTimeframe(1000 * 60)">1m</li>
+          <li @click="setTimeframe(1000 * 60 * 5)">5m</li>
+          <li @click="setTimeframe(1000 * 60 * 15)">15m</li>
+          <li @click="setTimeframe(1000 * 60 * 30)">30m</li>
+          <li @click="setTimeframe(1000 * 60 * 60)">1h</li>
+          <li @click="setTimeframe(1000 * 60 * 60 * 2)">2h</li>
+          <li @click="setTimeframe(1000 * 60 * 60 * 4)">4h</li>
+        </ul>
+      </button>
+      <button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}"><span class="icon-external-link"></span></button>
+      <button type="button" v-on:click="$store.commit('toggleSnap', !isSnaped)" v-bind:title="isSnaped ? 'Disable auto snap' : 'Auto snap chart to the latest candle'" v-tippy="{placement: 'bottom'}"><span class="icon-play" v-bind:class="{snaped: isSnaped}"></span></button>
+      <button type="button" v-on:click="$emit('toggleSettings')"><span class="icon-cog"></span></button>
+    </div>
 	</header>
 </template>
 
@@ -28,16 +30,18 @@ import { mapState } from 'vuex';
 import socket from '../services/socket';
 
 export default {
-  props: ['price'],
+  props: [
+    'price'
+  ],
   data() {
     return {
       pair: '',
-      dashoffset: 0,
       fetchLabel: 'Fetch timeframe',
       isPopupMode: window.opener !== null,
       canFetch: false,
       showTimeframeDropdown: false,
       timeframeLabel: '15m',
+      isLoading: false
     };
   },
   computed: {
@@ -56,13 +60,20 @@ export default {
 
       this.canFetch = canFetch && this.showChart;
     });
+    
+    socket.$on('fetchStart', () => {
+      this.isLoading = true;
+    });
+
+    socket.$on('fetchEnd', () => {
+      this.isLoading = false;
+    });
 
     socket.$on('fetchProgress', event => {
       if (!event || isNaN(event.progress)) {
         return;
       }
 
-      this.dashoffset = (1 - event.progress) * 40;
       this.fetchLabel = !Math.floor(this.dashoffset)
         ? this._fetchLabel
         : this.sizeOf(event.loaded);
@@ -75,6 +86,7 @@ export default {
       document.activeElement.blur();
 
       this.updateTimeframeLabel(timeframe);
+      
       this.$store.commit('setTimeframe', timeframe);
     },
     updateTimeframeLabel(timeframe) {
@@ -108,10 +120,16 @@ export default {
 @import "../assets/sass/variables";
 
 header.header {
-  display: flex;
-  align-items: center;
   color: white;
   background-color: #03A9F4;
+  position: relative;
+
+  div.header__wrapper {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+  }
 
   .header__title {
     width: 100%;
@@ -205,36 +223,6 @@ header.header {
       transition: all 0.5s $easeElastic;
     }
 
-    svg.loader {
-      width: 100%;
-      position: absolute;
-      transform: scale(0) translate(-50%, -50%);
-      visibility: hidden;
-      top: 50%;
-      left: 50%;
-      width: 50%;
-      transition: transform 1s $easeOutExpo, visibility 0.2s linear 1s;
-
-      path {
-        fill: none;
-        stroke: white;
-        stroke-linecap: round;
-        stroke-width: 2px;
-        stroke-dasharray: calc(6.9 * 3.142 * 1.85);
-      }
-
-      &.loading {
-        visibility: visible;
-        transition: transform 0.2s $easeElastic;
-        transform: scale(1) translate(-50%, -50%);
-
-        + span {
-          opacity: 0.25;
-          transform: scale(1.25);
-        }
-      }
-    }
-
     .icon-play {
       opacity: 0.2;
 
@@ -270,6 +258,65 @@ header.header {
         text-shadow: 0 0 20px $red, 0 0 2px white;
       }
     }
+  }
+
+  &:after,
+  &:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    display: block;
+    background-clip: padding-box;
+    transition: background-color .4s $easeOutExpo;
+  }
+
+  &.loading {
+    &:before {
+      background-color: rgba(black, .2);
+      animation: indeterminate-loading-bar-slow 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+    }
+
+    &:after {
+      background-color: rgba(black, .2);
+      animation: indeterminate-loading-bar-fast 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
+      animation-delay: 1.15s;
+    }
+  }
+}
+
+@keyframes indeterminate-loading-bar-slow {
+  0% {
+    left: -35%;
+    right: 100%;
+  }
+
+  60% {
+    left: 100%;
+    right: -90%;
+  }
+
+  100% {
+    left: 100%;
+    right: -90%;
+  }
+}
+
+@keyframes indeterminate-loading-bar-fast {
+  0% {
+    left: -200%;
+    right: 100%;
+  }
+
+  60% {
+    left: 107%;
+    right: -8%;
+  }
+
+  100% {
+    left: 107%;
+    right: -8%;
   }
 }
 </style>
