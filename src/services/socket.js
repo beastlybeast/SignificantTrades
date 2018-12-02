@@ -316,28 +316,18 @@ const emitter = new Vue({
 		canFetch() {
 			return !this._fetching && this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1);
 		},
-		getApiUrl(from, to, timeframe, pair = null, exchanges = null) {
-			console.log('getApiUrl', from, to, timeframe, pair, exchanges);
-
+		getApiUrl(from, to) {
 			let url = this.API_URL;
-
-			if (!pair) {
-				pair = this.pair;
-			}
-
-			if (!exchanges) {
-				exchanges = this.actives;
-			}
-
+			
 			url = url.replace(/\{from\}/, from);
 			url = url.replace(/\{to\}/, to);
-			url = url.replace(/\{timeframe\}/, timeframe);
+			url = url.replace(/\{timeframe\}/, this.timeframe);
 			url = url.replace(/\{pair\}/, this.pair.toLowerCase());
-			url = url.replace(/\{exchanges\}/, exchanges.join(','));
+			url = url.replace(/\{exchanges\}/, this.actives.join('+'));
 
 			return url;
 		},
-		fetchRangeIfNeeded(range, timeframe, clear = false) {
+		fetchRangeIfNeeded(range, clear = false) {
 			if (clear) {
 				this.ticks.splice(0, this.ticks.length);
 				this._fetchedMax = false;
@@ -358,22 +348,22 @@ const emitter = new Vue({
 			let from = now - range;
 			let to = minData;
 
-			from = Math.ceil(from / timeframe) * timeframe;
-			to = Math.ceil(to / timeframe) * timeframe;
+			from = Math.ceil(from / this.timeframe) * this.timeframe;
+			to = Math.ceil(to / this.timeframe) * this.timeframe;
 
 			console.log(`[socket.fetchRangeIfNeeded] minData: ${new Date(minData).toLocaleString()}, from: ${new Date(from).toLocaleString()}, to: ${to}`, this._fetchedMax ? '(FETCHED MAX)' : '');
 
       if (!this._fetchedMax && to - from >= 60000 && from < minData) {
 				console.info(`[socket.fetchRangeIfNeeded]`, `FETCH NEEDED\n\n\tcurrent time: ${new Date(now).toLocaleString()}\n\tfrom: ${new Date(from).toLocaleString()}\n\tto: ${new Date(to).toLocaleString()} (${this.trades.length ? 'using first trade as base' : 'using now for reference'})`);
 
-        promise = this.fetchHistoricalData(from, to, timeframe);
+        promise = this.fetchHistoricalData(from, to);
       } else {
         promise = Promise.resolve();
       }
 
 			return promise;
 		},
-		fetchHistoricalData(from, to, timeframe) {
+		fetchHistoricalData(from, to) {
 			if (!from || !to || !this.canFetch()) {
 				if (this._fetching) {
 					this.$emit('alert', {
@@ -386,7 +376,7 @@ const emitter = new Vue({
 				return Promise.resolve();
 			}
 
-			const url = this.getApiUrl(from, to, timeframe);
+			const url = this.getApiUrl(from, to);
 
 			if (this.lastFetchUrl === url) {
 				return Promise.resolve();
@@ -399,7 +389,6 @@ const emitter = new Vue({
 
 			return new Promise((resolve, reject) => {
 				Axios.get(url, {
-					method: 'POST',
 					onDownloadProgress: e => this.$emit('fetchProgress', {
 						loaded: e.loaded,
 						total: e.total,

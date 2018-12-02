@@ -179,7 +179,7 @@ export default {
 
       const now = +new Date();
 
-      socket.fetchRangeIfNeeded(range, timeframe, clear).then(response => {
+      socket.fetchRangeIfNeeded(range, clear).then(response => {
         if (response) {
           console.log(`[chart.setTimeframe] done fetching (${response.results.length} new ${response.format}(s))`)
         } else {
