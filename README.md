@@ -1,24 +1,24 @@
-A **heavily** modified version of [beastlybeast's SignificantTrades](https://github.com/beastlybeast/SignificantTrades) with multi exchanges / pairing support & chart visualizer.<br/>
-I did that mostly for fun and training, but combining many exchanges data together is kind of interesting to see. 
-
 # SignificantTrades [![Build Status](https://travis-ci.org/Tucsky/SignificantTrades.svg?branch=master)](https://travis-ci.org/Tucsky/SignificantTrades)
-Live trades visualizer.<br>
-Currently supporting Bitstamp, Kraken, Huobi, Hitbtc, Okex, Bitmex, Binance, Bitfinex, Gdax ([see server/src/exchanges/](server/src/exchanges))
+Live cryptocurrency trades visualizer.<br>
+Currently supporting BitMEX, Bitfinex, Binance, Gdax, Bitstamp, Huobi, Okex, Hitbtc, Poloniex, Coinex and Liquid ([see server/src/exchanges/](server/src/exchanges) for detail)
 
-![screenshot](https://i.imgur.com/j3iP8ds.gif)
-
-## How it works
-- The repo contains a server part to gather & format exchanges data and broadcast it to many clients through websocket (mostly) communication.
-- The client part is written in vue.js, show live trades in a list based on settings (short timeframe row stacking by amount) and allow to visualize session's buys/sells/price in a little chart (which tick from 10s to 1d depending on zoom, so mostly 10s). It also can control the server so it knows which pair to track.
+![screenshot](https://i.imgur.com/ALQuZwk.gif)
 
 ## What it do
 - Aggregate trades from exchanges on a specific pair (default BTCUSD)
-- Filter trades by amount (by stacking them up)
-- Show realtime BUY & SELL volume & average price on a chart
-- Load previous trade data on the chart
-- Range selection (`shift + clic` the chart)
+- Filter trades by amount (by stacking them up under very short timespan)
+- Chart averaged price, buy & sell volume, price sma, volume ema
+- Play audio when trade show up
+- Visualize historical data
 
-Check out [the demo](https://tucsky.github.io/SignificantTrades/)
+## How it works
+The app is written in vue.js, use the javascript WebSocket interface to connect to the exchanges API directly and listen to the trades events. From there it dispatch the trades to difference components within the app :
+- The trade list that shows the N previous significant orders
+- The chart that shows the averaged price action
+- The counters that sum up buy & sell volume by interval (buy/sell last 15m, last 1h, 2h etc)
+- The stats component that show basic number about whats happened under one specific interval (default 1m)
+
+Check out [the demo](https://aggr.trade/)
 
 ## How to install & run locally
 1. Clone the repo
@@ -27,52 +27,63 @@ Check out [the demo](https://tucsky.github.io/SignificantTrades/)
 git clone https://github.com/Tucsky/SignificantTrades
 ```
 
-2. Install server dependencies & run it
+2. Install dependencies
 
 ```bash
-cd server
 npm install
-node index
 ```
 
-3. Install client dependencies then run
+3. Run dev mode
 
+Dev mode is
 ```bash
-cd client
-npm install
 npm run dev
 ```
+This will automatically open a browser window at localhost:8080
 
-4. Open a browser window at localhost:8080
+Otherwise can build the application
+```bash
+npm run build
+```
+and access the index.html directly in the browser later without having to run a command
 
 ...
 
 5. Profit !
 
-## Configuration
+## Settings
+|Name|Description|
+|----|:-----------|
+|Pair|The pair you want to track. BTCUSD by default| 
+|Max rows|Define the maximum lines shown in the trade list| 
+|Decimal precision|To override the default rounding behavior (might be useful for alts)| 
+|Thresholds|First line define the minimum amount that a trade must have to be shown in the trade list<br>Second line is the significant threshold and define the minimum amount for a trade to be highlighted<br>Third threshold is used to identify rare trades and ask you a keyword for the kind of it will show on that trade<br>Fourth is same as third one except you can choose another gif keyword :-)|
+|Audio|Will play audio (bip bip) when big orders are made<br>It use the significant as a reference to play sound loud or not|
+|Stats|Toggle stats component<br>The text field let you choose the stats interval (ex: 60s)|
+|Counters|Toggle counters component<br>The texxt field let you define the counters intervals, separed by a comma (ex: 60s, 5m, 30m etc...)|
+|Chart|Toggle chart|
+|Margin|Add margin on the right of the chart, after printed candle (% of the visible range)|
+|Candlestick|Toggle candlestick chart (enabled by default)<br>Show line otherwise|
+|Liquidations|Toggle liquidation serie (will add a purple bar serie on top of the buy & sell area series)|
+|Volume averages|Toggle EMA on buys & sells<br>The number is the average length (default 14)|
+|Exchanges|List the available exchanges<br>Will be grey if the exchange doesn't match current pair<br>Red if error<br>Green if currently connected<br>Name will be striked when disabled. Click on it to enable exchange|
+|Exchange visibility|Eye symbol indicate visibility of the exchange. A connected exchange can be hidden temporarily while still capturing trades that can be shown later on|
+|Exchange threshold|Use the slider to ajust exchange threshold relative to the main threshold set above|
+|Exchange OHLC|Include exchange in chart (enabled by default for most of the exchanges)<br>Include exchange with the most relevant price action|
 
-All settings are optional and can be changed in the [server configuration file](server/config.json.example) (rename config.json.example into config.json as the real config file is untracked on github).
+## Supported pairs
+The app fetch the available exchanges products when it starts the first time. So technically every pairs of the supported exchanges are supported. Just type the name in the "pair" settings (without any spaces or caret !).
 
-```js
-{
-  // the port which the server will be at 
-  "port": 3000, // (note that you will NEED to update the target url in [client/src/services/socket.js](client/src/services/socket.js))
-  
-  // delay (in ms) between server broadcasts to avoid large
-  "delay": 200, // (the larger the better performance wise)
-  
-  // default pair it should use 
-  "pair": "BTCUSD" // (then you can change it in the client settings)
-}
-```
+## Adblocker issue (and solution)
+Some adblocker restrict access to exchanges websocket feeds.
+I know uBlock origin block many thing including huobi websocket API.
+Just disable Adblock on the app and you should be alright.
 
-*Wanna contribute ?*<br>
-- [x] Publish a demo on github ([its up!](https://tucsky.github.io/SignificantTrades/))
-- [ ] Improve client performances (always room for improvements)
-- [ ] Inter-exchanges volume averaged price (kind of work but [can definetly be improved](https://i.imgur.com/J5lBuWr.gif)
-- [ ] Alerts & push notifications
-- [ ] Support more exchanges
-- [ ] Multiple channels monitoring at once
+## Cross-Domain (CORS) policy issue (and solution)
+In order to fetch the products the app need to make calls to the exchanges API. Most of thoses API tell the browser they only allow access from the exchange domain (see https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS). The only way to bypass this is to use a server that will make the call for us. The cors proxy settings let u set the url of this server, which is set to mine by default.
+Running `PROXY_URL=http://my-personnal-cors-proxy.me/ npm run dev` will start the app with another cors proxy which I encourage you to do.
 
-*Like whats been done here ?* Donate BTC (segwit)<br>
-[3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX](bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX)
+## About the historical data
+I use my servers (api.aggr.trade) to store and serve historical trades on demand. It currently support BTCUSD, ETHUSD and XRPUSD.
+The current source for the server part is located in the [feature/server](https://github.com/Tucsky/SignificantTrades/tree/feature/server) branch.
+Set up your own node and run `API_URL=http://localhost:3000/{pair}/{from}/{to}/{timeframe} npm run dev` to get access to this very usefull functionnality.
