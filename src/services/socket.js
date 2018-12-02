@@ -187,6 +187,7 @@ const emitter = new Vue({
 
 			this.trades = this.queue = this.ticks = [];
 			this.timestamps = {};
+			this._fetchedMax = false;
 
 			console.log(`[socket.connect] connecting to "${this.pair}"`);
 
@@ -268,7 +269,6 @@ const emitter = new Vue({
 			}
 
 			if (i && this.ticks.length) {
-				console.log('remove', i, 'ticks', `(${new Date(this.ticks[0].timestamp).toLocaleString()} to ${new Date(this.ticks[i - 1].timestamp).toLocaleString()})`);
 				this._fetchedMax = false;
 			}
 
@@ -318,7 +318,7 @@ const emitter = new Vue({
 		},
 		getApiUrl(from, to) {
 			let url = this.API_URL;
-			
+
 			url = url.replace(/\{from\}/, from);
 			url = url.replace(/\{to\}/, to);
 			url = url.replace(/\{timeframe\}/, this.timeframe);
@@ -444,6 +444,8 @@ const emitter = new Vue({
 						});
 					})
 					.catch(err => {
+						this._fetchedMax = true;
+
 						err && this.$emit('alert', {
 							type: 'error',
 							title: `Unable to retrieve history`,
