@@ -23,6 +23,10 @@
           <sup>({{down.side}}{{(100 - (down.average / down.live) * 100).toFixed()}}%)</sup>
         </div>
       </li>
+       <li>
+        <div class="stats__label">AVG Trade</div>
+        <div class="stats__value"><span class="icon-commodity"></span> {{ (avgtrade / rate.live).toFixed(2) }}</div>
+      </li>
       <li v-tippy v-bind:title="`Total volume in the last ${periodLabel}`">
         <div class="stats__label">VOL</div>
         <div class="stats__value"><span class="icon-commodity"></span> {{$root.formatAmount(up.live + down.live, 1)}}</div>
@@ -59,6 +63,9 @@ export default {
     };
   },
   computed: {
+     avgtrade() {
+    	return parseInt(this.up.live) + parseInt(this.down.live);
+    },
     ...mapState([
 			'statsPeriod',
       'actives',
