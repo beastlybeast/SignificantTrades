@@ -160,14 +160,14 @@ export default {
   .stats__label {
     opacity: .5;
     font-size: .75em;
-    padding: .75em 1em .25em;
+    padding: .75em 0 .25em;
   }
 
   .stats__value {
     text-align: right;
     font-weight: 600;
     white-space: nowrap;
-    padding: .25em 1em .75em 0;
+    padding: .25em 0 .75em;
   }
 
   .stats__items {
