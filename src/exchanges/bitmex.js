@@ -89,6 +89,10 @@ class Bitmex extends Exchange {
 		return output;
 	}
 
+	matchPairName(name) {
+		return name.replace('/[A-Z]18/gi', 'BTC');	
+	}
+
 }
 
 export default Bitmex;
