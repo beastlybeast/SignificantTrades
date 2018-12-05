@@ -209,6 +209,13 @@ const emitter = new Vue({
 				});
 
 				if (!validExchanges.length) {
+					this.$emit('alert', {
+						id: `server_status`,
+						type: 'error',
+						title: `No match`,
+						message: `"${pair}" did not matched with any active pairs`
+					});
+
 					return;
 				}
 

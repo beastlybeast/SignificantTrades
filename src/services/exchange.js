@@ -104,8 +104,6 @@ class Exchange extends EventEmitter {
   }
 
   emitOpen(event) {
-    console.log(`[${this.id}] connected`);
-
     this.connected = true;
 
     this.reconnectionDelay = 5000;
@@ -169,16 +167,12 @@ class Exchange extends EventEmitter {
   }
 
   emitError(error) {
-    console.error(`[${this.id}] error`, error.message || '');
-
     this.error = error.message || 'Unknown error';
 
     this.emit('error');
   }
 
   emitClose(event) {
-    console.log(`[${this.id}] closed`);
-
     this.connected = false;
 
     this.emit('close', event);

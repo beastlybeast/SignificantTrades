@@ -5,6 +5,12 @@ class Bitmex extends Exchange {
 	constructor(options) {
 		super(options);
 
+		// BITMEX PRODUCTS NOW STORED AS ARRAY 
+		// temporary fix, TODO remove that in a week
+		if (this.pairs && typeof this.pairs === 'object') {
+			this.pairs = Object.values(this.pairs);
+		}
+
 		this.id = 'bitmex';
 
 		this.endpoints = {
@@ -51,8 +57,6 @@ class Bitmex extends Exchange {
 					trade.side === 'Buy' ? 1 : 0,
 					1
 				]);
-
-				return false;
 			} else if (json.table === 'trade' && json.action === 'insert') {
 				return json.data.map(trade => [
 					this.id,
@@ -80,17 +84,17 @@ class Bitmex extends Exchange {
 	} */
 
 	formatProducts(data) {
-		const output = {};
-
-		data.forEach(a => {
-			output[a.symbol.replace('XBT', 'BTC')] = a.symbol;
-		});
-
-		return output;
+		return data.map(a => a.symbol);
 	}
 
 	matchPairName(name) {
-		return name.replace('/[A-Z][0-9]{2}/gi', 'BTC');	
+		if (this.pairs.indexOf(name) !== -1) {
+			return name;
+		} else if ((name = name.replace('BTC', 'XBT')) && this.pairs.indexOf(name) !== -1) {
+			return name;
+		}
+		
+		return false;	
 	}
 
 }
