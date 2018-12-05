@@ -90,7 +90,7 @@ class Bitmex extends Exchange {
 	}
 
 	matchPairName(name) {
-		return name.replace('/[A-Z]18/gi', 'BTC');	
+		return name.replace('/[A-Z][0-9]{2}/gi', 'BTC');	
 	}
 
 }
