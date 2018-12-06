@@ -18,27 +18,34 @@ export default {
   data() {
     return {
 			exchangesAverage: {},
-			exchangesDirection: {}
+			exchangesDirection: {},
+			connectedExchanges: [],
     };
   },
   computed: {
     ...mapState([
 			'actives',
 			'exchanges',
-    ]),
-		connectedExchanges() {
-			return socket.exchanges
-				.filter(a => a.connected)
-				.sort((a, b) => a.price - b.price);
-		}
+    ])
   },
   created() {
+		this.connectedExchanges = socket.exchanges;
+
+		socket.$on('trades.queued', this.onTrades);
+
 		this._priceComparisonInterval = setInterval(this.updatePriceAction.bind(this), 2000);
   },
   beforeDestroy() {
+		socket.$off('trades.queued', this.onTrades);
+
 		clearInterval(this._priceComparisonInterval);
   },
   methods: {
+		onTrades() {
+			this.connectedExchanges = socket.exchanges
+				.filter(a => a.connected)
+				.sort((a, b) => a.price - b.price);
+		},
 		updatePriceAction() {
 			socket.exchanges.forEach((exchange, index) => {
 				if (this.actives.indexOf(exchange.id) === -1 || !exchange.price) {
@@ -68,6 +75,8 @@ export default {
 #exchanges {
 	display: flex;
 	flex-direction: row;
+
+	min-height: 2.71em;
 
 	> div {
     padding: .5em;
