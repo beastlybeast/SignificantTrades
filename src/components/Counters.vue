@@ -36,6 +36,7 @@ export default {
 			'actives',
 			'countersSteps',
       'counterPrecision',
+      'cumulativeCounters',
       'hideIncompleteCounter',
     ])
   },
@@ -57,6 +58,7 @@ export default {
       switch (mutation.type) {
         case 'setTimeframe':
         case 'setCounterStep':
+        case 'toggleCumulativeCounters':
         case 'replaceCounterSteps':
         case 'reloadExchangeState':
           this.rebuildCounters();
@@ -204,6 +206,11 @@ export default {
 
       for (let index = 0; index < this.countersSteps.length; index++) {
         this.counters[index] = this.counters[index].sort((a, b) => a[0] - b[0]);
+
+        if (!this.cumulativeCounters) {
+          stackedUpVolume = 0;
+          stackedDownVolume = 0;
+        }
 
         stackedUpVolume += this.strictSums[index][0];
         stackedDownVolume += this.strictSums[index][1];
@@ -415,14 +422,16 @@ export default {
   font-family: monospace;
   transition: flex-basis .4s $easeOutExpo;
 
+  flex-basis: 50%;
+
   border-bottom: 4px solid transparent;
   margin-bottom: 6px;
 
   &:before {
     content: attr(data-amount);
     position: absolute;
-    margin: .1em 0;
-    font-size: 1.1em;
+    margin: 0 .2em;
+    line-height: 1.75em;
     z-index: 1;
   }
 }

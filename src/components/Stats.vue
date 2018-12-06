@@ -1,36 +1,39 @@
 <template>
 	<div id="stats" class="stats">
-    <div class="stats__infos"></div>
+    <div class="stats__infos">
+      <div>{{periodLabel}}</div>
+    </div>
     <ul class="stats__items">
-      <li v-tippy v-bind:title="`Number of trades in the last ${periodLabel}`">
+      <li v-tippy v-bind:title="`Number of trades in the last ${periodLabel}`" v-bind:class="{ up: rate.live > rate.average }">
         <div class="stats__label">TRADES</div>
         <div class="stats__value">
-          {{$root.formatAmount(rate.live)}}
-          <sup>({{rate.side}}{{(100 - (rate.average / rate.live) * 100).toFixed()}}%)</sup>
+          {{ $root.formatAmount(rate.live) }}
         </div>
       </li>
-      <li v-tippy v-bind:title="`Buys in the last ${periodLabel}`">
+      <li>
+        <div class="stats__label" v-bind:title="`Average amount per trade over the last ${periodLabel}`">AVG Trade</div>
+        <div class="stats__value">
+          <span class="icon-commodity"></span> {{ $root.formatAmount(avgtrade / rate.live, 2) }}
+        </div>
+      </li>
+      <li v-tippy v-bind:title="`Buys in the last ${periodLabel}`"  v-bind:class="{ up: up.live > up.average }">
         <div class="stats__label">BUYS</div>
         <div class="stats__value">
-          <span class="icon-commodity"></span> {{$root.formatAmount(up.live, 1)}}
-          <sup>({{up.side}}{{(100 - (up.average / up.live) * 100).toFixed()}}%)</sup>
+          <span class="icon-commodity"></span> {{ $root.formatAmount(up.live, 1) }}
         </div>
       </li>
-      <li v-tippy v-bind:title="`Sells in the last ${periodLabel}`">
+      <li v-tippy v-bind:title="`Sells in the last ${periodLabel}`" v-bind:class="{ up: down.live > down.average }">
         <div class="stats__label">SELLS</div>
         <div class="stats__value">
-          <span class="icon-commodity"></span> {{$root.formatAmount(down.live, 1)}}
-          <sup>({{down.side}}{{(100 - (down.average / down.live) * 100).toFixed()}}%)</sup>
+          <span class="icon-commodity"></span> {{ $root.formatAmount(down.live, 1) }}
         </div>
       </li>
-       <li>
-        <div class="stats__label">AVG Trade</div>
-        <div class="stats__value"><span class="icon-commodity"></span> {{ (avgtrade / rate.live).toFixed(2) }}</div>
-      </li>
-      <li v-tippy v-bind:title="`Total volume in the last ${periodLabel}`">
+      <!-- 
+        // Maybe useless
+        <li v-tippy v-bind:title="`Total volume in the last ${periodLabel}`">
         <div class="stats__label">VOL</div>
         <div class="stats__value"><span class="icon-commodity"></span> {{$root.formatAmount(up.live + down.live, 1)}}</div>
-      </li>
+      </li> -->
     </ul>
 	</div>
 </template>
@@ -64,7 +67,7 @@ export default {
   },
   computed: {
      avgtrade() {
-    	return parseInt(this.up.live) + parseInt(this.down.live);
+    	return this.up.live + this.down.live;
     },
     ...mapState([
 			'statsPeriod',
@@ -175,6 +178,12 @@ export default {
     font-weight: 600;
     white-space: nowrap;
     padding: .25em 0 .75em;
+
+    &:after {
+      font-family: 'icon';
+      content: unicode($icon-down);
+      color: lighten($red, 10%);
+    }
   }
 
   .stats__items {
@@ -191,6 +200,13 @@ export default {
       flex-grow: 0;
       flex-direction: column;
       flex-basis: auto;
+
+      &.up {
+        .stats__value:after {
+          content: unicode($icon-up);
+          color: lighten($green, 20%);
+        }
+      }
     }
 
     sup {
@@ -222,8 +238,8 @@ export default {
     }
 
     > div {
-      font-family: cursive;
       font-size: 1.25em;
+      font-weight: 600;
       text-align: right;
       align-self: flex-end;
     }

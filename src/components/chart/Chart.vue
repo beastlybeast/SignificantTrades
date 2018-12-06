@@ -651,8 +651,9 @@ export default {
       if (scale === null) {
         min = max = null;
       } else if (scale) {
-        min -= scale;
-        max += scale;
+        const range = (max - min) * scale;
+        min -= range;
+        max += range;
       }
 
       this.chart.yAxis[0].update({
@@ -740,7 +741,7 @@ export default {
 
         this.resizing = event.pageY;
       } else if (!isNaN(this.scaling)) {
-        this.updateChartScale((event.pageY - this.scaling) / 10, true);
+        this.updateChartScale((event.pageY - this.scaling) / 100, true);
 
         this.scaling = event.pageY;
       }
@@ -826,8 +827,6 @@ export default {
       this.$store.commit('setChartRange', range);
 
       if (this.chart) {
-        console.log(`[chart.setRange]`, this.chartRange, this.chartPadding ? `with ${(this.chartPadding * 100).toFixed(2)})% margin` : '');
-
         const margin = this.chartRange * this.chartPadding;
         const now = +new Date();
 
@@ -926,6 +925,10 @@ export default {
 
   .highcharts-container {
     width: 100% !important;
+
+    @media screen and (min-width: 768px) {
+      position: absolute !important;
+    }
   }
 
   .chart__selection {

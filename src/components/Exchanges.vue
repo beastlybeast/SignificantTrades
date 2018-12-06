@@ -1,7 +1,7 @@
 <template>
 	<div id="exchanges" class="exchanges">
-		<div v-if="exchanges.length" v-for="(exchange, index) in exchanges" v-bind:key="index" v-bind:class="'exchange__action-' + exchange.side">
-			<div class="exchange__name">{{ exchange.id }}</div>
+		<div v-if="connectedExchanges.length" v-for="(exchange, index) in connectedExchanges" v-bind:key="index" v-bind:class="'exchange__action-' + exchange.side" v-on:click="$store.commit('toggleExchangeVisibility', exchange.id)">
+			<div class="exchange__name">{{ exchange.id }} <i v-if="exchanges[exchange.id].hidden" class="icon-eye-crossed"></i></div>
 			<div class="exchange__price" v-html="exchange.price ? $root.formatPrice(exchange.price) : `&nbsp;`"></div>
 		</div>
 	</div>
@@ -24,10 +24,11 @@ export default {
   computed: {
     ...mapState([
 			'actives',
+			'exchanges',
     ]),
-		exchanges() {
+		connectedExchanges() {
 			return socket.exchanges
-				.filter(a => this.$store.state.actives.indexOf(a.id) >= 0)
+				.filter(a => a.connected)
 				.sort((a, b) => a.price - b.price);
 		}
   },
@@ -78,6 +79,8 @@ export default {
     flex-grow: 1;
     flex-basis: 0;
 		position: relative;
+
+		cursor: pointer;
 
 		.exchange__name {
 			text-transform: uppercase;

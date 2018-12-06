@@ -59,7 +59,7 @@ export default {
       if (alert.type !== 'error') {
         setTimeout(() => {
           this.dismiss(this.alerts.indexOf(alert));
-        }, 1000 * 30);
+        }, alert.delay || 1000 * 30);
       }
     });
   },

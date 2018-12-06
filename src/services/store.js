@@ -49,12 +49,13 @@ const defaults = {
 	decimalPrecision: null,
 	showCounters: true,
 	counterPrecision: 1000 * 10,
+	countersSteps: [1000 * 60, 1000 * 60 * 5, 1000 * 60 * 15, 1000 * 60 * 30, 1000 * 60 * 60, 1000 * 60 * 60 * 2, 1000 * 60 * 60 * 4],
 	hideIncompleteCounter: true,
+	cumulativeCounters: true,
 	showStats: true,
 	showChart: true,
 	statsPeriod: 1000 * 60,
 	chartPadding: .075,
-	countersSteps: [1000 * 60, 1000 * 60 * 5, 1000 * 60 * 15, 1000 * 60 * 30, 1000 * 60 * 60, 1000 * 60 * 60 * 2, 1000 * 60 * 60 * 4],
 	timeframe: 1000 * 10,
 	autoClearTrades: true,
 	debug: false,
@@ -115,6 +116,9 @@ const store = new Vuex.Store({
 		},
 		toggleHideIncompleteCounter(state, value) {
 			state.hideIncompleteCounter = value ? true : false;
+		},
+		toggleCumulativeCounters(state, value) {
+			state.cumulativeCounters = value ? true : false;
 		},
 		setCounterStep(state, payload) {
 			const step = state.countersSteps[payload.index];

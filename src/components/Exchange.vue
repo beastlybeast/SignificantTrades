@@ -17,7 +17,7 @@
 				<small class="settings__exchanges__item__price" v-if="exchange.price" v-html="$root.formatPrice(exchange.price)"></small>
 			</div>
 			<div class="settings__exchanges__item__controls">
-				<button class="settings__exchanges__item__visibility" v-tippy v-bind:title="exchange.hidden ? 'Show' : 'Hide (from everything)'" v-on:click.stop.prevent="$store.commit('toggleExchangeVisibility', exchange.id)"><i class="icon-eye-crossed"></i></button>
+				<button class="settings__exchanges__item__visibility" v-tippy v-bind:title="exchange.hidden ? 'Show' : 'Hide (from everything)'" v-on:click.stop.prevent="$store.commit('toggleExchangeVisibility', exchange.id)"><i class="icon-eye"></i></button>
 				<button class="settings__exchanges__item__more" v-on:click.stop.prevent="expanded = !expanded"><i class="icon-down"></i></button>
 			</div>
 		</div>
@@ -126,8 +126,8 @@ export default {
 	&.settings__exchanges__item--invisible {
 		opacity: 0.8;
 
-		.icon-eye-crossed:before {
-			content: unicode($icon-eye);
+		.icon-eye:before {
+			content: unicode($icon-eye-crossed);
 		}
 	}
 
@@ -238,6 +238,7 @@ export default {
 		color: white;
 		font-size: 18px;
 		display: flex;
+		align-items: center;
 
 		&:hover {
 			background-color: rgba(white, 0.1);

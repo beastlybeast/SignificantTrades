@@ -77,9 +77,9 @@
             </label>
           </div>
           <div class="form-group settings__column__tight">
-            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Do not show incomplete counters">
-              <input type="checkbox" class="form-control" v-bind:checked="hideIncompleteCounter" @change="$store.commit('toggleHideIncompleteCounter', $event.target.checked)">
-              <div class="icon-eye-crossed"></div>
+            <label class="checkbox-control checkbox-cml-abs checkbox-control-input flex-right" v-tippy v-bind:title="cumulativeCounters ? 'Cumulative mode' : 'Absolute mode'">
+              <input type="checkbox" class="form-control" v-bind:checked="cumulativeCounters" @change="$store.commit('toggleCumulativeCounters', $event.target.checked)">
+              <div></div>
             </label>
           </div>
           <div class="form-group settings__column__fill">
@@ -201,6 +201,7 @@ export default {
       'showStats',
       'statsPeriod',
       'counterPrecision',
+      'cumulativeCounters',
       'hideIncompleteCounter',
       'countersSteps',
       'showChart',
@@ -296,7 +297,7 @@ export default {
     width: 100%;
 
     + .app__wrapper {
-      transform: scale(1.4);
+      transform: scale(1.2);
     }
 
     .stack__scroller {
@@ -535,6 +536,27 @@ export default {
           content: unicode($icon-power-off);
         }
       }
+
+      &.checkbox-cml-abs input {
+        ~ div {
+          &:before,
+          &:after {
+            font-family: inherit;
+          }
+          
+          &:before {
+            content: 'CML';
+          }
+
+          &:after {
+            content: 'ABS';
+          }
+        }
+
+        &:not(:checked) ~ div {
+          background-color: $blue;
+        }
+      }
     }
 
     > label {
@@ -571,6 +593,8 @@ export default {
     -webkit-transition: 0.2s; /* 0.2 seconds transition on hover */
     transition: opacity 0.2s;
     cursor: ew-resize;
+    margin: 0;
+    width: auto;
 
     &::-webkit-slider-thumb {
       -webkit-appearance: none; /* Override default look */

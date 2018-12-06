@@ -189,7 +189,7 @@ const emitter = new Vue({
 			this.timestamps = {};
 			this._fetchedMax = false;
 
-			console.log(`[socket.connect] connecting to "${this.pair}"`);
+			console.log(`[socket.connect] connecting to ${this.pair}`);
 
 			this.$emit('alert', {
 				id: `server_status`,
@@ -200,13 +200,6 @@ const emitter = new Vue({
 
 			Promise.all(this.exchanges.map(exchange => exchange.validatePair(this.pair))).then(() => {
 				let validExchanges = this.exchanges.filter(exchange => exchange.valid);
-
-				this.$emit('alert', {
-					id: `server_status`,
-					type: 'info',
-					title: `Loading`,
-					message: `Matching "${pair}" exchanges...`
-				});
 
 				if (!validExchanges.length) {
 					this.$emit('alert', {
@@ -219,32 +212,34 @@ const emitter = new Vue({
 					return;
 				}
 
+				this.$emit('alert', {
+					id: `server_status`,
+					type: 'info',
+					title: `Loading`,
+					message: `${validExchanges.length} exchange(s) matched ${pair}`
+				});
+
 				if (this._pair !== this.pair) {
 					this.$emit('pairing', this.pair, this.canFetch());
 
 					this._pair = this.pair;
 				}
 
+				console.log(`[socket.connect] ${validExchanges.length} successfully matched with ${this.pair}`);
+
 				validExchanges = validExchanges.filter(exchange => !this.exchangesSettings[exchange.id].disabled);
-
-				console.log(`[socket.connect] ${validExchanges.length} successfully matched with "${this.pair}"`);
-
-				if (this.canFetch()) {
-					this.$emit('alert', {
-						id: `server_status`,
-						type: 'info',
-						title: `Loading`,
-						message: 'Fetch last 60s...'
-					});
-				}
-
-				console.log(`[socket.connect] connect exchanges asynchronously`);
-
-				validExchanges.forEach(exchange => exchange.connect());
-
+				
 				this.$emit('alert', {
 					id: `server_status`,
+					type: 'info',
+					title: `Loading`,
+					message: `Subscribing to ${this.pair} on ${validExchanges.length} exchange(s)`,
+					delay: 1000 * 5
 				});
+
+				console.log(`[socket.connect] batch connect to ${validExchanges.map(a => a.id).join(' / ')}`);
+
+				validExchanges.forEach(exchange => exchange.connect());
 			});
 		},
 		disconnectExchanges() {
