@@ -615,7 +615,7 @@ const emitter = new Vue({
 					continue;
 				}
 
-				closesByExchanges[trade[0]] = trade[2];
+				closesByExchanges[tick.exchange] = tick.close;
 
 				if (gotAllCloses || !Object.keys(closesByExchanges).map(id => closesByExchanges[id]).filter(close => close === null).length) {					
 					gotAllCloses = true;

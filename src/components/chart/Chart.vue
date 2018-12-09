@@ -474,8 +474,6 @@ export default {
 
         const closes = socket.getFirstCloses();
 
-        this.printedExchanges = Object.keys(closes).length;
-
         for (let exchange in closes) {
           if (!this.exchanges[exchange] || this.exchanges[exchange] === false) {
             continue;
