@@ -21,6 +21,12 @@ try {
 	QUERY_STRING = {};
 }
 
+const subdomain = window.location.hostname.match(/^([\d\w]+)\..*\./i);
+
+if (subdomain && subdomain.length >= 2) {
+	QUERY_STRING.pair = subdomain[1].toUpperCase();
+}
+
 for (let name in QUERY_STRING) {
 	try {
 		QUERY_STRING[name] = JSON.parse(QUERY_STRING[name]);
