@@ -48,7 +48,7 @@
           </div>
           <div class="form-group settings__column__tight">
             <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Include orders down to 10% of significant orders">
-              <input type="checkbox" class="form-control" v-bind:checked="audioIncludeInsignificants" @change="$store.commit('toggleaudioIncludeInsignificants', $event.target.checked)">
+              <input type="checkbox" class="form-control" v-bind:checked="audioIncludeInsignificants" @change="$store.commit('toggleAudioIncludeInsignificants', $event.target.checked)">
               <div class="icon-expand"></div>
             </label>
           </div>

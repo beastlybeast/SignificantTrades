@@ -194,6 +194,9 @@ const store = new Vuex.Store({
 		toggleAudio(state, value) {
 			state.useAudio = value ? true : false;
 		},
+		toggleAudioIncludeInsignificants(state, value) {
+			state.audioIncludeInsignificants = value ? true : false;
+		},
 		toggleDark(state, value) {
 			state.dark = value ? true : false;
 		},
@@ -302,10 +305,12 @@ store.subscribe((mutation, state) => {
 		case 'disableExchange':
 		case 'toggleExchangeOHLC':
 		case 'setExchangeMatch':
+			store._mutations.reloadExchangeState[0](mutation.payload);
+
 			clearTimeout(this._reloadExchangeStateTimeout);
 
 			this._reloadExchangeStateTimeout = setTimeout(() => {
-				store.commit('reloadExchangeState', mutation.payload);
+				store.commit('reloadExchangeState', null);
 			}, 500);
 		break;
 	}

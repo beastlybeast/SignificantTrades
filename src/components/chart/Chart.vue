@@ -475,7 +475,7 @@ export default {
         const closes = socket.getFirstCloses();
 
         for (let exchange in closes) {
-          if (!this.exchanges[exchange] || this.exchanges[exchange] === false) {
+          if (this.actives.indexOf(exchange) === -1 || !this.exchanges[exchange] || this.exchanges[exchange].ohlc === false) {
             continue;
           }
 
