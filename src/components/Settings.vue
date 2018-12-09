@@ -53,7 +53,7 @@
             </label>
           </div>
           <div class="form-group settings__column__fill">
-            <input type="range" min="0" max="5" step=".1" v-bind:value="audioVolume" @change="$store.commit('setAudioVolume', $event.target.value)">
+            <input type="range" min="0" max="10" step=".1" v-bind:value="audioVolume" @change="$store.commit('setAudioVolume', $event.target.value)">
           </div>
         </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'stats')" v-bind:class="{closed: settings.indexOf('stats') > -1}">Stats <i class="icon-up"></i></div>
@@ -303,7 +303,7 @@ export default {
     .stack__scroller {
       width: 320px;
       height: 100%;
-      background: rgba(62, 33, 97, 0.88);
+      background: rgba($purple, .88);
     }
 
     .stack__wrapper {

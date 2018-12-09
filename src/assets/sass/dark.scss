@@ -2,19 +2,19 @@ body.theme-dark {
   background-color: $dark;
   color: white;
 
-  header.header {
+  header#header {
     background-color: lighten($dark, 10%);
     color: white;
 
-    &.loading {
-      &:before,
-      &:after {
-        background-color: lighten($dark, 30%);
-      }
-    }
-
     button {
       color: white;
+    }
+  }
+
+  #app.loading header#header {
+    &:before,
+    &:after {
+      background-color: lighten($dark, 28%);
     }
   }
 

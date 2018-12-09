@@ -5,6 +5,9 @@
     :data-commodity="commodity"
     :data-symbol="symbol"
     :data-pair="pair"
+    v-bind:class="{
+      loading: isLoading
+    }"
   >
 		<Settings v-if="showSettings" @close="showSettings = false"/>
 		<div class="app__wrapper">
@@ -63,7 +66,6 @@ export default {
 
       showSettings: false,
       showStatistics: false,
-      isLoading: false
     };
   },
   computed: {
@@ -75,7 +77,8 @@ export default {
       'showStats',
       'showChart',
       'decimalPrecision',
-      'autoClearTrades'
+      'autoClearTrades',
+      'isLoading'
     ])
   },
   created() {
@@ -83,16 +86,6 @@ export default {
     this.$root.formatAmount = this.formatAmount.bind(this);
     this.$root.padNumber = this.padNumber.bind(this);
     this.$root.ago = this.ago.bind(this);
-
-    socket.$on('fetchStart', value => {
-      this.isLoading = true;
-      console.log('isLoading', this.isLoading);
-    });
-
-    socket.$on('fetchEnd', value => {
-      this.isLoading = false;
-      console.log('isLoading', this.isLoading);
-    });
 
     socket.$on('pairing', value => {
       this.updatePairCurrency(this.pair);
@@ -191,10 +184,10 @@ export default {
       let interval, output;
 
       if ((interval = Math.floor(seconds / 31536000)) > 1) output = interval + 'y';
-      else if ((interval = Math.floor(seconds / 2592000)) > 1) output = interval + 'm';
-      else if ((interval = Math.floor(seconds / 86400)) > 1) output = interval + 'd';
-      else if ((interval = Math.floor(seconds / 3600)) > 1) output = interval + 'h';
-      else if ((interval = Math.floor(seconds / 60)) > 1) output = interval + 'm';
+      else if ((interval = Math.floor(seconds / 2592000)) >= 1) output = interval + 'm';
+      else if ((interval = Math.floor(seconds / 86400)) >= 1) output = interval + 'd';
+      else if ((interval = Math.floor(seconds / 3600)) >= 1) output = interval + 'h';
+      else if ((interval = Math.floor(seconds / 60)) >= 1) output = interval + 'm';
       else output = Math.ceil(seconds) + 's';
 
       return output;
@@ -289,6 +282,8 @@ export default {
 @import './assets/sass/icons';
 @import './assets/sass/currency';
 @import './assets/sass/tooltip';
+@import './assets/sass/dropdown';
+@import './assets/sass/button';
 
 @import './assets/sass/dark';
 </style>

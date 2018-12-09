@@ -79,6 +79,7 @@ export default {
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
+        case 'reloadExchangeState':
         case 'setStatsPeriod':
           this.rebuildStats();
           break;
@@ -125,7 +126,7 @@ export default {
         .filter(trade => this.actives.indexOf(trade[0]) !== -1 && trade[1] >= now - this.statsPeriod)
         .forEach(trade => {
           this.rate.count++;
-          this[+trade[4] ? 'up' : 'down'].count += +trade[3];
+          this[+trade[4] > 0 ? 'up' : 'down'].count += +trade[3];
         })
 
       this.updateStats(now);

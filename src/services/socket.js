@@ -43,7 +43,11 @@ const emitter = new Vue({
 			queue: [],
 
 			_pair: null,
-			_fetchedMax: false
+			_fetchedMax: false,
+			_fetchedTime: 0,
+			_fetchedBytes: 0,
+			_firstCloses: {},
+			_replayTime: 0
 		}
 	},
   computed: {
@@ -71,8 +75,16 @@ const emitter = new Vue({
     countersSteps() {
       return store.state.countersSteps
     },
+		isLoading() {
+			return store.state.isLoading
+		},
+		isReplaying() {
+			return store.state.isReplaying
+		}
   },
 	created() {
+		this._fetchedTime = this._fetchedBytes = 0;
+
 		window.emitTrade = (exchange, price, amount, side, type = null) => {
 			exchange = exchange || 'bitmex';
 
@@ -103,7 +115,9 @@ const emitter = new Vue({
 
 				this.queue = this.queue.concat(trades);
 
-				this.emitFilteredTradesAndVolumeSum(trades);
+				if (!this.isReplaying) {
+					this.emitFilteredTradesAndVolumeSum(trades);
+				}
 			});
 
 			exchange.on('open', event => {
@@ -167,7 +181,7 @@ const emitter = new Vue({
 			this.connectExchanges();
 
 			setInterval(() => {
-				if (!this.queue.length) {
+				if (this.isReplaying || !this.queue.length) {
 					return;
 				}
 
@@ -248,7 +262,7 @@ const emitter = new Vue({
 			this.exchanges.forEach(exchange => exchange.disconnect());
 		},
 		clean() {
-			if (this.fetching) {
+			if (this.isLoading || this.isReplaying) {
 				return;
 			}
 
@@ -304,7 +318,7 @@ const emitter = new Vue({
 					return false;
 				}
 
-				if (a[4]) {
+				if (a[4] > 0) {
 					upVolume += a[3];
 				} else {
 					downVolume += a[3];
@@ -316,7 +330,7 @@ const emitter = new Vue({
 			this.$emit(event, output, upVolume, downVolume);
 		},
 		canFetch() {
-			return !this._fetching && this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1);
+			return this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1);
 		},
 		getApiUrl(from, to) {
 			let url = this.API_URL;
@@ -335,7 +349,7 @@ const emitter = new Vue({
 				this._fetchedMax = false;
 			}
 			
-			if (!this.canFetch()) {
+			if (this.isReplaying || !this.canFetch()) {
 				return Promise.resolve(null);
 			}
 
@@ -365,9 +379,92 @@ const emitter = new Vue({
 
 			return promise;
 		},
+		replay(speed) {
+			if (this.isReplaying || this.isLoading) {
+				return;
+			}
+
+			const trades = this.trades.splice(0, this.trades.length);
+			const start = this._replayTime = +trades[0][1] + this.timeframe;
+
+			console.log('BASE REPLAY TRADE', new Date(start).toLocaleString());
+
+			let backup = [];
+			let queue = [];
+			let queuedAt = 0;
+			let startedAt;
+
+			const step = (timestamp) => {
+				if (!startedAt) {
+					startedAt = timestamp;
+				}
+
+				timestamp -= startedAt;
+
+				if (!this.isReplaying) {
+					if (trades.length) {
+						backup = backup.concat(trades);
+					}
+
+					this.trades = backup.concat(this.trades);
+
+					store.commit('toggleReplaying', false);
+
+					return false;
+				}
+
+				this._replayTime = start + timestamp * speed;
+
+				let index;
+
+				for (index = 0; index < trades.length; index++) {
+					if (trades[index][1] > this._replayTime) {
+						break;
+					}
+				}
+
+				if (index) {
+					const chunk = trades.splice(0, index);
+
+					this.emitFilteredTradesAndVolumeSum(chunk);
+
+					queue = queue.concat(chunk);
+
+					if (timestamp - queuedAt > 200) {
+						queuedAt = timestamp;
+
+						this.emitFilteredTradesAndVolumeSum(queue.splice(0, queue.length), 'trades.queued');
+					}
+
+					backup = backup.concat(chunk);
+				}
+
+				if (trades.length) {
+					window.requestAnimationFrame(step);
+
+				} else {
+					this.trades = backup.concat(this.trades);
+
+					store.commit('toggleReplaying', false);
+				}
+			}
+
+			store.commit('toggleReplaying', {
+				timestamp: start,
+				speed: speed
+			});
+
+			window.requestAnimationFrame(step);
+		},
 		fetchHistoricalData(from, to) {
-			if (!from || !to || !this.canFetch()) {
-				if (this._fetching) {
+			if (
+				this.isLoading 
+				|| this.isReplaying 
+				|| !this.canFetch()
+				|| !from 
+				|| !to 
+			) {
+				if (this.isLoading) {
 					this.$emit('alert', {
 						id: `already_fetching`,
 						type: 'info',
@@ -385,17 +482,22 @@ const emitter = new Vue({
 			}
 
 			this.lastFetchUrl = url;
-			this._fetching = true;
+			
+			store.commit('toggleLoading', true);
 
 			this.$emit('fetchStart', to - from);
 
 			return new Promise((resolve, reject) => {
 				Axios.get(url, {
-					onDownloadProgress: e => this.$emit('fetchProgress', {
-						loaded: e.loaded,
-						total: e.total,
-						progress: e.loaded / e.total
-					})
+					onDownloadProgress: e => {
+						this.$emit('fetchProgress', {
+							loaded: e.loaded,
+							total: e.total,
+							progress: e.loaded / e.total
+						});
+						
+						this._fetchedBytes += e.loaded;
+					}
 				})
 					.then(response => {
 						if (!response.data || !response.data.format || !response.data.results.length) {
@@ -407,8 +509,17 @@ const emitter = new Vue({
 
 						switch (format) {
 							case 'trade':
+								results.map(a => {
+									a[1] = +a[1];
+									a[2] = +a[2];
+									a[3] = +a[3];
+									a[4] = +a[4];
+
+									return a;
+								});
+
 								if (!this.trades.length) {
-									console.log(`[socket.fetch] Set socket.trades (${results.length} trades)`);
+									console.log(`[socket.fetch] set socket.trades (${results.length} trades)`);
 
 									this.trades = results;
 								} else {
@@ -458,14 +569,15 @@ const emitter = new Vue({
 						reject();
 					})
 					.then(() => {
-						this._fetching = false;
+						this._fetchedTime += (to - from);
 
-						this.$emit('fetchEnd');
+						this.$emit('fetchEnd', to - from);
+
+						store.commit('toggleLoading', false);
 					})
 			});
 		},
 		commitQueueAndRefreshListeners() {
-			console.log('socket:commitQueueAndRefreshListeners');
 			if (this.queue.length) {
 				this.trades = this.trades.concat(this.queue);
 
@@ -473,6 +585,68 @@ const emitter = new Vue({
 			}
 
 			store.commit('setTimeframe', this.timeframe);
+		},
+		getTime() {
+			if (this.isReplaying && this.replayTime) {
+				return this.replayTime;
+			}
+
+			return +new Date();
+		},
+		getFirstCloses() {
+			if (!this.ticks.length && !this.trades.length) {
+				return this._firstCloses;
+			}
+
+			const closesByExchanges = this.exchanges.reduce((obj, exchange) => {
+				obj[exchange.id] = null
+				
+				return obj
+			}, {});
+
+			if (!Object.keys(closesByExchanges).length) {
+				return closesByExchanges;
+			}
+
+			let gotAllCloses = false;
+
+			for (let tick of this.ticks) {
+				if (typeof closesByExchanges[tick.exchange] === 'undefined' || closesByExchanges[tick.exchange]) {
+					continue;
+				}
+
+				closesByExchanges[trade[0]] = trade[2];
+
+				if (gotAllCloses || !Object.keys(closesByExchanges).map(id => closesByExchanges[id]).filter(close => close === null).length) {					
+					gotAllCloses = true;
+					
+					break;
+				}
+			}
+
+			for (let trade of this.trades) {
+				if (typeof closesByExchanges[trade[0]] === 'undefined' || closesByExchanges[trade[0]]) {
+					continue;
+				}
+
+				closesByExchanges[trade[0]] = trade[2];
+
+				if (gotAllCloses || !Object.keys(closesByExchanges).map(id => closesByExchanges[id]).filter(close => close === null).length) {					
+					gotAllCloses = true;
+
+					break;
+				}
+			}
+
+			for (let exchange in closesByExchanges) {
+				if (closesByExchanges[exchange] === null) {
+					delete closesByExchanges[exchange];
+				}
+			}
+
+			this._firstCloses = closesByExchanges;
+
+			return closesByExchanges;
 		}
 	}
 });

@@ -1,21 +1,33 @@
 <template>
-	<header id="header" class="header" v-bind:class="{ loading: isLoading }">
+	<header id="header" class="header">
     <div class="header__wrapper">
       <div class="header__title"> <span class="pair" v-if="pair">{{pair}}</span> <span class="icon-currency"></span> <span v-html="price || 'SignificantTrades'"></span></div>
       <button></button>
-      <button type="button" class="header__timeframe" v-bind:title="fetchLabel" v-tippy="{placement: 'left'}">
-        {{timeframeLabel}}
-        <ul class="dropdown">
-          <li @click="setTimeframe(1000 * 10)">10s</li>
-          <li @click="setTimeframe(1000 * 30)">30s</li>
-          <li @click="setTimeframe(1000 * 60)">1m</li>
-          <li @click="setTimeframe(1000 * 60 * 5)">5m</li>
-          <li @click="setTimeframe(1000 * 60 * 15)">15m</li>
-        </ul>
+      <dropdown v-if="canFetch" :options="timeframes" :selected="timeframe" @output="setTimeframe(+$event)"></dropdown>
+      <button type="button" 
+        v-bind:class="{active: isReplaying}"
+        v-on:click="replay" title="Replay" 
+        v-tippy="{placement: 'bottom'}">
+        <span class="icon-history"></span>
       </button>
-      <button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}"><span class="icon-external-link"></span></button>
-      <button type="button" v-on:click="$store.commit('toggleSnap', !isSnaped)" v-bind:title="isSnaped ? 'Disable auto snap' : 'Auto snap chart to the latest candle'" v-tippy="{placement: 'bottom'}"><span class="icon-play" v-bind:class="{snaped: isSnaped}"></span></button>
-      <button type="button" v-on:click="$emit('toggleSettings')"><span class="icon-cog"></span></button>
+      <button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}">
+        <span class="icon-external-link"></span>
+      </button>
+      <button type="button" 
+        v-bind:class="{active: isSnaped}"
+        v-on:click="$store.commit('toggleSnap', !isSnaped)" 
+        v-bind:title="isSnaped ? 'Disable auto snap' : 'Auto snap chart to the latest candle'" 
+        v-tippy="{placement: 'bottom'}">
+        <span class="icon-play"></span>
+      </button>
+      <button type="button" 
+        v-bind:class="{active: useAudio}"
+        v-on:click="$store.commit('toggleAudio', !useAudio)">
+        <span class="icon-volume-muted"></span>
+      </button>
+      <button type="button" v-on:click="$emit('toggleSettings')">
+        <span class="icon-cog"></span>
+      </button>
     </div>
 	</header>
 </template>
@@ -37,19 +49,33 @@ export default {
       canFetch: false,
       showTimeframeDropdown: false,
       timeframeLabel: '15m',
-      isLoading: false
+      timeframes: {}
     };
   },
   computed: {
     ...mapState([
+      'useAudio',
       'showChart',
       'isSnaped',
       'timeframe',
+      'chartRange',
+      'isReplaying'
 		])
   },
   created() {
     this._fetchLabel = this.fetchLabel.substr();
     this.canFetch = socket.canFetch();
+
+    const now = +new Date();
+
+    [
+      1000 * 10,
+      1000 * 30,
+      1000 * 60,
+      1000 * 60 * 3,
+      1000 * 60 * 5,
+      1000 * 60 * 10,
+    ].forEach(span => (this.timeframes[span] = this.$root.ago(now - span)));
 
     socket.$on('pairing', (pair, canFetch) => {
       this.pair = pair;
@@ -58,11 +84,11 @@ export default {
     });
     
     socket.$on('fetchStart', () => {
-      this.isLoading = true;
+      //
     });
 
-    socket.$on('fetchEnd', () => {
-      this.isLoading = false;
+    socket.$on('fetchEnd', () => {      
+      this.updateTimeframesApproximateContentSize();
     });
 
     socket.$on('fetchProgress', event => {
@@ -76,14 +102,24 @@ export default {
     });
 
     this.updateTimeframeLabel();
+    this.updateTimeframesApproximateContentSize();
   },
   methods: {
+    replay() {
+      if (this.isReplaying) {
+        this.$store.state.isReplaying = false;
+      } else {
+        socket.replay(10);
+      }
+    },
     setTimeframe(timeframe) {
       document.activeElement.blur();
 
       this.updateTimeframeLabel(timeframe);
-      
-      this.$store.commit('setTimeframe', timeframe);
+
+      setTimeout(() => {
+        this.$store.commit('setTimeframe', timeframe);
+      }, 50);
     },
     updateTimeframeLabel(timeframe) {
       this.timeframeLabel = this.$root.ago(+new Date() - (timeframe || this.timeframe));
@@ -99,14 +135,30 @@ export default {
         window.close();
       }, 500);
     },
-    sizeOf(bytes) {
-      var sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    sizeOf(bytes, si) {
+      var thresh = si ? 1000 : 1024;
+      if(Math.abs(bytes) < thresh) {
+          return bytes + ' B';
+      }
+      var units = si
+          ? ['kB','MB','GB','TB','PB','EB','ZB','YB']
+          : ['KiB','MiB','GiB','TiB','PiB','EiB','ZiB','YiB'];
+      var u = -1;
+      do {
+          bytes /= thresh;
+          ++u;
+      } while(Math.abs(bytes) > thresh && u < units.length - 1);
+      return bytes.toFixed(1)+' '+units[u];
+    },
+    updateTimeframesApproximateContentSize() {
+      const now = +new Date();
+      const candleCount = this.chartRange / this.timeframe;
 
-      if (bytes == 0) return '0 Byte';
-
-      var i = parseInt(Math.floor(Math.log(bytes) / Math.log(1024)));
-
-      return Math.round(bytes / Math.pow(1024, i), 2) + ' ' + sizes[i];
+      if (socket._fetchedTime && socket._fetchedBytes) {
+        for (let span in this.timeframes) {
+          this.timeframes[span] = '<span>~' + this.sizeOf(socket._fetchedBytes * ((span * candleCount) / socket._fetchedTime)) + '</span> ' + this.$root.ago(now - span).trim();
+        }
+      }
     }
   }
 };
@@ -115,16 +167,31 @@ export default {
 <style lang="scss">
 @import "../assets/sass/variables";
 
-header.header {
+header#header {
   color: white;
-  background-color: #03A9F4;
+  background-color: rgba($purple, .88);
   position: relative;
+  z-index: 2;
 
   div.header__wrapper {
     position: relative;
     z-index: 1;
     display: flex;
     align-items: center;
+
+    > button,
+    .dropdown__selected {
+      padding: .2em .6em;
+      font-size: 1em;
+    }
+
+    .dropdown__option {
+      text-align: left;
+
+      span {
+        margin-right: 1em;
+      }
+    }
   }
 
   .header__title {
@@ -146,73 +213,20 @@ header.header {
     }
   }
 
+  .dropdown {
+    .options {
+      position: absolute;
+    }
+  }
+
   button {
     border: 0;
     background: none;
     color: inherit;
-    padding: 6px 10px 5px;
-    font-size: 20px;
     position: relative;
 
     align-self: stretch;
     cursor: pointer;
-
-    &.header__timeframe {
-      font-size: 16px;
-      font-family: monospace;
-    }
-
-    .dropdown {
-      display: none;
-      position: absolute;
-      top: 3.5em;
-      right: 0em;
-      border-radius: 2px;
-      font-size: 14px;
-      text-align: right;
-      min-width: 5em;
-      margin: 0;
-      background-color: $green;
-      color: white;
-      padding: 0;
-      animation: .4s $easeOutExpo appear-from-above;
-      z-index: 10001;
-      max-height: 200px;
-      overflow: auto;
-
-      @keyframes appear-from-above {
-        0% {
-          -webkit-transform: translateY(-20%);
-          transform: translateY(-20%);
-          opacity: 0;
-        }
-        100% {
-          -webkit-transform: translateY(0);
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-
-      > li {
-        list-style: none;
-        background-color: rgba(white, .05);
-        padding: .5em 1em;
-
-        transition: background-color .2s $easeOutExpo;
-
-        &:nth-child(odd) {
-          background-color: rgba(white, .1);
-        }
-
-        &:hover {
-          background-color: rgba(white, .2);
-        }
-      }
-    }
-
-    &:focus .dropdown {
-      display: block;
-    }
 
     > span {
       display: inline-block;
@@ -221,23 +235,21 @@ header.header {
 
     .icon-play {
       opacity: 0.2;
+    }
 
-      &.snaped {
-        opacity: 1;
-        color: $red;
-        transform: rotateZ(-7deg) scale(1.2) translateX(10%);
-        text-shadow: 0 0 20px $red, 0 0 2px $red;
-      }
+    .icon-volume-muted {
+      transform: scale(1.2);
     }
 
     &:hover,
-    &:active {
+    &:active,
+    &.active {
       .icon-external-link {
         transform: rotateZ(-7deg) scale(1.2) translate(5%, -5%);
         text-shadow: 0 0 20px $orange, 0 0 2px white;
       }
 
-      .icon-play:not(.snaped) {
+      .icon-play {
         opacity: 1;
         transform: rotateZ(-7deg) scale(1.2) translateX(10%);
         text-shadow: 0 0 20px $blue, 0 0 2px white;
@@ -253,6 +265,32 @@ header.header {
         display: inline-block;
         text-shadow: 0 0 20px $red, 0 0 2px white;
       }
+
+      .icon-volume-muted {
+        color: white;
+        transform: rotateZ(-7deg) scale(1.3);
+        text-shadow: 0 0 20px $blue, 0 0 2px $blue;
+      }
+    }
+
+    &.active {
+      .icon-play {
+        opacity: 1;
+        color: $red;
+        transform: rotateZ(-7deg) scale(1.2) translateX(10%);
+        text-shadow: 0 0 20px $red, 0 0 2px $red;
+      }
+
+      .icon-volume-muted {
+        &:before {
+          content: unicode($icon-volume);
+        }
+      }
+
+      .icon-history {
+        color: white;
+        text-shadow: 0 0 20px white, 0 0 2px white;
+      }
     }
   }
 
@@ -267,18 +305,18 @@ header.header {
     background-clip: padding-box;
     transition: background-color .4s $easeOutExpo;
   }
+}
 
-  &.loading {
-    &:before {
-      background-color: rgba(black, .2);
-      animation: indeterminate-loading-bar-slow 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
-    }
+#app.loading header#header {
+  &:before {
+    background-color: rgba(black, .2);
+    animation: indeterminate-loading-bar-slow 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+  }
 
-    &:after {
-      background-color: rgba(black, .2);
-      animation: indeterminate-loading-bar-fast 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
-      animation-delay: 1.15s;
-    }
+  &:after {
+    background-color: rgba(black, .2);
+    animation: indeterminate-loading-bar-fast 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
+    animation-delay: 1.15s;
   }
 }
 

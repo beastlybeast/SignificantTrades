@@ -7,6 +7,14 @@
 	@media screen and (min-width: 768px) {
 		height: 100vh;
 	}
+
+	&.loading {
+		.app__layout {
+			transition: opacity 5s $easeElastic;
+			opacity: .7;
+			pointer-events: none;
+		}
+	}
 }
 
 .app__wrapper {
@@ -93,6 +101,7 @@
 
 		.app__layout {
 			flex-grow: 1;
+			min-height: 0px;
 		}
 	}
 }
@@ -134,6 +143,7 @@
 			overflow: hidden;
 			flex-basis: calc(2/3 * 100%);
 			flex-grow: 0;
+			max-height: 100%;
 
 			#chart {
 				overflow: hidden;
@@ -211,5 +221,15 @@
 		.app__right {
 			font-size: 1.2em;
 		}
+	}
+}
+
+.min-768 {
+	display: none;
+}
+
+@media screen and (min-width: 768px) {
+	.min-768 {
+		display: block;
 	}
 }

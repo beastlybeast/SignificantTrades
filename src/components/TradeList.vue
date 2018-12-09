@@ -103,7 +103,7 @@ export default {
         this.processTrade(trade, Math.min(2000, trades[trades.length - 1][1] - trades[0][1]));
       }
     },
-    processTrade(trade, delay) {
+    processTrade(trade) {
       const size = trade[2] * trade[3];
 
       const multiplier = typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1;
@@ -116,7 +116,7 @@ export default {
             trade,
             ['liquidation'],
             `${app.getAttribute('data-symbol')}<strong>${this.$root.formatAmount(size, 1)}</strong> liquidated <strong>${
-              trade[4] ? 'SHORT' : 'LONG'
+              trade[4] > 0 ? 'SHORT' : 'LONG'
             }</strong> @ ${app.getAttribute('data-symbol')}${this.$root.formatPrice(trade[2])}`
           );
         }
@@ -133,10 +133,11 @@ export default {
 
       // group by [exchange name + buy=1/sell=0] (ex bitmex1)
       const tid = trade[0] + trade[4];
+      const now = socket.getTime();
 
       if (this.thresholds[0].amount) {
         if (this.ticks[tid]) {
-          if (+new Date() - this.ticks[tid][2] > 5000) {
+          if (now - this.ticks[tid][2] > 5000) {
             delete this.ticks[tid];
           } else {
             // average group prices
@@ -226,7 +227,7 @@ export default {
           .substring(7),
         color: color,
         background: background,
-        side: trade[4] ? 'BUY' : 'SELL',
+        side: trade[4] > 0 ? 'BUY' : 'SELL',
         size: trade[3],
         exchange: trade[0],
         price: this.$root.formatPrice(trade[2]),

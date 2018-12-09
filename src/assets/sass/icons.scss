@@ -210,3 +210,28 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-power-off);
   }
 }
+.icon-volume {
+  &:before {
+    content: unicode($icon-volume);
+  }
+}
+.icon-volume-muted {
+  &:before {
+    content: unicode($icon-volume-muted);
+  }
+}
+.icon-axis {
+  &:before {
+    content: unicode($icon-axis);
+  }
+}
+.icon-locked {
+  &:before {
+    content: unicode($icon-locked);
+  }
+}
+.icon-unlocked {
+  &:before {
+    content: unicode($icon-unlocked);
+  }
+}

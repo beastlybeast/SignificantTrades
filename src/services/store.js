@@ -5,6 +5,8 @@ Vue.use(Vuex);
 
 const EPHEMERAL_PROPERTIES = [
 	'isSnaped',
+	'isLoading',
+	'isReplaying',
 	'actives'
 ];
 
@@ -71,14 +73,19 @@ const defaults = {
 	chartCandlestick: true,
 	chartVolumeAverage: true,
 	chartVolumeAverageLength: 14,
+	chartAutoScale: true,
 
 	// runtime state
 	isSnaped: true,
+	isLoading: false,
+	isReplaying: false,
 	actives: []
 }
 
 const store = new Vuex.Store({
-	state: Object.assign({}, defaults, JSON.parse(localStorage.getItem('settings')) || {}, QUERY_STRING),
+	state: Object.assign({}, defaults, JSON.parse(localStorage.getItem('settings')) || {}, QUERY_STRING, {
+		useAudio: false // WebAudio require user action to start so now its always off by default (see https://goo.gl/7K7WLu)
+	}),
 	mutations: {
 		setPair(state, value) {
 			state.pair = value.toString().toUpperCase();
@@ -223,10 +230,19 @@ const store = new Vuex.Store({
 		setChartPadding(state, value) {
 			state.chartPadding = value;
 		},
+		toggleChartAutoScale(state, value) {
+			state.chartAutoScale = value ? true : false;
+		},
 
 		// runtime commit
 		toggleSnap(state, value) {
 			state.isSnaped = value ? true : false;
+		},
+		toggleLoading(state, value) {
+			state.isLoading = value ? true : false;
+		},
+		toggleReplaying(state, params) {
+			state.isReplaying = params ? true : false;
 		},
 		reloadExchangeState(state, exchange) {
 			if (!exchange) {
@@ -280,7 +296,11 @@ store.subscribe((mutation, state) => {
 		case 'disableExchange':
 		case 'toggleExchangeOHLC':
 		case 'setExchangeMatch':
-			store.commit('reloadExchangeState', mutation.payload);
+			clearTimeout(this._reloadExchangeStateTimeout);
+
+			this._reloadExchangeStateTimeout = setTimeout(() => {
+				store.commit('reloadExchangeState', mutation.payload);
+			}, 500);
 		break;
 	}
 });

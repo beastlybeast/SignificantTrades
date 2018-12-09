@@ -4,7 +4,8 @@
     "backgroundColor": "transparent",
     "spacing": 0,
     "spacingBottom": 10,
-    "animation": false
+    "animation": false,
+    "panning": false
   },
   "exporting": { "enabled": false },
   "navigator": { "enabled": false },

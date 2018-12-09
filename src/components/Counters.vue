@@ -89,6 +89,10 @@ export default {
       for (let index = 0; index < this.stackedSums.length; index++) {
         this.$set(this.stackedSums[index], 0, this.stackedSums[index][0] + upVolume);
         this.$set(this.stackedSums[index], 1, this.stackedSums[index][1] + downVolume);
+
+        if (!this.cumulativeCounters) {
+          break;
+        }
       }
     },
     onFetch(ticks) {
@@ -147,6 +151,11 @@ export default {
             }
           }
         }
+        
+        if (!this.cumulativeCounters) {
+          stackedUpVolume = 0;
+          stackedDownVolume = 0;
+        }
 
         stackedUpVolume += this.strictSums[stepIndex][0];
         stackedDownVolume += this.strictSums[stepIndex][1];
@@ -168,7 +177,7 @@ export default {
           continue;
         }
 
-        const isBuy = +trade[4] ? true : false;
+        const isBuy = +trade[4] > 0 ? true : false;
 
         if (stacks.length && trade[1] - stacks[stacks.length - 1][0] < this.counterPrecision) {
           stacks[stacks.length - 1][isBuy ? 1 : 2] += +trade[3];
@@ -440,6 +449,7 @@ export default {
   text-align: left;
   color: desaturate($green, 5);
   border-color: desaturate($green, 5);
+  margin-right: 2px;
 
   &:before {
     left: .25em;
