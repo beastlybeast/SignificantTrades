@@ -47,10 +47,23 @@ class Coinex extends Exchange {
 				id: 16
 			}));
 
+			this.keepalive = setInterval(() => {
+				this.api.send(JSON.stringify({ 
+					method: 'server.ping',
+					params: [],
+					id: 11
+				}));
+			}, 30000);
+
 			this.emitOpen(event);
 		};
 
-		this.api.onclose = this.emitClose.bind(this);
+		this.api.onclose = event => {
+			this.emitClose(event);
+
+			clearInterval(this.keepalive);
+		};
+
 		this.api.onerror = this.emitError.bind(this, {message: 'Websocket error'});
 	}
 

@@ -44,7 +44,6 @@ const defaults = {
 	exchanges: {
 		bithumb: {disabled: true},
 		hitbtc: {disabled: true},
-		kraken: {disabled: true},
 		coinex: {ohlc: false},
 		gdax: {threshold: .50},
 		bitfinex: {threshold: .75},
@@ -76,6 +75,7 @@ const defaults = {
 	chartLiquidations: true,
 	chartHeight: null,
 	chartRange: 0,
+	chartCandleWidth: 10,
 	chartCandlestick: true,
 	chartVolumeAverage: true,
 	chartVolumeAverageLength: 14,
@@ -235,6 +235,9 @@ const store = new Vuex.Store({
 		},
 		setChartRange(state, value) {
 			state.chartRange = value;
+		},
+		setChartCandleWidth(state, value) {
+			state.chartCandleWidth = value;
 		},
 		setChartPadding(state, value) {
 			state.chartPadding = value;

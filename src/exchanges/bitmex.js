@@ -5,12 +5,6 @@ class Bitmex extends Exchange {
 	constructor(options) {
 		super(options);
 
-		// BITMEX PRODUCTS NOW STORED AS ARRAY 
-		// temporary fix, TODO remove that in a week
-		if (this.pairs && typeof this.pairs === 'object') {
-			this.pairs = Object.values(this.pairs);
-		}
-
 		this.id = 'bitmex';
 
 		this.endpoints = {

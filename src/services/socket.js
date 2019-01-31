@@ -34,7 +34,8 @@ const emitter = new Vue({
 				new Hitbtc(),
 				new Okex(),
 				new Poloniex(),
-				new Liquid()
+				new Liquid(),
+				new Kraken(),
 			],
 
 			trades: [],

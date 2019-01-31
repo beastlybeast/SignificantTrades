@@ -11,7 +11,8 @@
         <button class="btn" v-on:click="dismissDirtyNotice">Show anyway</button>
       </div>
       
-      <div class="chart__scale-handler" ref="chartScaleHandler" v-on:mousedown="startScale" v-on:dblclick.stop.prevent="resetScale"></div>
+      <div class="chart__scale-handler -y" ref="chartScaleHandler" v-on:mousedown="startScale('y', $event)" v-on:dblclick.stop.prevent="resetScale('y')"></div>
+      <div class="chart__scale-handler -x" ref="chartScaleHandler" v-on:mousedown="startScale('x', $event)" v-on:dblclick.stop.prevent="resetScale('x')"></div>
       <div class="chart__height-handler" ref="chartHeightHandler" v-on:mousedown="startResize" v-on:dblclick.stop.prevent="resetHeight"></div>
 
       <div class="chart__canvas"></div>
@@ -48,7 +49,7 @@ export default {
       showDirtyChart: false,
       isDirty: false,
 
-      _timeframe: null
+      _timeframe: null,
     };
   },
   computed: {
@@ -62,6 +63,7 @@ export default {
       'chartAutoScale',
       'chartHeight',
       'chartRange',
+      'chartCandleWidth',
       'chartLiquidations',
       'chartCandlestick',
       'chartPadding'
@@ -113,12 +115,14 @@ export default {
           }
         break;
         case 'toggleChartAutoScale':
-          this.resetScale();
+          this.resetScale('x');
+          this.resetScale('y');
         break;
       }
     });
 
     this._timeframe = parseInt(this.timeframe);
+    this._scaling = {};
   },
 	mounted() {
     console.log(`[chart.mounted]`);
@@ -199,7 +203,7 @@ export default {
     setTimeframe(timeframe, snap = false, clear = false, print = true) {
       console.log(`[chart.setTimeframe]`, timeframe);
 
-      const count = ((this.chart ? this.chart.chartWidth : this.$refs.chartContainer.offsetWidth) * (1 - this.chartPadding) - 20 * .1) / 10;
+      const count = ((this.chart ? this.chart.chartWidth : this.$refs.chartContainer.offsetWidth) * (1 - this.chartPadding) - 20 * .1) / this.chartCandleWidth;
       const range = timeframe * 2 * count;
 
       socket.fetchRangeIfNeeded(range, clear).then(response => {
@@ -622,12 +626,12 @@ export default {
       this.updateChartHeight();
     },
 
-    startScale(event) {
+    startScale(axis, event) {
       if (event.which === 3) {
         return;
       }
 
-      this.scaling = event.pageY;
+      this._scaling[axis] = event['page' + axis.toUpperCase()];
     },
 
     updateChartHeight(height = null) {
@@ -644,25 +648,35 @@ export default {
       );
     },
 
-    resetScale(event) {
-      delete this.scaling;
+    resetScale(axis) {
+      delete this._scaling[axis];
 
-      this.updateChartScale(null);
+      this.updateChartScale(axis, null);
     },
 
-    updateChartScale(scale) {
-      let min = this.chart.yAxis[0].min;
-      let max = this.chart.yAxis[0].max;
+    updateChartScale(axis, scale) {
+      let min = this.chart[axis + 'Axis'][0].min;
+      let max = this.chart[axis + 'Axis'][0].max;
+
+      let range;
 
       if (scale === null) {
         min = max = null;
       } else if (scale) {
-        const range = (max - min) * scale;
+        range = (max - min) * scale;
+
         min -= range;
         max += range;
       }
 
-      this.chart.yAxis[0].setExtremes(min, max)
+      this.chart[axis + 'Axis'][0].setExtremes(min, max);
+
+      if (axis === 'x') {
+        range = this.chart.xAxis[0].max - this.chart.xAxis[0].min;
+
+        this.$store.commit('setChartRange', range);
+        this.$store.commit('setChartCandleWidth', this.chart.chartWidth / (range / this.timeframe));
+      }
     },
 
     getChartSize() {
@@ -743,10 +757,14 @@ export default {
         this.updateChartHeight(this.chart.chartHeight + (event.pageY - this.resizing));
 
         this.resizing = event.pageY;
-      } else if (!isNaN(this.scaling)) {
-        this.updateChartScale((event.pageY - this.scaling) / 100, true);
+      } else if (typeof this._scaling['x'] !== 'undefined' && !isNaN(this._scaling['x'])) {
+        this.updateChartScale('x', (event.pageX - this._scaling['x']) / 100, true);
 
-        this.scaling = event.pageY;
+        this._scaling['x'] = event.pageX;
+      } else if (typeof this._scaling['y'] !== 'undefined' && !isNaN(this._scaling['y'])) {
+        this.updateChartScale('y', (event.pageY - this._scaling['y']) / 100, true);
+
+        this._scaling['y'] = event.pageY;
       }
     },
 
@@ -757,12 +775,16 @@ export default {
         delete this.resizing;
       }
 
-      if (this.scaling) {        
-        delete this.scaling;
+      for (let axis in this._scaling) {
+        delete this._scaling[axis];
       }
     },
 
     snapRight(redraw = false) {
+      if (Object.keys(this._scaling).length) {
+        return;
+      }
+
       const margin = this.chartRange * this.chartPadding;
       const now = socket.getTime();
 
@@ -966,10 +988,21 @@ export default {
 }
 
 .chart__scale-handler {
-  right: 0;
-  top: 0;
-  width: 7%;
-  cursor: ns-resize;
+
+  &.-y {
+    right: 0;
+    top: 0;
+    width: 7%;
+    cursor: ns-resize;
+  }
+
+  &.-x {
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4%;
+    cursor: ew-resize;
+  }
 }
 
 .chart__height-handler {

@@ -1,5 +1,4 @@
 import Exchange from '../services/exchange'
-import axios from 'axios'
 
 class Kraken extends Exchange {
 
@@ -14,8 +13,9 @@ class Kraken extends Exchange {
 		}
 
 		this.options = Object.assign({
-			url: 'https://api.kraken.com/0/public/Trades',
-			interval: 3000
+			url: () => {
+				return `wss://ws.kraken.com`
+			},
 		}, this.options);
 	}
 
@@ -23,131 +23,80 @@ class Kraken extends Exchange {
 		if (!super.connect())
 			return;
 
-		this.schedule();
-	}
+		this.api = new WebSocket(this.getUrl());
 
-	schedule() {
-		clearTimeout(this.timeout);
-		this.timeout = setTimeout(this.get.bind(this), this.options.interval);
-	}
-
-	get() {
-		const token = axios.CancelToken;
-		this.source = token.source();
-
-		const params = {
-			pair: this.pair
-		}
-
-		if (this.reference) {
-			params.since = this.reference;
-		}
-
-		axios.get(`http://176.31.163.155:1337/cors/${this.getUrl()}`, {
-			params: params,
-			cancelToken: this.source.token
-		})
-			.then(response => {
-				if (!this.connected) {
-					this.emitOpen();
+		this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)));
+		this.api.onopen = event => {
+			this.api.send(JSON.stringify({
+				event: 'subscribe',
+				pair: [this.pair],
+				subscription: {
+					name: 'trade'
 				}
+			}));
 
-				if (!response.data || (response.data.error && response.data.error.length)) {
-					throw new Error(response.data.error.join("\n"));
-				}
-
-				this.emitTrades(this.formatLiveTrades(response.data));
-
-				this.schedule();
-			})
-			.catch(error => {
-				if (axios.isCancel(error)) {
-					return;
-				}
-
-				this.emitError(error);
-				this.emitClose();
-
-				return error;
-			})
-			.then(() => {
-				delete this.source;
-			})
+			this.emitOpen(event);
+		};
+		this.api.onclose = this.emitClose.bind(this);
+		this.api.onerror = this.emitError.bind(this, {message: 'Websocket error'});
 	}
 
 	disconnect() {
-		if (!this.connected ||  !super.disconnect())
+		if (!super.disconnect())
 			return;
 
-		clearTimeout(this.timeout);
-		this.source && this.source.cancel();
-
-		delete this.reference;
-
-		this.emitClose();
-	}
-
-	formatLiveTrades(response) {
-		const initial = typeof this.reference === 'undefined';
-
-		if (response.result && response.result[this.pair]) {
-			if (response.result.last) {
-				this.reference = response.result.last;
-			}
-
-			if (!initial) {
-				const output = [];
-				for (let trade of response.result[this.pair]) {
-
-					output.push([
-						this.id,
-						trade[2] * 1000, // timestamp
-						+trade[0], // price
-						+trade[1], // volume
-						trade[3] === 'b' ? 1 : 0, // is buy
-					]);
-				}
-
-				return output;
-			}
+		if (this.api && this.api.readyState < 2) {
+			this.api.close();
 		}
 	}
 
-	/* formatRecentsTrades(response) {
-		if (response && response.result && response.result && response.result[this.pair] && response.result[this.pair].length) {
-			return response.result[this.pair].map(trade => [
+	formatLiveTrades(json) {
+		if (json && json[1] && json[1].length) {
+			return json[1].map(trade => [
 				this.id,
 				trade[2] * 1000,
-				+trade[0],
-				+trade[1],
-				trade[3] === 'b' ? 1 : 0,
+				trade[0],
+				trade[1],
+				trade[3] === 'b' ? 1 : 0
+			]);
+		}
+
+		return false;
+	}
+
+	/* formatRecentsTrades(response) {
+		if (response && response.length) {
+			return response.reverse().map(trade => [
+				this.id,
+				+new Date(trade.timestamp),
+				trade.price,
+				trade.size / trade.price,
+				trade.side === 'Buy' ? 1 : 0
 			])
 		}
 	} */
 
+	matchPairName(name) {
+		name = name
+			.trim()
+			.replace('/', '');
+
+		if (
+			this.pairs.indexOf(name) !== -1
+			|| (name = name.replace('BTC', 'XBT')) && this.pairs.indexOf(name) !== -1
+		) {
+			if (name.indexOf('/') === -1) {
+				name = name.slice(0, name.length - 3) + '/' + name.slice(name.length - 3, name.length);
+			}
+
+			return name;
+		}
+		
+		return false;	
+	}
+
 	formatProducts(data) {
-		const output = {};
-
-		Object.keys(data.result).forEach(a => {
-			if (a.indexOf('.') !== -1) {
-				return;
-			}
-
-			let base = data.result[a].base;
-			let quote = data.result[a].quote;
-
-			if (base.length > 3 && (base[0] === 'Z' || base[0] === 'X')) {
-				base = base.substr(1);
-			}
-
-			if (quote.length > 3 && (quote[0] === 'Z' || quote[0] === 'X')) {
-				quote = quote.substr(1);
-			}
-
-			output[(base + quote).replace('XBT', 'BTC')] = a;
-		})
-
-		return output;
+		return Object.keys(data.result).map(id => data.result[id].altname);
 	}
 
 }
