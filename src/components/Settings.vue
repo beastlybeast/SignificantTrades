@@ -290,6 +290,10 @@ export default {
   background: none !important;
   color: white;
 
+  .stack__scroller {
+    background: rgba($purple, .88);
+  }
+
   @media screen and (min-width: 500px) {
     z-index: 2;
     position: fixed;
@@ -303,7 +307,6 @@ export default {
     .stack__scroller {
       width: 320px;
       height: 100%;
-      background: rgba($purple, .88);
     }
 
     .stack__wrapper {

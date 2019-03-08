@@ -2,7 +2,6 @@
 	<header id="header" class="header">
     <div class="header__wrapper">
       <div class="header__title"> <span class="pair" v-if="pair">{{pair}}</span> <span class="icon-currency"></span> <span v-html="price || 'SignificantTrades'"></span></div>
-      <button></button>
       <dropdown v-if="canFetch" :options="timeframes" :selected="timeframe" @output="setTimeframe(+$event)"></dropdown>
       <button type="button" 
         v-bind:class="{active: isReplaying}"
@@ -181,8 +180,12 @@ header#header {
 
     > button,
     .dropdown__selected {
-      padding: .2em .6em;
+      padding: .2em .4em;
       font-size: 1em;
+
+      @media screen and (min-width: 480px) {
+        padding: .2em .6em;
+      }
     }
 
     .dropdown__option {
@@ -197,6 +200,9 @@ header#header {
   .header__title {
     width: 100%;
     padding: 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 
     .pair {
       opacity: .5;

@@ -196,6 +196,18 @@
 		}
 	}
 
+	@media screen and (max-width: 379px) {
+		.highcharts-series-1,
+		.highcharts-series-2 {
+			visibility: hidden;
+		}
+
+		#trades,
+		#stats {
+			font-size: .8em;
+		}
+	}
+
 	@media screen and (min-width: 992px) {
 		.app__right #trades {
 			font-size: 1em;

@@ -48,6 +48,7 @@ export default {
       chartedExchanges: 0,
       showDirtyChart: false,
       isDirty: false,
+      isMini: false,
 
       _timeframe: null,
     };
@@ -167,6 +168,8 @@ export default {
   methods: {
     createChart() {
       this.destroyChart();
+      
+      this.themes = JSON.parse(JSON.stringify(chartOptions)).themes;
 
       const options = this.getChartOptions();
 
@@ -175,6 +178,9 @@ export default {
       enablePanning(Highcharts, this.chart);
 
       this.updateChartHeight();
+
+      this.isMini = false;
+      this.updateMiniMode();
 
       if (this.chartRange) {
         this.setRange(this.chartRange);
@@ -648,6 +654,28 @@ export default {
       );
     },
 
+    updateMiniMode() {
+      const theme = this.themes[this.dark ? 'dark' : 'bright'];
+
+      const isMini = window.innerWidth < 380;
+
+      if (this.isMini !== isMini) {
+        this.chart.yAxis[1].update({
+          top: isMini ? '20%' : '70%',
+          height: isMini ? '80%' : '30%'
+        }, false)
+
+        this.chart.yAxis[2].update({
+          top: isMini ? '20%' : '70%',
+          height: isMini ? '80%' : '30%'
+        }, false);
+
+        setTimeout(this.chart.redraw.bind(this.chart), 1000);
+      }
+
+      this.isMini = isMini;
+    },
+
     resetScale(axis) {
       delete this._scaling[axis];
 
@@ -703,7 +731,10 @@ export default {
     doResize(event) {
       clearTimeout(this._resizeTimeout);
 
-      this._resizeTimeout = setTimeout(this.updateChartHeight.bind(this), 250);
+      this._resizeTimeout = setTimeout(() => {
+        this.updateMiniMode();
+        this.updateChartHeight();
+      }, 250);
     },
 
     doZoom(event, two = false) {
@@ -978,6 +1009,12 @@ export default {
   .highcharts-credits {
     visibility: hidden;
   }
+
+  &:hover {
+    .chart__scale-mode {
+      opacity: 1;
+    }
+  }
 }
 
 .chart__scale-handler,
@@ -992,7 +1029,7 @@ export default {
   &.-y {
     right: 0;
     top: 0;
-    width: 7%;
+    width: 2em;
     cursor: ns-resize;
   }
 
@@ -1000,7 +1037,7 @@ export default {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 4%;
+    height: 1.5em;
     cursor: ew-resize;
   }
 }
@@ -1027,6 +1064,7 @@ export default {
   align-items: center;
   z-index: 3;
   cursor: pointer;
+  opacity: 0;
 
   i {
     font-size: 14px;
