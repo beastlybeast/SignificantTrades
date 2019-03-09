@@ -419,7 +419,6 @@ export default {
 
     &.trades__item__exchange {
       flex-grow: 0.75;
-      min-width: 4.5em;
 
       small {
         opacity: 0.8;

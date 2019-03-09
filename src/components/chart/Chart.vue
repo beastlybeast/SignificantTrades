@@ -661,13 +661,13 @@ export default {
 
       if (this.isMini !== isMini) {
         this.chart.yAxis[1].update({
-          top: isMini ? '20%' : '70%',
-          height: isMini ? '80%' : '30%'
+          top: isMini ? '40%' : '70%',
+          height: isMini ? '60%' : '30%'
         }, false)
 
         this.chart.yAxis[2].update({
-          top: isMini ? '20%' : '70%',
-          height: isMini ? '80%' : '30%'
+          top: isMini ? '40%' : '70%',
+          height: isMini ? '60%' : '30%'
         }, false);
 
         setTimeout(this.chart.redraw.bind(this.chart), 1000);

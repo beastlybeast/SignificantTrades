@@ -202,6 +202,10 @@
 			visibility: hidden;
 		}
 
+		.highcharts-xaxis-labels {
+			transform: translateY(2px);
+		}
+
 		#trades,
 		#stats {
 			font-size: .8em;
