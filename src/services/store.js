@@ -89,9 +89,7 @@ const defaults = {
 }
 
 const store = new Vuex.Store({
-	state: Object.assign({}, defaults, JSON.parse(localStorage.getItem('settings')) || {}, QUERY_STRING, {
-		useAudio: false // WebAudio require user action to start so now its always off by default (see https://goo.gl/7K7WLu)
-	}),
+	state: Object.assign({}, defaults, JSON.parse(localStorage.getItem('settings')) || {}, QUERY_STRING),
 	mutations: {
 		setPair(state, value) {
 			state.pair = value.toString().toUpperCase();

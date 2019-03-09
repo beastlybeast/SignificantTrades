@@ -74,6 +74,16 @@ export default {
   mounted() {
     if (this.useAudio) {
       this.sfx = new Sfx();
+
+      if (this.sfx.context.state === 'suspended') {
+        const resumeOnFocus = (() => {
+          this.sfx.context.resume();
+
+          window.removeEventListener('focus', resumeOnFocus, false);
+        }).bind(this)
+
+        window.addEventListener('focus', resumeOnFocus, false);
+      }
     }
 
     this.timeAgoInterval = setInterval(() => {
