@@ -77,11 +77,17 @@ export default {
 
       if (this.sfx.context.state === 'suspended') {
         const resumeOnFocus = (() => {
-          this.sfx.context.resume();
+          if (this.useAudio) {
+            this.sfx.context.resume();
+          }
 
-          window.removeEventListener('focus', resumeOnFocus, false);
+          if (!this.useAudio || this.sfx.context.state !== 'suspended') {
+             window.removeEventListener('focus', resumeOnFocus, false);
+             window.removeEventListener('blur', resumeOnFocus, false);
+          }
         }).bind(this)
 
+        window.addEventListener('blur', resumeOnFocus, false);
         window.addEventListener('focus', resumeOnFocus, false);
       }
     }
