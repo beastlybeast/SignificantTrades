@@ -96,7 +96,7 @@ module.exports.plugins = (module.exports.plugins || []).concat([
       BUILD_DATE: JSON.stringify(date.getDate() + ' ' + date.toLocaleString('en-US', {month: 'short'}).toLowerCase()),
       PROXY_URL: JSON.stringify(process.env.PROXY_URL || 'https://cors.aggr.trade/'),
       API_URL: JSON.stringify(process.env.API_URL || 'https://api.aggr.trade/{pair}/historical/{from}/{to}/{timeframe}/'),
-      API_SUPPORTED_PAIRS: JSON.stringify(['BTCUSD', 'ETHUSD', 'XRPUSD', 'XBTUSD'])
+      API_SUPPORTED_PAIRS: JSON.stringify(['BTCUSD'])
     }
   })
 ]);
