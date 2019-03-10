@@ -67,7 +67,9 @@ export default {
       'chartCandleWidth',
       'chartLiquidations',
       'chartCandlestick',
-      'chartPadding'
+      'chartPadding',
+      'chartGridlines',
+      'chartGridlinesGap',
 		])
   },
   created() {
@@ -96,6 +98,8 @@ export default {
           break;
         case 'toggleDark':
         case 'toggleCandlestick':
+        case 'toggleChartGridlines':
+        case 'setChartGridlinesGap':
           this.createChart();
           this.setTimeframe(this.timeframe);
         break;
@@ -182,10 +186,6 @@ export default {
       this.isMini = false;
       this.updateMiniMode();
 
-      if (this.chartRange) {
-        this.setRange(this.chartRange);
-      }
-
       if (this.queuedTicks.length) {
         this.tickHistoricals(this.queuedTicks.splice(0, this.queuedTicks.length));
 
@@ -209,7 +209,7 @@ export default {
     setTimeframe(timeframe, snap = false, clear = false, print = true) {
       console.log(`[chart.setTimeframe]`, timeframe);
 
-      const count = ((this.chart ? this.chart.chartWidth : this.$refs.chartContainer.offsetWidth) * (1 - this.chartPadding) - 20 * .1) / this.chartCandleWidth;
+      const count = ((this.chart ? this.chart.chartWidth : this.$refs.chartContainer.offsetWidth) - 20 * .1) / this.chartCandleWidth;
       const range = timeframe * 2 * count;
 
       socket.fetchRangeIfNeeded(range, clear).then(response => {
@@ -816,7 +816,7 @@ export default {
         return;
       }
 
-      const margin = this.chartRange * this.chartPadding;
+      const margin = (Math.min(this.chart.xAxis[0].dataMax, this.chart.xAxis[0].max) - this.chart.xAxis[0].min) * this.chartPadding;
       const now = socket.getTime();
 
       let from;
@@ -856,15 +856,18 @@ export default {
     },
     updateChartedCount() {
       const chartableExchanges = this.actives.filter(id => this.exchanges[id].ohlc !== false);
+      
+      let chartedExchanges = 0;
 
-      if (!this.tickData) {
-        this.chartedExchanges = 0;
-      } else {
-        this.chartedExchanges = Object.keys(this.tickData.exchanges).filter(id => {
+      if (this.tickData) {
+        chartedExchanges = Object.keys(this.tickData.exchanges).filter(id => {
           return chartableExchanges.indexOf(id) !== -1
         }).length;
       }
-
+      if(this.chartedExchanges != chartedExchanges) {
+        console.log('difference', this.chartedExchanges, chartedExchanges);
+      }
+      this.chartedExchanges = chartedExchanges;
       this.chartableExchanges = chartableExchanges.length;
 
       this.isDirty = !this.isReplaying && this.chartedExchanges !== this.chartableExchanges;
@@ -886,13 +889,17 @@ export default {
       this.$store.commit('setChartRange', range);
 
       if (this.chart) {
-        const margin = this.chartRange * this.chartPadding;
+        const padding = this.chartRange * this.chartPadding;
         const now = socket.getTime();
-        const from = now - this.chartRange + (!this.isReplaying ? margin : 0);
-        const to = now + margin;
+        let from = now - this.chartRange;
+        let to = now;
+
+        if (!this.isReplaying) {
+          to += padding;
+        }
 
         this.chart.xAxis[0].update({
-            overscroll: margin
+            overscroll: padding
         });
 
         this.chart.xAxis[0].setExtremes(from, to, true);
@@ -908,8 +915,9 @@ export default {
 
       // price axis
       options.yAxis[0].labels.color = theme.labels;
-      options.yAxis[0].gridLineColor = theme.gridline;
+      options.yAxis[0].gridLineColor = this.chartGridlines ? theme.gridline : 'transparent';
       options.yAxis[0].crosshair.color = theme.crosshair;
+      options.yAxis[0].tickPixelInterval = this.chartGridlinesGap;
 
       // candlesticks
       options.series[0].upColor = theme.up;

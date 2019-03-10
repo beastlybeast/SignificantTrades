@@ -10,8 +10,8 @@
           {{ $root.formatAmount(rate.live) }}
         </div>
       </li>
-      <li>
-        <div v-tippy class="stats__label" v-bind:title="`Average amount per trade over the last ${periodLabel}`">AVG trd.</div>
+      <li v-tippy v-bind:title="`Average amount per trade over the last ${periodLabel}`">
+        <div class="stats__label">AVG trd.</div>
         <div class="stats__value">
           <span class="icon-currency" :class="{ 'icon-commodity': !this.statsCurrency }"></span> {{ $root.formatAmount(avgtrade / rate.live, 2) }}
         </div>

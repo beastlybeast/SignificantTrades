@@ -69,7 +69,7 @@
           </div>
           <div class="form-group settings__column__tight">
             <label class="checkbox-control checkbox-commodity-currency checkbox-control-input flex-right" v-tippy title="Sum currency instead of commodity">
-              <input type="checkbox" class="form-control" v-bind:checked="showStats" @change="$store.commit('toggleStatsCurrency', $event.target.checked)">
+              <input type="checkbox" class="form-control" v-bind:checked="statsCurrency" @change="$store.commit('toggleStatsCurrency', $event.target.checked)">
               <div></div>
             </label>
           </div>
@@ -102,6 +102,13 @@
             </label>
           </div>
           <div class="settings__column__fill">
+            <div class="form-group mb8">
+              <label class="checkbox-control flex-left" v-tippy title="Gridlines (horizontal tick lines)">
+                <input type="checkbox" class="form-control" v-bind:checked="chartGridlines" @change="$store.commit('toggleChartGridlines', $event.target.checked)">
+                <div></div>
+                <span v-on:click.stop.prevent>Add line every <editable :content="chartGridlinesGap" @output="$store.commit('setChartGridlinesGap', $event)"></editable>px</span>
+              </label>
+            </div>
             <div class="form-group mb8">
               <label class="checkbox-control flex-left" v-tippy title="Pad chart">
                 <input type="checkbox" class="form-control" v-bind:checked="chartPadding" @change="$store.commit('setChartPadding', $event.target.checked ? .05 : 0)">
@@ -206,6 +213,7 @@ export default {
       'showCounters',
       'showStats',
       'statsPeriod',
+      'statsCurrency',
       'counterPrecision',
       'cumulativeCounters',
       'hideIncompleteCounter',
@@ -219,6 +227,8 @@ export default {
       'timeframe',
       'chartLiquidations',
       'chartPadding',
+      'chartGridlines',
+      'chartGridlinesGap',
       'chartCandlestick',
       'chartVolumeAverage',
       'chartVolumeAverageLength',

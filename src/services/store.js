@@ -64,6 +64,8 @@ const defaults = {
 	statsPeriod: 1000 * 60,
 	statsCurrency: false,
 	chartPadding: .075,
+	chartGridlines: true,
+	chartGridlinesGap: 5,
 	timeframe: 1000 * 10,
 	autoClearTrades: true,
 	debug: false,
@@ -243,6 +245,12 @@ const store = new Vuex.Store({
 		},
 		setChartPadding(state, value) {
 			state.chartPadding = value;
+		},
+		toggleChartGridlines(state, value) {
+			state.chartGridlines = value ? true : false;
+		},
+		setChartGridlinesGap(state, value) {
+			state.chartGridlinesGap = parseInt(value) || 0;
 		},
 		toggleChartAutoScale(state, value) {
 			state.chartAutoScale = value ? true : false;
