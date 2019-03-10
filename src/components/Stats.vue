@@ -106,8 +106,15 @@ export default {
       this.rate.count += trades.length;
 
       if (this.statsCurrency) {
-        this.up.count += trades.filter(trade => trade[4] > 0).map(trade => trade[3] * trade[2]).reduce((a, b) => a +b);
-        this.down.count += trades.filter(trade => trade[4] < 1).trades.map(trade => trade[3] * trade[2]).reduce((a, b) => a +b);
+        const upTrades = trades.filter(trade => trade[4] > 0);
+        const downTrades = trades.filter(trade => trade[4] < 1);
+
+        if (upTrades.length) {
+          this.up.count += upTrades.map(trade => trade[3] * trade[2]).reduce((a, b) => a +b);
+        }
+        if (downTrades.length) {
+          this.down.count += downTrades.map(trade => trade[3] * trade[2]).reduce((a, b) => a +b);
+        }
       } else {
         this.up.count += upVolume;
         this.down.count += downVolume;
