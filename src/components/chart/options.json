@@ -160,7 +160,7 @@
       "sellsLine": "rgba(233, 30, 99, 1)",
       "sellsGradient": ["rgba(233, 30, 99, .5)", "rgba(233, 30, 99, .4)"],
       "liquidations": "rgba(140, 97, 245, 1)",
-      "priceMA": "rgba(255, 255, 255, .25)",
+      "priceMA": "rgba(255, 255, 255, .33)",
       "buysMA": "rgba(139, 195, 74, 1)",
       "sellsMA": "rgba(216, 27, 96, 1)",
       "tooltipBackground": "rgba(0, 0, 0, .5)",

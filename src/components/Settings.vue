@@ -57,7 +57,7 @@
           </div>
         </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'stats')" v-bind:class="{closed: settings.indexOf('stats') > -1}">Stats <i class="icon-up"></i></div>
-        <div class="settings__counters settings__activable settings__column" v-bind:class="{active: showStats}">
+        <div class="settings__stats settings__activable settings__column" v-bind:class="{active: showStats}">
           <div class="form-group settings__column__tight">
             <label class="checkbox-control checkbox-on-off checkbox-control-input flex-right" v-tippy title="Enable stats">
               <input type="checkbox" class="form-control" v-bind:checked="showStats" @change="$store.commit('toggleStats', $event.target.checked)">
@@ -66,6 +66,12 @@
           </div>
           <div class="form-group settings__column__fill">
             <input type="string" placeholder="ms" class="form-control" v-bind:value="statsPeriodStringified" @change="$store.commit('setStatsPeriod', $event.target.value)">
+          </div>
+          <div class="form-group settings__column__tight">
+            <label class="checkbox-control checkbox-commodity-currency checkbox-control-input flex-right" v-tippy title="Sum currency instead of commodity">
+              <input type="checkbox" class="form-control" v-bind:checked="showStats" @change="$store.commit('toggleStatsCurrency', $event.target.checked)">
+              <div></div>
+            </label>
           </div>
         </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'counters')" v-bind:class="{closed: settings.indexOf('counters') > -1}">Counter <i class="icon-up"></i></div>
@@ -537,6 +543,16 @@ export default {
 
         &:after {
           content: unicode($icon-power-off);
+        }
+      }
+
+      &.checkbox-commodity-currency input ~ div {
+        &:before {
+          content: unicode($icon-dollar);
+        }
+
+        &:after {
+          content: unicode($icon-btc);
         }
       }
 

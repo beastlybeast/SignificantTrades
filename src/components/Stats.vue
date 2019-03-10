@@ -11,21 +11,21 @@
         </div>
       </li>
       <li>
-        <div class="stats__label" v-bind:title="`Average amount per trade over the last ${periodLabel}`">AVG Trade</div>
+        <div v-tippy class="stats__label" v-bind:title="`Average amount per trade over the last ${periodLabel}`">AVG trd.</div>
         <div class="stats__value">
-          <span class="icon-commodity"></span> {{ $root.formatAmount(avgtrade / rate.live, 2) }}
+          <span class="icon-currency" :class="{ 'icon-commodity': !this.statsCurrency }"></span> {{ $root.formatAmount(avgtrade / rate.live, 2) }}
         </div>
       </li>
       <li v-tippy v-bind:title="`Buys in the last ${periodLabel}`"  v-bind:class="{ up: up.live > up.average }">
         <div class="stats__label">BUYS</div>
         <div class="stats__value">
-          <span class="icon-commodity"></span> {{ $root.formatAmount(up.live, 1) }}
+          <span class="icon-currency" :class="{ 'icon-commodity': !this.statsCurrency }"></span> {{ $root.formatAmount(up.live, 1) }}
         </div>
       </li>
       <li v-tippy v-bind:title="`Sells in the last ${periodLabel}`" v-bind:class="{ up: down.live > down.average }">
         <div class="stats__label">SELLS</div>
         <div class="stats__value">
-          <span class="icon-commodity"></span> {{ $root.formatAmount(down.live, 1) }}
+          <span class="icon-currency" :class="{ 'icon-commodity': !this.statsCurrency }"></span> {{ $root.formatAmount(down.live, 1) }}
         </div>
       </li>
       <!-- 
@@ -71,6 +71,7 @@ export default {
     },
     ...mapState([
 			'statsPeriod',
+      'statsCurrency',
       'actives',
     ])
   },
@@ -81,6 +82,7 @@ export default {
       switch (mutation.type) {
         case 'reloadExchangeState':
         case 'setStatsPeriod':
+        case 'toggleStatsCurrency':
           this.rebuildStats();
           break;
       }
@@ -102,8 +104,14 @@ export default {
   methods: {
     onTrades(trades, upVolume, downVolume) {
       this.rate.count += trades.length;
-      this.up.count += upVolume;
-      this.down.count += downVolume;
+
+      if (this.statsCurrency) {
+        this.up.count += trades.filter(trade => trade[4] > 0).map(trade => trade[3] * trade[2]).reduce((a, b) => a +b);
+        this.down.count += trades.filter(trade => trade[4] < 1).trades.map(trade => trade[3] * trade[2]).reduce((a, b) => a +b);
+      } else {
+        this.up.count += upVolume;
+        this.down.count += downVolume;
+      }
     },
     onFetch(trades, from, to) {
       const now = +new Date();
@@ -126,7 +134,12 @@ export default {
         .filter(trade => this.actives.indexOf(trade[0]) !== -1 && trade[1] >= now - this.statsPeriod)
         .forEach(trade => {
           this.rate.count++;
-          this[+trade[4] > 0 ? 'up' : 'down'].count += +trade[3];
+
+          if (this.statsCurrency) {
+            this[+trade[4] > 0 ? 'up' : 'down'].count += (trade[3] * trade[2]);
+          } else {
+            this[+trade[4] > 0 ? 'up' : 'down'].count += trade[3];
+          }
         })
 
       this.updateStats(now);

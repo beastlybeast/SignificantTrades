@@ -210,6 +210,16 @@
 		#stats {
 			font-size: .8em;
 		}
+
+		#stats {
+			.stats__label {
+				font-size: .89em;
+			}
+			
+			.stats__value {
+				font-weight: 400;
+			}
+		}
 	}
 
 	@media screen and (min-width: 992px) {

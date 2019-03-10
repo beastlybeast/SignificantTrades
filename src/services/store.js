@@ -62,6 +62,7 @@ const defaults = {
 	showStats: true,
 	showChart: true,
 	statsPeriod: 1000 * 60,
+	statsCurrency: false,
 	chartPadding: .075,
 	timeframe: 1000 * 10,
 	autoClearTrades: true,
@@ -111,6 +112,9 @@ const store = new Vuex.Store({
 		},
 		toggleStats(state, value) {
 			state.showStats = value ? true : false;
+		},
+		toggleStatsCurrency(state, value) {
+			state.statsCurrency = value ? true : false;
 		},
 		setStatsPeriod(state, value) {
 			let period;
