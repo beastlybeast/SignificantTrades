@@ -65,7 +65,7 @@ const defaults = {
 	statsCurrency: false,
 	chartPadding: .075,
 	chartGridlines: true,
-	chartGridlinesGap: 5,
+	chartGridlinesGap: 50,
 	timeframe: 1000 * 10,
 	autoClearTrades: true,
 	debug: false,
