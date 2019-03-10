@@ -54,6 +54,7 @@
   "xAxis": {
     "tickWidth": 0,
     "lineColor": "transparent",
+    "ordinal": false,
     "crosshair": {
       "width": 1.5, "dashStyle": "dash"
     },

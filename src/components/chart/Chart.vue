@@ -73,8 +73,6 @@ export default {
 		])
   },
   created() {
-    Highcharts.wrap(Highcharts.Chart.prototype, 'pan', this.doPan(this));
-
     socket.$on('trades.queued', this.onTrades);
 
     socket.$on('clean', this.onClean);
@@ -147,10 +145,6 @@ export default {
     this._stopDrag = this.stopDrag.bind(this);
 
     window.addEventListener('mouseup', this._stopDrag, false);
-
-    // this.$el.addEventListener('wheel', this.doZoom);
-
-    // this.buildExchangesSeries();
 
     this.setTimeframe(this.timeframe, true);
 	},
@@ -737,52 +731,6 @@ export default {
       }, 250);
     },
 
-    doZoom(event, two = false) {
-      this.timestamp = +new Date();
-
-      if (!this.chart.series[0].xData.length) {
-        return;
-      }
-
-      event.preventDefault();
-      let axisMin = this.chart.xAxis[0].min;
-      let axisMax = this.chart.xAxis[0].max;
-
-      if (event.deltaX || event.deltaZ || !event.deltaY) {
-        return;
-      }
-
-      const multiplier = (event.deltaY > 0 ? 1 : -1);
-
-      let range = (axisMax - axisMin) * .05;
-
-      this.chart.xAxis[0].setExtremes(axisMin - range * multiplier, axisMax + range * multiplier);
-
-      axisMin = this.chart.yAxis[0].min;
-      axisMax = this.chart.yAxis[0].max;
-
-      range = (axisMax - axisMin) * .02;
-
-      this.chart.yAxis[0].setExtremes(axisMin - range * multiplier, axisMax + range * multiplier);
-
-    },
-
-    doPan(self) {
-      return function(proceed, event, arg, c) {
-        if (!self.chart) {
-          return;
-        }
-        
-        const isPanned = self.isPanned();
-
-        if (!isPanned !== self.isSnaped) {
-          self.$store.commit('toggleSnap', !isPanned);
-        }
-
-        return proceed.call(self.chart, event, arg);
-      };
-    },
-
     doDrag(event) {
       if (!isNaN(this.resizing)) {
         this.updateChartHeight(this.chart.chartHeight + (event.pageY - this.resizing));
@@ -816,7 +764,7 @@ export default {
         return;
       }
 
-      const margin = (Math.min(this.chart.xAxis[0].dataMax, this.chart.xAxis[0].max) - this.chart.xAxis[0].min) * this.chartPadding;
+      const margin = this.chartRange * this.chartPadding;
       const now = socket.getTime();
 
       let from;
@@ -828,6 +776,10 @@ export default {
       }
 
       const to = now + margin;
+
+      if (to < this.chart.xAxis[0].max) {
+        return;
+      }
 
       this.chart.xAxis[0].setExtremes(from, to, redraw);
     },
@@ -895,6 +847,7 @@ export default {
         let to = now;
 
         if (!this.isReplaying) {
+          from += padding;
           to += padding;
         }
 
@@ -917,7 +870,7 @@ export default {
       options.yAxis[0].labels.color = theme.labels;
       options.yAxis[0].gridLineColor = this.chartGridlines ? theme.gridline : 'transparent';
       options.yAxis[0].crosshair.color = theme.crosshair;
-      options.yAxis[0].tickPixelInterval = this.chartGridlinesGap;
+      options.yAxis[0].tickPixelInterval = this.chartGridlinesGap || null;
 
       // candlesticks
       options.series[0].upColor = theme.up;
@@ -961,6 +914,11 @@ export default {
 
       options.chart.events = {
         pan: () => {
+          const isPanned = this.chart.xAxis[0].max < this.chart.xAxis[0].dataMax;
+
+          if (!isPanned !== this.isSnaped) {
+            this.$store.commit('toggleSnap', !isPanned);
+          }
         }
       }
 
