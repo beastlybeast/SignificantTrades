@@ -4,13 +4,13 @@
       <div class="chart__scale-mode" v-on:click="$store.commit('toggleChartAutoScale', !chartAutoScale)" v-tippy v-bind:title="chartAutoScale ? 'Unlock price axis' : 'Lock price axis'">
         <span class="min-768">{{ chartAutoScale ? "AUTO" : "FREE" }}</span> <i v-bind:class="{ 'icon-locked': chartAutoScale, 'icon-unlocked': !chartAutoScale }"></i>
       </div>
-      
+
       <div class="chart__dirty-notice" v-if="isDirty && !showDirtyChart">
         <strong>Chart not ready yet</strong>
         <p>Only {{ chartedExchanges }}/{{ chartableExchanges }} exchanges have sent at least 1 trade atm.<br>Price action may not be 100% legit.</p>
         <button class="btn" v-on:click="dismissDirtyNotice">Show anyway</button>
       </div>
-      
+
       <div class="chart__scale-handler -y" ref="chartScaleHandler" v-on:mousedown="startScale('y', $event)" v-on:dblclick.stop.prevent="resetScale('y')"></div>
       <div class="chart__scale-handler -x" ref="chartScaleHandler" v-on:mousedown="startScale('x', $event)" v-on:dblclick.stop.prevent="resetScale('x')"></div>
       <div class="chart__height-handler" ref="chartHeightHandler" v-on:mousedown="startResize" v-on:dblclick.stop.prevent="resetHeight"></div>
@@ -50,7 +50,7 @@ export default {
       isDirty: false,
       isMini: false,
 
-      _timeframe: null,
+      _timeframe: null
     };
   },
   computed: {
@@ -92,7 +92,9 @@ export default {
         case 'reloadExchangeState':
         case 'toggleLiquidations':
         case 'setChartPadding':
-          this.setTimeframe(this.timeframe);
+          if (+new Date() - this.$root.applicationStartTime > 1000) {
+            this.setTimeframe(this.timeframe);
+          }
           break;
         case 'toggleDark':
         case 'toggleCandlestick':
@@ -130,7 +132,7 @@ export default {
 	mounted() {
     console.log(`[chart.mounted]`);
 
-    this.$refs.chartContainer.style.height = this.getChartSize().height;
+    this.$refs.chartContainer.style.height = this.getChartSize().height + 'px';
 
     window.setTimeout(() => this.createChart());
 
@@ -166,7 +168,7 @@ export default {
   methods: {
     createChart() {
       this.destroyChart();
-      
+
       this.themes = JSON.parse(JSON.stringify(chartOptions)).themes;
 
       const options = this.getChartOptions();
@@ -191,6 +193,8 @@ export default {
 
         this.chart.redraw();
       }
+
+      this.$refs.chartContainer.style.height = '';
     },
     destroyChart() {
       if (!this.chart) {
@@ -213,7 +217,7 @@ export default {
           console.log(`[chart.setTimeframe] did not fetch anything new`);
         }
 
-        this.setRange(range);
+        this.setRange(range / 2);
 
         if (this.chart) {
           this.clearChart(+new Date() - range / 2);
@@ -226,8 +230,6 @@ export default {
         this.tickHistoricals(socket.ticks);
 
         this.tickTrades(socket.trades);
-
-        this.setRange(range / 2, snap);
       })
     },
     onTrades(trades) {
@@ -242,11 +244,11 @@ export default {
         ticks = ticks.concat(this.queuedTicks.splice(0, this.queuedTicks.length));
       }
 
-      ticks = ticks.filter(tick => 
-        this.actives.indexOf(tick.exchange) !== -1 
+      ticks = ticks.filter(tick =>
+        this.actives.indexOf(tick.exchange) !== -1
         && this.exchanges[tick.exchange] && this.exchanges[tick.exchange].ohlc !== false
       );
-      
+
       if (!ticks.length) {
         return;
       }
@@ -259,20 +261,20 @@ export default {
         this.tickData.buys += tick.buys;
         this.tickData.sells += tick.sells;
         this.tickData.liquidations += tick.liquidations || 0;
-        
+
         this.tickData.exchanges[tick.exchange] = {
           open: tick.open,
           high: tick.high,
           low: tick.low,
           close: tick.close,
         }
-        
+
         if (!ticks[index + 1] || this.tickData.timestamp !== ticks[index + 1].timestamp) {
           const formatedTick = this.formatTickData(this.tickData);
           this.addTickToSeries(formatedTick);
 
           formatedTicks.push(formatedTick);
-          
+
           if (ticks[index + 1]) {
             this.createTick(ticks[index + 1].timestamp);
           }
@@ -303,7 +305,7 @@ export default {
     },
     tickTrades(trades, live = false) {
       const ticks = [];
-    
+
       if (!trades || !trades.length) {
         trades = [];
       }
@@ -329,8 +331,9 @@ export default {
         .filter(a =>
             a[1] >= this.cursor // only process trades >= current tick time
             && this.actives.indexOf(a[0]) !== -1 // only process trades from enabled exchanges (client side)
-        );
-    
+        )
+        .sort((a, b) => a[1] - b[1]);
+
       if (!trades.length) {
         return;
       }
@@ -768,6 +771,7 @@ export default {
       const now = socket.getTime();
 
       let from;
+      let to;
 
       if (this.isReplaying) {
         from = this.chart.xAxis[0].dataMin;
@@ -775,11 +779,14 @@ export default {
         from = now - this.chartRange + margin;
       }
 
-      const to = now + margin;
+      to = now + margin;
 
       if (to < this.chart.xAxis[0].max) {
         return;
       }
+
+      from = Math.floor(from / this.timeframe) * this.timeframe;
+      to = Math.floor(to / this.timeframe) * this.timeframe;
 
       this.chart.xAxis[0].setExtremes(from, to, redraw);
     },
@@ -808,7 +815,7 @@ export default {
     },
     updateChartedCount() {
       const chartableExchanges = this.actives.filter(id => this.exchanges[id].ohlc !== false);
-      
+
       let chartedExchanges = 0;
 
       if (this.tickData) {
@@ -816,9 +823,7 @@ export default {
           return chartableExchanges.indexOf(id) !== -1
         }).length;
       }
-      if(this.chartedExchanges != chartedExchanges) {
-        console.log('difference', this.chartedExchanges, chartedExchanges);
-      }
+
       this.chartedExchanges = chartedExchanges;
       this.chartableExchanges = chartableExchanges.length;
 
@@ -828,13 +833,13 @@ export default {
     },
     dismissDirtyNotice() {
       this.setTimeframe(this.timeframe);
-      this.showDirtyChart = true; 
+      this.showDirtyChart = true;
     },
     isPanned() {
       if (!this.chart || !this.chart.series.length) {
         return true;
       }
-      
+
       return this.tickData && this.chart.series[0].points.length && this.chart.series[0].points[this.chart.series[0].points.length - 1].x < this.tickData.timestamp
     },
     setRange(range) {
@@ -861,16 +866,20 @@ export default {
     getChartOptions() {
       const options = JSON.parse(JSON.stringify(chartOptions));
       const theme = options.themes[this.dark ? 'dark' : 'bright'];
-      
+
       // time axis
       options.xAxis.labels.color = theme.labels;
       options.xAxis.crosshair.color = theme.crosshair;
 
       // price axis
-      options.yAxis[0].labels.color = theme.labels;
-      options.yAxis[0].gridLineColor = this.chartGridlines ? theme.gridline : 'transparent';
-      options.yAxis[0].crosshair.color = theme.crosshair;
-      options.yAxis[0].tickPixelInterval = this.chartGridlinesGap || null;
+      if (this.chartGridlines) {
+        options.yAxis[0].labels.color = theme.labels;
+        options.yAxis[0].gridLineColor = theme.gridline;
+        options.yAxis[0].crosshair.color = theme.crosshair;
+        options.yAxis[0].tickPixelInterval = this.chartGridlinesGap || null;
+      } else {
+        options.yAxis[0].visible = false;
+      }
 
       // candlesticks
       options.series[0].upColor = theme.up;
@@ -925,7 +934,9 @@ export default {
       return options;
     },
     onClean(min) {
-      this.setTimeframe(this.timeframe)
+      if (!this.isPanned()) {
+        this.setTimeframe(this.timeframe)
+      }
     }
   }
 };

@@ -82,6 +82,7 @@ export default {
     ])
   },
   created() {
+    this.$root.applicationStartTime = +new Date();
     this.$root.formatPrice = this.formatPrice.bind(this);
     this.$root.formatAmount = this.formatAmount.bind(this);
     this.$root.padNumber = this.padNumber.bind(this);
@@ -227,7 +228,7 @@ export default {
         return;
       }
 
-      this._autoWipeCacheInterval = setInterval(socket.clean.bind(socket), 1000 * 60 * 5);
+      this._autoWipeCacheInterval = setInterval(socket.clean.bind(socket), 1000 * 30);
     },
     updatePrice() {
       let price = 0;
