@@ -785,8 +785,8 @@ export default {
         return;
       }
 
-      from = Math.floor(from / this.timeframe) * this.timeframe;
-      to = Math.floor(to / this.timeframe) * this.timeframe;
+      from = Math.ceil(from / this.timeframe) * this.timeframe;
+      to = Math.ceil(to / this.timeframe) * this.timeframe;
 
       this.chart.xAxis[0].setExtremes(from, to, redraw);
     },
@@ -934,9 +934,7 @@ export default {
       return options;
     },
     onClean(min) {
-      if (!this.isPanned()) {
-        this.setTimeframe(this.timeframe)
-      }
+      this.setTimeframe(this.timeframe);
     }
   }
 };
