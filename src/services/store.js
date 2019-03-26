@@ -54,6 +54,7 @@ const defaults = {
 	},
 	maxRows: 20,
 	decimalPrecision: null,
+	showLogos: false,
 	showCounters: true,
 	counterPrecision: 1000 * 10,
 	countersSteps: [1000 * 60, 1000 * 60 * 5, 1000 * 60 * 15, 1000 * 60 * 30, 1000 * 60 * 60, 1000 * 60 * 60 * 2, 1000 * 60 * 60 * 4],
@@ -102,6 +103,9 @@ const store = new Vuex.Store({
 		},
 		setDecimalPrecision(state, value) {
 			state.decimalPrecision = value;
+		},
+		toggleLogos(state, value) {
+			state.showLogos = value ? true : false;
 		},
 		setCounterPrecision(state, payload) {
 			state.counterPrecision = value;

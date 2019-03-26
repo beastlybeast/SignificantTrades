@@ -14,13 +14,20 @@
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'list')" v-bind:class="{closed: settings.indexOf('list') > -1}">Trades list <i class="icon-up"></i></div>
         <div class="mb8">
           <div class="settings__column">
-            <div class="form-group">
+            <div class="form-group settings__column__fill">
               <label>Max rows <span class="icon-info-circle" title="Numbers of trades to keep visible" v-tippy></span></label>
               <input type="number" min="0" max="1000" step="1" class="form-control" v-bind:value="maxRows" @change="$store.commit('setMaxRows', $event.target.value)">
             </div>
-            <div class="form-group">
-              <label>Decimal precision <span class="icon-info-circle" title="Define how much digits will be displayed after the decimal point" v-tippy></span></label>
+            <div class="form-group settings__column__tight">
+              <label>Precision <span class="icon-info-circle" title="Round prices to n decimals" v-tippy></span></label>
               <input type="number" min="0" max="10" step="1" placeholder="auto" class="form-control" v-bind:value="decimalPrecision" @change="$store.commit('setDecimalPrecision', $event.target.value)">
+            </div>
+            <div class="form-group settings__column__tight" title="Show exchange's logo" v-tippy>
+              <label>Logos</label>
+              <label class="checkbox-control checkbox-control-input flex-right">
+                <input type="checkbox" class="form-control" v-bind:checked="showLogos" @change="$store.commit('toggleLogos', $event.target.checked)">
+                <div></div>
+              </label>
             </div>
           </div>
         </div>
@@ -210,6 +217,7 @@ export default {
       'pair',
       'maxRows',
       'decimalPrecision',
+      'showLogos',
       'showCounters',
       'showStats',
       'statsPeriod',
@@ -572,7 +580,7 @@ export default {
           &:after {
             font-family: inherit;
           }
-          
+
           &:before {
             content: 'CML';
           }
@@ -680,6 +688,10 @@ export default {
     > .settings__column__tight {
       flex-basis: auto;
       flex-grow: 0;
+
+      label {
+        white-space: nowrap;
+      }
     }
 
     > .settings__column__fill {

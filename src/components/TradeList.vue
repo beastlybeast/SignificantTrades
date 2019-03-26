@@ -1,5 +1,5 @@
 <template>
-	<div id="trades" class="trades">
+	<div id="trades" class="trades" :class="{ '-logos': this.showLogos }">
 		<ul v-if="trades.length">
 			<li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ backgroundImage: trade.image, backgroundColor: trade.background, color: trade.color }">
 				<template v-if="trade.message">
@@ -41,12 +41,14 @@ export default {
   },
   computed: {
     ...mapState([
-      'pair', 
+      'pair',
       'maxRows',
       'thresholds',
       'exchanges',
       'useAudio',
-      'audioIncludeInsignificants'
+      'audioIncludeInsignificants',
+      'decimalPrecision',
+      'showLogos'
     ])
   },
   created() {
@@ -186,6 +188,8 @@ export default {
       let background, color;
       let amount = trade[2] * trade[3];
 
+      classname.push(trade[0]);
+
       const multiplier = typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1;
 
       if (trade[4]) {
@@ -196,7 +200,7 @@ export default {
 
       if (amount >= this.thresholds[1].amount * multiplier) {
         classname.push('significant');
-      
+
         let ratio = Math.min(1, (amount - this.thresholds[1].amount * multiplier) / (this.thresholds[2].amount * multiplier - this.thresholds[1].amount * multiplier));
 
         if (trade[4]) {
@@ -244,7 +248,7 @@ export default {
         color: color,
         background: background,
         side: trade[4] > 0 ? 'BUY' : 'SELL',
-        size: trade[3],
+        size: this.$root.formatAmount(trade[3], this.decimalPrecision),
         exchange: trade[0],
         price: this.$root.formatPrice(trade[2]),
         amount: amount,
@@ -329,6 +333,20 @@ export default {
     padding: 0;
     display: flex;
     flex-flow: column nowrap;
+  }
+
+  &.-logos {
+    .trades__item__exchange {
+      text-indent: -9999px;
+      flex-basis: 3em;
+      flex-grow: 0;
+    }
+
+    @each $exchange in $exchanges {
+      .trades__item--#{$exchange} .trades__item__exchange {
+        background-image: url("/static/exchanges/#{$exchange}.svg");
+      }
+    }
   }
 }
 
@@ -434,6 +452,8 @@ export default {
     }
 
     &.trades__item__exchange {
+      background-repeat: no-repeat;
+      background-position: center center;
       flex-grow: 0.75;
 
       small {

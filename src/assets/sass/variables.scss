@@ -52,6 +52,8 @@ $icon-axis: \e927;
 $icon-locked: \e928;
 $icon-unlocked: \e929;
 
+$exchanges: bitmex binance bitfinex okex huobi bitstamp gdax hitbtc poloniex liquid coinex kraken;
+
 @function unicode($str) {
   @return unquote("\"") + $str + unquote("\"");
 }

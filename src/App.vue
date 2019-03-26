@@ -156,18 +156,18 @@ export default {
         return (0).toFixed(decimals);
       }
 
-      if (typeof decimals !== 'undefined') {
+      if (!isNaN(decimals)) {
         return price.toFixed(decimals);
+      }
+
+      if (this.decimalPrecision) {
+        return +price.toFixed(this.decimalPrecision);
       }
 
       if (price <= 0.0001) {
         return (price * 100000000).toFixed() + ' <small>sats</small>';
       } else if (price >= 1000) {
         return +price.toFixed(2);
-      }
-
-      if (this.decimalPrecision) {
-        return +price.toFixed(this.decimalPrecision);
       }
 
       const firstDigitIndex = price.toString().match(/[1-9]/);
