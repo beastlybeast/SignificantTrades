@@ -33,17 +33,7 @@
         </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'thresholds')" v-bind:class="{closed: settings.indexOf('thresholds') > -1}">Thresholds <i class="icon-up"></i></div>
         <div class="settings__thresholds">
-          <div class="form-group mb8">
-            <label v-for="(threshold, index) in thresholds" :key="`threshold-${index}`">
-              <span>Trades </span>{{index == 0 ? "&lt;" : "&gt;"}} <i class="icon-currency"></i> <editable :content="threshold.amount" @output="$store.commit('setThresholdAmount', {index: index, value: $event})"></editable>
-                <span v-if="index === 0">won't show up</span>
-                <span v-if="index === 1">will be highlighted</span>
-                <span v-if="index > 1">
-                  will show
-                  <editable class="settings__thresholds--gifkeyword" :content="threshold.gif" @output="$store.commit('setThresholdGif', {index: index, value: $event})"></editable>
-                </span>
-            </label>
-          </div>
+          <Thresholds />
         </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'audio')" v-bind:class="{closed: settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
         <div class="settings__audio settings__activable settings__column" v-bind:class="{active: useAudio}">
@@ -189,10 +179,12 @@ import { mapState } from 'vuex';
 import socket from '../services/socket';
 
 import Exchange from './Exchange.vue';
+import Thresholds from './Thresholds.vue';
 
 export default {
   components: {
-    Exchange
+    Exchange,
+    Thresholds
   },
   data() {
     return {
@@ -482,7 +474,7 @@ export default {
         width: 1em;
         height: 1em;
         border-radius: 2px;
-        background-color: rgba(black, 0.3);
+        background-color: rgba(white, 0.2);
         transition: all 0.2s $easeOutExpo;
         position: relative;
         flex-shrink: 0;

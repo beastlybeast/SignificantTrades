@@ -33,10 +33,18 @@ for (let name in QUERY_STRING) {
 	} catch (error) {}
 }
 
+const storage = JSON.parse(localStorage.getItem('settings'));
+
+if (storage && typeof storage.minimum === 'undefined') {
+	storage.minimum = storage.thresholds[0].amount;
+
+	storage.thresholds.splice(0, 1);
+}
+
 const defaults = {
 	pair: 'BTCUSD',
+	minimum: 10000,
 	thresholds: [
-		{amount: 100000, gif: null},
 		{amount: 100000, gif: null},
 		{amount: 1000000, gif: 'cash'},
 		{amount: 10000000, gif: 'explosion'},
@@ -91,9 +99,9 @@ const defaults = {
 	isReplaying: false,
 	actives: []
 }
-
+console.log(storage, defaults);
 const store = new Vuex.Store({
-	state: Object.assign({}, defaults, JSON.parse(localStorage.getItem('settings')) || {}, QUERY_STRING),
+	state: Object.assign({}, defaults, storage || {}, QUERY_STRING),
 	mutations: {
 		setPair(state, value) {
 			state.pair = value.toString().toUpperCase();
@@ -154,6 +162,9 @@ const store = new Vuex.Store({
 		},
 		replaceCounterSteps(state, counters) {
 			state.countersSteps = counters.sort((a, b) => a - b);
+		},
+		setMinimumAmount(state, value) {
+			state.minimum = value;
 		},
 		setThresholdAmount(state, payload) {
 			const threshold = state.thresholds[payload.index];

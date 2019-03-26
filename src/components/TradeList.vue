@@ -43,6 +43,7 @@ export default {
     ...mapState([
       'pair',
       'maxRows',
+      'minimum',
       'thresholds',
       'exchanges',
       'useAudio',
@@ -129,7 +130,7 @@ export default {
       if (trade[5] === 1) {
         this.sfx && this.sfx.liquidation();
 
-        if (size >= this.thresholds[0].amount * multiplier) {
+        if (size >= this.minimum * multiplier) {
           this.appendRow(
             trade,
             ['liquidation'],
@@ -143,17 +144,17 @@ export default {
 
       if (
         this.useAudio &&
-        ((this.audioIncludeInsignificants && size > this.thresholds[0].amount * Math.max(0.1, multiplier) * 0.1) ||
-          size > this.thresholds[1].amount * Math.max(0.1, multiplier))
+        ((this.audioIncludeInsignificants && size > this.minimum * Math.max(0.1, multiplier) * 0.1) ||
+          size > this.thresholds[0].amount * Math.max(0.1, multiplier))
       ) {
-        this.sfx && this.sfx.tradeToSong(size / (this.thresholds[1].amount * Math.max(0.1, multiplier)), trade[4]);
+        this.sfx && this.sfx.tradeToSong(size / (this.thresholds[0].amount * Math.max(0.1, multiplier)), trade[4]);
       }
 
       // group by [exchange name + buy=1/sell=0] (ex bitmex1)
       const tid = trade[0] + trade[4];
       const now = socket.getTime();
 
-      if (this.thresholds[0].amount) {
+      if (this.minimum) {
         if (this.ticks[tid]) {
           if (now - this.ticks[tid][2] > 5000) {
             delete this.ticks[tid];
@@ -164,7 +165,7 @@ export default {
             // sum volume
             this.ticks[tid][3] += trade[3];
 
-            if (this.ticks[tid][2] * this.ticks[tid][3] >= thresholds[0].amount * multiplier) {
+            if (this.ticks[tid][2] * this.ticks[tid][3] >= this.minimum * multiplier) {
               this.appendRow(this.ticks[tid]);
               delete this.ticks[tid];
             }
@@ -173,7 +174,7 @@ export default {
           }
         }
 
-        if (!this.ticks[tid] && size < this.thresholds[0].amount * multiplier) {
+        if (!this.ticks[tid] && size < this.minimum * multiplier) {
           this.ticks[tid] = trade;
           return;
         }
@@ -198,10 +199,10 @@ export default {
         classname.push('sell');
       }
 
-      if (amount >= this.thresholds[1].amount * multiplier) {
+      if (amount >= this.thresholds[0].amount * multiplier) {
         classname.push('significant');
 
-        let ratio = Math.min(1, (amount - this.thresholds[1].amount * multiplier) / (this.thresholds[2].amount * multiplier - this.thresholds[1].amount * multiplier));
+        let ratio = Math.min(1, (amount - this.thresholds[0].amount * multiplier) / (this.thresholds[1].amount * multiplier - this.thresholds[0].amount * multiplier));
 
         if (trade[4]) {
           background = `hsl(89, ${(36 + (1 - ratio) * 10).toFixed(2)}%, ${(35 + ratio * 20).toFixed(2)}%)`;
@@ -209,7 +210,7 @@ export default {
           background = `hsl(4, ${(70 + ratio * 30).toFixed(2)}%, ${(45 + (1 - ratio) * 15).toFixed(2)}%)`;
         }
       } else {
-        let ratio = Math.min(1, amount / this.thresholds[1].amount * multiplier);
+        let ratio = Math.min(1, amount / this.thresholds[0].amount * multiplier);
         let hsl;
 
         if (trade[4]) {
@@ -401,7 +402,7 @@ export default {
     }
   }
 
-  &.trades__item--level-1 {
+  &.trades__item--level-0 {
     color: white;
   }
 
@@ -409,7 +410,7 @@ export default {
     background-color: $pink !important;
   }
 
-  &.trades__item--level-2 {
+  &.trades__item--level-1 {
     padding: 0.6em 0.6em;
 
     > div {
@@ -427,7 +428,7 @@ export default {
     }
   }
 
-  &.trades__item--level-3 {
+  &.trades__item--level-2 {
     box-shadow: 0 0 20px rgba(red, 0.5);
     z-index: 1;
   }
