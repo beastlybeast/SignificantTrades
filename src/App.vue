@@ -83,8 +83,8 @@ export default {
   },
   created() {
     this.$root.applicationStartTime = +new Date();
-    this.$root.formatPrice = window.formatPrice = this.formatPrice.bind(this);
-    this.$root.formatAmount = window.formatAmount = this.formatAmount.bind(this);
+    this.$root.formatPrice = this.formatPrice.bind(this);
+    this.$root.formatAmount = this.formatAmount.bind(this);
     this.$root.padNumber = this.padNumber.bind(this);
     this.$root.ago = this.ago.bind(this);
 
