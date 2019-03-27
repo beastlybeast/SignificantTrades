@@ -138,11 +138,11 @@ export default {
       var s = '000000000' + num;
       return s.substr(s.length - size);
     },
-    formatAmount(amount, decimals) {
+    formatAmount(amount, decimals = 1) {
       if (amount >= 1000000) {
-        amount = (amount / 1000000).toFixed(1) + 'M';
+        amount = +(amount / 1000000).toFixed(decimals) + 'M';
       } else if (amount >= 1000) {
-        amount = (amount / 1000).toFixed(1) + 'K';
+        amount = +(amount / 1000).toFixed(decimals) + 'K';
       } else {
         amount = this.$root.formatPrice(amount, decimals);
       }

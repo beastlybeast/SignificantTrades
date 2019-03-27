@@ -13,7 +13,7 @@
         </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'list')" v-bind:class="{closed: settings.indexOf('list') > -1}">Trades list <i class="icon-up"></i></div>
         <div class="mb8">
-          <div class="settings__column">
+          <div class="settings__column mb8">
             <div class="form-group settings__column__fill">
               <label>Max rows <span class="icon-info-circle" title="Numbers of trades to keep visible" v-tippy></span></label>
               <input type="number" min="0" max="1000" step="1" class="form-control" v-bind:value="maxRows" @change="$store.commit('setMaxRows', $event.target.value)">
@@ -30,10 +30,9 @@
               </label>
             </div>
           </div>
-        </div>
-        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'thresholds')" v-bind:class="{closed: settings.indexOf('thresholds') > -1}">Thresholds <i class="icon-up"></i></div>
-        <div class="settings__thresholds">
-          <Thresholds />
+          <div class="settings__thresholds">
+            <Thresholds />
+          </div>
         </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'audio')" v-bind:class="{closed: settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
         <div class="settings__audio settings__activable settings__column" v-bind:class="{active: useAudio}">
@@ -401,6 +400,14 @@ export default {
     display: flex;
     flex-direction: column;
 
+    .help-text {
+      opacity: .6;
+    }
+
+    label + .help-text {
+      margin: -.5em 0 .5em;
+    }
+
     .form-control {
       padding: 8px 8px;
       background-color: white;
@@ -410,6 +417,7 @@ export default {
       letter-spacing: -0.5px;
       min-width: 0;
       height: 100%;
+      font-size: 1em;
     }
 
     .input-group {

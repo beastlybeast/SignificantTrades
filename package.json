@@ -18,6 +18,7 @@
     "pusher-js": "^4.2.2",
     "tunajs": "^1.0.1",
     "vue": "^2.5.11",
+    "vue-color": "^2.7.0",
     "vue-tippy": "^2.0.11",
     "vue2-highcharts": "^1.1.8",
     "vuex": "^3.0.1"

@@ -41,13 +41,26 @@ if (storage && typeof storage.minimum === 'undefined') {
 	storage.thresholds.splice(0, 1);
 }
 
+      colors: {
+        buys: [
+          '#4caf50',
+          '#5b8230',
+          '#9ccc65',
+          '#FFA000',
+        ],
+        sells: [
+          '#e57373',
+          '#e05b52',
+          '#f44336',
+          '#e91e63'
+        ],
 const defaults = {
 	pair: 'BTCUSD',
 	minimum: 10000,
 	thresholds: [
-		{amount: 100000, gif: null},
-		{amount: 1000000, gif: 'cash'},
-		{amount: 10000000, gif: 'explosion'},
+		{amount: 100000, gif: null, buyColor: '#5b8230', sellColor: '#e05b52' },
+		{amount: 1000000, gif: 'cash', buyColor: '#9ccc65', sellColor: '#f44336' },
+		{amount: 10000000, gif: 'explosion', buyColor: '#FFA000', sellColor: '#e91e63' },
 	],
 	exchanges: {
 		bithumb: {disabled: true},
