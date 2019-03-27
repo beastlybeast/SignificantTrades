@@ -83,8 +83,8 @@ export default {
   },
   created() {
     this.$root.applicationStartTime = +new Date();
-    this.$root.formatPrice = this.formatPrice.bind(this);
-    this.$root.formatAmount = this.formatAmount.bind(this);
+    this.$root.formatPrice = window.formatPrice = this.formatPrice.bind(this);
+    this.$root.formatAmount = window.formatAmount = this.formatAmount.bind(this);
     this.$root.padNumber = this.padNumber.bind(this);
     this.$root.ago = this.ago.bind(this);
 
@@ -140,9 +140,9 @@ export default {
     },
     formatAmount(amount, decimals = 1) {
       if (amount >= 1000000) {
-        amount = +(amount / 1000000).toFixed(decimals) + 'M';
+        amount = +((amount / 1000000).toFixed(decimals)) + 'M';
       } else if (amount >= 1000) {
-        amount = +(amount / 1000).toFixed(decimals) + 'K';
+        amount = +((amount / 1000).toFixed(decimals)) + 'K';
       } else {
         amount = this.$root.formatPrice(amount, decimals);
       }
@@ -157,7 +157,7 @@ export default {
       }
 
       if (!isNaN(decimals)) {
-        return price.toFixed(decimals);
+        return +price.toFixed(decimals);
       }
 
       if (this.decimalPrecision) {

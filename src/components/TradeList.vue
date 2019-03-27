@@ -1,7 +1,7 @@
 <template>
 	<div id="trades" class="trades" :class="{ '-logos': this.showLogos }">
 		<ul v-if="trades.length">
-			<li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ backgroundImage: trade.image, backgroundColor: trade.background, color: trade.color }">
+			<li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ backgroundImage: trade.image, backgroundColor: trade.background, color: trade.foreground }">
 				<template v-if="trade.message">
 					<div class="trades__item__side icon-side"></div>
 					<div class="trades__item__message" v-html="trade.message"></div>
@@ -41,9 +41,9 @@ export default {
   },
   computed: {
     ...mapState([
+      'dark',
       'pair',
       'maxRows',
-      'minimum',
       'thresholds',
       'exchanges',
       'useAudio',
@@ -54,6 +54,7 @@ export default {
   },
   created() {
     this.getGifs();
+    this.refreshColorsPercentages();
 
     socket.$on('pairing', this.onPairing);
     socket.$on('trades.instant', this.onTrades);
@@ -70,6 +71,16 @@ export default {
         case 'setThresholdGif':
           clearTimeout(this.gifKeywordChangeTimeout);
           this.gifKeywordChangeTimeout = setTimeout(this.fetchGifByKeyword.bind(this, mutation.payload.value, mutation.payload.index), 2000);
+          break;
+        case 'setThresholdColor':
+          this.refreshColorsPercentages();
+          this.trades.splice(0, this.trades.length);
+
+          clearTimeout(this._refreshColorRenderList);
+
+          this._refreshColorRenderList = setTimeout(() => {
+            this.onTrades(socket.trades.slice(socket.trades.length - 1000, socket.trades.length));
+          }, 500);
           break;
       }
     });
@@ -112,8 +123,6 @@ export default {
     this.sfx && this.sfx.disconnect();
   },
   methods: {
-    onSettings(data) {
-    },
     onPairing() {
       this.trades = [];
     },
@@ -130,7 +139,7 @@ export default {
       if (trade[5] === 1) {
         this.sfx && this.sfx.liquidation();
 
-        if (size >= this.minimum * multiplier) {
+        if (size >= this.thresholds[0].amount * multiplier) {
           this.appendRow(
             trade,
             ['liquidation'],
@@ -144,17 +153,17 @@ export default {
 
       if (
         this.useAudio &&
-        ((this.audioIncludeInsignificants && size > this.minimum * Math.max(0.1, multiplier) * 0.1) ||
-          size > this.thresholds[0].amount * Math.max(0.1, multiplier))
+        ((this.audioIncludeInsignificants && size > this.thresholds[0].amount * Math.max(0.1, multiplier) * 0.1) ||
+          size > this.thresholds[1].amount * Math.max(0.1, multiplier))
       ) {
-        this.sfx && this.sfx.tradeToSong(size / (this.thresholds[0].amount * Math.max(0.1, multiplier)), trade[4]);
+        this.sfx && this.sfx.tradeToSong(size / (this.thresholds[1].amount * Math.max(0.1, multiplier)), trade[4]);
       }
 
       // group by [exchange name + buy=1/sell=0] (ex bitmex1)
       const tid = trade[0] + trade[4];
       const now = socket.getTime();
 
-      if (this.minimum) {
+      if (this.thresholds[0].amount) {
         if (this.ticks[tid]) {
           if (now - this.ticks[tid][2] > 5000) {
             delete this.ticks[tid];
@@ -165,7 +174,7 @@ export default {
             // sum volume
             this.ticks[tid][3] += trade[3];
 
-            if (this.ticks[tid][2] * this.ticks[tid][3] >= this.minimum * multiplier) {
+            if (this.ticks[tid][2] * this.ticks[tid][3] >= this.thresholds[0].amount * multiplier) {
               this.appendRow(this.ticks[tid]);
               delete this.ticks[tid];
             }
@@ -174,7 +183,7 @@ export default {
           }
         }
 
-        if (!this.ticks[tid] && size < this.minimum * multiplier) {
+        if (!this.ticks[tid] && size < this.thresholds[0].amount * multiplier) {
           this.ticks[tid] = trade;
           return;
         }
@@ -186,8 +195,8 @@ export default {
     appendRow(trade, classname = [], message = null) {
       let icon;
       let image;
-      let background, color;
       let amount = trade[2] * trade[3];
+      let color = this.getTradeColor(trade);
 
       classname.push(trade[0]);
 
@@ -199,29 +208,8 @@ export default {
         classname.push('sell');
       }
 
-      if (amount >= this.thresholds[0].amount * multiplier) {
+      if (amount >= this.thresholds[1].amount * multiplier) {
         classname.push('significant');
-
-        let ratio = Math.min(1, (amount - this.thresholds[0].amount * multiplier) / (this.thresholds[1].amount * multiplier - this.thresholds[0].amount * multiplier));
-
-        if (trade[4]) {
-          background = `hsl(89, ${(36 + (1 - ratio) * 10).toFixed(2)}%, ${(35 + ratio * 20).toFixed(2)}%)`;
-        } else {
-          background = `hsl(4, ${(70 + ratio * 30).toFixed(2)}%, ${(45 + (1 - ratio) * 15).toFixed(2)}%)`;
-        }
-      } else {
-        let ratio = Math.min(1, amount / this.thresholds[0].amount * multiplier);
-        let hsl;
-
-        if (trade[4]) {
-          hsl = `89, ${(36 + (1 - ratio) * 10).toFixed(2)}%, ${(35 + ratio * 40).toFixed(2)}%`;
-          color = `hsl(${hsl})`;
-          background = `hsla(${hsl}, .1)`;
-        } else {
-          hsl = `4, ${(70 + ratio * 30).toFixed(2)}%, ${(45 + (1 - ratio) * 30).toFixed(2)}%`;
-          color = `hsl(${hsl})`;
-          background = `hsla(${hsl}, .1)`;
-        }
       }
 
       for (let i = 1; i < this.thresholds.length; i++) {
@@ -243,11 +231,9 @@ export default {
       }
 
       this.trades.unshift({
-        id: Math.random()
-          .toString(36)
-          .substring(7),
-        color: color,
-        background: background,
+        id: Math.random().toString(36).substring(7),
+        background: color.background,
+        foreground: color.foreground,
         side: trade[4] > 0 ? 'BUY' : 'SELL',
         size: this.$root.formatAmount(trade[3], this.decimalPrecision),
         exchange: trade[0],
@@ -277,6 +263,72 @@ export default {
           this.fetchGifByKeyword(threshold.gif, index);
         }
       });
+    },
+    hexToRgb(hex) {
+      const bigint = parseInt(hex.replace(/[^0-9A-F]/gi, ''), 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+
+      return {
+        r,
+        g,
+        b
+      };
+    },
+    getTradeColor(trade) {
+      const amount = trade[2] * trade[3];
+      const pct = amount / this.thresholds[this.thresholds.length - 1].amount;
+      const palette = this.colors[trade[4] > 0 ? 'buys': 'sells'];
+
+      for (var i = 1; i < palette.length - 1; i++) {
+        if (pct < palette[i].pct) {
+          break;
+        }
+      }
+
+      const lower = palette[i - 1];
+      const upper = palette[i];
+      const range = upper.pct - lower.pct;
+      const rangePct = (pct - lower.pct) / range;
+      const pctLower = 1 - rangePct;
+      const pctUpper = rangePct;
+      const color = {
+        r: Math.floor(lower.color.r * pctLower + upper.color.r * pctUpper),
+        g: Math.floor(lower.color.g * pctLower + upper.color.g * pctUpper),
+        b: Math.floor(lower.color.b * pctLower + upper.color.b * pctUpper)
+      };
+
+      const opacity = +(.33 + Math.min(.66, amount / this.thresholds[1].amount * .66)).toFixed(2);
+      let luminance = Math.sqrt(0.299 * Math.pow(color.r, 2) + 0.587 * Math.pow(color.g, 2) + 0.114 * Math.pow(color.b, 2));
+
+      if (opacity < 1) {
+        if (this.dark) {
+          luminance *= opacity;
+        } else {
+          luminance = 255;
+        }
+      }
+
+      return {
+        background: 'rgba(' + [color.r, color.g, color.b, opacity].join(',') + ')',
+        foreground: 'rgba(' + (luminance > 200 ? '0,0,0' : '255,255,255') + ',' + Math.min(1, opacity * 1.25) + ')'
+      }
+    },
+    refreshColorsPercentages() {
+      const maximum = this.thresholds[this.thresholds.length - 1].amount;
+
+      this.colors = {};
+
+      this.colors.buys = this.thresholds.map((threshold, index) => ({
+        pct: threshold.amount / maximum,
+        color: this.hexToRgb(threshold.buyColor)
+      }));
+
+      this.colors.sells = this.thresholds.map((threshold, index) => ({
+        pct: threshold.amount / maximum,
+        color: this.hexToRgb(threshold.sellColor)
+      }));
     },
     fetchGifByKeyword(keyword, index) {
       if (!keyword) {
@@ -402,7 +454,7 @@ export default {
     }
   }
 
-  &.trades__item--level-0 {
+  &.trades__item--level-1 {
     color: white;
   }
 
@@ -410,7 +462,7 @@ export default {
     background-color: $pink !important;
   }
 
-  &.trades__item--level-1 {
+  &.trades__item--level-2 {
     padding: 0.6em 0.6em;
 
     > div {
@@ -428,7 +480,7 @@ export default {
     }
   }
 
-  &.trades__item--level-2 {
+  &.trades__item--level-3 {
     box-shadow: 0 0 20px rgba(red, 0.5);
     z-index: 1;
   }

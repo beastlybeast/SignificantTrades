@@ -1,32 +1,32 @@
 <template>
 	<div class="thresholds">
-    <chrome-picker v-if="picking !== null" ref="picker" :value="options.colors[picking.side][picking.index]" @input="updateColor"></chrome-picker>
+    <chrome-picker v-if="picking !== null" ref="picker" :value="thresholds[picking.index][picking.side]" @input="updateColor"></chrome-picker>
 
-    <p>Hide anything <strong>below</strong> <editable :content="minimum" @output="$store.commit('setMinimumAmount', $event)"></editable></p>
     <div class="thresholds__bar" ref="thresholdContainer">
       <div v-for="(threshold, index) in thresholds" :key="`threshold-${index}`" class="thresholds__handler" :class="{ '-selected': selectedIndex === index }" v-on:mousedown="startDrag($event, index)" :data-amount="$root.formatAmount(threshold.amount, 2)"></div>
     </div>
-    <div class="threshold-panel" v-if="selectedIndex !== null">
+    <div class="threshold-panel" v-if="selectedIndex !== null" :class="{ '-minimum': selectedIndex === 0 }">
       <div class="threshold-panel__caret" v-bind:style="{ left: this.selectedCaretPosition + 'px' }"></div>
       <a href="#" class="threshold-panel__close icon-cross" v-on:click="selectedIndex = null"></a>
-      <h3>if amount > <strong>{{ $root.formatAmount(thresholds[selectedIndex].amount, 2) }}</strong></h3>
-      <div class="settings__columns">
-        <div class="form-group mb8">
+      <h3>if amount > <editable :content="thresholds[selectedIndex].amount" @output="$store.commit('setThresholdAmount', {index: selectedIndex, value: $event})"></editable></h3>
+      <div class="settings__column">
+        <div class="form-group mb8 threshold-panel__gif">
           <label>Show themed gif</label>
           <small class="help-text">Comma separated <a href="https://gfycat.com" target="_blank">Gifycat</a> keywords</small>
           <input type="text" class="form-control" :value="thresholds[selectedIndex].gif" @change="$store.commit('setThresholdGif', {index: selectedIndex, value: $event.target.value})" placeholder="Leave empty = no gif">
         </div>
         <div class="form-group mb8 threshold-panel__colors">
-          <label>Edit colors</label>
-          <div class="settings__columns">
-            <input type="text" class="form-control" :style="{ 'color': thresholds[selectedIndex].buyColor }" @click="openPicker('buy', 0, $event)">
-            <input type="text" class="form-control" :style="{ 'backgroundColor': thresholds[selectedIndex].sellColor }" @click="openPicker('sell', 0, $event)">
+          <label>Custom colors</label>
+          <small class="help-text">Set buy & sell color</small>
+          <div class="settings__column">
+            <div class="form-group" title="When buy" v-tippy>
+              <input type="text" class="form-control" :value="thresholds[selectedIndex].buyColor" :style="{ 'backgroundColor': thresholds[selectedIndex].buyColor }" @change="$store.commit('setThresholdColor', { index: selectedIndex, side: 'buyColor', value: $event.target.value })" @click="openPicker('buyColor', selectedIndex, $event)">
+            </div>
+            <div class="form-group" title="When sell" v-tippy>
+              <input type="text" class="form-control" :value="thresholds[selectedIndex].sellColor" :style="{ 'backgroundColor': thresholds[selectedIndex].sellColor }" @change="$store.commit('setThresholdColor', { index: selectedIndex, side: 'buyColor', value: $event.target.value })" @click="openPicker('sellColor', selectedIndex, $event)">
+            </div>
           </div>
         </div>
-      </div>
-      <div class="form-group">
-        <label>Change amount</label>
-        <input type="text" class="form-control" :value="thresholds[selectedIndex].amount" @change="$store.commit('setThresholdAmount', {index: selectedIndex, value: $event.target.value})">
       </div>
     </div>
 	</div>
@@ -51,18 +51,12 @@ export default {
 	},
   computed: {
     ...mapState([
-      'minimum',
       'thresholds',
     ])
   },
   created() {
-    const amounts = this.thresholds.map(threshold => threshold.amount);
-
-    this.maximum = Math.max.apply(null, amounts);
-
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
-        case 'setMinimumAmount':
         case 'setThresholdAmount':
           this.refreshHandlers();
           break;
@@ -80,7 +74,7 @@ export default {
 
     window.addEventListener('mouseup', this._endDrag, false);
 
-    this._doResize = this.refresh.bind(this);
+    this._doResize = this.refreshHandlers.bind(this);
 
     window.addEventListener('resize', this._doResize, false);
   },
@@ -94,9 +88,12 @@ export default {
 	methods: {
     startDrag(event, index) {
       this.selectedIndex = index;
-      this.selectedElement = event.target;
 
-      this.refreshCaretPosition();
+      if (index > 0) {
+        this.selectedElement = event.target;
+      }
+
+      this.refreshCaretPosition(event.target);
     },
     doDrag(event) {
       if (this.selectedElement === null) {
@@ -116,12 +113,26 @@ export default {
       this.$store.commit('setThresholdAmount', {index: this.selectedIndex, value: this.$root.formatPrice(amount)});
     },
     endDrag(event) {
-      this.selectedElement = null;
+      if (this.selectedElement) {
+        this.selectedElement = null;
 
-      this.reorderThresholds();
+        this.reorderThresholds();
+      }
+
+      if (this.picking) {
+        this.closePicker(event);
+      }
     },
     refreshHandlers() {
-      this.offsetLeft = this.$refs.thresholdContainer.getBoundingClientRect().left;
+      const amounts = this.thresholds.map(threshold => threshold.amount);
+
+      this.minimum = this.thresholds[0].amount;
+      this.maximum = Math.max.apply(null, amounts);
+
+      const bounds = this.$refs.thresholdContainer.getBoundingClientRect();
+
+      this.offsetTop = bounds.top;
+      this.offsetLeft = bounds.left;
       this.width = this.$refs.thresholdContainer.clientWidth;
 
       const handlers = this.$refs.thresholdContainer.children;
@@ -129,7 +140,7 @@ export default {
       const minLog = Math.log(this.minimum);
       const maxLog = Math.log(this.maximum) - minLog;
 
-      for (let i = 0; i < this.thresholds.length; i++) {
+      for (let i = 1; i < this.thresholds.length; i++) {
         const handler = handlers[i];
         const threshold = this.thresholds[i];
         const posLog = Math.log(threshold.amount) - minLog;
@@ -138,8 +149,8 @@ export default {
         handler.style.left = posPx + 'px';
       }
     },
-    refreshCaretPosition() {
-      const left = parseInt(this.selectedElement.style.left);
+    refreshCaretPosition(selectedElement = this.selectedElement) {
+      const left = parseInt(selectedElement.style.left) || 0;
 
       this.selectedCaretPosition = Math.max(32, Math.min(this.width - 32, left));
     },
@@ -164,33 +175,35 @@ export default {
         }
       }
     },
-    openPicker(side, index, $event) {
+    openPicker(side, index, event) {
+      if (!this.thresholds[index][side]) {
+        this.$store.commit('setThresholdColor', { index: index, side: side, value: '#ffffff' });
+      }
+
       this.picking = { side, index };
 
       setTimeout(() => {
-        this.$refs.picker.$el.style.left = Math.min(window.innerWidth - this.$refs.picker.$el.clientWidth - 16, $event.target.offsetLeft) + 'px';
-        this.$refs.picker.$el.style.top = ($event.pageY + 16) + 'px';
+        this.$refs.picker.$el.style.left = Math.min(this.width - this.$refs.picker.$el.clientWidth - 16, event.pageX - this.offsetLeft) + 'px';
+        this.$refs.picker.$el.style.top = (event.pageY - this.offsetTop + 16) + 'px';
       })
 
-      $event.stopPropagation();
+      event.stopPropagation();
     },
-    closePicker($event) {
-      if (this.$refs.picker && this.$refs.picker.$el.contains($event.target)) {
-        $event.preventDefault();
+    closePicker(event) {
+      if (this.$refs.picker && this.$refs.picker.$el.contains(event.target)) {
+        event.preventDefault();
 
         return;
       }
 
       this.picking = null;
     },
-    updateColor() {
+    updateColor(color) {
       if (!this.picking) {
         return;
       }
 
-      Vue.set(options.colors[this.picking.side], this.picking.index, color.hex);
-
-      options.onChange('colors', options.colors);
+      this.$store.commit('setThresholdColor', { index: this.picking.index, side: this.picking.side, value: color.hex });
     }
 	}
 }
@@ -249,6 +262,21 @@ export default {
   padding: 1em;
   margin: 2em 1em 1em;
 
+  > .settings__column {
+    @media screen and (max-width: 380px) {
+      flex-direction: column;
+
+      > .form-group {
+        flex-basis: 100%;
+        max-width: 100%;
+
+        + .form-group {
+          margin-top: 8px;
+        }
+      }
+    }
+  }
+
   code {
     color: white;
     font-weight: 600;
@@ -259,9 +287,11 @@ export default {
     margin: 0 0 1em;
     color: rgba(white, .6);
 
-    strong {
-      text-transform: uppercase;
+    [contenteditable] {
+      font-weight: 600;
       color: white;
+      background-color: rgba(black, .2);
+      padding: 0 .25em;
     }
   }
 
@@ -276,7 +306,7 @@ export default {
       opacity: 1;
     }
   }
-  
+
   &__caret {
     position: absolute;
     top: -.75em;
@@ -287,7 +317,21 @@ export default {
 
     transition: left 1s $easeOutExpo;
   }
-  
+
+  &__colors {
+    .form-control {
+      height: auto;
+      width: auto;
+      min-width: 1px;
+    }
+  }
+
+  &.-minimum {
+    .threshold-panel__gif {
+      opacity: .5;
+      pointer-events: none;
+    }
+  }
 }
 
 @keyframes picker-in {

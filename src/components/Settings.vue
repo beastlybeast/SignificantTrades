@@ -37,7 +37,7 @@
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'audio')" v-bind:class="{closed: settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
         <div class="settings__audio settings__activable settings__column" v-bind:class="{active: useAudio}">
           <div class="form-group settings__column__tight">
-            <label class="checkbox-control checkbox-on-off checkbox-control-input flex-right" v-tippy title="Enable audio">
+            <label class="checkbox-control checkbox-on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable audio">
               <input type="checkbox" class="form-control" v-bind:checked="useAudio" @change="$store.commit('toggleAudio', $event.target.checked)">
               <div></div>
             </label>
@@ -55,7 +55,7 @@
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'stats')" v-bind:class="{closed: settings.indexOf('stats') > -1}">Stats <i class="icon-up"></i></div>
         <div class="settings__stats settings__activable settings__column" v-bind:class="{active: showStats}">
           <div class="form-group settings__column__tight">
-            <label class="checkbox-control checkbox-on-off checkbox-control-input flex-right" v-tippy title="Enable stats">
+            <label class="checkbox-control checkbox-on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable stats">
               <input type="checkbox" class="form-control" v-bind:checked="showStats" @change="$store.commit('toggleStats', $event.target.checked)">
               <div></div>
             </label>
@@ -73,7 +73,7 @@
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'counters')" v-bind:class="{closed: settings.indexOf('counters') > -1}">Counter <i class="icon-up"></i></div>
         <div class="settings__counters settings__activable settings__column" v-bind:class="{active: showCounters}">
           <div class="form-group settings__column__tight">
-            <label class="checkbox-control checkbox-on-off checkbox-control-input flex-right" v-tippy title="Enable counters">
+            <label class="checkbox-control checkbox-on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable counters">
               <input type="checkbox" class="form-control" v-bind:checked="showCounters" @change="$store.commit('toggleCounters', $event.target.checked)">
               <div></div>
             </label>
@@ -92,7 +92,7 @@
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'chart')" v-bind:class="{closed: settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
         <div class="settings__chart settings__activable settings__column" v-bind:class="{active: showChart}">
           <div class="form-group settings__column__tight">
-            <label class="checkbox-control checkbox-on-off checkbox-control-input flex-right" v-tippy title="Enable chart">
+            <label class="checkbox-control checkbox-on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable chart">
               <input type="checkbox" class="form-control" v-bind:checked="showChart" @change="$store.commit('toggleChart', $event.target.checked)">
               <div></div>
             </label>
@@ -504,6 +504,7 @@ export default {
           align-items: center;
           justify-content: center;
           line-height: 0;
+          pointer-events: none;
         }
 
         &:not([class^="icon-"]):before {

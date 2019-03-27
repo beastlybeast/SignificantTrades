@@ -3,23 +3,23 @@
     <div class="header__wrapper">
       <div class="header__title"> <span class="pair" v-if="pair">{{pair}}</span> <span class="icon-currency"></span> <span v-html="price || 'SignificantTrades'"></span></div>
       <dropdown v-if="canFetch" :options="timeframes" :selected="timeframe" @output="setTimeframe(+$event)"></dropdown>
-      <button type="button" 
+      <!-- <button type="button"
         v-bind:class="{active: isReplaying}"
-        v-on:click="replay" title="Replay" 
+        v-on:click="replay" title="Replay"
         v-tippy="{placement: 'bottom'}">
         <span class="icon-history"></span>
-      </button>
+      </button> -->
       <button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}">
         <span class="icon-external-link"></span>
       </button>
-      <button type="button" 
+      <button type="button"
         v-bind:class="{active: isSnaped}"
-        v-on:click="$store.commit('toggleSnap', !isSnaped)" 
-        v-bind:title="isSnaped ? 'Disable auto snap' : 'Auto snap chart to the latest candle'" 
+        v-on:click="$store.commit('toggleSnap', !isSnaped)"
+        v-bind:title="isSnaped ? 'Disable auto snap' : 'Auto snap chart to the latest candle'"
         v-tippy="{placement: 'bottom'}">
         <span class="icon-play"></span>
       </button>
-      <button type="button" 
+      <button type="button"
         v-bind:class="{active: useAudio}"
         v-on:click="$store.commit('toggleAudio', !useAudio)">
         <span class="icon-volume-muted"></span>
@@ -81,12 +81,12 @@ export default {
 
       this.canFetch = canFetch && this.showChart;
     });
-    
+
     socket.$on('fetchStart', () => {
       //
     });
 
-    socket.$on('fetchEnd', () => {      
+    socket.$on('fetchEnd', () => {
       this.updateTimeframesApproximateContentSize();
     });
 

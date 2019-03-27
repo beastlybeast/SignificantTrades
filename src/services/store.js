@@ -35,32 +35,13 @@ for (let name in QUERY_STRING) {
 
 const storage = JSON.parse(localStorage.getItem('settings'));
 
-if (storage && typeof storage.minimum === 'undefined') {
-	storage.minimum = storage.thresholds[0].amount;
-
-	storage.thresholds.splice(0, 1);
-}
-
-      colors: {
-        buys: [
-          '#4caf50',
-          '#5b8230',
-          '#9ccc65',
-          '#FFA000',
-        ],
-        sells: [
-          '#e57373',
-          '#e05b52',
-          '#f44336',
-          '#e91e63'
-        ],
 const defaults = {
 	pair: 'BTCUSD',
-	minimum: 10000,
 	thresholds: [
-		{amount: 100000, gif: null, buyColor: '#5b8230', sellColor: '#e05b52' },
-		{amount: 1000000, gif: 'cash', buyColor: '#9ccc65', sellColor: '#f44336' },
-		{amount: 10000000, gif: 'explosion', buyColor: '#FFA000', sellColor: '#e91e63' },
+		{ amount: 10000, buyColor: '#4caf50', sellColor: '#e57373' },
+		{ amount: 100000, buyColor: '#5b8230', sellColor: '#e05b52' },
+		{ amount: 1000000, gif: 'cash', buyColor: '#9ccc65', sellColor: '#f44336' },
+		{ amount: 10000000, gif: 'explosion', buyColor: '#FFA000', sellColor: '#e91e63' },
 	],
 	exchanges: {
 		bithumb: {disabled: true},
@@ -76,7 +57,7 @@ const defaults = {
 	maxRows: 20,
 	decimalPrecision: null,
 	showLogos: false,
-	showCounters: true,
+	showCounters: false,
 	counterPrecision: 1000 * 10,
 	countersSteps: [1000 * 60, 1000 * 60 * 5, 1000 * 60 * 15, 1000 * 60 * 30, 1000 * 60 * 60, 1000 * 60 * 60 * 2, 1000 * 60 * 60 * 4],
 	hideIncompleteCounter: true,
@@ -84,7 +65,7 @@ const defaults = {
 	showStats: true,
 	showChart: true,
 	statsPeriod: 1000 * 60,
-	statsCurrency: false,
+	statsCurrency: true,
 	chartPadding: .075,
 	chartGridlines: true,
 	chartGridlinesGap: 50,
@@ -100,7 +81,7 @@ const defaults = {
 	chartLiquidations: true,
 	chartHeight: null,
 	chartRange: 0,
-	chartCandleWidth: 10,
+	chartCandleWidth: 5,
 	chartCandlestick: true,
 	chartVolumeAverage: true,
 	chartVolumeAverageLength: 14,
@@ -112,7 +93,7 @@ const defaults = {
 	isReplaying: false,
 	actives: []
 }
-console.log(storage, defaults);
+
 const store = new Vuex.Store({
 	state: Object.assign({}, defaults, storage || {}, QUERY_STRING),
 	mutations: {
@@ -176,27 +157,31 @@ const store = new Vuex.Store({
 		replaceCounterSteps(state, counters) {
 			state.countersSteps = counters.sort((a, b) => a - b);
 		},
-		setMinimumAmount(state, value) {
-			state.minimum = value;
-		},
 		setThresholdAmount(state, payload) {
 			const threshold = state.thresholds[payload.index];
 
 			if (threshold) {
-				Vue.set(state.thresholds, payload.index, {
-					amount: payload.value,
-					gif: threshold.gif
-				});
+				threshold.amount = payload.value;
+
+				Vue.set(state.thresholds, payload.index, threshold);
 			}
 		},
 		setThresholdGif(state, payload) {
 			const threshold = state.thresholds[payload.index];
 
 			if (threshold) {
-				Vue.set(state.thresholds, payload.index, {
-					amount: threshold.amount,
-					gif: payload.value
-				});
+				threshold.gif = payload.value;
+
+				Vue.set(state.thresholds, payload.index, threshold);
+			}
+		},
+		setThresholdColor(state, payload) {
+			const threshold = state.thresholds[payload.index];
+
+			if (threshold) {
+				threshold[payload.side] = payload.value;
+
+				Vue.set(state.thresholds, payload.index, threshold);
 			}
 		},
 		enableExchange(state, exchange) {

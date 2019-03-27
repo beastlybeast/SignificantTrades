@@ -28,7 +28,7 @@
           <span class="icon-currency" :class="{ 'icon-commodity': !this.statsCurrency }"></span> {{ $root.formatAmount(down.live, 1) }}
         </div>
       </li>
-      <!-- 
+      <!--
         // Maybe useless
         <li v-tippy v-bind:title="`Total volume in the last ${periodLabel}`">
         <div class="stats__label">VOL</div>
@@ -136,7 +136,7 @@ export default {
       this.timestamp = now - this.statsPeriod;
       this.rate.average = this.up.average = this.down.average = null;
       this.rate.count = this.up.count = this.down.count = 0;
- 
+
       socket.trades
         .filter(trade => this.actives.indexOf(trade[0]) !== -1 && trade[1] >= now - this.statsPeriod)
         .forEach(trade => {
