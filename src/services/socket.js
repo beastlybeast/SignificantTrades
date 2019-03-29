@@ -86,15 +86,12 @@ const emitter = new Vue({
 	created() {
 		this._fetchedTime = this._fetchedBytes = 0;
 
-		window.emitTrade = (exchange, price, amount, side, type = null) => {
+		window.emitTrade = (exchange, price, amount = 1, side = 1, type = null) => {
 			exchange = exchange || 'bitmex';
 
 			if (price === null) {
 				price = this.getExchangeById(exchange).price;
 			}
-
-			amount = amount || 1;
-			side = side || 1;
 
 			let trade = [exchange, +new Date(), price, amount, side ? 1 : 0, type]
 

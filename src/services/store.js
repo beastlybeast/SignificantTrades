@@ -3,45 +3,13 @@ import Vuex from 'vuex'
 
 Vue.use(Vuex);
 
-const EPHEMERAL_PROPERTIES = [
-	'isSnaped',
-	'isLoading',
-	'isReplaying',
-	'actives'
-];
-
-let QUERY_STRING;
-
-try {
-	QUERY_STRING = JSON.parse('{"' + decodeURI(location.search.substring(1))
-	.replace(/"/g, '\\"')
-	.replace(/&/g, '","')
-	.replace(/=/g,'":"') + '"}');
-} catch (error) {
-	QUERY_STRING = {};
-}
-
-const subdomain = window.location.hostname.match(/^([\d\w]+)\..*\./i);
-
-if (subdomain && subdomain.length >= 2) {
-	QUERY_STRING.pair = subdomain[1].toUpperCase();
-}
-
-for (let name in QUERY_STRING) {
-	try {
-		QUERY_STRING[name] = JSON.parse(QUERY_STRING[name]);
-	} catch (error) {}
-}
-
-const storage = JSON.parse(localStorage.getItem('settings'));
-
-const defaults = {
+const DEFAULTS = {
 	pair: 'BTCUSD',
 	thresholds: [
-		{ amount: 10000, buyColor: '#4caf50', sellColor: '#e57373' },
-		{ amount: 100000, buyColor: '#5b8230', sellColor: '#e05b52' },
-		{ amount: 1000000, gif: 'cash', buyColor: '#9ccc65', sellColor: '#f44336' },
-		{ amount: 10000000, gif: 'explosion', buyColor: '#FFA000', sellColor: '#e91e63' },
+		{ amount: 10000, buyColor: 'rgba(76,175,80,.33)', sellColor: 'rgba(229,115,115,.33)' },
+		{ amount: 100000, buyColor: 'rgb(91,130,48)', sellColor: 'rgb(224,91,82)' },
+		{ amount: 1000000, gif: 'cash', buyColor: 'rgb(156,204,101)', sellColor: 'rgb(244,67,54)' },
+		{ amount: 10000000, gif: 'explosion', buyColor: 'rgb(255,160,0)', sellColor: 'rgb(233,30,99)' },
 	],
 	exchanges: {
 		bithumb: {disabled: true},
@@ -68,7 +36,7 @@ const defaults = {
 	statsCurrency: true,
 	chartPadding: .075,
 	chartGridlines: true,
-	chartGridlinesGap: 50,
+	chartGridlinesGap: 80,
 	timeframe: 1000 * 10,
 	autoClearTrades: true,
 	debug: false,
@@ -83,19 +51,93 @@ const defaults = {
 	chartRange: 0,
 	chartCandleWidth: 5,
 	chartCandlestick: true,
+	chartVolume: true,
+	chartVolumeThreshold: 0,
+	chartVolumeOpacity: 1,
 	chartVolumeAverage: true,
 	chartVolumeAverageLength: 14,
 	chartAutoScale: true,
 
 	// runtime state
+	//ok
 	isSnaped: true,
 	isLoading: false,
 	isReplaying: false,
 	actives: []
 }
 
+/**
+ *  SUBDOMAIN EXTRA
+ * 	automaticaly map subdomain as a *pair* and replace it in options
+ * 	eg: ethusd.aggr.trade will set the *pair* options to ethusd.
+ */
+
+const subdomain = window.location.hostname.match(/^([\d\w]+)\..*\./i);
+
+/**
+ *  QUERY STRING PARSER
+ * 	every options should be settable from querystring using encoded json
+ */
+
+let QUERY_STRING;
+
+try {
+	QUERY_STRING = JSON.parse('{"' + decodeURI(location.search.substring(1))
+	.replace(/"/g, '\\"')
+	.replace(/&/g, '","')
+	.replace(/=/g,'":"') + '"}');
+} catch (error) {
+	QUERY_STRING = {};
+}
+
+if (subdomain && subdomain.length >= 2) {
+	QUERY_STRING.pair = subdomain[1].toUpperCase();
+}
+
+for (let name in QUERY_STRING) {
+	try {
+		QUERY_STRING[name] = JSON.parse(QUERY_STRING[name]);
+	} catch (error) {}
+}
+
+/**
+ * ACTUAL STORED OBJECT
+ */
+
+const STORED = JSON.parse(localStorage.getItem('settings'));
+
+// <migrations>
+
+// 29/03/19 (2.3) 
+// added custom colors, make sure everyone got some
+if (STORED && STORED.thresholds && STORED.thresholds.length) {
+	for (let i = 0; i < STORED.thresholds.length; i++) {
+		if (typeof STORED.thresholds[i].buyColor === 'undefined') {
+			STORED.thresholds[i].buyColor = DEFAULTS.thresholds[i].buyColor;
+		}
+
+		if (typeof STORED.thresholds[i].sellColor === 'undefined') {
+			STORED.thresholds[i].sellColor = DEFAULTS.thresholds[i].sellColor;
+		}
+	}
+}
+
+// </migrations>
+
+/**
+ * NON PERSISTENT DATA
+ * thoses properties are used in the store logic, but shouldn't be stored in the client storage
+ */
+const EPHEMERAL_PROPERTIES = [
+	'isSnaped',
+	'isLoading',
+	'isReplaying',
+	'actives'
+];
+
 const store = new Vuex.Store({
-	state: Object.assign({}, defaults, storage || {}, QUERY_STRING),
+	defaults: DEFAULTS,
+	state: Object.assign({}, DEFAULTS, STORED || {}, QUERY_STRING),
 	mutations: {
 		setPair(state, value) {
 			state.pair = value.toString().toUpperCase();
@@ -228,6 +270,16 @@ const store = new Vuex.Store({
 		},
 		toggleCandlestick(state, value) {
 			state.chartCandlestick = value ? true : false;
+		},
+		toggleVolume(state, value) {
+			state.chartVolume = value ? true : false;
+		},
+		setVolumeThreshold(state, value) {
+			state.chartVolumeThreshold = parseFloat(value) || 0;
+		},
+		setVolumeOpacity(state, value) {
+			value = parseFloat(value);
+			state.chartVolumeOpacity = isNaN(value) ? 1 : value;
 		},
 		toggleVolumeAverage(state, value) {
 			state.chartVolumeAverage = value ? true : false;

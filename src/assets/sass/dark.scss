@@ -25,7 +25,7 @@ body.theme-dark {
 
   .stack__container {
     .stack__backdrop {
-      background-color: rgba(black, .5);
+      background-color: rgba(black, .2);
     }
 
     .stack__toggler {
@@ -64,19 +64,19 @@ body.theme-dark {
   }
 
   #exchanges {
-    .exchange__action-up {
-      background-color: $green;
-      color: white;
+    >.-up {
+      background-color: transparent;
+      color: lighten($green, 10%);
     }
 
-    .exchange__action-down {
-      background-color: $red;
-      color: white;
+    >.-down {
+      background-color: transparent;
+      color: darken($red, 10%);
     }
 
-    .exchange__action-neutral {
-      background-color: rgba(white, .4);
-      color: rgba(white, .75);
+    >.-neutral {
+      background-color: rgba(white, .2);
+      opacity: .5;
     }
   }
 

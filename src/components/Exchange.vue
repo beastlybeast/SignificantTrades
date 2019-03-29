@@ -1,27 +1,27 @@
 <template>
 	<div
-		class="settings__exchanges__item"
+		class="settings-exchange"
 		v-bind:class="{
-			'settings__exchanges__item--active': exchange.connected,
-			'settings__exchanges__item--enabled': !settings.disabled,
-			'settings__exchanges__item--loading': !settings.disabled && !exchange.connected && exchange.valid,
-			'settings__exchanges__item--error': exchange.error,
-			'settings__exchanges__item--unmatched': !exchange.valid,
-			'settings__exchanges__item--invisible': settings.hidden,
-			'settings__exchanges__item--expanded': expanded
+			'-active': exchange.connected,
+			'-enabled': !settings.disabled,
+			'-loading': !settings.disabled && !exchange.connected && exchange.valid,
+			'-error': exchange.error,
+			'-unmatched': !exchange.valid,
+			'-invisible': settings.hidden,
+			'-expanded': expanded
 		}">
-		<div class="settings__exchanges__item__header" v-on:click="toggleExchange(exchange)">
-			<div class="settings__exchanges__item__identity">
-				<div class="settings__exchanges__item__name">{{ exchange.id }}</div>
-				<small class="settings__exchanges__item__error" v-if="exchange.error">{{ exchange.error }}</small>
-				<small class="settings__exchanges__item__price" v-if="exchange.price" v-html="$root.formatPrice(exchange.price)"></small>
+		<div class="settings-exchange__header" v-on:click="toggleExchange(exchange)">
+			<div class="settings-exchange__identity">
+				<div class="settings-exchange__name">{{ exchange.id }} <i v-if="settings.ohlc !== false" class="icon-line-chart"></i></div>
+				<small class="settings-exchange__error" v-if="exchange.error">{{ exchange.error }}</small>
+				<small class="settings-exchange__price" v-if="exchange.price" v-html="$root.formatPrice(exchange.price)"></small>
 			</div>
-			<div class="settings__exchanges__item__controls">
-				<button class="settings__exchanges__item__visibility" v-tippy v-bind:title="exchange.hidden ? 'Show' : 'Hide (from everything)'" v-on:click.stop.prevent="$store.commit('toggleExchangeVisibility', exchange.id)"><i class="icon-eye"></i></button>
-				<button class="settings__exchanges__item__more" v-on:click.stop.prevent="expanded = !expanded"><i class="icon-down"></i></button>
+			<div class="settings-exchange__controls">
+				<button class="settings-exchange__visibility" v-tippy v-bind:title="exchange.hidden ? 'Show' : 'Hide (from everything)'" v-on:click.stop.prevent="$store.commit('toggleExchangeVisibility', exchange.id)"><i class="icon-eye"></i></button>
+				<button class="settings-exchange__more" v-on:click.stop.prevent="expanded = !expanded"><i class="icon-down"></i></button>
 			</div>
 		</div>
-		<div class="settings__exchanges__item__detail" v-if="expanded">
+		<div class="settings-exchange__detail" v-if="expanded">
 			<div class="form-group">
 				<label>Threshold <span v-if="exchanges[exchange.id].threshold !== 1">x{{exchanges[exchange.id].threshold}}</span></label>
 				<input type="range" min="0" max="2" step="0.01" v-bind:value="exchanges[exchange.id].threshold" @change="$store.commit('setExchangeThreshold', {exchange: exchange.id, threshold: $event.target.value})">
@@ -77,7 +77,7 @@ export default {
 <style lang='scss'>
 @import '../assets/sass/variables';
 
-.settings__exchanges__item {
+.settings-exchange {
 	background-color: rgba(white, 0.15);
 	color: white;
 	transition: all 0.2s $easeOutExpo;
@@ -90,10 +90,10 @@ export default {
 		margin-right: 8px;
 	}
 
-	&.settings__exchanges__item--loading {
+	&.-loading {
 		background-color: $blue;
 
-		.settings__exchanges__item__header:before {
+		.settings-exchange__header:before {
 			transition: all 0.2s $easeElastic;
 			display: block;
 			opacity: 1;
@@ -102,28 +102,28 @@ export default {
 		}
 	}
 
-	&.settings__exchanges__item--enabled {
-		.settings__exchanges__item__name:before {
+	&.-enabled {
+		.settings-exchange__name:before {
 			width: 0%;
 		}
 	}
 
-	&.settings__exchanges__item--active {
+	&.-active {
 		background-color: $green;
 		color: white;
 
-		.settings__exchanges__item__visibility {
+		.settings-exchange__visibility {
 			display: flex;
 		}
 
-		&.settings__exchanges__item--invisible {
+		&.-invisible {
 			.icon-visibility:before {
 				transform: scale(1.2) rotateY(180deg);
 			}
 		}
 	}
 
-	&.settings__exchanges__item--invisible {
+	&.-invisible {
 		opacity: 0.8;
 
 		.icon-eye:before {
@@ -131,7 +131,7 @@ export default {
 		}
 	}
 
-	&.settings__exchanges__item--error {
+	&.-error {
 		background-color: $red;
 
 		.icon-warning {
@@ -140,20 +140,20 @@ export default {
 		}
 	}
 
-	&.settings__exchanges__item--unmatched {
+	&.-unmatched {
 		background-color: #555;
 
 		color: rgba(white, 0.75);
 	}
 
-	&.settings__exchanges__item--expanded {
-		.settings__exchanges__item__more i:before {
+	&.-expanded {
+		.settings-exchange__more i:before {
 			content: unicode($icon-up);
 		}
 	}
 }
 
-.settings__exchanges__item__identity {
+.settings-exchange__identity {
 	position: relative;
 	margin: 0px 10px;
 	display: flex;
@@ -162,8 +162,15 @@ export default {
 	justify-content: center;
 }
 
-.settings__exchanges__item__name {
+.settings-exchange__name {
 	position: relative;
+	margin-right: auto;
+
+	.icon-line-chart {
+		position: absolute;
+    right: -1.5em;
+    top: .05em;
+	}
 
 	&:before {
 		content: "";
@@ -177,11 +184,11 @@ export default {
 	}
 }
 
-.settings__exchanges__item__price {
+.settings-exchange__price {
 	opacity: .8;
 }
 
-.settings__exchanges__item__header {
+.settings-exchange__header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
@@ -222,12 +229,12 @@ export default {
 	}
 }
 
-.settings__exchanges__item__controls {
+.settings-exchange__controls {
 	display: flex;
 	margin-left: auto;
 	align-self: stretch;
 
-	.settings__exchanges__item__visibility {
+	.settings-exchange__visibility {
 		display: none;
 	}
 
@@ -246,7 +253,7 @@ export default {
 	}
 }
 
-.settings__exchanges__item__detail {
+.settings-exchange__detail {
 	padding: 10px;
 	background-color: rgba(black, 0.25);
 }

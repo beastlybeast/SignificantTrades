@@ -70,6 +70,9 @@ export default {
       'chartPadding',
       'chartGridlines',
       'chartGridlinesGap',
+      'chartVolume',
+      'chartVolumeOpacity',
+      'chartVolumeThreshold'
 		])
   },
   created() {
@@ -92,6 +95,8 @@ export default {
         case 'reloadExchangeState':
         case 'toggleLiquidations':
         case 'setChartPadding':
+        case 'toggleVolume':
+        case 'setVolumeThreshold':
           if (+new Date() - this.$root.applicationStartTime > 1000) {
             this.setTimeframe(this.timeframe);
           }
@@ -100,6 +105,7 @@ export default {
         case 'toggleCandlestick':
         case 'toggleChartGridlines':
         case 'setChartGridlinesGap':
+        case 'setVolumeOpacity':
           this.createChart();
           this.setTimeframe(this.timeframe);
         break;
@@ -108,8 +114,8 @@ export default {
           this.chart.series[6].update({visible: mutation.payload});
         break;
         case 'setVolumeAverageLength':
-          this.chart.series[5].update({params: {period: mutation.payload || 14}});
-          this.chart.series[6].update({params: {period: mutation.payload || 14}});
+          this.chart.series[5].update({params: {period: +mutation.payload || 14}});
+          this.chart.series[6].update({params: {period: +mutation.payload || 14}});
         break;
         case 'toggleReplaying':
           if (mutation.payload) {
@@ -258,9 +264,14 @@ export default {
       const formatedTicks = [];
 
       ticks.forEach((tick, index) => {
-        this.tickData.buys += tick.buys;
-        this.tickData.sells += tick.sells;
-        this.tickData.liquidations += tick.liquidations || 0;
+        if (this.chartVolume) {
+          this.tickData.buys += tick.buys;
+          this.tickData.sells += tick.sells;
+        }
+
+        if (this.chartLiquidations) {
+          this.tickData.liquidations += tick.liquidations || 0;
+        }
 
         this.tickData.exchanges[tick.exchange] = {
           open: tick.open,
@@ -360,12 +371,6 @@ export default {
               case 1:
                 if (this.chartLiquidations) {
                   this.tickData.liquidations += trades[i][3] * trades[i][2];
-
-                  /* this.tickData.markers.push({
-                    x: trades[i][1],
-                    label: `${app.getAttribute('data-symbol')}${this.$root.formatAmount(trades[i][2] * trades[i][3], 1)} liquidated <b>${trades[i][4] == 1 ? 'SHORT' : 'LONG'}</b>`,
-                    symbol: 'rip'
-                  }); */
                 }
                 break;
             }
@@ -391,8 +396,10 @@ export default {
             this.tickData.exchanges[trades[i][0]].close = +trades[i][2];
             this.tickData.exchanges[trades[i][0]].size += +trades[i][3];
 
-            this.tickData[(trades[i][4] > 0 ? 'buys' : 'sells') + 'Count']++;
-            this.tickData[trades[i][4] > 0 ? 'buys' : 'sells'] += trades[i][3] * trades[i][2];
+            if (this.chartVolume && (!this.chartVolumeThreshold || trades[i][3] * trades[i][2] > this.chartVolumeThreshold)) {
+              this.tickData[(trades[i][4] > 0 ? 'buys' : 'sells') + 'Count']++;
+              this.tickData[trades[i][4] > 0 ? 'buys' : 'sells'] += trades[i][3] * trades[i][2];
+            }
           }
         }
 
@@ -416,7 +423,6 @@ export default {
       this.chart.redraw();
 
       this.tickData.added = true;
-      this.tickData.markers.splice(0, this.tickData.markers.length);
 
       window.chart = this.chart;
     },
@@ -443,7 +449,6 @@ export default {
 
       if (this.tickData) {
         this.tickData.timestamp = this.cursor;
-        this.tickData.markers = [];
 
         for (let exchange in this.tickData.exchanges) {
           this.tickData.exchanges[exchange].count = 0;
@@ -465,7 +470,6 @@ export default {
       } else {
         this.tickData = {
           timestamp: this.cursor,
-          markers: [],
           exchanges: {},
           open: null,
           high: null,
@@ -501,15 +505,14 @@ export default {
     },
     addTickToSeries(tick, live = false, snap = false) {
       this.chart.series[0].addPoint(tick.ohlc, false);
-      this.chart.series[1].addPoint(tick.buys, false);
-      this.chart.series[2].addPoint(tick.sells, false);
+
+      if (this.chartVolume) {
+        this.chart.series[1].addPoint(tick.buys, false);
+        this.chart.series[2].addPoint(tick.sells, false);
+      }
 
       if (this.chartLiquidations) {
         this.chart.series[3].addPoint(tick.liquidations, false);
-      }
-
-      if (tick.markers && tick.markers.length) {
-        this.processTickMarkers(tick);
       }
 
       if (snap && this.isSnaped) {
@@ -523,46 +526,19 @@ export default {
         tickPoints.liquidations.update(tick.liquidations[1], false);
       }
 
-      tickPoints.buys.update(tick.buys[1], false);
-      tickPoints.sells.update(tick.sells[1], false);
+      if (this.chartVolume) {
+        tickPoints.buys.update(tick.buys[1], false);
+        tickPoints.sells.update(tick.sells[1], false);
+      }
+
       tickPoints.ohlc.update(tick.ohlc, false);
-
-      if (tick.markers.length) {
-        this.processTickMarkers(tick);
-      }
     },
-    processTickMarkers(tick) {
-      if (!tick.markers.length) {
-        return;
-      }
-
-      tick.markers.forEach(marker =>
-        this.createMarker(marker.x || tick.ohlc[0], marker.y || tick.ohlc[4], marker.label, marker.symbol)
-      )
-    },
-    createMarker(x, y, label, symbol) {
-      const point = {
-        x: x,
-        y: y,
-        marker: {
-          radius: 8,
-          lineWidth: 4,
-          symbol: symbol,
-          fillColor: 'white'
-        },
-        name: label
-      };
-
-      this.chart.series[4].addPoint(point);
-    },
-
     formatTickData(tickData) {
       return {
         buys: [tickData.timestamp, tickData.buys],
         sells: [tickData.timestamp, tickData.sells],
         liquidations: [tickData.timestamp, tickData.liquidations],
         ohlc: this.getExchangesAveragedOHLC(tickData.exchanges, tickData),
-        markers: tickData.markers,
         added: tickData.added
       }
     },
@@ -856,10 +832,6 @@ export default {
           to += padding;
         }
 
-        this.chart.xAxis[0].update({
-            overscroll: padding
-        });
-
         this.chart.xAxis[0].setExtremes(from, to, true);
       }
     },
@@ -928,10 +900,19 @@ export default {
           if (!isPanned !== this.isSnaped) {
             this.$store.commit('toggleSnap', !isPanned);
           }
+        },
+        load: () => {
+          setTimeout(this.applyChartStyles.bind(this), 200);
         }
       }
 
       return options;
+    },
+    applyChartStyles() {
+      if (this.chartVolumeOpacity < 1) {
+        this.chart.series[1].graph.parentGroup.element.style.opacity = this.chartVolumeOpacity;
+        this.chart.series[2].graph.parentGroup.element.style.opacity = this.chartVolumeOpacity;
+      }
     },
     onClean(min) {
       this.setTimeframe(this.timeframe);
@@ -964,6 +945,13 @@ export default {
   position: relative;
   width: calc(100% + 1px);
 
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  
   .highcharts-container {
     width: 100% !important;
   }

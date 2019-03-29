@@ -235,3 +235,13 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-unlocked);
   }
 }
+.icon-line-chart {
+  &:before {
+    content: unicode($icon-line-chart);
+  }
+}
+.icon-candlestick-chart {
+  &:before {
+    content: unicode($icon-candlestick-chart);
+  }
+}

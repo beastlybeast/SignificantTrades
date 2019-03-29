@@ -73,6 +73,7 @@ export default {
           this.gifKeywordChangeTimeout = setTimeout(this.fetchGifByKeyword.bind(this, mutation.payload.value, mutation.payload.index), 2000);
           break;
         case 'setThresholdColor':
+        case 'setThresholdAmount':
           this.refreshColorsPercentages();
           this.trades.splice(0, this.trades.length);
 
@@ -264,72 +265,6 @@ export default {
         }
       });
     },
-    hexToRgb(hex) {
-      const bigint = parseInt(hex.replace(/[^0-9A-F]/gi, ''), 16);
-      const r = (bigint >> 16) & 255;
-      const g = (bigint >> 8) & 255;
-      const b = bigint & 255;
-
-      return {
-        r,
-        g,
-        b
-      };
-    },
-    getTradeColor(trade) {
-      const amount = trade[2] * trade[3];
-      const pct = amount / this.thresholds[this.thresholds.length - 1].amount;
-      const palette = this.colors[trade[4] > 0 ? 'buys': 'sells'];
-
-      for (var i = 1; i < palette.length - 1; i++) {
-        if (pct < palette[i].pct) {
-          break;
-        }
-      }
-
-      const lower = palette[i - 1];
-      const upper = palette[i];
-      const range = upper.pct - lower.pct;
-      const rangePct = (pct - lower.pct) / range;
-      const pctLower = 1 - rangePct;
-      const pctUpper = rangePct;
-      const color = {
-        r: Math.floor(lower.color.r * pctLower + upper.color.r * pctUpper),
-        g: Math.floor(lower.color.g * pctLower + upper.color.g * pctUpper),
-        b: Math.floor(lower.color.b * pctLower + upper.color.b * pctUpper)
-      };
-
-      const opacity = +(.33 + Math.min(.66, amount / this.thresholds[1].amount * .66)).toFixed(2);
-      let luminance = Math.sqrt(0.299 * Math.pow(color.r, 2) + 0.587 * Math.pow(color.g, 2) + 0.114 * Math.pow(color.b, 2));
-
-      if (opacity < 1) {
-        if (this.dark) {
-          luminance *= opacity;
-        } else {
-          luminance = 255;
-        }
-      }
-
-      return {
-        background: 'rgba(' + [color.r, color.g, color.b, opacity].join(',') + ')',
-        foreground: 'rgba(' + (luminance > 200 ? '0,0,0' : '255,255,255') + ',' + Math.min(1, opacity * 1.25) + ')'
-      }
-    },
-    refreshColorsPercentages() {
-      const maximum = this.thresholds[this.thresholds.length - 1].amount;
-
-      this.colors = {};
-
-      this.colors.buys = this.thresholds.map((threshold, index) => ({
-        pct: threshold.amount / maximum,
-        color: this.hexToRgb(threshold.buyColor)
-      }));
-
-      this.colors.sells = this.thresholds.map((threshold, index) => ({
-        pct: threshold.amount / maximum,
-        color: this.hexToRgb(threshold.sellColor)
-      }));
-    },
     fetchGifByKeyword(keyword, index) {
       if (!keyword) {
         if (this.gifs[index]) {
@@ -362,7 +297,85 @@ export default {
             })
           );
         });
-    }
+    },
+    formatRgba(string) {
+      const match = string.match(/rgba?\((\d+)[\s\,]*(\d+)[\s\,]*(\d+)(?:[\s\,]*([\d\.]+))?\)/);
+
+      return {
+        r: +match[1],
+        g: +match[2],
+        b: +match[3],
+        a: typeof match[4] === 'undefined' ? 1 : +match[4]
+      };
+    },
+    refreshColorsPercentages() {
+      let uniqueThresholds = [];
+      let amounts = [];
+
+      for (let i = this.thresholds.length - 1; i >= 0; i--) {
+        console.log('i', i, this.thresholds[i].amount, this.thresholds[i].buyColor);
+        if (amounts.indexOf(+this.thresholds[i].amount) === -1) {
+          console.log('unshift!');
+          uniqueThresholds.unshift(this.thresholds[i]);
+          amounts.push(+this.thresholds[i].amount);
+        }
+      }
+      console.log(uniqueThresholds, this.thresholds);
+      const maximum = uniqueThresholds[uniqueThresholds.length - 1].amount;
+
+      this.colors = {};
+
+      this.colors.buys = uniqueThresholds.map((threshold, index) => ({
+        pct: threshold.amount / maximum,
+        color: this.formatRgba(threshold.buyColor)
+      }));
+
+      this.colors.sells = uniqueThresholds.map((threshold, index) => ({
+        pct: threshold.amount / maximum,
+        color: this.formatRgba(threshold.sellColor)
+      }));
+    },
+    getTradeColor(trade) {
+      const amount = trade[2] * trade[3];
+      const pct = amount / this.thresholds[this.thresholds.length - 1].amount;
+      const palette = this.colors[trade[4] > 0 ? 'buys': 'sells'];
+
+      for (var i = 1; i < palette.length - 1; i++) {
+        if (pct < palette[i].pct) {
+          break;
+        }
+      }
+
+      const lower = palette[i - 1];
+      const upper = palette[i];
+      const range = upper.pct - lower.pct;
+      let rangePct = (pct - lower.pct) / range;
+      let pctLower = 1 - rangePct;
+      const pctUpper = rangePct;
+
+      const background = {
+        r: Math.floor(lower.color.r * pctLower + upper.color.r * rangePct),
+        g: Math.floor(lower.color.g * pctLower + upper.color.g * rangePct),
+        b: Math.floor(lower.color.b * pctLower + upper.color.b * rangePct),
+        a: lower.color.a * pctLower + upper.color.a * rangePct
+      };
+      
+      let luminance = Math.sqrt(0.299 * Math.pow(background.r, 2) + 0.587 * Math.pow(background.g, 2) + 0.114 * Math.pow(background.b, 2));
+      let foreground;
+
+      if (luminance > 200 || background.a === 1) {
+        foreground = this.dark ? `white` : `black`;
+      } else {
+        pctLower *= 1.5;
+
+        foreground = `rgb(${Math.floor(lower.color.r * pctLower + 255 * rangePct)}, ${Math.floor(lower.color.g * pctLower + 255 * rangePct)}, ${Math.floor(lower.color.b * pctLower + 255 * rangePct)})`;
+      }
+
+      return {
+        background: `rgba(${background.r}, ${background.g}, ${background.b}, ${background.a})`,
+        foreground
+      }
+    },
   }
 };
 </script>

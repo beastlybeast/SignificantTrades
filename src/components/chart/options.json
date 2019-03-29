@@ -18,9 +18,7 @@
       "dataGrouping": {
         "enabled": false
       },
-      "pointPadding": 0.18,
-      "groupPadding": 0,
-      "marker": { "states": { "hover": { "enabled": false, "radiusPlus": 2, "lineWidthPlus": 1 } } }
+      "marker": { "states": { "hover": { "enabled": false, "radiusPlus": 0, "lineWidthPlus": 0 } } }
     },
     "line": { "marker": { "enabled": false } },
     "sma": { "marker": { "enabled": false } },
@@ -32,7 +30,7 @@
       }
     },
     "candlestick": {
-      "states": { "hover": { "halo": false, "brightness": 2, "lineWidthPlus": 1 } }
+      "states": { "hover": { "halo": false, "brightness": 0, "lineWidthPlus": 0 } }
     },
     "scatter": {
       "tooltip": {
@@ -111,7 +109,8 @@
       "stacking": "area",
       "name": "BUYS",
       "data": [],
-      "yAxis": 1
+      "yAxis": 1,
+      "lineWidth": 1
     },
     {
       "id": "sells",
@@ -120,7 +119,8 @@
       "name": "SELLS",
       "color": "rgba(233, 30, 99, 1)",
       "data": [],
-      "yAxis": 1
+      "yAxis": 1,
+      "lineWidth": 1
     },
     {
       "id": "liquidations",

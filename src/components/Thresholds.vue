@@ -1,30 +1,33 @@
 <template>
-	<div class="thresholds">
-    <chrome-picker v-if="picking !== null" ref="picker" :value="thresholds[picking.index][picking.side]" @input="updateColor"></chrome-picker>
+	<div class="thresholds" :class="{ '-dragging': dragging }">    
+    <div class="thresholds-gradients">
+      <div class="thresholds-gradients__buys" ref="buysGradient"></div>
+      <div class="thresholds-gradients__sells" ref="sellsGradient"></div>
+    </div>
 
     <div class="thresholds__bar" ref="thresholdContainer">
       <div v-for="(threshold, index) in thresholds" :key="`threshold-${index}`" class="thresholds__handler" :class="{ '-selected': selectedIndex === index }" v-on:mousedown="startDrag($event, index)" :data-amount="$root.formatAmount(threshold.amount, 2)"></div>
     </div>
-    <div class="threshold-panel" v-if="selectedIndex !== null" :class="{ '-minimum': selectedIndex === 0 }">
-      <div class="threshold-panel__caret" v-bind:style="{ left: this.selectedCaretPosition + 'px' }"></div>
-      <a href="#" class="threshold-panel__close icon-cross" v-on:click="selectedIndex = null"></a>
+    <div class="threshold-panel" v-if="selectedIndex !== null" @click="editing = true" ref="thresholdPanel" :class="{ '-minimum': selectedIndex === 0 }" v-bind:style="{ transform: 'translateX(' + this.panelOffsetPosition + 'px)' }">
+      <chrome-picker v-if="picking !== null" ref="picker" :value="thresholds[picking.index][picking.side]" @input="updateColor"></chrome-picker>
+
+      <div class="threshold-panel__caret" v-bind:style="{ transform: 'translateX(' + this.panelCaretPosition + 'px)' }"></div>
+      <a href="#" class="threshold-panel__close icon-cross" v-on:click="selectedIndex = null, editing = false"></a>
       <h3>if amount > <editable :content="thresholds[selectedIndex].amount" @output="$store.commit('setThresholdAmount', {index: selectedIndex, value: $event})"></editable></h3>
-      <div class="settings__column">
-        <div class="form-group mb8 threshold-panel__gif">
-          <label>Show themed gif</label>
-          <small class="help-text">Comma separated <a href="https://gfycat.com" target="_blank">Gifycat</a> keywords</small>
-          <input type="text" class="form-control" :value="thresholds[selectedIndex].gif" @change="$store.commit('setThresholdGif', {index: selectedIndex, value: $event.target.value})" placeholder="Leave empty = no gif">
-        </div>
-        <div class="form-group mb8 threshold-panel__colors">
-          <label>Custom colors</label>
-          <small class="help-text">Set buy & sell color</small>
-          <div class="settings__column">
-            <div class="form-group" title="When buy" v-tippy>
-              <input type="text" class="form-control" :value="thresholds[selectedIndex].buyColor" :style="{ 'backgroundColor': thresholds[selectedIndex].buyColor }" @change="$store.commit('setThresholdColor', { index: selectedIndex, side: 'buyColor', value: $event.target.value })" @click="openPicker('buyColor', selectedIndex, $event)">
-            </div>
-            <div class="form-group" title="When sell" v-tippy>
-              <input type="text" class="form-control" :value="thresholds[selectedIndex].sellColor" :style="{ 'backgroundColor': thresholds[selectedIndex].sellColor }" @change="$store.commit('setThresholdColor', { index: selectedIndex, side: 'buyColor', value: $event.target.value })" @click="openPicker('sellColor', selectedIndex, $event)">
-            </div>
+      <div class="form-group mb8 threshold-panel__gif">
+        <label>Show themed gif</label>
+        <small class="help-text">Random gif based on <a href="https://gfycat.com" target="_blank">Gifycat</a> keyword</small>
+        <input type="text" class="form-control" :value="thresholds[selectedIndex].gif" @change="$store.commit('setThresholdGif', {index: selectedIndex, value: $event.target.value})" placeholder='eg: "cat" or "dog"'>
+      </div>
+      <div class="form-group mb8 threshold-panel__colors">
+        <label>Custom colors</label>
+        <small class="help-text">Will show colored line</small>
+        <div class="column">
+          <div class="form-group" title="When buy" v-tippy="{ placement: 'bottom' }">
+            <input type="text" class="form-control" :value="thresholds[selectedIndex].buyColor" :style="{ 'backgroundColor': thresholds[selectedIndex].buyColor }" @change="$store.commit('setThresholdColor', { index: selectedIndex, side: 'buyColor', value: $event.target.value })" @click="openPicker('buyColor', selectedIndex, $event)">
+          </div>
+          <div class="form-group" title="When sell" v-tippy="{ placement: 'bottom' }">
+            <input type="text" class="form-control" :value="thresholds[selectedIndex].sellColor" :style="{ 'backgroundColor': thresholds[selectedIndex].sellColor }" @change="$store.commit('setThresholdColor', { index: selectedIndex, side: 'sellColor', value: $event.target.value })" @click="openPicker('sellColor', selectedIndex, $event)">
           </div>
         </div>
       </div>
@@ -43,10 +46,13 @@ export default {
   },
 	data() {
 		return {
+      dragging: null,
       picking: null,
+      editing: null,
       selectedIndex: null,
       selectedElement: null,
-      selectedCaretPosition: 0
+      panelCaretPosition: 0,
+      panelOffsetPosition: 0
 		}
 	},
   computed: {
@@ -60,11 +66,15 @@ export default {
         case 'setThresholdAmount':
           this.refreshHandlers();
           break;
+        case 'setThresholdColor':
+          this.refreshGradients();
+          break;
       }
     });
   },
   mounted() {
     this.refreshHandlers();
+    this.refreshGradients();
 
     this._doDrag = this.doDrag.bind(this);
 
@@ -89,39 +99,67 @@ export default {
     startDrag(event, index) {
       this.selectedIndex = index;
 
-      if (index > 0) {
+      if (index > -1) {
         this.selectedElement = event.target;
       }
 
-      this.refreshCaretPosition(event.target);
+      setTimeout(this.refreshCaretPosition.bind(this, event.target));
+
+      this.dragStartedAt = {
+        timestamp: +new Date(),
+        position: event.pageX
+      };
     },
     doDrag(event) {
-      if (this.selectedElement === null) {
+      if (
+        this.selectedElement === null || 
+        !this.dragStartedAt || 
+        (new Date() - this.dragStartedAt.timestamp < 1000 && Math.abs(this.dragStartedAt.position - event.pageX) < 3)) {
         return;
       }
 
+      this.dragging = true;
+
       const minLog = Math.log(this.minimum);
-
-      const left = Math.max(0, Math.min(this.width, event.pageX - this.offsetLeft));
       const minLeft = Math.log(this.minimum) / Math.log(this.maximum) * this.width;
-      const amount = Math.exp(((minLeft + (left / this.width) * (this.width - minLeft)) / this.width) * Math.log(this.maximum));
 
-      this.selectedElement.style.left = left + 'px';
+      let left = Math.max(this.width / 3 * -1, Math.min(this.width * 1.5, event.pageX - this.offsetLeft));
+      let amount = Math.exp(((minLeft + (left / this.width) * (this.width - minLeft)) / this.width) * Math.log(this.maximum));
+
+      if (event.pageX < this.offsetLeft) {
+        amount = this.thresholds[this.selectedIndex].amount - (this.thresholds[this.selectedIndex].amount - amount) * .1;
+        left = 0;
+      } else if (event.pageX > this.offsetLeft + this.width) {
+        amount = this.thresholds[this.selectedIndex].amount - (this.thresholds[this.selectedIndex].amount - amount) * .1;
+        left = this.width;
+      }
+
+      if (amount < 0) {
+        amount = 0;
+      }
+
+      this.selectedElement.style.transform = 'translateX(' + left + 'px)';
 
       this.refreshCaretPosition();
 
-      this.$store.commit('setThresholdAmount', {index: this.selectedIndex, value: this.$root.formatPrice(amount)});
+      this.thresholds[this.selectedIndex].amount = this.$root.formatPrice(amount);
     },
     endDrag(event) {
       if (this.selectedElement) {
+        this.$store.commit('setThresholdAmount', {index: this.selectedIndex, value: this.thresholds[this.selectedIndex].amount});
+
         this.selectedElement = null;
 
         this.reorderThresholds();
+        this.refreshHandlers();
+        this.refreshGradients();
       }
 
       if (this.picking) {
         this.closePicker(event);
       }
+
+      this.dragging = false;
     },
     refreshHandlers() {
       const amounts = this.thresholds.map(threshold => threshold.amount);
@@ -140,19 +178,40 @@ export default {
       const minLog = Math.log(this.minimum);
       const maxLog = Math.log(this.maximum) - minLog;
 
-      for (let i = 1; i < this.thresholds.length; i++) {
+      for (let i = 0; i < this.thresholds.length; i++) {
         const handler = handlers[i];
         const threshold = this.thresholds[i];
         const posLog = Math.log(threshold.amount) - minLog;
         const posPx = this.width * (posLog / maxLog);
 
-        handler.style.left = posPx + 'px';
+        handler.style.transform = 'translateX(' + posPx + 'px)';
       }
     },
     refreshCaretPosition(selectedElement = this.selectedElement) {
-      const left = parseInt(selectedElement.style.left) || 0;
+      const left = parseFloat(selectedElement.style.transform.replace(/[^\d.]/g, '')) || 0;
+      const panelWidth = this.$refs.thresholdPanel.clientWidth;
+      const caretMargin = 12;
+      const panelRange = (this.width - panelWidth) / 2 + caretMargin;
 
-      this.selectedCaretPosition = Math.max(32, Math.min(this.width - 32, left));
+      this.panelOffsetPosition = -panelRange + ((panelRange * 2) * (left / (this.width)));
+      this.panelCaretPosition = caretMargin + (panelWidth - caretMargin * 2) * (left / (this.width));
+    },
+    refreshGradients() {
+      const minLog = Math.log(this.minimum);
+      const maxLog = Math.log(this.maximum);
+
+      let buysStops = [];
+      let sellsStops = [];
+
+      for (let i = 0; i < this.thresholds.length; i++) {
+        const percent = i === 0 ? 0 : i === this.thresholds.length - 1 ? 100 : ((Math.log(this.thresholds[i].amount) - minLog) / (maxLog - minLog) * 100).toFixed(2);
+        
+        buysStops.push(`${this.thresholds[i].buyColor} ${percent}%`);
+        sellsStops.push(`${this.thresholds[i].sellColor} ${percent}%`);
+      }
+
+      this.$refs.buysGradient.style.backgroundImage = `linear-gradient(to right, ${buysStops.join(', ')})`;
+      this.$refs.sellsGradient.style.backgroundImage = `linear-gradient(to right, ${sellsStops.join(', ')})`;
     },
     reorderThresholds() {
       let selectedThreshold;
@@ -182,10 +241,10 @@ export default {
 
       this.picking = { side, index };
 
-      setTimeout(() => {
+      /* setTimeout(() => {
         this.$refs.picker.$el.style.left = Math.min(this.width - this.$refs.picker.$el.clientWidth - 16, event.pageX - this.offsetLeft) + 'px';
         this.$refs.picker.$el.style.top = (event.pageY - this.offsetTop + 16) + 'px';
-      })
+      }) */
 
       event.stopPropagation();
     },
@@ -203,7 +262,7 @@ export default {
         return;
       }
 
-      this.$store.commit('setThresholdColor', { index: this.picking.index, side: this.picking.side, value: color.hex });
+      this.$store.commit('setThresholdColor', { index: this.picking.index, side: this.picking.side, value: `rgba(${color.rgba.r}, ${color.rgba.g}, ${color.rgba.b}, ${color.rgba.a})` });
     }
 	}
 }
@@ -214,6 +273,7 @@ export default {
 
 .thresholds {
   position: relative;
+  z-index: 1;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
   -khtml-user-select: none;
@@ -224,8 +284,7 @@ export default {
   &__bar {
     margin: 2.5em 0 1em;
     height: .5em;
-    border-radius: 2px;
-    background-color: rgba(white, .2);
+    background-color: rgba(black, .2);
     left: 0;
     right: 0;
   }
@@ -244,35 +303,142 @@ export default {
     &:before {
       position: absolute;
       content: attr(data-amount);
-      top: -1.5em;
+      top: -2.5em;
       left: 50%;
       transform: translateX(-50%);
+      font-size: .89em;
     }
 
     &.-selected {
-      box-shadow: 0 0 0 10px rgba(white, .2);
+      box-shadow: 0 0 0 12px rgba(white, .2);
+    }
+  }
+
+  &.-dragging {
+    .thresholds-gradients,
+    .thresholds__handler {
+      opacity: .5;
+
+      &.-selected {
+        opacity: 1;
+      }
+    }
+
+    .threshold-panel {
+      transition: transform .2s $easeOutExpo;
+
+      &__caret {
+        transition: transform .2s $easeOutExpo;
+      }
+    }
+  }
+}
+
+.thresholds-gradients {
+  position: absolute;
+  width: 100%;
+  margin: -.85em 0;
+
+  > div {
+    height: 1em;
+    width: 100%;
+    border-radius: 4px;
+
+    + div {
+      margin-top: .25em;
     }
   }
 }
 
 .threshold-panel {
   position: relative;
-  background-color: rgba(white, .2);
-  border-radius: 2px;
+  background-color: lighten($dark, 18%);
+  border-radius: 4px;
   padding: 1em;
-  margin: 2em 1em 1em;
+  margin: 2em auto 0;
+  transition: transform .2s $easeOutExpo;
+  max-width: 220px;
 
-  > .settings__column {
-    @media screen and (max-width: 380px) {
-      flex-direction: column;
+  .vc-chrome {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    box-shadow: 0;
+    display: flex;
+    flex-direction: column-reverse;
+    bottom: 0;
+    flex-grow: 1;
+    width: 100%;
 
-      > .form-group {
-        flex-basis: 100%;
-        max-width: 100%;
+    .vc-input__input {
+      background: none;
+      border: 2px solid white;
+      border-radius: 2px;
+      color: white;
+      box-shadow: none;
+    }
 
-        + .form-group {
-          margin-top: 8px;
-        }
+    .vc-chrome-body {
+      border-radius: 2px 2px 0 0;
+      background: lighten($dark, 18%) !important;
+    }
+
+    .vc-chrome-saturation-wrap {
+      flex-grow: 1;
+      padding: 0;
+      border-radius: 0 0 2px 2px;
+    }
+
+    .vc-chrome-toggle-icon-highlight {
+      background-color: rgba(black, .2);
+    }
+
+    .vc-chrome-toggle-icon {
+      path {
+        fill: white;
+      }
+    }
+
+    &,
+    .vc-chrome-body {
+      box-shadow: none;
+    }
+  }
+  
+  .form-group {
+    min-width: 1px;
+
+    .form-control {
+      background: none;
+      border: 2px solid white;
+      color: white;
+
+      &::-webkit-input-placeholder {
+        color: rgba(white, .55);
+      }
+      
+      &:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
+        color: rgba(white, .55);
+        opacity: 1;
+      }
+
+      &::-moz-placeholder { /* Mozilla Firefox 19+ */
+        color: rgba(white, .55);
+        opacity: 1;
+      }
+
+      &:-ms-input-placeholder { /* Internet Explorer 10-11 */
+        color: rgba(white, .55);
+      }
+
+      &::-ms-input-placeholder { /* Microsoft Edge */
+        color: rgba(white, .55);
+      }
+      
+      &::placeholder { /* Most modern browsers support this now. */
+        color: rgba(white, .55);
       }
     }
   }
@@ -288,10 +454,13 @@ export default {
     color: rgba(white, .6);
 
     [contenteditable] {
-      font-weight: 600;
-      color: white;
-      background-color: rgba(black, .2);
-      padding: 0 .25em;
+      color: black;
+      background-color: white;
+      padding: .25em;
+      border-radius: 1px;
+      font-size: .75em;
+      vertical-align: top;
+      font-family: inherit;
     }
   }
 
@@ -312,24 +481,30 @@ export default {
     top: -.75em;
     border-left: .75em solid transparent;
     border-right: .75em solid transparent;
-    border-bottom: .75em solid rgba(255, 255, 255, 0.2);
+    border-bottom: .75em solid lighten($dark, 18%);
     margin-left: -1.75em;
-
-    transition: left 1s $easeOutExpo;
+    transition: transform .2s $easeOutExpo;
   }
 
   &__colors {
-    .form-control {
+    .form-group .form-control {
       height: auto;
       width: auto;
       min-width: 1px;
+      border: 0;
     }
   }
 
   &.-minimum {
+    &:before {
+      content: 'Minimum for a trade to show up';
+      display: block;
+      margin-bottom: 1em;
+      text-decoration: underline;
+    }
+
     .threshold-panel__gif {
-      opacity: .5;
-      pointer-events: none;
+      display: none;
     }
   }
 }
@@ -343,14 +518,5 @@ export default {
     opacity: 1;
     transform: translateY(0%);
   }
-}
-
-.vc-chrome {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  z-index: 1;
-
-  animation: .5s $easeOutExpo picker-in;
 }
 </style>

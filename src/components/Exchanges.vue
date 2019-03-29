@@ -1,6 +1,6 @@
 <template>
 	<div id="exchanges" class="exchanges">
-		<div v-if="connectedExchanges.length" v-for="(exchange, index) in connectedExchanges" v-bind:key="index" v-bind:class="'exchange__action-' + exchange.side" v-on:click="$store.commit('toggleExchangeVisibility', exchange.id)">
+		<div v-for="(exchange, index) in connectedExchanges" v-bind:key="index" v-bind:class="'-' + exchange.id + ' -' + exchange.side" v-on:click="$store.commit('toggleExchangeVisibility', exchange.id)">
 			<div class="exchange__name">{{ exchange.id }} <i v-if="exchanges[exchange.id].hidden" class="icon-eye-crossed"></i></div>
 			<div class="exchange__price" v-html="exchange.price ? $root.formatPrice(exchange.price) : `&nbsp;`"></div>
 		</div>
@@ -76,12 +76,12 @@ export default {
 	display: flex;
 	flex-direction: row;
 
-	min-height: 2.71em;
+	min-height: 1.5em;
 
 	> div {
     padding: .5em;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     background-color: rgba(white, .2);
     font-size: .9em;
     align-items: flex-start;
@@ -96,25 +96,35 @@ export default {
 			opacity: .8;
 			font-size: .9em;
 			letter-spacing: 1px;
+			background-position: left;
+			background-repeat: no-repeat;
+			text-indent: -99999px;
+			width: 1.5em;
 		}
 
 		.exchange__price {
 			font-family: monospace;
 		}
 
-		&.exchange__action-up {
+		&.-up {
 			background-color: rgba(lighten($green, 20%), .5);
 			color: darken($green, 20%);
 		}
 
-		&.exchange__action-down {
+		&.-down {
 			background-color: rgba(lighten($red, 20%), .5);
 			color: darken($red, 20%);
 		}
 
-		&.exchange__action-neutral {
+		&.-neutral {
 			background-color: rgba(black, .2);
 		}
+
+    @each $exchange in $exchanges {
+      &.-#{$exchange} .exchange__name {
+        background-image: url("/static/exchanges/#{$exchange}.svg");
+      }
+    }
 	}
 }
 </style>
