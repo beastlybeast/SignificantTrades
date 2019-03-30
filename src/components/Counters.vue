@@ -371,12 +371,6 @@ export default {
     padding: .25em;
   }
 
-  background-color: rgba(black, .05);
-
-  &:nth-child(odd) {
-    background-color: rgba(black, .025);
-  }
-
   &:hover {
     .counter__delete {
       flex-basis: 2.35em;
@@ -418,6 +412,8 @@ export default {
   flex-shrink: 0;
   transition: padding .2s $easeOutExpo;
   position: relative;
+  color: white;
+  background-color: rgba(black, .2);
 
   [contenteditable] {
     padding: 4px;
@@ -433,9 +429,6 @@ export default {
 
   flex-basis: 50%;
 
-  border-bottom: 4px solid transparent;
-  margin-bottom: 6px;
-
   &:before {
     content: attr(data-amount);
     position: absolute;
@@ -447,9 +440,8 @@ export default {
 
 .counter__up {
   text-align: left;
-  color: desaturate($green, 5);
-  border-color: desaturate($green, 5);
-  margin-right: 2px;
+  background-color: desaturate($green, 5);
+  color: white;
 
   &:before {
     left: .25em;
@@ -458,10 +450,10 @@ export default {
 
 .counter__down {
   text-align: right;
-  color: $red;
-  border-color: $red;
   margin-bottom: 6px;
   margin-right: 6px;
+  background-color: $red;
+  color: white;
 
   &:before {
     right: .25em;

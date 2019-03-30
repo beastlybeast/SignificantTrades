@@ -2,7 +2,7 @@
 	<header id="header" class="header">
     <div class="header__wrapper">
       <div class="header__title"> <span class="pair" v-if="pair">{{pair}}</span> <span class="icon-currency"></span> <span v-html="price || 'SignificantTrades'"></span></div>
-      <dropdown v-if="canFetch" :options="timeframes" :selected="timeframe" @output="setTimeframe(+$event)"></dropdown>
+      <dropdown :options="timeframes" :selected="timeframe" @output="setTimeframe(+$event)"></dropdown>
       <!-- <button type="button"
         v-bind:class="{active: isReplaying}"
         v-on:click="replay" title="Replay"
@@ -167,8 +167,8 @@ export default {
 @import "../assets/sass/variables";
 
 header#header {
+  background-color: lighten($dark, 10%);
   color: white;
-  background-color: rgba($purple, .88);
   position: relative;
   z-index: 2;
 
@@ -230,6 +230,7 @@ header#header {
     background: none;
     color: inherit;
     position: relative;
+    color: white;
 
     align-self: stretch;
     cursor: pointer;
@@ -315,12 +316,12 @@ header#header {
 
 #app.loading header#header {
   &:before {
-    background-color: rgba(black, .2);
+    background-color: lighten($dark, 28%);
     animation: indeterminate-loading-bar-slow 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
   }
 
   &:after {
-    background-color: rgba(black, .2);
+    background-color: lighten($dark, 28%);
     animation: indeterminate-loading-bar-fast 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
     animation-delay: 1.15s;
   }

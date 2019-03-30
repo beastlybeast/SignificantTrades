@@ -1,14 +1,18 @@
 <template>
 	<div id="chart">
-		<div class="chart__container" ref="chartContainer" v-bind:class="{fetching: fetching}" v-bind:style="{ height: chartHeight }">
-      <div class="chart__scale-mode" v-on:click="$store.commit('toggleChartAutoScale', !chartAutoScale)" v-tippy v-bind:title="chartAutoScale ? 'Unlock price axis' : 'Lock price axis'">
-        <span class="min-768">{{ chartAutoScale ? "AUTO" : "FREE" }}</span> <i v-bind:class="{ 'icon-locked': chartAutoScale, 'icon-unlocked': !chartAutoScale }"></i>
+		<div class="chart__container" ref="chartContainer" v-bind:class="{fetching: fetching}" v-bind:style="{ height: chartHeight }" @mouseenter="showControls = true" @mouseleave="showControls = false">
+      <div class="chart__notice" v-if="isDirty" v-tippy="{ placement: 'bottom' }" :title="`${pendingExchanges.join(pendingExchanges.length === 2 ? ' and ' : ', ')} did not send any trades since the beginning of the session.<br>Chart will be updated automaticaly once the data is received`">
+        <i class="icon-warning"></i> {{ pendingExchanges.length }} exchange{{ pendingExchanges.length > 1 ? 's are' : ' is' }} still silent
       </div>
-
-      <div class="chart__dirty-notice" v-if="isDirty && !showDirtyChart">
-        <strong>Chart not ready yet</strong>
-        <p>Only {{ chartedExchanges }}/{{ chartableExchanges }} exchanges have sent at least 1 trade atm.<br>Price action may not be 100% legit.</p>
-        <button class="btn" v-on:click="dismissDirtyNotice">Show anyway</button>
+      
+      <div class="chart__controls chart-controls" v-if="showControls">
+        <div class="chart-controls__left">
+        </div>
+        <div class="chart-controls__right">
+          <div class="chart__scale-mode" v-on:click="$store.commit('toggleChartAutoScale', !chartAutoScale)" v-tippy v-bind:title="chartAutoScale ? 'Unlock price axis' : 'Lock price axis'">
+            <span class="min-768">{{ chartAutoScale ? "AUTO" : "FREE" }}</span> <i v-bind:class="{ 'icon-locked': chartAutoScale, 'icon-unlocked': !chartAutoScale }"></i>
+          </div>
+        </div>
       </div>
 
       <div class="chart__scale-handler -y" ref="chartScaleHandler" v-on:mousedown="startScale('y', $event)" v-on:dblclick.stop.prevent="resetScale('y')"></div>
@@ -39,14 +43,13 @@ export default {
   data() {
     return {
       fetching: false,
+      showControls: false,
 			chart: null,
       tick: null,
       cursor: null,
       queuedTrades: [],
       queuedTicks: [],
-      chartableExchanges: 0,
-      chartedExchanges: 0,
-      showDirtyChart: false,
+      pendingExchanges: [],
       isDirty: false,
       isMini: false,
 
@@ -56,7 +59,6 @@ export default {
   computed: {
     ...mapState([
       'timeframe',
-      'dark',
       'actives',
       'exchanges',
       'isSnaped',
@@ -101,7 +103,6 @@ export default {
             this.setTimeframe(this.timeframe);
           }
           break;
-        case 'toggleDark':
         case 'toggleCandlestick':
         case 'toggleChartGridlines':
         case 'setChartGridlinesGap':
@@ -175,7 +176,7 @@ export default {
     createChart() {
       this.destroyChart();
 
-      this.themes = JSON.parse(JSON.stringify(chartOptions)).themes;
+      this.theme = JSON.parse(JSON.stringify(chartOptions)).theme;
 
       const options = this.getChartOptions();
 
@@ -628,8 +629,6 @@ export default {
     },
 
     updateMiniMode() {
-      const theme = this.themes[this.dark ? 'dark' : 'bright'];
-
       const isMini = window.innerWidth < 380;
 
       if (this.isMini !== isMini) {
@@ -664,7 +663,7 @@ export default {
       if (scale === null) {
         min = max = null;
       } else if (scale) {
-        range = (max - min) * scale;
+        range = (max - min) * (scale * (axis === 'x' ? -1 : 1));
 
         min -= range;
         max += range;
@@ -790,26 +789,21 @@ export default {
       setTimeout(() => this.setTimeframe(this.timeframe), 100);
     },
     updateChartedCount() {
-      const chartableExchanges = this.actives.filter(id => this.exchanges[id].ohlc !== false);
-
-      let chartedExchanges = 0;
+      let pendingExchanges = this.actives.filter(id => this.exchanges[id].ohlc !== false);
 
       if (this.tickData) {
-        chartedExchanges = Object.keys(this.tickData.exchanges).filter(id => {
-          return chartableExchanges.indexOf(id) !== -1
-        }).length;
+        pendingExchanges = pendingExchanges.filter(id => Object.keys(this.tickData.exchanges).indexOf(id) === -1);
+      }
+      
+      if (this.pendingExchanges.length !== pendingExchanges.length) {
+        this.setTimeframe(this.timeframe);
       }
 
-      this.chartedExchanges = chartedExchanges;
-      this.chartableExchanges = chartableExchanges.length;
+      this.pendingExchanges = pendingExchanges.map(a => a.toUpperCase());
 
-      this.isDirty = !this.isReplaying && this.chartedExchanges !== this.chartableExchanges;
+      this.isDirty = !this.isReplaying && this.pendingExchanges.length;
 
       return this.isDirty;
-    },
-    dismissDirtyNotice() {
-      this.setTimeframe(this.timeframe);
-      this.showDirtyChart = true;
     },
     isPanned() {
       if (!this.chart || !this.chart.series.length) {
@@ -837,60 +831,47 @@ export default {
     },
     getChartOptions() {
       const options = JSON.parse(JSON.stringify(chartOptions));
-      const theme = options.themes[this.dark ? 'dark' : 'bright'];
 
       // time axis
-      options.xAxis.labels.color = theme.labels;
-      options.xAxis.crosshair.color = theme.crosshair;
+      options.xAxis.labels.color = this.theme.labels;
+      options.xAxis.crosshair.color = this.theme.crosshair;
 
       // price axis
       if (this.chartGridlines) {
-        options.yAxis[0].labels.color = theme.labels;
-        options.yAxis[0].gridLineColor = theme.gridline;
-        options.yAxis[0].crosshair.color = theme.crosshair;
+        options.yAxis[0].labels.color = this.theme.labels;
+        options.yAxis[0].gridLineColor = this.theme.gridline;
+        options.yAxis[0].crosshair.color = this.theme.crosshair;
         options.yAxis[0].tickPixelInterval = this.chartGridlinesGap || null;
       } else {
         options.yAxis[0].visible = false;
       }
 
       // candlesticks
-      options.series[0].upColor = theme.up;
-      options.series[0].upLineColor = theme.upLine;
-      options.series[0].color = theme.down;
-      options.series[0].lineColor = theme.downLine;
+      options.series[0].upColor = this.theme.up;
+      options.series[0].upLineColor = this.theme.up;
+      options.series[0].color = this.theme.down;
+      options.series[0].lineColor = this.theme.down;
 
       // buys
-      options.series[1].color = theme.buysLine;
-      options.series[1].fillColor = {
-        linearGradient: {
-          x1: 0, y1: 0, x2: 0, y2: 1
-        },
-        stops: [[0, theme.buysGradient[0]], [1, theme.buysGradient[1]]]
-      };
+      options.series[1].color = this.theme.buys;
 
       // sells
-      options.series[2].color = theme.sellsLine;
-      options.series[2].fillColor = {
-        linearGradient: {
-          x1: 0, y1: 0, x2: 0, y2: 1
-        },
-        stops: [[0, theme.sellsGradient[0]], [1, theme.sellsGradient[1]]]
-      };
+      options.series[2].color = this.theme.sells;
 
       // liquidations bars
-      options.series[3].color = theme.liquidations;
+      options.series[3].color = this.theme.liquidations;
 
       // price MA
-      options.series[4].lineColor = theme.priceMA;
+      options.series[4].lineColor = this.theme.priceMA;
 
       // sells EMA
-      options.series[5].lineColor = theme.sellsMA;
+      options.series[5].lineColor = this.theme.sellsMA;
 
       // buys EMA
-      options.series[6].lineColor = theme.buysMA;
+      options.series[6].lineColor = this.theme.buysMA;
 
       options.series[0].type = this.chartCandlestick ? 'candlestick' : 'spline';
-      options.series[0].lineColor = this.chartCandlestick ? options.series[0].downLine : 'white';
+      options.series[0].lineColor = this.chartCandlestick ? options.series[0].down : 'white';
       options.series[0].lineWidth = this.chartCandlestick ? 1 : 2;
 
       options.chart.events = {
@@ -910,8 +891,8 @@ export default {
     },
     applyChartStyles() {
       if (this.chartVolumeOpacity < 1) {
-        this.chart.series[1].graph.parentGroup.element.style.opacity = this.chartVolumeOpacity;
-        this.chart.series[2].graph.parentGroup.element.style.opacity = this.chartVolumeOpacity;
+        this.chart.series[1].group.element.style.opacity = this.chartVolumeOpacity;
+        this.chart.series[2].group.element.style.opacity = this.chartVolumeOpacity;
       }
     },
     onClean(min) {
@@ -960,7 +941,7 @@ export default {
     position: absolute;
     top: 0;
     bottom: 0;
-    background-color: rgba(black, 0.1);
+    background-color: rgba(white, 0.1);
     z-index: 1;
     pointer-events: none;
   }
@@ -972,12 +953,6 @@ export default {
   .highcharts-credits {
     visibility: hidden;
   }
-
-  &:hover {
-    .chart__scale-mode {
-      opacity: 1;
-    }
-  }
 }
 
 .chart__scale-handler,
@@ -988,7 +963,6 @@ export default {
 }
 
 .chart__scale-handler {
-
   &.-y {
     right: 0;
     top: 0;
@@ -1018,16 +992,11 @@ export default {
 }
 
 .chart__scale-mode {
-  position: absolute;
-  top: 1em;
-  right: 1em;
   font-size: 14px;
-  opacity: .5;
   display: flex;
   align-items: center;
   z-index: 3;
   cursor: pointer;
-  opacity: 0;
 
   i {
     font-size: 14px;
@@ -1072,10 +1041,41 @@ export default {
   }
 }
 
-.chart_timeframe {
+.chart__notice {
   position: absolute;
-  margin: 10px;
   z-index: 1;
+  max-width: 200px;
+  left: 50%;
+  transform: translateX(-50%);
+
+  text-align: center;
+  font-size: .75em;
+  margin-top: 1em;
+
+  color: lighten($red, 10%);
+}
+
+.chart-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+
+  > div > div {
+    position: relative;
+  }
+
+  &__left {
+    position: absolute;
+    top: 1em;
+    left: 1em;
+  }
+
+  &__right {
+    position: absolute;
+    top: 1em;
+    right: 1em;
+    text-align: right;
+  }
 }
 
 .highcharts-tooltip-box tspan {

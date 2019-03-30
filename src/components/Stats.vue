@@ -199,11 +199,12 @@ export default {
     font-weight: 600;
     white-space: nowrap;
     padding: .25em 0 .75em;
+    font-family: 'Roboto Condensed';
 
     &:after {
       font-family: 'icon';
       content: unicode($icon-down);
-      color: lighten($red, 10%);
+      color: white;
     }
   }
 
@@ -263,17 +264,18 @@ export default {
       font-weight: 600;
       text-align: right;
       align-self: flex-end;
+      position: relative;
     }
 
     &:before {
       position: absolute;
       content: unicode($icon-stopwatch);
       font-family: 'icon';
-      opacity: .1;
+      opacity: .33;
       pointer-events: none;
       font-size: 120px;
       bottom: 0;
-      left: -60%;
+      left: -100%;
       color: black;
     }
 

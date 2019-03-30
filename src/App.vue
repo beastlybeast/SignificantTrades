@@ -70,7 +70,6 @@ export default {
   },
   computed: {
     ...mapState([
-      'dark',
       'pair',
       'actives',
       'showCounters',
@@ -97,9 +96,6 @@ export default {
         case 'toggleAutoClearTrades':
           this.toggleAutoClearTrades(mutation.payload);
         break;
-        case 'toggleDark':
-          this.toggleDark(mutation.payload);
-        break;
         case 'setPair':
           socket.connectExchanges(mutation.payload);
         break;
@@ -107,7 +103,6 @@ export default {
     });
 
     this.toggleAutoClearTrades(this.autoClearTrades);
-    this.toggleDark(this.dark);
 
     // Is request blocked by browser ?
     // If true notice user that most of the exchanges may be unavailable
@@ -160,14 +155,14 @@ export default {
         return +price.toFixed(decimals);
       }
 
-      if (this.decimalPrecision) {
-        return +price.toFixed(this.decimalPrecision);
-      }
-
-      if (price <= 0.0001) {
-        return (price * 100000000).toFixed() + ' <small>sats</small>';
+      if (price <= 0.01 && /BTC$/.test(this.pair)) {
+        return (price * 100000000).toFixed() + ' <small class="condensed">sats</small>';
       } else if (price >= 1000) {
         return +price.toFixed(2);
+      }
+
+      if (this.decimalPrecision) {
+        return +price.toFixed(this.decimalPrecision);
       }
 
       const firstDigitIndex = price.toString().match(/[1-9]/);
@@ -217,9 +212,6 @@ export default {
           this.commodity = symbols[symbol][0];
         }
       }
-    },
-    toggleDark(isDarkMode) {
-      window.document.body.classList[isDarkMode ? 'add' : 'remove']('theme-dark');
     },
     toggleAutoClearTrades(isAutoWipeCacheEnabled) {
       clearInterval(this._autoWipeCacheInterval);
@@ -285,6 +277,4 @@ export default {
 @import './assets/sass/tooltip';
 @import './assets/sass/dropdown';
 @import './assets/sass/button';
-
-@import './assets/sass/dark';
 </style>

@@ -1,8 +1,9 @@
 <template>
-	<div id="exchanges" class="exchanges">
+	<div id="exchanges" class="exchanges condensed" @mouseenter="hovering = true" @mouseleave="hovering = false">
 		<div v-for="(exchange, index) in connectedExchanges" v-bind:key="index" v-bind:class="'-' + exchange.id + ' -' + exchange.side" v-on:click="$store.commit('toggleExchangeVisibility', exchange.id)">
-			<div class="exchange__name">{{ exchange.id }} <i v-if="exchanges[exchange.id].hidden" class="icon-eye-crossed"></i></div>
-			<div class="exchange__price" v-html="exchange.price ? $root.formatPrice(exchange.price) : `&nbsp;`"></div>
+			<div class="exchange__price" :class="{ '-hidden': exchanges[exchange.id].hidden }">
+				{{ $root.formatPrice(exchange.price) }} &nbsp;
+			</div>
 		</div>
 	</div>
 </template>
@@ -17,6 +18,7 @@ const storedPrices = {};
 export default {
   data() {
     return {
+			hovering: false,
 			exchangesAverage: {},
 			exchangesDirection: {},
 			connectedExchanges: [],
@@ -42,9 +44,6 @@ export default {
   },
   methods: {
 		onTrades() {
-			this.connectedExchanges = socket.exchanges
-				.filter(a => a.connected)
-				.sort((a, b) => a.price - b.price);
 		},
 		updatePriceAction() {
 			socket.exchanges.forEach((exchange, index) => {
@@ -62,8 +61,16 @@ export default {
 				}
 
 				socket.exchanges[index].avg = storedPrices[exchange.id].reduce((a, b) => a + b) / storedPrices[exchange.id].length;
-				socket.exchanges[index].side = exchange.price > exchange.avg ? 'up' : exchange.price < exchange.avg ? 'down' : 'neutral';
+				socket.exchanges[index].side = !exchange.price ? 'pending' : exchange.price > exchange.avg ? 'up' : exchange.price < exchange.avg ? 'down' : 'neutral';
 			});
+
+			if (this.hovering) {
+				return;
+			}
+			
+			this.connectedExchanges = socket.exchanges
+				.filter(a => a.connected)
+				.sort((a, b) => a.price - b.price);
 		}
   }
 };
@@ -82,46 +89,49 @@ export default {
     padding: .5em;
     display: flex;
     flex-direction: row;
-    background-color: rgba(white, .2);
     font-size: .9em;
-    align-items: flex-start;
+    align-items: center;
     flex-grow: 1;
     flex-basis: 0;
 		position: relative;
+		line-height: 1.1;
+		background-position: .5em;
+		background-repeat: no-repeat;
+		background-size: 1em;
 
 		cursor: pointer;
 
-		.exchange__name {
-			text-transform: uppercase;
-			opacity: .8;
-			font-size: .9em;
-			letter-spacing: 1px;
-			background-position: left;
-			background-repeat: no-repeat;
-			text-indent: -99999px;
-			width: 1.5em;
-		}
-
 		.exchange__price {
-			font-family: monospace;
+			margin-left: 1.25em;
+			white-space: nowrap;
+
+			&.-hidden {
+				text-decoration: line-through;
+			}
 		}
 
-		&.-up {
-			background-color: rgba(lighten($green, 20%), .5);
-			color: darken($green, 20%);
-		}
+    &.-up {
+      background-color: transparent;
+      color: lighten($green, 10%);
+    }
 
-		&.-down {
-			background-color: rgba(lighten($red, 20%), .5);
-			color: darken($red, 20%);
-		}
+    &.-down {
+      background-color: transparent;
+      color: $red;
+    }
 
-		&.-neutral {
-			background-color: rgba(black, .2);
-		}
+    &.-neutral {
+      color: rgba(white, .75);
+			font-style: italic;
+    }
+
+    &.-pending {
+      background-color: rgba(white, .2);
+      opacity: .5;
+    }
 
     @each $exchange in $exchanges {
-      &.-#{$exchange} .exchange__name {
+      &.-#{$exchange} {
         background-image: url("/static/exchanges/#{$exchange}.svg");
       }
     }

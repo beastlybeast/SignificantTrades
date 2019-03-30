@@ -40,7 +40,6 @@ const DEFAULTS = {
 	timeframe: 1000 * 10,
 	autoClearTrades: true,
 	debug: false,
-	dark: true,
 	useShades: true,
 	useAudio: false,
 	audioIncludeInsignificants: true,
@@ -255,9 +254,6 @@ const store = new Vuex.Store({
 		},
 		toggleAudioIncludeInsignificants(state, value) {
 			state.audioIncludeInsignificants = value ? true : false;
-		},
-		toggleDark(state, value) {
-			state.dark = value ? true : false;
 		},
 		setAudioVolume(state, value) {
 			state.audioVolume = value;

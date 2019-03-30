@@ -41,7 +41,6 @@ export default {
   },
   computed: {
     ...mapState([
-      'dark',
       'pair',
       'maxRows',
       'thresholds',
@@ -154,7 +153,7 @@ export default {
 
       if (
         this.useAudio &&
-        ((this.audioIncludeInsignificants && size > this.thresholds[0].amount * Math.max(0.1, multiplier) * 0.1) ||
+        ((this.audioIncludeInsignificants && size > this.thresholds[1].amount * Math.max(0.1, multiplier) * 0.1) ||
           size > this.thresholds[1].amount * Math.max(0.1, multiplier))
       ) {
         this.sfx && this.sfx.tradeToSong(size / (this.thresholds[1].amount * Math.max(0.1, multiplier)), trade[4]);
@@ -313,14 +312,12 @@ export default {
       let amounts = [];
 
       for (let i = this.thresholds.length - 1; i >= 0; i--) {
-        console.log('i', i, this.thresholds[i].amount, this.thresholds[i].buyColor);
         if (amounts.indexOf(+this.thresholds[i].amount) === -1) {
-          console.log('unshift!');
           uniqueThresholds.unshift(this.thresholds[i]);
           amounts.push(+this.thresholds[i].amount);
         }
       }
-      console.log(uniqueThresholds, this.thresholds);
+
       const maximum = uniqueThresholds[uniqueThresholds.length - 1].amount;
 
       this.colors = {};
@@ -334,6 +331,10 @@ export default {
         pct: threshold.amount / maximum,
         color: this.formatRgba(threshold.sellColor)
       }));
+    },
+    shadeRGBColor(color, percent) {
+      var f=color.split(","),t=percent<0?0:255,p=percent<0?percent*-1:percent,R=parseInt(f[0].slice(4)),G=parseInt(f[1]),B=parseInt(f[2]);
+      return "rgb("+(Math.round((t-R)*p)+R)+","+(Math.round((t-G)*p)+G)+","+(Math.round((t-B)*p)+B)+")";
     },
     getTradeColor(trade) {
       const amount = trade[2] * trade[3];
@@ -353,26 +354,28 @@ export default {
       let pctLower = 1 - rangePct;
       const pctUpper = rangePct;
 
-      const background = {
+      const backgroundRGB = {
         r: Math.floor(lower.color.r * pctLower + upper.color.r * rangePct),
         g: Math.floor(lower.color.g * pctLower + upper.color.g * rangePct),
         b: Math.floor(lower.color.b * pctLower + upper.color.b * rangePct),
         a: lower.color.a * pctLower + upper.color.a * rangePct
       };
       
-      let luminance = Math.sqrt(0.299 * Math.pow(background.r, 2) + 0.587 * Math.pow(background.g, 2) + 0.114 * Math.pow(background.b, 2));
+      const background = `rgba(${backgroundRGB.r}, ${backgroundRGB.g}, ${backgroundRGB.b}, ${backgroundRGB.a})`;
+      const luminance = Math.sqrt(0.299 * Math.pow(backgroundRGB.r, 2) + 0.587 * Math.pow(backgroundRGB.g, 2) + 0.114 * Math.pow(backgroundRGB.b, 2));
+
       let foreground;
 
-      if (luminance > 200 || background.a === 1) {
-        foreground = this.dark ? `white` : `black`;
+      if (luminance > 200 || backgroundRGB.a === 1) {
+        foreground = 'white';
       } else {
-        pctLower *= 1.5;
+        rangePct *= 1.2;
 
-        foreground = `rgb(${Math.floor(lower.color.r * pctLower + 255 * rangePct)}, ${Math.floor(lower.color.g * pctLower + 255 * rangePct)}, ${Math.floor(lower.color.b * pctLower + 255 * rangePct)})`;
+        foreground = this.shadeRGBColor(`rgb(${backgroundRGB.r}, ${backgroundRGB.g}, ${backgroundRGB.b})`, rangePct);
       }
 
       return {
-        background: `rgba(${background.r}, ${background.g}, ${background.b}, ${background.a})`,
+        background,
         foreground
       }
     },
@@ -394,6 +397,8 @@ export default {
 }
 
 .trades {
+  background-color: rgba(black, .2);
+
   ul {
     margin: 0;
     padding: 0;

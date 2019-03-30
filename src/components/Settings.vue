@@ -1,5 +1,8 @@
 <template>
 	<div id="settings" class="settings__container stack__container" v-on:click="$event.target === $el && $emit('close')">
+    <div ref="tippin" v-if="tippin" class="tippin-me">
+      <iframe src="https://tippin.me/buttons/send-lite.php?u=Tucsky" frameborder="0" scrolling="no"></iframe>
+    </div>
     <div class="stack__backdrop"></div>
     <div class="stack__scroller">
       <!-- <a href="https://github.com/Tucsky/SignificantTrades/issues" target="_blank" class="settings__report"><i class="icon-warning"></i> Found a bug or feedback ? Let me know on Github !</a> -->
@@ -31,7 +34,7 @@
             </div>
           </div>
           <div class="settings-thresholds">
-            <Thresholds />
+            <Thresholds ref="thresholdsComponent" />
           </div>
         </div>
         <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'audio')" v-bind:class="{closed: settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
@@ -170,15 +173,8 @@
               <i class="divider">|</i>
               <a href="javascript:void(0);" v-on:click="reset()"> reset</a>
               <i class="divider">|</i>
-              <a href="bitcoin:3NuLQsrphzgKxTBU3Vunj87XADPvZqZ7gc" target="_blank" title="Bitcoin for more <3" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">donate</a>
+              <a target="_blank" @click="openTippin" title="Bitcoin for more <3" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">donate</a>
             </div>
-          </div>
-          <div class="form-group">
-            <label class="checkbox-control -luminosity flex-right" title="Switch luminosity" v-tippy>
-              <input type="checkbox" class="form-control" v-bind:checked="dark" @change="$store.commit('toggleDark', $event.target.checked)">
-              <span>{{ dark ? 'Day mode' : 'Night mode' }}</span>
-              <div></div>
-            </label>
           </div>
         </div>
       </div>
@@ -201,16 +197,10 @@ export default {
   },
   data() {
     return {
+      tippin: false,
       expanded: [],
       help: {
-        statsCurrency: `Show <i class="icon-currency"></i> value instead of <i class="icon-commodity"></i> value`,
-        timeframe: `
-          Define how much trades we stack together in the chart, type a amount of seconds or % of the visible range<br>
-          <ul>
-            <li>Type 1.5% for optimal result</li>
-            <li>Minimum is 5s whatever you enter</li>
-          </ul>
-        `
+        statsCurrency: `Show stats in DOLLAR/CURRENCY value`,
       },
       version: {
         number: process.env.VERSION || 'DEV',
@@ -250,7 +240,6 @@ export default {
       'chartVolumeAverage',
       'chartVolumeAverageLength',
       'autoClearTrades',
-      'dark',
       'settings',
     ]),
     exchanges: () => {
@@ -260,6 +249,9 @@ export default {
   created() {
     this.stringifyCounters();
     this.stringifyStatsPeriod();
+  },
+  beforeDestroy() {
+    document.removeEventListener('click', this._closeTippinHandler);
   },
   methods: {
     stringifyStatsPeriod() {
@@ -305,6 +297,22 @@ export default {
       window.localStorage && window.localStorage.clear();
 
       window.location.reload(true);
+    },
+    openTippin() {
+      this.tippin = true;
+
+      this._closeTippinHandler = this.closeTippin.bind(this);
+
+      document.addEventListener('click', this._closeTippinHandler);
+    },
+    closeTippin(e) {
+      if (!document.querySelector('.tippin-me').contains(e.target)) {
+        this.tippin = false;
+
+        document.removeEventListener('click', this._closeTippinHandler);
+
+        e.stopPropagation();
+      }
     }
   }
 };
@@ -324,7 +332,7 @@ export default {
   color: white;
 
   .stack__scroller {
-    background: rgba($purple, .88);
+    background-color: $dark;
   }
 
   @media screen and (min-width: 500px) {
@@ -434,7 +442,6 @@ export default {
       width: calc(100% - 16px);
       letter-spacing: -0.5px;
       min-width: 0;
-      height: 100%;
       font-size: 1em;
     }
 
@@ -866,5 +873,38 @@ export default {
       }
     }
   }
+}
+
+.tippin-me {
+    position: fixed;
+    z-index: 1;
+    width: 280px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.1);
+    border: 2em solid white;
+    height: 470px;
+		animation: .33s $easeElastic tippin-in;
+
+    @keyframes tippin-in {
+      from {
+        transform: translate(-50%, -50%) scale(.5);
+        opacity: .1;
+      }
+      to {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+    }
 }
 </style>

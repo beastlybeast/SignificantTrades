@@ -63,6 +63,14 @@ export default {
   created() {
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
+        case 'toggleSettingsPanel':
+          if (mutation.payload === 'list') {
+            setTimeout(() => {
+              this.refreshHandlers();
+              this.refreshGradients();
+            });
+          }
+          break;
         case 'setThresholdAmount':
           this.refreshHandlers();
           break;
@@ -492,6 +500,10 @@ export default {
       width: auto;
       min-width: 1px;
       border: 0;
+      font-family: monospace;
+      font-size: .9em;
+      font-weight: 600;
+      padding: 1.25em 1em;
     }
   }
 
