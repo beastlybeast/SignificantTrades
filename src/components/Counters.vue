@@ -450,8 +450,6 @@ export default {
 
 .counter__down {
   text-align: right;
-  margin-bottom: 6px;
-  margin-right: 6px;
   background-color: $red;
   color: white;
 

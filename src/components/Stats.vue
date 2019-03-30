@@ -288,6 +288,12 @@ export default {
         font-size: 140px;
       }
     }
+
+    @media screen and (min-width: 1200px) {
+      &:before {
+        left: -60%;
+      }
+    }
   }
 }
 </style>
