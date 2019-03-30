@@ -102,7 +102,7 @@ export default {
         case 'setChartPadding':
         case 'toggleVolume':
         case 'setVolumeThreshold':
-          if (+new Date() - this.$root.applicationStartTime > 5000) {
+          if (+new Date() - this.$root.applicationStartTime > 1000) {
             this.redrawChart()
           }
           break;
@@ -244,7 +244,7 @@ export default {
         min = this.chart.xAxis[0].min;
         max = this.chart.xAxis[0].max;
 
-        this.chart.xAxis[0].setExtremes(min - (max - min), max, true);
+        this.chart.xAxis[0].setExtremes(min - (max - min), max, false);
       }
 
       if (this.chart) {
