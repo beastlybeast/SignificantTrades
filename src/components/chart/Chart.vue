@@ -235,8 +235,16 @@ export default {
     redrawChart(range) {
       console.log(`[chart.redrawChart]`, range ? '(& setting range to ' + range + ')' : '');
 
+      let min;
+      let max;
+      
       if (range) {
-        this.setRange(range / 2);
+        this.setRange(range);
+      } else if (this.chart) {
+        min = this.chart.xAxis[0].min;
+        max = this.chart.xAxis[0].max;
+
+        this.chart.xAxis[0].setExtremes(min - (max - min), max, true);
       }
 
       if (this.chart) {
@@ -250,6 +258,12 @@ export default {
       this.tickHistoricals(socket.ticks);
 
       this.tickTrades(socket.trades);
+
+      if (range) {
+        this.setRange(range / 2);
+      } else if (this.chart) {
+        this.chart.xAxis[0].setExtremes(min, max, true);
+      }
     },
     onTrades(trades) {
       this.tickTrades(trades, true);
@@ -336,7 +350,7 @@ export default {
 
       // chart doesn't allow edit on invisible ticks when it is panned
       // we just process them when will get there
-      if (this.panning || this.isPanned()) {
+      if (this.busy || this.panning || this.isPanned()) {
         this.queuedTrades = this.queuedTrades.concat(trades);
 
         return;
@@ -423,31 +437,35 @@ export default {
         ticks.push(this.formatTickData(this.tickData));
       }
 
-      if (ticks.length && ticks[0].added) {
-        this.updateCurrentTick(ticks[0], live);
+      if (!this.chart.series[0].data.length) {
+        this.replaceEntireChart(ticks, live);
+      } else {
+        if (ticks.length && ticks[0].added) {
+          this.updateLatestPoints(ticks[0], live);
 
-        ticks.splice(0, 1);
-      }
+          ticks.splice(0, 1);
+        }
 
-      for (let i = 0; i < ticks.length; i++) {
-        this.addTickToSeries(ticks[i], live, i === ticks.length - 1);
+        for (let i = 0; i < ticks.length; i++) {
+          this.addTickToSeries(ticks[i], live, i === ticks.length - 1);
+        }
       }
       
       if (ticks.length) {
-        this.chart.redraw();
+        this.chart.xAxis[0].setExtremes(this.chart.xAxis[0].min, this.chart.xAxis[0].max)
       }
 
       this.tickData.added = true;
 
       window.chart = this.chart;
-    },
-    getCurrentTickPoints() {
-      return {
-        ohlc: this.chart.series[0].points[this.chart.series[0].points.length - 1],
-        buys: this.chart.series[1].points[this.chart.series[1].points.length - 1],
-        sells: this.chart.series[2].points[this.chart.series[2].points.length - 1],
-        liquidations: this.chart.series[3].points[this.chart.series[3].points.length - 1],
-      };
+
+      /* if (this.busy) {
+        this._busyTimeout = setTimeout(() => {
+          this.chart.redraw();
+
+          this.busy = false;
+        }, 3000)
+      } */
     },
     createTick(timestamp = null) {
       if (timestamp) {
@@ -515,45 +533,60 @@ export default {
           }
         }
       }
-
-      this.updateChartedCount();
     },
-    addTickToSeries(tick, live = false, snap = false) {
-      this.chart.series[0].addPoint(tick.ohlc, false);
+    replaceEntireChart(ticks, live = false, snap = false) {
+      const seriesData = {};
 
-      if (this.chartVolume) {
-        this.chart.series[1].addPoint(tick.buys, false);
-        this.chart.series[2].addPoint(tick.sells, false);
+      for (let tick of ticks) {
+        for (let serieIndex of Object.keys(tick)) {
+          if (isNaN(serieIndex)) {
+            continue;
+          }
+
+          if (!seriesData[serieIndex]) {
+            seriesData[serieIndex] = [];
+          }
+
+          if (tick[serieIndex]) {
+            seriesData[serieIndex].push(tick[serieIndex]);
+          }
+        }
       }
 
-      if (this.chartLiquidations) {
-        this.chart.series[3].addPoint(tick.liquidations, false);
+      for (let serieIndex in seriesData) {
+        this.chart.series[serieIndex].setData(seriesData[serieIndex], false)
+      }
+    },
+    addTickToSeries(tick, live = false, snap = false) {
+      for (let serieIndex in tick) {
+        if (!isNaN(serieIndex) && tick[serieIndex]) {
+          this.chart.series[serieIndex].addPoint(tick[serieIndex], false);
+        }
       }
 
       if (snap && this.isSnaped) {
         this.snapRight(live);
       }
     },
-    updateCurrentTick(tick, live = false) {
-      const tickPoints = this.getCurrentTickPoints();
+    updateLatestPoints(tick, live = false) {
+      for (let serieIndex in tick) {
+        if (!isNaN(serieIndex) && tick[serieIndex]) {
+          const point = this.chart.series[serieIndex].points[this.chart.series[serieIndex].points.length - 1];
 
-      if (this.chartLiquidations) {
-        tickPoints.liquidations.update(tick.liquidations[1], false);
+          if (point.y !== tick[serieIndex][1]) {
+            point.update(tick[serieIndex], false);
+          }
+        }
       }
 
-      if (this.chartVolume) {
-        tickPoints.buys.update(tick.buys[1], false);
-        tickPoints.sells.update(tick.sells[1], false);
-      }
-
-      tickPoints.ohlc.update(tick.ohlc);
+      this.chart.redraw();
     },
     formatTickData(tickData) {
       return {
-        buys: [tickData.timestamp, tickData.buys],
-        sells: [tickData.timestamp, tickData.sells],
-        liquidations: [tickData.timestamp, tickData.liquidations],
-        ohlc: this.getExchangesAveragedOHLC(tickData.exchanges, tickData),
+        0: this.getExchangesAveragedOHLC(tickData.exchanges, tickData),
+        1: this.chartVolume ? [tickData.timestamp, tickData.buys] : null,
+        2: this.chartVolume ? [tickData.timestamp, tickData.sells] : null,
+        3: this.chartLiquidations ? [tickData.timestamp, tickData.liquidations] : null,
         added: tickData.added
       }
     },
@@ -741,7 +774,7 @@ export default {
     },
 
     snapRight(redraw = false) {
-      if (this.panning) {
+      if (this.busy || this.panning) {
         return;
       }
 
@@ -799,7 +832,7 @@ export default {
       return this.tickData && this.chart.series[0].points.length && this.chart.series[0].points[this.chart.series[0].points.length - 1].x < this.tickData.timestamp
     },
 
-    setRange(range) {
+    setRange(range, setExtremes = true) {
       this.$store.commit('setChartRange', range);
 
       if (this.chart) {
@@ -813,7 +846,9 @@ export default {
           to += padding;
         }
 
-        this.chart.xAxis[0].setExtremes(from, to, true);
+        if (setExtremes) {
+          this.chart.xAxis[0].setExtremes(from, to, true);
+        }
       }
     },
     getChartOptions() {

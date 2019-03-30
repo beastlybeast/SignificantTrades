@@ -173,7 +173,7 @@
               <i class="divider">|</i>
               <a href="javascript:void(0);" v-on:click="reset()"> reset</a>
               <i class="divider">|</i>
-              <a target="_blank" @click="openTippin" title="Bitcoin for more <3" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">donate</a>
+              <a target="_blank" href="https://tippin.me/@Tucsky" @click="openTippin" title="Bitcoin for more <3" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">donate</a>
             </div>
           </div>
         </div>
@@ -298,14 +298,22 @@ export default {
 
       window.location.reload(true);
     },
-    openTippin() {
+    openTippin(e) {
+      e.preventDefault();
+
       this.tippin = true;
 
-      this._closeTippinHandler = this.closeTippin.bind(this);
+      this._closeTippinHandlerTimeout = setTimeout(() => {
+        this._closeTippinHandler = this.closeTippin.bind(this);
 
-      document.addEventListener('click', this._closeTippinHandler);
+        document.addEventListener('click', this._closeTippinHandler);
+      })
     },
     closeTippin(e) {
+      e.preventDefault();
+
+      clearTimeout(this._closeTippinHandlerTimeout);
+
       if (!document.querySelector('.tippin-me').contains(e.target)) {
         this.tippin = false;
 

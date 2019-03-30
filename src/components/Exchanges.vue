@@ -5,7 +5,7 @@
 			v-bind:class="'-' + exchange.id + ' -' + exchange.side" 
 			@click="$store.commit('toggleExchangeVisibility', exchange.id)"
 		>
-			<div class="exchange__price" :class="{ '-hidden': exchanges[exchange.id].hidden }">
+			<div v-if="exchange.price" class="exchange__price" :class="{ '-hidden': exchanges[exchange.id].hidden }">
 				{{ $root.formatPrice(exchange.price) }} &nbsp;
 			</div>
 		</div>
