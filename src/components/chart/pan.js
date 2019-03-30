@@ -34,77 +34,103 @@ const enablePanning = (H, chart) => {
     isDragging = false,
     hasDragged = 0;
 
+  var _event;
+
   if (panning && zoomType === '') {
-    addEvent(container, 'mousedown', function(e) {
-      body.style.cursor = 'move';
+    addEvent(container, 'mousedown', beforePan);
+    addEvent(doc, 'mousemove', e => (_event = e));
+    addEvent(doc, 'mouseup', afterPan);
+  }
 
-      downYPixels = chart.pointer.normalize(e).chartY;
-      downYValue = yAxis.toValue(downYPixels);
+  function beforePan(e) {
+    body.style.cursor = 'move';
 
-      downXPixels = chart.pointer.normalize(e).chartX;
-      downXValue = xAxis.toValue(downXPixels);
+    downYPixels = chart.pointer.normalize(e).chartY;
+    downYValue = yAxis.toValue(downYPixels);
 
-      isDragging = true;
-    });
+    downXPixels = chart.pointer.normalize(e).chartX;
+    downXValue = xAxis.toValue(downXPixels);
 
-    addEvent(doc, 'mousemove', function(e) {
-      if (isDragging) {
-        var dragYPixels = chart.pointer.normalize(e).chartY,
-            dragYValue = yAxis.toValue(dragYPixels);
+    isDragging = true;
+    
+    fireEvent(chart, '_panStart');
 
+    smoothPan();
+  }
+
+  function afterPan(e) {
+    if (isDragging) {
+      isDragging = false;
+
+      body.style.cursor = '';
+
+      fireEvent(chart, '_panEnd');
+    }
+  }
+
+  function doPan(e) {
+    if (isDragging) {
+      var dragYPixels = chart.pointer.normalize(e).chartY,
+          dragYValue = yAxis.toValue(dragYPixels);
+
+      if (!store.state.chartAutoScale) {
+        var yExtremes = yAxis.getExtremes(),
+          yUserMin = yExtremes.userMin,
+          yUserMax = yExtremes.userMax,
+          yDataMin = yExtremes.dataMin,
+          yDataMax = yExtremes.dataMax,
+          yMin = yUserMin !== undefined && yUserMin !== null ? yUserMin : yDataMin,
+          yMax = yUserMax !== undefined && yUserMax !== null ? yUserMax : yDataMax,
+          newMinY,
+          newMaxY;
+      }
+
+      var dragXPixels = chart.pointer.normalize(e).chartX,
+        dragXValue = xAxis.toValue(dragXPixels),
+        xExtremes = xAxis.getExtremes(),
+        xUserMin = xExtremes.userMin,
+        xUserMax = xExtremes.userMax,
+        xDataMin = xExtremes.dataMin,
+        xDataMax = xExtremes.dataMax,
+        xMin = xUserMin !== undefined && xUserMin !== null ? xUserMin : xDataMin,
+        xMax = xUserMax !== undefined && xUserMax !== null ? xUserMax : xDataMax,
+        newMinX,
+        newMaxX;
+        
+      // determine if the mouse has moved more than 10px
+      hasDragged = Math.max(
+        Math.abs(downYPixels - dragYPixels),
+        Math.abs(downXPixels - dragXPixels)
+      );
+
+      if (hasDragged > 2) {
         if (!store.state.chartAutoScale) {
-          var yExtremes = yAxis.getExtremes(),
-            yUserMin = yExtremes.userMin,
-            yUserMax = yExtremes.userMax,
-            yDataMin = yExtremes.dataMin,
-            yDataMax = yExtremes.dataMax,
-            yMin = yUserMin !== undefined && yUserMin !== null ? yUserMin : yDataMin,
-            yMax = yUserMax !== undefined && yUserMax !== null ? yUserMax : yDataMax,
-            newMinY,
-            newMaxY;
+          newMinY = yMin - (dragYValue - downYValue);
+          newMaxY = yMax - (dragYValue - downYValue);
+          yAxis.setExtremes(newMinY, newMaxY, false, false);
         }
 
-        var dragXPixels = chart.pointer.normalize(e).chartX,
-          dragXValue = xAxis.toValue(dragXPixels),
-          xExtremes = xAxis.getExtremes(),
-          xUserMin = xExtremes.userMin,
-          xUserMax = xExtremes.userMax,
-          xDataMin = xExtremes.dataMin,
-          xDataMax = xExtremes.dataMax,
-          xMin = xUserMin !== undefined && xUserMin !== null ? xUserMin : xDataMin,
-          xMax = xUserMax !== undefined && xUserMax !== null ? xUserMax : xDataMax,
-          newMinX,
-          newMaxX;
-          
-        // determine if the mouse has moved more than 10px
-        hasDragged = Math.max(
-          Math.abs(downYPixels - dragYPixels),
-          Math.abs(downXPixels - dragXPixels)
-        );
+        newMinX = xMin - (dragXValue - downXValue);
+        newMaxX = xMax - (dragXValue - downXValue);
+        xAxis.setExtremes(newMinX, newMaxX, true, false);
 
-        if (hasDragged > 2) {
-          if (!store.state.chartAutoScale) {
-            newMinY = yMin - (dragYValue - downYValue);
-            newMaxY = yMax - (dragYValue - downYValue);
-            yAxis.setExtremes(newMinY, newMaxY, false, false);
-          }
-
-          newMinX = xMin - (dragXValue - downXValue);
-          newMaxX = xMax - (dragXValue - downXValue);
-          xAxis.setExtremes(newMinX, newMaxX, true, false);
-
-          fireEvent(chart, 'pan');
-        }
+        fireEvent(chart, '_pan');
       }
-    });
+    }
+  }
 
-    addEvent(doc, 'mouseup', function() {
-      if (isDragging) {
-        isDragging = false;
+  function smoothPan() {
+    if (!isDragging) {
+      return;
+    }
 
-        body.style.cursor = '';
-      }
-    });
+    if (_event) {
+      doPan(_event);
+
+      _event = null;
+    }
+
+    return requestAnimationFrame(smoothPan);
   }
 };
 

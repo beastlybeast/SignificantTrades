@@ -33,15 +33,18 @@ import chartOptions from "./options.json";
 import Highcharts from 'highcharts/highstock';
 import Indicators from 'highcharts/indicators/indicators';
 import EMA from 'highcharts/indicators/ema';
+// import BB from 'highcharts/indicators/bollinger-bands';
 
 import enablePanning from './pan.js';
 
 Indicators(Highcharts);
 EMA(Highcharts);
+// BB(Highcharts); // is bugged on highchart 7 :-(
 
 export default {
   data() {
     return {
+      panning: false,
       fetching: false,
       showControls: false,
 			chart: null,
@@ -99,8 +102,8 @@ export default {
         case 'setChartPadding':
         case 'toggleVolume':
         case 'setVolumeThreshold':
-          if (+new Date() - this.$root.applicationStartTime > 1000) {
-            this.setTimeframe(this.timeframe);
+          if (+new Date() - this.$root.applicationStartTime > 5000) {
+            this.redrawChart()
           }
           break;
         case 'toggleCandlestick':
@@ -111,12 +114,12 @@ export default {
           this.setTimeframe(this.timeframe);
         break;
         case 'toggleVolumeAverage':
+          this.chart.series[4].update({visible: mutation.payload});
           this.chart.series[5].update({visible: mutation.payload});
-          this.chart.series[6].update({visible: mutation.payload});
         break;
         case 'setVolumeAverageLength':
+          this.chart.series[4].update({params: {period: +mutation.payload || 14}});
           this.chart.series[5].update({params: {period: +mutation.payload || 14}});
-          this.chart.series[6].update({params: {period: +mutation.payload || 14}});
         break;
         case 'toggleReplaying':
           if (mutation.payload) {
@@ -212,6 +215,8 @@ export default {
       delete this.chart;
     },
     setTimeframe(timeframe, snap = false, clear = false, print = true) {
+      clearTimeout(this._renderEndTimeout);
+
       console.log(`[chart.setTimeframe]`, timeframe);
 
       const count = ((this.chart ? this.chart.chartWidth : this.$refs.chartContainer.offsetWidth) - 20 * .1) / this.chartCandleWidth;
@@ -224,20 +229,27 @@ export default {
           console.log(`[chart.setTimeframe] did not fetch anything new`);
         }
 
-        this.setRange(range / 2);
-
-        if (this.chart) {
-          this.clearChart(+new Date() - range / 2);
-        }
-
-        if (!print || !socket.ticks.length && !socket.trades.length) {
-          return;
-        }
-
-        this.tickHistoricals(socket.ticks);
-
-        this.tickTrades(socket.trades);
+        this.redrawChart(range);
       })
+    },
+    redrawChart(range) {
+      console.log(`[chart.redrawChart]`, range ? '(& setting range to ' + range + ')' : '');
+
+      if (range) {
+        this.setRange(range / 2);
+      }
+
+      if (this.chart) {
+        this.clearChart(+new Date() - this.chartRange / 2);
+      }
+
+      if (!print || !socket.ticks.length && !socket.trades.length) {
+        return;
+      }
+
+      this.tickHistoricals(socket.ticks);
+
+      this.tickTrades(socket.trades);
     },
     onTrades(trades) {
       this.tickTrades(trades, true);
@@ -324,7 +336,7 @@ export default {
 
       // chart doesn't allow edit on invisible ticks when it is panned
       // we just process them when will get there
-      if (this.isPanned()) {
+      if (this.panning || this.isPanned()) {
         this.queuedTrades = this.queuedTrades.concat(trades);
 
         return;
@@ -335,7 +347,7 @@ export default {
         trades = this.queuedTrades.splice(0, this.queuedTrades.length).concat(trades);
 
       }
-
+      
       // first we trim trades
       // - equal or higer than current tick
       // - only from actives exchanges (enabled, matched and visible exchange)
@@ -420,8 +432,10 @@ export default {
       for (let i = 0; i < ticks.length; i++) {
         this.addTickToSeries(ticks[i], live, i === ticks.length - 1);
       }
-
-      this.chart.redraw();
+      
+      if (ticks.length) {
+        this.chart.redraw();
+      }
 
       this.tickData.added = true;
 
@@ -532,7 +546,7 @@ export default {
         tickPoints.sells.update(tick.sells[1], false);
       }
 
-      tickPoints.ohlc.update(tick.ohlc, false);
+      tickPoints.ohlc.update(tick.ohlc);
     },
     formatTickData(tickData) {
       return {
@@ -633,13 +647,13 @@ export default {
 
       if (this.isMini !== isMini) {
         this.chart.yAxis[1].update({
-          top: isMini ? '40%' : '70%',
-          height: isMini ? '60%' : '30%'
+          top: isMini ? '40%' : '75%',
+          height: isMini ? '60%' : '25%'
         }, false)
 
         this.chart.yAxis[2].update({
-          top: isMini ? '40%' : '70%',
-          height: isMini ? '60%' : '30%'
+          top: isMini ? '40%' : '75%',
+          height: isMini ? '60%' : '25%'
         }, false);
 
         setTimeout(this.chart.redraw.bind(this.chart), 1000);
@@ -688,17 +702,6 @@ export default {
         height: this.chartHeight > 0 ? this.chartHeight : +Math.min(w / 2, Math.max(300, h / 3)).toFixed()
       };
     },
-    createAndAppendEmptyTick() {
-      this.createTick();
-
-      const tick = this.formatTickData(this.tickData);
-
-      this.addTickToSeries(tick);
-
-      this.tickData.added = true;
-
-      this.chart.redraw();
-    },
 
     doResize(event) {
       clearTimeout(this._resizeTimeout);
@@ -738,6 +741,10 @@ export default {
     },
 
     snapRight(redraw = false) {
+      if (this.panning) {
+        return;
+      }
+
       if (Object.keys(this._scaling).length) {
         return;
       }
@@ -765,29 +772,7 @@ export default {
 
       this.chart.xAxis[0].setExtremes(from, to, redraw);
     },
-
-    buildExchangesSeries() {
-      for (let i = 4; i < this.chart.series.length; i++) {
-        this.chart.series[i].remove();
-      }
-
-      for (let exchange of this.actives) {
-        this.chart.addAxis({
-          id: exchange + '-axis',
-          visible: false,
-          height: '33%',
-        }, false);
-
-        this.chart.addSeries({
-          type: 'spline',
-          name: exchange,
-          yAxis: exchange + '-axis',
-          data: []
-        }, false);
-      }
-
-      setTimeout(() => this.setTimeframe(this.timeframe), 100);
-    },
+    
     updateChartedCount() {
       let pendingExchanges = this.actives.filter(id => this.exchanges[id].ohlc !== false);
 
@@ -796,7 +781,7 @@ export default {
       }
       
       if (this.pendingExchanges.length !== pendingExchanges.length) {
-        this.setTimeframe(this.timeframe);
+        this.redrawChart();
       }
 
       this.pendingExchanges = pendingExchanges.map(a => a.toUpperCase());
@@ -805,6 +790,7 @@ export default {
 
       return this.isDirty;
     },
+
     isPanned() {
       if (!this.chart || !this.chart.series.length) {
         return true;
@@ -812,6 +798,7 @@ export default {
 
       return this.tickData && this.chart.series[0].points.length && this.chart.series[0].points[this.chart.series[0].points.length - 1].x < this.tickData.timestamp
     },
+
     setRange(range) {
       this.$store.commit('setChartRange', range);
 
@@ -852,6 +839,11 @@ export default {
       options.series[0].color = this.theme.down;
       options.series[0].lineColor = this.theme.down;
 
+      // line
+      options.series[0].type = this.chartCandlestick ? 'candlestick' : 'spline';
+      options.series[0].lineColor = this.chartCandlestick ? options.series[0].down : 'white';
+      options.series[0].lineWidth = this.chartCandlestick ? 1 : 2;
+
       // buys
       options.series[1].color = this.theme.buys;
 
@@ -861,21 +853,20 @@ export default {
       // liquidations bars
       options.series[3].color = this.theme.liquidations;
 
-      // price MA
-      options.series[4].lineColor = this.theme.priceMA;
-
       // sells EMA
-      options.series[5].lineColor = this.theme.sellsMA;
+      options.series[4].lineColor = this.theme.sellsMA;
 
       // buys EMA
-      options.series[6].lineColor = this.theme.buysMA;
+      options.series[5].lineColor = this.theme.buysMA;
 
-      options.series[0].type = this.chartCandlestick ? 'candlestick' : 'spline';
-      options.series[0].lineColor = this.chartCandlestick ? options.series[0].down : 'white';
-      options.series[0].lineWidth = this.chartCandlestick ? 1 : 2;
+      // price MA
+      options.series[6].lineColor = this.theme.priceMA;
+      options.series[7] && (options.series[7].lineColor = this.theme.priceMA);
 
       options.chart.events = {
-        pan: () => {
+        _panStart: () => (this.panning = true),
+        _panEnd: () => (this.panning = false),
+        _pan: () => {
           const isPanned = this.chart.xAxis[0].max < this.chart.xAxis[0].dataMax;
 
           if (!isPanned !== this.isSnaped) {
@@ -896,7 +887,7 @@ export default {
       }
     },
     onClean(min) {
-      this.setTimeframe(this.timeframe);
+      this.redrawChart();
     }
   }
 };

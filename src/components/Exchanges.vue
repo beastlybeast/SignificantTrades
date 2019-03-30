@@ -1,6 +1,10 @@
 <template>
 	<div id="exchanges" class="exchanges condensed" @mouseenter="hovering = true" @mouseleave="hovering = false">
-		<div v-for="(exchange, index) in connectedExchanges" v-bind:key="index" v-bind:class="'-' + exchange.id + ' -' + exchange.side" v-on:click="$store.commit('toggleExchangeVisibility', exchange.id)">
+		<div v-for="(exchange, index) in connectedExchanges" 
+			v-bind:key="index" 
+			v-bind:class="'-' + exchange.id + ' -' + exchange.side" 
+			@click="$store.commit('toggleExchangeVisibility', exchange.id)"
+		>
 			<div class="exchange__price" :class="{ '-hidden': exchanges[exchange.id].hidden }">
 				{{ $root.formatPrice(exchange.price) }} &nbsp;
 			</div>

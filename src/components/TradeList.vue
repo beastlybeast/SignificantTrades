@@ -76,11 +76,7 @@ export default {
           this.refreshColorsPercentages();
           this.trades.splice(0, this.trades.length);
 
-          clearTimeout(this._refreshColorRenderList);
-
-          this._refreshColorRenderList = setTimeout(() => {
-            this.onTrades(socket.trades.slice(socket.trades.length - 1000, socket.trades.length));
-          }, 500);
+          this.redrawList()
           break;
       }
     });
@@ -111,6 +107,8 @@ export default {
         element.innerHTML = this.$root.ago(element.getAttribute('timestamp'));
       }
     }, 1000);
+
+    this.redrawList();
   },
   beforeDestroy() {
     socket.$off('pairing', this.onPairing);
@@ -126,18 +124,20 @@ export default {
     onPairing() {
       this.trades = [];
     },
-    onTrades(trades) {
+    onTrades(trades, silent = false) {
       for (let trade of trades) {
-        this.processTrade(trade, Math.min(2000, trades[trades.length - 1][1] - trades[0][1]));
+        this.processTrade(trade, Math.min(2000, trades[trades.length - 1][1] - trades[0][1]), silent);
       }
     },
-    processTrade(trade) {
+    processTrade(trade, silent = false) {
       const size = trade[2] * trade[3];
 
       const multiplier = typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1;
 
       if (trade[5] === 1) {
-        this.sfx && this.sfx.liquidation();
+        if (!silent && this.sfx) {
+          this.sfx.liquidation();
+        }
 
         if (size >= this.thresholds[0].amount * multiplier) {
           this.appendRow(
@@ -152,7 +152,7 @@ export default {
       }
 
       if (
-        this.useAudio &&
+        !silent && this.useAudio &&
         ((this.audioIncludeInsignificants && size > this.thresholds[1].amount * Math.max(0.1, multiplier) * 0.1) ||
           size > this.thresholds[1].amount * Math.max(0.1, multiplier))
       ) {
@@ -196,11 +196,12 @@ export default {
       let icon;
       let image;
       let amount = trade[2] * trade[3];
-      let color = this.getTradeColor(trade);
 
       classname.push(trade[0]);
 
-      const multiplier = typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1;
+      const multiplier = this.exchanges[trade[0]] && typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1;
+
+      let color = this.getTradeColor(trade, multiplier);
 
       if (trade[4]) {
         classname.push('buy');
@@ -336,9 +337,9 @@ export default {
       var f=color.split(","),t=percent<0?0:255,p=percent<0?percent*-1:percent,R=parseInt(f[0].slice(4)),G=parseInt(f[1]),B=parseInt(f[2]);
       return "rgb("+(Math.round((t-R)*p)+R)+","+(Math.round((t-G)*p)+G)+","+(Math.round((t-B)*p)+B)+")";
     },
-    getTradeColor(trade) {
+    getTradeColor(trade, multiplier = 1) {
       const amount = trade[2] * trade[3];
-      const pct = amount / this.thresholds[this.thresholds.length - 1].amount;
+      const pct = amount / (this.thresholds[this.thresholds.length - 1].amount * multiplier);
       const palette = this.colors[trade[4] > 0 ? 'buys': 'sells'];
 
       for (var i = 1; i < palette.length - 1; i++) {
@@ -379,6 +380,13 @@ export default {
         foreground
       }
     },
+    redrawList(lookback = 1000) {
+      clearTimeout(this._refreshColorRenderList);
+
+      this._refreshColorRenderList = setTimeout(() => {
+        this.onTrades(socket.trades.slice(socket.trades.length - lookback, socket.trades.length), true);
+      }, 500);
+    }
   }
 };
 </script>

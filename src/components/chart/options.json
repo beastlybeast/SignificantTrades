@@ -3,7 +3,7 @@
   "chart": {
     "backgroundColor": "transparent",
     "spacing": 0,
-    "spacingBottom": 10,
+    "spacingBottom": 5,
     "animation": false,
     "panning": false
   },
@@ -61,7 +61,7 @@
     "lineColor": "transparent",
     "ordinal": false,
     "crosshair": {
-      "width": 1.5, "dashStyle": "dash"
+      "width": 1, "dashStyle": "dash"
     },
     "labels": {
       "y": 15
@@ -70,20 +70,20 @@
   "yAxis": [
     {
       "top": "0%",
-      "height": "95%",
+      "height": "90%",
       "min": null,
       "max": null,
       "startOnTick": false,
       "alignTicks": false,
       "endOnTick": false,
-      "gridLineWidth": 2,
+      "gridLineWidth": 1,
       "minorGridLineWidth": 1,
       "tickPixelInterval": 16,
       "tickPosition": "outside",
       "showFirstLabel": false,
       "showLastLabel": false,
       "crosshair": {
-        "width": 1.5, "dashStyle": "dash"
+        "width": 1, "dashStyle": "dash"
       },
       "labels": {
         "align": "right",
@@ -93,13 +93,13 @@
     },
     {
       "visible": false,
-      "top": "70%",
-      "height": "30%"
+      "top": "75%",
+      "height": "25%"
     },
     {
       "visible": false,
-      "top": "70%",
-      "height": "30%"
+      "top": "75%",
+      "height": "25%"
     }
   ],
   "series": [
@@ -138,9 +138,9 @@
       "fillColor": { "linearGradient": { "x1": 0, "y1": 0, "x2": 0, "y2": 1 }, "stops": [[0, "rgba(140, 97, 245, .5)"], [1, "rgba(140, 97, 245, .4)"]] },
       "yAxis": 1
     },
-    { "type": "sma", "name": "Price SMA (14)", "linkedTo": "price", "marker": { "enabled": false } },
     { "type": "ema", "name": "SELLS ema (14)", "params": { "period": 14 }, "linkedTo": "sells", "marker": { "enabled": false }, "yAxis": 2 },
-    { "type": "ema", "name": "BUYS ema (14)", "params": { "period": 14 }, "linkedTo": "buys", "marker": { "enabled": false }, "yAxis": 2 }
+    { "type": "ema", "name": "BUYS ema (14)", "params": { "period": 14 }, "linkedTo": "buys", "marker": { "enabled": false }, "yAxis": 2 },
+    { "type": "sma", "name": "SMA (14)", "params": { "period": 14 }, "linkedTo": "price", "marker": { "enabled": false } }
   ],
   "theme": {
     "labels": "rgba(255, 255, 255, .2)",

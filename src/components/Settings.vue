@@ -478,6 +478,20 @@ export default {
       cursor: pointer;
       margin-right: auto;
 
+      + .settings-chart__sub-settings {
+        position: relative;
+
+        &:before {
+          content: '';
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: -1.5em;
+          width: 2px;
+          background-color: rgba(white, .2);
+        }
+      }
+
       input {
         display: none;
 
@@ -863,8 +877,14 @@ export default {
       margin-left: 2.4em;
       margin-bottom: .5em;
 
+      > div {
+        + div {
+          margin-top: .75em;
+        }
+      }
+
       > div + div {
-        margin-top: .5em;
+        margin-top: .75em;
       }
 
       input[type="range"] {
