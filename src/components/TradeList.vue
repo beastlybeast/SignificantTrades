@@ -9,7 +9,7 @@
 				</template>
 				<template v-else>
 					<div class="trades__item__side icon-side"></div>
-					<div class="trades__item__exchange">{{ trade.exchange }}</div>
+					<div class="trades__item__exchange" :title="trade.exchange">{{ trade.exchange }}</div>
 					<div class="trades__item__price"><span class="icon-currency"></span> <span v-html="trade.price"></span></div>
 					<div class="trades__item__amount">
 						<span class="trades__item__amount__fiat"><span class="icon-currency"></span> <span v-html="trade.amount"></span></span>
@@ -478,10 +478,11 @@ export default {
 
   &.trades__item--liquidation {
     background-color: $pink !important;
+    color: white !important;
   }
 
   &.trades__item--level-2 {
-    padding: 0.6em 0.6em;
+    padding: 0.5em 0.6em;
 
     > div {
       position: relative;
