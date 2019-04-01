@@ -33,12 +33,14 @@ import chartOptions from "./options.json";
 import Highcharts from 'highcharts/highstock';
 import Indicators from 'highcharts/indicators/indicators';
 import EMA from 'highcharts/indicators/ema';
+// import ATR from 'highcharts/indicators/atr';
 // import BB from 'highcharts/indicators/bollinger-bands';
 
 import enablePanning from './pan.js';
 
 Indicators(Highcharts);
 EMA(Highcharts);
+// ATR(Highcharts);
 // BB(Highcharts); // is bugged on highchart 7 :-(
 
 export default {

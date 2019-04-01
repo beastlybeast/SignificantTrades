@@ -52,6 +52,7 @@
     "borderWidth": 0,
     "shadow": false,
     "valueDecimals": 2,
+    "followPointer": true,
     "padding": 4,
     "backgroundColor": "rgba(0, 0, 0, .5)",
     "style": { "color": "rgba(255, 255, 255, 1)" }
@@ -61,7 +62,7 @@
     "lineColor": "transparent",
     "ordinal": false,
     "crosshair": {
-      "width": 1, "dashStyle": "dash"
+      "width": 1, "dashStyle": "dash", "snap": false
     },
     "labels": {
       "y": 15
@@ -83,7 +84,7 @@
       "showFirstLabel": false,
       "showLastLabel": false,
       "crosshair": {
-        "width": 1, "dashStyle": "dash"
+        "width": 1, "dashStyle": "dash", "snap": false
       },
       "labels": {
         "align": "right",
@@ -146,12 +147,12 @@
     "labels": "rgba(255, 255, 255, .2)",
     "up": "rgb(195, 168, 122)",
     "down": "rgb(193, 64, 71)",
-    "buys": "rgb(201,176,135)",
-    "sells": "rgba(216, 27, 96, 1)",
+    "buys": "rgb(117,193,165)",
+    "sells": "rgb(205,103,108)",
     "liquidations": "rgba(140, 97, 245, 1)",
     "priceMA": "rgba(255, 255, 255, .33)",
     "buysMA": "rgb(201,176,135)",
-    "sellsMA": "rgba(216, 27, 96, 1)",
+    "sellsMA": "rgb(193, 64, 71)",
     "tooltipBackground": "rgba(0, 0, 0, .5)",
     "tooltipColor": "rgba(255, 255, 255, 1)",
     "crosshair": "rgba(255, 255, 255, .4)",
