@@ -157,7 +157,7 @@ export default {
       const now = timestamp || +new Date();
 
       if (this.rate.average !== null) {
-        this.rate.live = parseInt((this.rate.count + this.rate.average) / (1 + (now - this.timestamp) / this.statsPeriod));
+        this.rate.live = Math.ceil((this.rate.count + this.rate.average) / (1 + (now - this.timestamp) / this.statsPeriod));
         this.up.live = parseFloat((this.up.count + this.up.average) / (1 + (now - this.timestamp) / this.statsPeriod));
         this.down.live = parseFloat((this.down.count + this.down.average) / (1 + (now - this.timestamp) / this.statsPeriod));
         this.rate.side = this.rate.live > this.rate.average ? '+' : '';
