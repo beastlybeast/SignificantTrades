@@ -213,7 +213,7 @@ export default {
         classname.push('significant');
       }
 
-      for (let i = 1; i < this.thresholds.length; i++) {
+      for (let i = 0; i < this.thresholds.length; i++) {
         if (amount < this.thresholds[i].amount * multiplier) {
           break;
         }
@@ -364,13 +364,18 @@ export default {
       
       const background = `rgba(${backgroundRGB.r}, ${backgroundRGB.g}, ${backgroundRGB.b}, ${backgroundRGB.a})`;
       const luminance = Math.sqrt(0.299 * Math.pow(backgroundRGB.r, 2) + 0.587 * Math.pow(backgroundRGB.g, 2) + 0.114 * Math.pow(backgroundRGB.b, 2));
+      const ajustedLuminance = luminance * backgroundRGB.a;
 
       let foreground;
 
-      if (luminance > 200 || backgroundRGB.a === 1) {
+      if (backgroundRGB.a === 1 && luminance < 200) {
+        foreground = 'white';
+      } else if (luminance > 200) {
+        foreground = 'black';
+      } else if (luminance < 10) {
         foreground = 'white';
       } else {
-        rangePct *= 1.2;
+        rangePct *= (3 * ((200 - ajustedLuminance) / 200));
 
         foreground = this.shadeRGBColor(`rgb(${backgroundRGB.r}, ${backgroundRGB.g}, ${backgroundRGB.b})`, rangePct);
       }

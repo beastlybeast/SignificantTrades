@@ -6,7 +6,7 @@ Vue.use(Vuex);
 const DEFAULTS = {
 	pair: 'BTCUSD',
 	thresholds: [
-		{ amount: 10000, buyColor: 'rgba(76,175,80,.33)', sellColor: 'rgba(229,115,115,.33)' },
+		{ amount: 50000, buyColor: 'rgba(76,175,80,.33)', sellColor: 'rgba(229,115,115,.33)' },
 		{ amount: 100000, buyColor: 'rgb(91,130,48)', sellColor: 'rgb(224,91,82)' },
 		{ amount: 1000000, gif: 'cash', buyColor: 'rgb(156,204,101)', sellColor: 'rgb(244,67,54)' },
 		{ amount: 10000000, gif: 'explosion', buyColor: 'rgb(255,160,0)', sellColor: 'rgb(233,30,99)' },
@@ -56,9 +56,9 @@ const DEFAULTS = {
 	chartVolumeAverage: true,
 	chartVolumeAverageLength: 14,
 	chartAutoScale: true,
+	showThresholdsAsTable: false,
 
 	// runtime state
-	//ok
 	isSnaped: true,
 	isLoading: false,
 	isReplaying: false,
@@ -197,6 +197,9 @@ const store = new Vuex.Store({
 		},
 		replaceCounterSteps(state, counters) {
 			state.countersSteps = counters.sort((a, b) => a - b);
+		},
+		toggleTresholdsTable(state, value) {
+			state.showThresholdsAsTable = value ? true : false;
 		},
 		setThresholdAmount(state, payload) {
 			const threshold = state.thresholds[payload.index];

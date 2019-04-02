@@ -16,7 +16,7 @@
         </div>
         <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'list')" v-bind:class="{closed: settings.indexOf('list') > -1}">Trades list <i class="icon-up"></i></div>
         <div class="mb8">
-          <div class="column mb8">
+          <div class="column">
             <div class="form-group column__fill">
               <label>Max rows <span class="icon-info-circle" title="Numbers of trades to keep visible" v-tippy></span></label>
               <input type="number" min="0" max="1000" step="1" class="form-control" v-bind:value="maxRows" @change="$store.commit('setMaxRows', $event.target.value)">
@@ -33,9 +33,11 @@
               </label>
             </div>
           </div>
-          <div class="settings-thresholds">
-            <Thresholds ref="thresholdsComponent" />
-          </div>
+        </div>
+        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'thresholds')" v-bind:class="{closed: settings.indexOf('thresholds') > -1}">Thresholds <i class="icon-up"></i></div>
+        <div class="settings-thresholds">
+          <a href="javascript:void(0);" class="settings-thresholds__display-toggle" v-tippy title="Switch thresholds display" @click="$store.commit('toggleTresholdsTable', !showThresholdsAsTable)">{{ showThresholdsAsTable ? 'slider' : 'table' }}</a>
+          <Thresholds ref="thresholdsComponent" />
         </div>
         <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'audio')" v-bind:class="{closed: settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
         <div class="settings-audio settings__activable column" v-bind:class="{active: useAudio}">
@@ -225,6 +227,7 @@ export default {
       'showChart',
       'actives',
       'thresholds',
+      'showThresholdsAsTable',
       'useAudio',
       'audioIncludeInsignificants',
       'audioVolume',
@@ -831,40 +834,18 @@ export default {
   }
 
   .settings-thresholds {
-    .label {
-      margin-bottom: 2px;
-    }
+    position: relative;
+    
+    &__display-toggle {
+      position: absolute;
+      right: 0;
+      top: -1.70em;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      opacity: 0.5;
 
-    span {
-      margin-right: 4px;
-      display: none;
-
-      @media only screen and (min-width: 320px) {
-        display: inline-block;
-      }
-    }
-
-    .icon-currency {
-      color: $green;
-    }
-
-    [contenteditable] {
-      min-width: 40px;
-
-      &.settings-thresholds--gifkeyword {
-        &:empty:before {
-          content: "nothing";
-          opacity: 0.4;
-        }
-
-        &:not(:empty):after {
-          content: "gifs";
-          font-family: inherit;
-          color: white;
-          margin-left: 5px;
-          position: absolute;
-          pointer-events: none;
-        }
+      &:hover {
+        opacity: 1;
       }
     }
   }
