@@ -300,7 +300,7 @@ export default {
     position: absolute;
     z-index: 1;
 
-    margin: .85em 0 0;
+    margin: .75em 0 0;
     background-color: rgba(black, .2);
     top: 0;
     left: 0;
@@ -312,8 +312,9 @@ export default {
     width: 1em;
     height: 1em;
     background-color: white;
-    margin-top: -.25em;
-    margin-left: -.5em;
+    margin-top: -.5em;
+    margin-left: -.75em;
+    padding: .25em;
     border-radius: 50%;
     transition: box-shadow .2s $easeElastic;
     cursor: move;
@@ -321,7 +322,7 @@ export default {
     &:before {
       position: absolute;
       content: attr(data-amount);
-      top: -2.5em;
+      top: -2em;
       left: 50%;
       transform: translateX(-50%);
       font-size: .89em;
@@ -358,10 +359,10 @@ export default {
   > div {
     height: 1em;
     width: 100%;
-    border-radius: 4px;
+    border-radius: 1em 1em 0 0;
 
     + div {
-      margin-top: .25em;
+      border-radius: 0 0 1em 1em;
     }
   }
 }
