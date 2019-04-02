@@ -141,7 +141,7 @@ export default {
 
       this.dragging = true;
 
-      const minLog = Math.max(0, Math.log(this.minimum));
+      const minLog = Math.max(0, Math.log(this.minimum) || 0);;
       const minLeft = minLog / Math.log(this.maximum) * this.width;
 
       let left = Math.max(this.width / 3 * -1, Math.min(this.width * 1.5, x - this.offsetLeft));
@@ -196,7 +196,7 @@ export default {
 
       const handlers = this.$refs.thresholdContainer.children;
 
-      const minLog = Math.max(0, Math.log(this.minimum));
+      const minLog = Math.max(0, Math.log(this.minimum) || 0);
       const maxLog = Math.log(this.maximum) - minLog;
 
       for (let i = 0; i < this.thresholds.length; i++) {
@@ -218,7 +218,7 @@ export default {
       this.panelCaretPosition = caretMargin + (panelWidth - caretMargin * 2) * (left / (this.width));
     },
     refreshGradients() {
-      const minLog = Math.max(0, Math.log(this.minimum));
+      const minLog = Math.max(0, Math.log(this.minimum) || 0);
       const maxLog = Math.log(this.maximum);
 
       let buysStops = [];
