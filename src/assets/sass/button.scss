@@ -9,6 +9,6 @@
 	background-color: $green;
 
 	&:hover {
-		background-color: $green + 10%;
+		background-color: lighten($green, 10%);
 	}
 }

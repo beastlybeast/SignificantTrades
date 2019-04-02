@@ -52,7 +52,7 @@ const DEFAULTS = {
 	chartCandlestick: true,
 	chartVolume: true,
 	chartVolumeThreshold: 0,
-	chartVolumeOpacity: 1,
+	chartVolumeOpacity: .75,
 	chartVolumeAverage: true,
 	chartVolumeAverageLength: 14,
 	chartAutoScale: true,
@@ -107,7 +107,7 @@ const STORED = JSON.parse(localStorage.getItem('settings'));
 
 // <migrations>
 
-// 29/03/19 (2.3) 
+// 29/03/19 (2.3)
 // added custom colors, make sure everyone got some
 if (STORED && STORED.thresholds && STORED.thresholds.length) {
 	for (let i = 0; i < STORED.thresholds.length; i++) {

@@ -14,7 +14,7 @@
             <input type="string" placeholder="BTCUSD" class="form-control" v-bind:value="pair" @change="$store.commit('setPair', $event.target.value)">
           </div>
         </div>
-        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'list')" v-bind:class="{closed: settings.indexOf('list') > -1}">Trades list <i class="icon-up"></i></div>
+        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'list')" v-bind:class="{closed: settings.indexOf('list') > -1}">Trades list <i class="icon-up"></i></div>
         <div class="mb8">
           <div class="column mb8">
             <div class="form-group column__fill">
@@ -37,7 +37,7 @@
             <Thresholds ref="thresholdsComponent" />
           </div>
         </div>
-        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'audio')" v-bind:class="{closed: settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
+        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'audio')" v-bind:class="{closed: settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
         <div class="settings-audio settings__activable column" v-bind:class="{active: useAudio}">
           <div class="form-group column__tight">
             <label class="checkbox-control -on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable audio">
@@ -55,7 +55,7 @@
             <input type="range" min="0" max="10" step=".1" v-bind:value="audioVolume" @change="$store.commit('setAudioVolume', $event.target.value)">
           </div>
         </div>
-        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'stats')" v-bind:class="{closed: settings.indexOf('stats') > -1}">Stats <i class="icon-up"></i></div>
+        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'stats')" v-bind:class="{closed: settings.indexOf('stats') > -1}">Stats <i class="icon-up"></i></div>
         <div class="settings-stats settings__activable column" v-bind:class="{active: showStats}">
           <div class="form-group column__tight">
             <label class="checkbox-control -on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable stats">
@@ -73,7 +73,7 @@
             </label>
           </div>
         </div>
-        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'counters')" v-bind:class="{closed: settings.indexOf('counters') > -1}">Counter <i class="icon-up"></i></div>
+        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'counters')" v-bind:class="{closed: settings.indexOf('counters') > -1}">Counter <i class="icon-up"></i></div>
         <div class="settings-counters settings__activable column" v-bind:class="{active: showCounters}">
           <div class="form-group column__tight">
             <label class="checkbox-control -on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable counters">
@@ -92,7 +92,7 @@
             <small class="mt8">Write counters intervals separed by a comma (XXs, XXm, XXh ...)</small>
           </div>
         </div>
-        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'chart')" v-bind:class="{closed: settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
+        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'chart')" v-bind:class="{closed: settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
         <div class="settings-chart settings__activable column" v-bind:class="{active: showChart}">
           <div class="form-group column__tight">
             <label class="checkbox-control -on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable chart">
@@ -159,7 +159,7 @@
             </div>
           </div>
         </div>
-        <div class="mt8 settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'exchanges')" v-bind:class="{closed: settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
+        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'exchanges')" v-bind:class="{closed: settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
         <div class="form-group">
           <div class="settings-exchanges">
             <Exchange v-for="(exchange, index) in exchanges" v-bind:key="index"  :exchange="exchange" />
@@ -687,14 +687,14 @@ export default {
       appearance: none;
       width: .5em; /* Set a specific slider handle width */
       height: 2em; /* Slider handle height */
-      background: $green + 20%; /* Green background */
+      background: lighten($green, 20%); /* Green background */
       cursor: ew-resize;
     }
 
     &::-moz-range-thumb {
       width: .5em; /* Set a specific slider handle width */
       height: 2em; /* Slider handle height */
-      background: $green + 20%; /* Green background */
+      background: lighten($green, 20%); /* Green background */
       cursor: ew-resize;
     }
 
@@ -766,9 +766,9 @@ export default {
   }
 
   .settings__title {
-    display: inline-block;
-    text-align: left;
-    margin-bottom: 5px;
+    display: flex;
+    align-items: center;
+    padding: .5em 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     opacity: 0.5;
@@ -786,7 +786,7 @@ export default {
 
     .icon-up {
       transition: transform 0.2s $easeElastic;
-      display: inline-block;
+      margin-left: .5em;
     }
 
     &.closed {

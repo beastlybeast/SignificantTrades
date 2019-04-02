@@ -1,6 +1,9 @@
 import Vue from 'vue'
 import App from './App.vue'
 import VueTippy from 'vue-tippy'
+import Vue2TouchEvents from 'vue2-touch-events'
+
+Vue.use(Vue2TouchEvents)
 
 import store from './services/store'
 

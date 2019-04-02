@@ -35,6 +35,7 @@
 import { mapState } from 'vuex';
 
 import socket from './services/socket';
+import touchevent from './utils/touchevent';
 
 import Alerts from './components/Alerts.vue';
 import Header from './components/Header.vue';
@@ -81,6 +82,8 @@ export default {
     ])
   },
   created() {
+    this.$root.isTouchSupported = touchevent();
+
     this.$root.applicationStartTime = +new Date();
     this.$root.formatPrice = this.formatPrice.bind(this);
     this.$root.formatAmount = this.formatAmount.bind(this);

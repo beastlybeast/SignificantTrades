@@ -1,12 +1,12 @@
 <template>
-	<div class="thresholds" :class="{ '-dragging': dragging }">    
+	<div class="thresholds" :class="{ '-dragging': dragging }">
     <div class="thresholds-gradients">
       <div class="thresholds-gradients__buys" ref="buysGradient"></div>
       <div class="thresholds-gradients__sells" ref="sellsGradient"></div>
     </div>
 
     <div class="thresholds__bar" ref="thresholdContainer">
-      <div v-for="(threshold, index) in thresholds" :key="`threshold-${index}`" class="thresholds__handler" :class="{ '-selected': selectedIndex === index }" v-on:mousedown="startDrag($event, index)" :data-amount="$root.formatAmount(threshold.amount, 2)"></div>
+      <div v-for="(threshold, index) in thresholds" :key="`threshold-${index}`" class="thresholds__handler" :class="{ '-selected': selectedIndex === index }" v-touch:start="startDrag" :data-amount="$root.formatAmount(threshold.amount, 2)"></div>
     </div>
     <div class="threshold-panel" v-if="selectedIndex !== null" @click="editing = true" ref="thresholdPanel" :class="{ '-minimum': selectedIndex === 0 }" v-bind:style="{ transform: 'translateX(' + this.panelOffsetPosition + 'px)' }">
       <chrome-picker v-if="picking !== null" ref="picker" :value="thresholds[picking.index][picking.side]" @input="updateColor"></chrome-picker>
@@ -72,6 +72,7 @@ export default {
           }
           break;
         case 'setThresholdAmount':
+          this.reorderThresholds();
           this.refreshHandlers();
           break;
         case 'setThresholdColor':
@@ -86,28 +87,34 @@ export default {
 
     this._doDrag = this.doDrag.bind(this);
 
-    window.addEventListener('mousemove', this._doDrag, false);
+    window.addEventListener(this.$root.isTouchSupported ? 'touchmove' : 'mousemove', this._doDrag, false);
 
     this._endDrag = this.endDrag.bind(this);
 
-    window.addEventListener('mouseup', this._endDrag, false);
+    window.addEventListener(this.$root.isTouchSupported ? 'touchend' : 'mouseup', this._endDrag, false);
 
     this._doResize = this.refreshHandlers.bind(this);
 
     window.addEventListener('resize', this._doResize, false);
   },
   beforeDestroy() {
-    window.removeEventListener('mousemove', this._doDrag);
-    window.removeEventListener('mouseup', this._endDrag);
+    window.removeEventListener(this.$root.isTouchSupported ? 'touchmove' : 'mousemove', this._doDrag);
+    window.removeEventListener(this.$root.isTouchSupported ? 'touchend' : 'mouseup', this._endDrag);
     window.removeEventListener('resize', this._doResize);
 
     this.onStoreMutation();
   },
 	methods: {
-    startDrag(event, index) {
-      this.selectedIndex = index;
+    startDrag(event) {
+      let x = event.pageX;
 
-      if (index > -1) {
+      if (event.touches && event.touches.length) {
+        x = event.touches[0].pageX;
+      }
+
+      this.selectedIndex = Array.prototype.slice.call(event.target.parentNode.children).indexOf(event.target);
+
+      if (this.selectedIndex > -1) {
         this.selectedElement = event.target;
       }
 
@@ -115,29 +122,35 @@ export default {
 
       this.dragStartedAt = {
         timestamp: +new Date(),
-        position: event.pageX
+        position: x
       };
     },
     doDrag(event) {
+      let x = event.pageX;
+
+      if (event.touches && event.touches.length) {
+        x = event.touches[0].pageX;
+      }
+
       if (
-        this.selectedElement === null || 
-        !this.dragStartedAt || 
-        (new Date() - this.dragStartedAt.timestamp < 1000 && Math.abs(this.dragStartedAt.position - event.pageX) < 3)) {
+        this.selectedElement === null ||
+        !this.dragStartedAt ||
+        (new Date() - this.dragStartedAt.timestamp < 1000 && Math.abs(this.dragStartedAt.position - x) < 3)) {
         return;
       }
 
       this.dragging = true;
 
-      const minLog = Math.log(this.minimum);
-      const minLeft = Math.log(this.minimum) / Math.log(this.maximum) * this.width;
+      const minLog = Math.max(0, Math.log(this.minimum));
+      const minLeft = minLog / Math.log(this.maximum) * this.width;
 
-      let left = Math.max(this.width / 3 * -1, Math.min(this.width * 1.5, event.pageX - this.offsetLeft));
+      let left = Math.max(this.width / 3 * -1, Math.min(this.width * 1.5, x - this.offsetLeft));
       let amount = Math.exp(((minLeft + (left / this.width) * (this.width - minLeft)) / this.width) * Math.log(this.maximum));
 
-      if (event.pageX < this.offsetLeft) {
+      if (x < this.offsetLeft) {
         amount = this.thresholds[this.selectedIndex].amount - (this.thresholds[this.selectedIndex].amount - amount) * .1;
         left = 0;
-      } else if (event.pageX > this.offsetLeft + this.width) {
+      } else if (x > this.offsetLeft + this.width) {
         amount = this.thresholds[this.selectedIndex].amount - (this.thresholds[this.selectedIndex].amount - amount) * .1;
         left = this.width;
       }
@@ -183,7 +196,7 @@ export default {
 
       const handlers = this.$refs.thresholdContainer.children;
 
-      const minLog = Math.log(this.minimum);
+      const minLog = Math.max(0, Math.log(this.minimum));
       const maxLog = Math.log(this.maximum) - minLog;
 
       for (let i = 0; i < this.thresholds.length; i++) {
@@ -205,7 +218,7 @@ export default {
       this.panelCaretPosition = caretMargin + (panelWidth - caretMargin * 2) * (left / (this.width));
     },
     refreshGradients() {
-      const minLog = Math.log(this.minimum);
+      const minLog = Math.max(0, Math.log(this.minimum));
       const maxLog = Math.log(this.maximum);
 
       let buysStops = [];
@@ -213,7 +226,7 @@ export default {
 
       for (let i = 0; i < this.thresholds.length; i++) {
         const percent = i === 0 ? 0 : i === this.thresholds.length - 1 ? 100 : ((Math.log(this.thresholds[i].amount) - minLog) / (maxLog - minLog) * 100).toFixed(2);
-        
+
         buysStops.push(`${this.thresholds[i].buyColor} ${percent}%`);
         sellsStops.push(`${this.thresholds[i].sellColor} ${percent}%`);
       }
@@ -232,8 +245,6 @@ export default {
 
       this.$store.state.thresholds = orderedThresholds;
 
-      this.$store.commit('setThresholdAmount', { index: 0, value: orderedThresholds[0].amount });
-
       if (selectedThreshold) {
         for (let i = 0; i < this.thresholds.length; i++) {
           if (selectedThreshold.amount === this.thresholds[i].amount && selectedThreshold.gif === this.thresholds[i].gif) {
@@ -248,11 +259,6 @@ export default {
       }
 
       this.picking = { side, index };
-
-      /* setTimeout(() => {
-        this.$refs.picker.$el.style.left = Math.min(this.width - this.$refs.picker.$el.clientWidth - 16, event.pageX - this.offsetLeft) + 'px';
-        this.$refs.picker.$el.style.top = (event.pageY - this.offsetTop + 16) + 'px';
-      }) */
 
       event.stopPropagation();
     },
@@ -288,11 +294,15 @@ export default {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  margin-top: 1.5em;
 
   &__bar {
-    margin: 2.5em 0 1em;
-    height: .5em;
+    position: absolute;
+    z-index: 1;
+
+    margin: .85em 0 0;
     background-color: rgba(black, .2);
+    top: 0;
     left: 0;
     right: 0;
   }
@@ -333,19 +343,17 @@ export default {
     }
 
     .threshold-panel {
-      transition: transform .2s $easeOutExpo;
+      transition: none;
 
       &__caret {
-        transition: transform .2s $easeOutExpo;
+        transition: none;
       }
     }
   }
 }
 
 .thresholds-gradients {
-  position: absolute;
   width: 100%;
-  margin: -.85em 0;
 
   > div {
     height: 1em;
@@ -363,7 +371,7 @@ export default {
   background-color: lighten($dark, 18%);
   border-radius: 4px;
   padding: 1em;
-  margin: 2em auto 0;
+  margin: 1.5em auto 0;
   transition: transform .2s $easeOutExpo;
   max-width: 220px;
 
@@ -414,7 +422,7 @@ export default {
       box-shadow: none;
     }
   }
-  
+
   .form-group {
     min-width: 1px;
 
@@ -426,7 +434,7 @@ export default {
       &::-webkit-input-placeholder {
         color: rgba(white, .55);
       }
-      
+
       &:-moz-placeholder { /* Mozilla Firefox 4 to 18 */
         color: rgba(white, .55);
         opacity: 1;
@@ -444,7 +452,7 @@ export default {
       &::-ms-input-placeholder { /* Microsoft Edge */
         color: rgba(white, .55);
       }
-      
+
       &::placeholder { /* Most modern browsers support this now. */
         color: rgba(white, .55);
       }
