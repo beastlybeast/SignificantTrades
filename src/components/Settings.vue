@@ -175,6 +175,8 @@
               <i class="divider">|</i>
               <a href="javascript:void(0);" v-on:click="reset()"> reset</a>
               <i class="divider">|</i>
+              <a target="_blank" href="https://github.com/Tucsky/SignificantTrades" title="Run your own instance !">github</a>
+              <i class="divider">|</i>
               <a target="_blank" href="https://tippin.me/@Tucsky" @click="openTippin" title="Bitcoin for more <3" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">donate</a>
             </div>
           </div>

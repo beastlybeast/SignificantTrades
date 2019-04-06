@@ -86,7 +86,7 @@ export default {
           }
 
           if (
-            (mutation.type === 'toggleSettingsPanel' && mutation.payload === 'list')
+            (mutation.type === 'toggleSettingsPanel' && mutation.payload === 'thresholds')
             || (mutation.type === 'toggleTresholdsTable' && mutation.payload === false)
           ) {
             this.rendering = true;
@@ -424,6 +424,10 @@ export default {
       &.-selected {
         opacity: 1;
       }
+    }
+
+    .thresholds-slider__handler {
+      transition: box-shadow .2s $easeElastic;
     }
 
     .threshold-panel {

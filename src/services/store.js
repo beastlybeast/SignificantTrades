@@ -19,7 +19,7 @@ const DEFAULTS = {
 		bitfinex: {threshold: .75},
 		binance: {threshold: .75},
 		huobi: {ohlc: false, threshold: .66},
-		okex: {ohlc: false, threshold: .80},
+		okex: {disabled: true, threshold: .80},
 		liquid: {disabled: true},
 	},
 	maxRows: 20,

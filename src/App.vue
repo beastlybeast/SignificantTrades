@@ -136,18 +136,18 @@ export default {
       var s = '000000000' + num;
       return s.substr(s.length - size);
     },
-    formatAmount(amount, decimals = 1) {
+    formatAmount(amount, decimals) {
       if (amount >= 1000000) {
-        amount = +((amount / 1000000).toFixed(decimals)) + 'M';
+        amount = +((amount / 1000000).toFixed(isNaN(decimals) ? 1 : decimals)) + 'M';
       } else if (amount >= 1000) {
-        amount = +((amount / 1000).toFixed(decimals)) + 'K';
+        amount = +((amount / 1000).toFixed(isNaN(decimals) ? 1 : decimals)) + 'K';
       } else {
-        amount = this.$root.formatPrice(amount, decimals);
+        amount = this.$root.formatPrice(amount, decimals, false);
       }
 
       return amount;
     },
-    formatPrice(price, decimals) {
+    formatPrice(price, decimals, sats = true) {
       price = +price;
 
       if (isNaN(price) || !price) {
@@ -158,7 +158,7 @@ export default {
         return +price.toFixed(decimals);
       }
 
-      if ((price <= 0.01 && /BTC$/.test(this.pair)) || price <= 0.0001) {
+      if (sats && ((price <= 0.01 && /BTC$/.test(this.pair)) || price <= 0.0001)) {
         return (price * 100000000).toFixed() + ' <small class="condensed">sats</small>';
       } else if (price >= 1000) {
         return +price.toFixed(2);
