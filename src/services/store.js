@@ -205,7 +205,14 @@ const store = new Vuex.Store({
 			const threshold = state.thresholds[payload.index];
 
 			if (threshold) {
-				threshold.amount = payload.value;
+				if (typeof payload.value === 'string' && /m|k$/i.test(payload.value)) {
+					if (/m$/i.test(value)) {
+						threshold.amount = parseFloat(payload.value) * 1000000;
+					} else {
+						threshold.amount = parseFloat(payload.value) * 1000;
+					}
+				}
+				threshold.amount = +payload.value;
 
 				Vue.set(state.thresholds, payload.index, threshold);
 			}

@@ -1,5 +1,5 @@
 <template>
-	<div class="thresholds" :class="{ '-dragging': dragging }">
+	<div class="thresholds" :class="{ '-dragging': dragging, '-rendering': rendering }">
     <chrome-picker v-if="picking !== null" ref="picker" :value="thresholds[picking.index][picking.side]" @input="updateColor"></chrome-picker>
 
     <table class="thresholds-table" v-if="showThresholdsAsTable">
@@ -21,7 +21,7 @@
       </div>
 
       <div class="thresholds-slider__bar" ref="thresholdContainer">
-        <div v-for="(threshold, index) in thresholds" :key="`threshold-${index}`" class="thresholds-slider__handler" :class="{ '-selected': selectedIndex === index }" v-touch:start="startDrag" :data-amount="$root.formatAmount(threshold.amount, 2)"></div>
+        <div v-for="(threshold, index) in thresholds" :key="`threshold-${index}`" class="thresholds-slider__handler" :class="{ '-selected': selectedIndex === index }" :data-amount="$root.formatAmount(threshold.amount, 2)"></div>
       </div>
       <div class="threshold-panel" v-if="selectedIndex !== null" @click="editing = true" ref="thresholdPanel" :class="{ '-minimum': selectedIndex === 0 }" v-bind:style="{ transform: 'translateX(' + this.panelOffsetPosition + 'px)' }">
         <div class="threshold-panel__caret" v-bind:style="{ transform: 'translateX(' + this.panelCaretPosition + 'px)' }"></div>
@@ -60,6 +60,7 @@ export default {
   },
 	data() {
 		return {
+      rendering: true,
       dragging: null,
       picking: null,
       editing: null,
@@ -88,10 +89,12 @@ export default {
             (mutation.type === 'toggleSettingsPanel' && mutation.payload === 'list')
             || (mutation.type === 'toggleTresholdsTable' && mutation.payload === false)
           ) {
+            this.rendering = true;
+
             setTimeout(() => {
               this.refreshHandlers();
               this.refreshGradients();
-            });
+            }, 100);
           }
           break;
         case 'setThresholdAmount':
@@ -109,6 +112,10 @@ export default {
       this.refreshHandlers();
       this.refreshGradients();
     }
+
+    this._startDrag = this.startDrag.bind(this);
+
+    this.$el.addEventListener(this.$root.isTouchSupported ? 'touchstart' : 'mousedown', this._startDrag, false);
 
     this._doDrag = this.doDrag.bind(this);
 
@@ -131,6 +138,10 @@ export default {
   },
 	methods: {
     startDrag(event) {
+      if (!event.target.classList.contains('thresholds-slider__handler')) {
+        return;
+      }
+
       let x = event.pageX;
 
       if (event.touches && event.touches.length) {
@@ -166,11 +177,11 @@ export default {
 
       this.dragging = true;
 
-      const minLog = Math.max(0, Math.log(this.minimum) || 0);;
-      const minLeft = minLog / Math.log(this.maximum) * this.width;
+      const minLog = Math.max(0, Math.log(this.minimum + 1) || 0);
+      const minLeft = minLog / Math.log(this.maximum + 1) * this.width;
 
       let left = Math.max(this.width / 3 * -1, Math.min(this.width * 1.5, x - this.offsetLeft));
-      let amount = Math.exp(((minLeft + (left / this.width) * (this.width - minLeft)) / this.width) * Math.log(this.maximum));
+      let amount = Math.exp(((minLeft + (left / this.width) * (this.width - minLeft)) / this.width) * Math.log(this.maximum + 1)) - 1;
 
       if (x < this.offsetLeft) {
         amount = this.thresholds[this.selectedIndex].amount - (this.thresholds[this.selectedIndex].amount - amount) * .1;
@@ -223,17 +234,19 @@ export default {
 
       const handlers = this.$refs.thresholdContainer.children;
 
-      const minLog = Math.max(0, Math.log(this.minimum) || 0);
-      const maxLog = Math.log(this.maximum) - minLog;
+      const minLog = Math.max(0, Math.log(this.minimum + 1) || 0);
+      const maxLog = Math.log(this.maximum + 1) - minLog;
 
       for (let i = 0; i < this.thresholds.length; i++) {
         const handler = handlers[i];
         const threshold = this.thresholds[i];
-        const posLog = Math.log(threshold.amount) - minLog;
+        const posLog = Math.log(threshold.amount + 1) - minLog;
         const posPx = this.width * (posLog / maxLog);
 
         handler.style.transform = 'translateX(' + posPx + 'px)';
       }
+
+      this.rendering = false;
     },
     refreshCaretPosition(selectedElement = this.selectedElement) {
       const left = parseFloat(selectedElement.style.transform.replace(/[^\d.]/g, '')) || 0;
@@ -245,14 +258,14 @@ export default {
       this.panelCaretPosition = caretMargin + (panelWidth - caretMargin * 2) * (left / (this.width));
     },
     refreshGradients() {
-      const minLog = Math.max(0, Math.log(this.minimum) || 0);
-      const maxLog = Math.log(this.maximum);
+      const minLog = Math.max(0, Math.log(this.minimum + 1) || 0);
+      const maxLog = Math.log(this.maximum + 1);
 
       let buysStops = [];
       let sellsStops = [];
 
       for (let i = 0; i < this.thresholds.length; i++) {
-        const percent = i === 0 ? 0 : i === this.thresholds.length - 1 ? 100 : ((Math.log(this.thresholds[i].amount) - minLog) / (maxLog - minLog) * 100).toFixed(2);
+        const percent = i === 0 ? 0 : i === this.thresholds.length - 1 ? 100 : ((Math.log(this.thresholds[i].amount + 1) - minLog) / (maxLog - minLog) * 100).toFixed(2);
 
         buysStops.push(`${this.thresholds[i].buyColor} ${percent}%`);
         sellsStops.push(`${this.thresholds[i].sellColor} ${percent}%`);
@@ -309,7 +322,7 @@ export default {
         this.$refs.picker.$el.style.opacity = 1;
 
         this.$refs.picker.fieldsIndex = 1;
-      });
+      }, 100);
 
       event.stopPropagation();
     },
@@ -347,6 +360,14 @@ export default {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+
+  &.-rendering .thresholds-slider {
+    opacity: 0;
+
+    &__handler {
+      transform: scale(.5) !important;
+    }
+  }
 
   .vc-chrome {
     position: absolute;
@@ -419,7 +440,7 @@ export default {
   width: 100%;
   border: 0;
   border-spacing: 0px;
-  margin: .25em 0 .25em;
+  padding: .5em 0 .75em;
 
   &__input {
     background-color: transparent;
@@ -485,14 +506,15 @@ export default {
 }
 
 .thresholds-slider {
-  margin: 1.5em 0 1em;
+  padding: 2em 0 1em;
+  transition: opacity .2s $easeOutExpo;
+  position: relative;
 
   &__bar {
     position: absolute;
     z-index: 1;
 
-    margin: .75em 0 0;
-    background-color: rgba(black, .2);
+    padding: 2.75em 0 0;
     top: 0;
     left: 1em;
     right: 1em;
@@ -507,7 +529,7 @@ export default {
     margin-left: -.75em;
     padding: .25em;
     border-radius: 50%;
-    transition: box-shadow .2s $easeElastic;
+    transition: box-shadow .2s $easeElastic, transform .2s $easeOutExpo;
     box-shadow: 0 1px 0 1px rgba(black, .2);
     cursor: move;
 

@@ -377,7 +377,7 @@ export default {
       } else {
         rangePct *= (3 * ((200 - ajustedLuminance) / 200));
 
-        foreground = this.shadeRGBColor(`rgb(${backgroundRGB.r}, ${backgroundRGB.g}, ${backgroundRGB.b})`, rangePct);
+        foreground = this.shadeRGBColor(`rgb(${backgroundRGB.r}, ${backgroundRGB.g}, ${backgroundRGB.b})`, Math.max(.25, rangePct));
       }
 
       return {

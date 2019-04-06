@@ -20,7 +20,6 @@
     "vue": "^2.5.11",
     "vue-color": "^2.7.0",
     "vue-tippy": "^2.0.11",
-    "vue2-touch-events": "^2.0.0",
     "vuex": "^3.0.1"
   },
   "browserslist": [

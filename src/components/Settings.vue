@@ -454,6 +454,7 @@ export default {
       letter-spacing: -0.5px;
       min-width: 0;
       font-size: 1em;
+      margin: 0;
     }
 
     .input-group {
@@ -839,7 +840,7 @@ export default {
     &__display-toggle {
       position: absolute;
       right: 0;
-      top: -1.70em;
+      top: -1.75em;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       opacity: 0.5;
@@ -886,7 +887,7 @@ export default {
 
 .tippin-me {
     position: fixed;
-    z-index: 1;
+    z-index: 10000;
     width: 280px;
     top: 50%;
     left: 50%;
