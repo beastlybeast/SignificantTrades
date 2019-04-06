@@ -2,7 +2,7 @@
 Live cryptocurrency trades visualizer.<br>
 Currently supporting BitMEX, Bitfinex, Binance, Gdax, Bitstamp, Huobi, Okex, Hitbtc, Poloniex, Coinex and Liquid ([see server/src/exchanges/](server/src/exchanges) for detail)
 
-![screenshot](https://aggr.trade/preview.gif)
+![screenshot](https://i.imgur.com/nHJxsdL.gif)
 
 ## What it do
 - Aggregate trades from exchanges on a specific pair (default BTCUSD)
