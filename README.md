@@ -2,7 +2,7 @@
 Live cryptocurrency trades visualizer.<br>
 Currently supporting BitMEX, Bitfinex, Binance, Gdax, Bitstamp, Huobi, Okex, Hitbtc, Poloniex, Coinex and Liquid ([see server/src/exchanges/](server/src/exchanges) for detail)
 
-![screenshot](https://i.imgur.com/ALQuZwk.gif)
+![screenshot](https://aggr.trade/preview.gif)
 
 ## What it do
 - Aggregate trades from exchanges on a specific pair (default BTCUSD)
@@ -84,6 +84,6 @@ In order to fetch the products the app need to make calls to the exchanges API. 
 Running `PROXY_URL=http://my-personnal-cors-proxy.me/ npm run dev` will start the app with another cors proxy which I encourage you to do.
 
 ## About the historical data
-I use my servers (api.aggr.trade) to store and serve historical trades on demand. It currently support BTCUSD, ETHUSD and XRPUSD.
+I use my servers (api.aggr.trade) to store and serve historical trades on demand.
 The current source for the server part is located in the [feature/server](https://github.com/Tucsky/SignificantTrades/tree/feature/server) branch.
 Set up your own node and run `API_URL=http://localhost:3000/{pair}/{from}/{to}/{timeframe} npm run dev` to get access to this very usefull functionnality.
