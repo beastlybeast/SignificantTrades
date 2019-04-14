@@ -2,7 +2,7 @@
 Live cryptocurrency trades visualizer.<br>
 Currently supporting BitMEX, Bitfinex, Binance, Gdax, Bitstamp, Huobi, Okex, Hitbtc, Poloniex, Coinex and Liquid ([see server/src/exchanges/](server/src/exchanges) for detail)
 
-![screenshot](https://i.imgur.com/ALQuZwk.gif)
+![screenshot](https://i.imgur.com/nHJxsdL.gif)
 
 ## What it do
 - Aggregate trades from exchanges on a specific pair (default BTCUSD)
@@ -18,7 +18,12 @@ The app is written in vue.js, use the javascript WebSocket interface to connect 
 - The counters that sum up buy & sell volume by interval (buy/sell last 15m, last 1h, 2h etc)
 - The stats component that show basic number about whats happened under one specific interval (default 1m)
 
-Check out [the demo](https://aggr.trade/)
+## Demo 
+[BTCUSD](https://aggr.trade/)<br>
+[ETHUSD](https://ethusd.aggr.trade/)<br>
+[XLMBTC](https://xlmbtc.aggr.trade/)<br>
+Just replace the subdomain by the pair of your choice.<br>
+Each subdomain get their own settings.
 
 ## How to install & run locally
 1. Clone the repo
@@ -84,6 +89,10 @@ In order to fetch the products the app need to make calls to the exchanges API. 
 Running `PROXY_URL=http://my-personnal-cors-proxy.me/ npm run dev` will start the app with another cors proxy which I encourage you to do.
 
 ## About the historical data
-I use my servers (api.aggr.trade) to store and serve historical trades on demand. It currently support BTCUSD, ETHUSD and XRPUSD.
-The current source for the server part is located in the [feature/server](https://github.com/Tucsky/SignificantTrades/tree/feature/server) branch.
-Set up your own node and run `API_URL=http://localhost:3000/{pair}/{from}/{to}/{timeframe} npm run dev` to get access to this very usefull functionnality.
+I use my servers (api.aggr.trade) to store and serve historical trades on demand.
+The current code for the server part is located in the [feature/server](https://github.com/Tucsky/SignificantTrades/tree/feature/server) branch.
+Once your node is up & listening, start the client with an environment variable `API_URL=http://localhost:3000/historical/{pair}/{from}/{to}/{timeframe} npm run dev`.
+
+## Donate
+BTC [3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX](bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX)<br>
+XMR 48NJj3RJDo33zMLaudQDdM8G6MfPrQbpeZU2YnRN2Ep6hbKyYRrS2ZSdiAKpkUXBcjD2pKiPqXtQmSZjZM7fC6YT6CMmoX6

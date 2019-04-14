@@ -71,6 +71,18 @@ export default {
           clearTimeout(this.gifKeywordChangeTimeout);
           this.gifKeywordChangeTimeout = setTimeout(this.fetchGifByKeyword.bind(this, mutation.payload.value, mutation.payload.index), 2000);
           break;
+        case 'reorderThresholds':
+          function swap(obj, key1, key2) {
+            [obj[key1], obj[key2]] = [obj[key2], obj[key1]];
+          }
+          
+          for (var i = 0; i < mutation.payload.before.length; i++) {
+            const iA = mutation.payload.before[i];
+            const iB = mutation.payload.after[i];
+
+            swap(this.gifs, iA, iB);
+          }
+          break;
         case 'setThresholdColor':
         case 'setThresholdAmount':
           this.refreshColorsPercentages();

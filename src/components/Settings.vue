@@ -66,7 +66,7 @@
             </label>
           </div>
           <div class="form-group column__fill">
-            <input type="string" placeholder="ms" class="form-control" v-bind:value="statsPeriodStringified" @change="$store.commit('setStatsPeriod', $event.target.value)">
+            <input v-tippy title="Timeframe to watch (ie: 1m)" type="string" class="form-control" v-bind:value="statsPeriodStringified" @change="$store.commit('setStatsPeriod', $event.target.value)" placeholder="Enter a timeframe (ie: 1m)">
           </div>
           <div class="form-group column__tight">
             <label class="checkbox-control -commodity-currency checkbox-control-input flex-right" v-tippy v-bind:title="help.statsCurrency">
@@ -90,8 +90,8 @@
             </label>
           </div>
           <div class="form-group column__fill">
-            <input type="string" placeholder="Counters step separed by a comma (ie: 1m, 5m, 10m, 15m)" class="form-control" v-bind:value="countersStepsStringified" @change="replaceCounters($event.target.value)">
-            <small class="mt8">Write counters intervals separed by a comma (XXs, XXm, XXh ...)</small>
+            <input v-tippy title="Counters step separed by a comma (ie: 1m, 5m, 10m, 15m)" type="string" placeholder="Enter a set of timeframe (ie 1m, 15m)" class="form-control" v-bind:value="countersStepsStringified" @change="replaceCounters($event.target.value)">
+            <small class="mt8">Volume sum by time</small>
           </div>
         </div>
         <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'chart')" v-bind:class="{closed: settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>

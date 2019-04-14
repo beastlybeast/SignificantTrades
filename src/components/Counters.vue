@@ -1,12 +1,16 @@
 <template>
 	<div id="counters" class="counters">
-    <ul>
+    <ul ref="countersList">
       <li v-for="(sum, index) of stackedSums" :key="`sum-${index}`" v-if="!hideIncompleteCounter || index <= completed" class="counters__item">
         <div class="counter__index" v-tippy="{placement: 'left'}" title="Edit interval" >
           <editable :content="labels[index]" @output="updateCounterStep(index, $event)"></editable>
         </div>
-        <div class="counter__up" v-bind:style="{ flexBasis: (sum[0] / (sum[0] + sum[1]) * 100) + '%' }" :data-amount="$root.formatAmount(sum[0], 2)"></div>
-        <div class="counter__down" v-bind:style="{ flexBasis: (sum[1] / (sum[0] + sum[1]) * 100) + '%' }" :data-amount="$root.formatAmount(sum[1], 2)"></div>
+        <div class="counter__up" v-bind:style="{ flexBasis: (sum[0] / (sum[0] + sum[1]) * 100) + '%' }" :data-amount="$root.formatAmount(sum[0], 2)">
+          <div v-if="index === 0" class="counter__light"></div>
+        </div>
+        <div class="counter__down" v-bind:style="{ flexBasis: (sum[1] / (sum[0] + sum[1]) * 100) + '%' }" :data-amount="$root.formatAmount(sum[1], 2)">
+          <div v-if="index === 0" class="counter__light"></div>
+        </div>
         <div class="counter__delete icon-cross" v-on:click="deleteCounter(index)"></div>
       </li>
     </ul>
@@ -27,13 +31,15 @@ export default {
       stackedSums: [],
 			counters: [],
 			complete: 0,
-      queue: [0, 0]
+      queue: [0, 0],
+      strength: [0, 0],
     };
   },
   computed: {
     ...mapState([
 			'pair',
 			'actives',
+			'thresholds',
 			'countersSteps',
       'counterPrecision',
       'cumulativeCounters',
@@ -66,13 +72,15 @@ export default {
       }
     });
 
-    socket.$on('trades.queued', this.onTrades);
+    socket.$on('trades.queued', this.appendTrades);
+    socket.$on('trades.instant', this.highlightSide);
     socket.$on('historical', this.onFetch);
 
     this.rebuildCounters();
   },
   beforeDestroy() {
-    socket.$off('trades.queued', this.onTrades);
+    socket.$off('trades.queued', this.appendTrades);
+    socket.$off('trades.instant', this.highlightSide);
     socket.$off('historical', this.onFetch);
 
 		clearInterval(this.countersRefreshCycleInterval);
@@ -80,7 +88,27 @@ export default {
     this.onStoreMutation();
   },
   methods: {
-    onTrades(trades, upVolume, downVolume) {
+    highlightSide(trades) {
+      const volume = [0, 0];
+
+      for (let i = 0; i < trades.length; i++) {
+        volume[+trades[i][4]] += trades[i][3] * trades[i][2];
+      }
+
+      const side = volume[1] > volume[0] ? 1 : 0;
+
+      const strength = (this.strength[side] + volume[side]) / (this.thresholds[0].amount * .1);
+
+      const element = this.$refs.countersList.children[0].querySelector('.counter__' + (side ? 'up' : 'down')).children[0];
+      
+      element.style.backgroundColor = `rgba(255, 255, 255, ${(strength * .8).toFixed(2)})`;
+      element.classList.remove('-highlight');
+      void element.offsetWidth;
+      element.classList.add('-highlight');
+
+      this.strength[side] = (this.strength[side] + volume[side]) * .75;
+    },
+    appendTrades(trades, upVolume, downVolume) {
       const now = +new Date();
 
 			this.queue[0] += upVolume;
@@ -435,6 +463,20 @@ export default {
     margin: 0 .2em;
     line-height: 1.75em;
     z-index: 1;
+  }
+
+  .counter__light {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(white, .75);
+    opacity: 0;
+
+    &.-highlight {
+      animation: highlight .2s $easeOutExpo;
+    }
   }
 }
 

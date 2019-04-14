@@ -235,6 +235,7 @@ const store = new Vuex.Store({
 				Vue.set(state.thresholds, payload.index, threshold);
 			}
 		},
+		reorderThresholds(state, payload) {},
 		enableExchange(state, exchange) {
 			Vue.set(state.exchanges[exchange], 'disabled', false);
 		},

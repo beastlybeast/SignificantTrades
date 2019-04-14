@@ -158,7 +158,7 @@ export default {
         return +price.toFixed(decimals);
       }
 
-      if (sats && ((price <= 0.01 && /BTC$/.test(this.pair)) || price <= 0.0001)) {
+      if (sats && ((price <= 0.001 && /BTC$/.test(this.pair)) || price <= 0.0001)) {
         return (price * 100000000).toFixed() + ' <small class="condensed">sats</small>';
       } else if (price >= 1000) {
         return +price.toFixed(2);

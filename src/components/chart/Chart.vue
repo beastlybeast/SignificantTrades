@@ -89,6 +89,9 @@ export default {
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
+        case 'setPair':
+          this.chart.series[0].update({name: mutation.payload.toUpperCase()}, false);
+        break;
         case 'setTimeframe':
           this.setTimeframe(mutation.payload, true, this._timeframe !== this.timeframe);
           this._timeframe = parseInt(this.timeframe);
@@ -899,6 +902,25 @@ export default {
       // price MA
       options.series[6].lineColor = this.theme.priceMA;
       options.series[7] && (options.series[7].lineColor = this.theme.priceMA);
+      
+      // Tooltip value formatter
+      const formatPrice = this.$root.formatPrice;
+      const formatAmount = this.$root.formatAmount;
+
+      options.tooltip.backgroundColor = this.theme.tooltipBackground;
+      options.tooltip.style.color = this.theme.tooltipColor;
+
+      options.tooltip.pointFormatter = function() {
+        if (!this.y) return '';
+
+        const isPrice = 
+          this.series.options.id === 'price' 
+          || (this.series.linkedParent && this.series.linkedParent.options.id === 'price')
+        
+        const formatter = isPrice ? formatPrice : formatAmount;
+
+        return `<b>${this.series.name}</b> ${(formatter)(this.y)}`;
+      }
 
       options.chart.events = {
         _panStart: () => (this.panning = true),

@@ -5,10 +5,10 @@
     <table class="thresholds-table" v-if="showThresholdsAsTable">
       <tr v-for="(threshold, index) in thresholds" :key="`threshold-${index}`">
         <td class="thresholds-table__input">
-          <input type="number" :value="thresholds[index].amount" @change="$store.commit('setThresholdAmount', {index: index, value: $event.target.value})">
+          <input type="number" placeholder="Amount*" :value="thresholds[index].amount" @change="$store.commit('setThresholdAmount', {index: index, value: $event.target.value})">
         </td>
         <td class="thresholds-table__input">
-          <input type="text" :value="thresholds[index].gif" @change="$store.commit('setThresholdGif', {index: index, value: $event.target.value})">
+          <input type="text" placeholder="Keyword" :value="thresholds[index].gif" @change="$store.commit('setThresholdGif', {index: index, value: $event.target.value})">
         </td>
         <td class="thresholds-table__color" :style="{ 'backgroundColor': thresholds[index].buyColor }" @click="openPicker('buyColor', index, $event)"></td>
         <td class="thresholds-table__color" :style="{ 'backgroundColor': thresholds[index].sellColor }" @click="openPicker('sellColor', index, $event)"></td>
@@ -281,7 +281,23 @@ export default {
         selectedThreshold = this.thresholds[this.selectedIndex];
       }
 
-      const orderedThresholds = this.thresholds.sort((a, b) => a.amount - b.amount);
+      let orderedThresholds = this.thresholds
+        .map((a, i) => {
+          a.index = i;
+
+          return a;
+        });
+
+      const indexOrderBefore = orderedThresholds.map(a => a.index);
+
+      orderedThresholds = orderedThresholds
+        .sort((a, b) => a.amount - b.amount);
+
+      const indexOrderAfter = orderedThresholds.map(a => a.index);
+
+      const orderChanged = indexOrderBefore.join('') !== indexOrderAfter.join('');
+
+      orderedThresholds.forEach(a => (delete a.index));
 
       this.$store.state.thresholds = orderedThresholds;
 
@@ -291,6 +307,13 @@ export default {
             this.selectedIndex = i;
           }
         }
+      }
+
+      if (orderChanged) {
+        this.$store.commit('reorderThresholds', {
+          before: indexOrderBefore,
+          after: indexOrderAfter
+        });
       }
     },
     openPicker(side, index, event) {

@@ -53,8 +53,8 @@
     "shadow": false,
     "valueDecimals": 2,
     "followPointer": true,
-    "padding": 4,
-    "backgroundColor": "rgba(0, 0, 0, .5)",
+    "padding": 8,
+    "backgroundColor": "rgba(0, 0, 0, .33)",
     "style": { "color": "rgba(255, 255, 255, 1)" }
   },
   "xAxis": {
@@ -139,7 +139,7 @@
       "fillColor": { "linearGradient": { "x1": 0, "y1": 0, "x2": 0, "y2": 1 }, "stops": [[0, "rgba(140, 97, 245, .5)"], [1, "rgba(140, 97, 245, .4)"]] },
       "yAxis": 1
     },
-    { "type": "ema", "name": "SELLS ema (14)", "params": { "period": 14 }, "linkedTo": "sells", "marker": { "enabled": false }, "yAxis": 2 },
+    { "type": "ema", "name": "SELLS ema (14)", "id": "sells", "params": { "period": 14 }, "linkedTo": "sells", "marker": { "enabled": false }, "yAxis": 2 },
     { "type": "ema", "name": "BUYS ema (14)", "params": { "period": 14 }, "linkedTo": "buys", "marker": { "enabled": false }, "yAxis": 2 },
     { "type": "sma", "name": "SMA (14)", "params": { "period": 14 }, "linkedTo": "price", "marker": { "enabled": false } }
   ],
@@ -153,7 +153,7 @@
     "priceMA": "rgba(255, 255, 255, .33)",
     "buysMA": "rgb(201,176,135)",
     "sellsMA": "rgb(193, 64, 71)",
-    "tooltipBackground": "rgba(0, 0, 0, .5)",
+    "tooltipBackground": "rgba(0, 0, 0, .33)",
     "tooltipColor": "rgba(255, 255, 255, 1)",
     "crosshair": "rgba(255, 255, 255, .4)",
     "gridline": "rgba(255, 255, 255, .1)"
