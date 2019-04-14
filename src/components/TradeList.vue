@@ -68,20 +68,7 @@ export default {
           }
           break;
         case 'setThresholdGif':
-          clearTimeout(this.gifKeywordChangeTimeout);
-          this.gifKeywordChangeTimeout = setTimeout(this.fetchGifByKeyword.bind(this, mutation.payload.value, mutation.payload.index), 2000);
-          break;
-        case 'reorderThresholds':
-          function swap(obj, key1, key2) {
-            [obj[key1], obj[key2]] = [obj[key2], obj[key1]];
-          }
-          
-          for (var i = 0; i < mutation.payload.before.length; i++) {
-            const iA = mutation.payload.before[i];
-            const iB = mutation.payload.after[i];
-
-            swap(this.gifs, iA, iB);
-          }
+          this.fetchGifByKeyword(mutation.payload.value, mutation.payload.isDeleted);
           break;
         case 'setThresholdColor':
         case 'setThresholdAmount':
@@ -230,8 +217,8 @@ export default {
           break;
         }
 
-        if (this.gifs[i] && this.gifs[i].length) {
-          image = this.gifs[i][Math.floor(Math.random() * (this.gifs[i].length - 1))];
+        if (this.thresholds[i].gif && this.gifs[this.thresholds[i].gif]) {
+          image = this.gifs[this.thresholds[i].gif][Math.floor(Math.random() * (this.gifs[this.thresholds[i].gif].length - 1))];
         }
 
         classname.push('level-' + i);
@@ -263,27 +250,38 @@ export default {
       this.trades.splice(+this.maxRows || 20, this.trades.length);
     },
     getGifs(refresh) {
-      this.thresholds.forEach((threshold, index) => {
+      this.thresholds.forEach(threshold => {
         if (!threshold.gif) {
           return;
         }
 
-        const storage = localStorage ? JSON.parse(localStorage.getItem('threshold_' + index + '_gifs')) : null;
+        const slug = this.slug(threshold.gif);
+        const storage = localStorage ? JSON.parse(localStorage.getItem('threshold_' + slug + '_gifs')) : null;
 
         if (!refresh && storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7) {
-          this.gifs[index] = storage.data;
+          this.gifs[threshold.gif] = storage.data;
         } else {
-          this.fetchGifByKeyword(threshold.gif, index);
+          this.fetchGifByKeyword(threshold.gif);
         }
       });
     },
-    fetchGifByKeyword(keyword, index) {
+    fetchGifByKeyword(keyword, isDeleted = false) {
+      if (isDeleted) {
+        debugger;
+      }
+
       if (!keyword) {
-        if (this.gifs[index]) {
-          delete this.gifs[index];
+        return;
+      }
+      
+      const slug = this.slug(keyword);
+
+      if (isDeleted) {
+        if (this.gifs[keyword]) {
+          delete this.gifs[keyword];
         }
 
-        localStorage.removeItem('threshold_' + index + '_gifs');
+        localStorage.removeItem('threshold_' + slug + '_gifs');
 
         return;
       }
@@ -295,20 +293,23 @@ export default {
             return;
           }
 
-          this.gifs[index] = [];
+          this.gifs[keyword] = [];
 
           for (let item of res.data) {
-            this.gifs[index].push(item.images.original.url);
+            this.gifs[keyword].push(item.images.original.url);
           }
 
           localStorage.setItem(
-            'threshold_' + index + '_gifs',
+            'threshold_' + slug + '_gifs',
             JSON.stringify({
               timestamp: +new Date(),
-              data: this.gifs[index]
+              data: this.gifs[keyword]
             })
           );
         });
+    },
+    slug(keyword) {
+      return keyword.toLowerCase().trim().replace(/[^a-zA-Z0-9]+/g, '-');
     },
     formatRgba(string) {
       const match = string.match(/rgba?\((\d+)[\s\,]*(\d+)[\s\,]*(\d+)(?:[\s\,]*([\d\.]+))?\)/);

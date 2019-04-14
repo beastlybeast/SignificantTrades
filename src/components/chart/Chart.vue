@@ -63,6 +63,7 @@ export default {
   },
   computed: {
     ...mapState([
+      'pair',
       'timeframe',
       'actives',
       'exchanges',
@@ -878,6 +879,7 @@ export default {
       options.series[0].upLineColor = this.theme.up;
       options.series[0].color = this.theme.down;
       options.series[0].lineColor = this.theme.down;
+      options.series[0].name = this.pair;
 
       // line
       options.series[0].type = this.chartCandlestick ? 'candlestick' : 'spline';

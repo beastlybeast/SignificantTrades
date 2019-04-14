@@ -281,25 +281,8 @@ export default {
         selectedThreshold = this.thresholds[this.selectedIndex];
       }
 
-      let orderedThresholds = this.thresholds
-        .map((a, i) => {
-          a.index = i;
-
-          return a;
-        });
-
-      const indexOrderBefore = orderedThresholds.map(a => a.index);
-
-      orderedThresholds = orderedThresholds
+      this.$store.state.thresholds = this.thresholds
         .sort((a, b) => a.amount - b.amount);
-
-      const indexOrderAfter = orderedThresholds.map(a => a.index);
-
-      const orderChanged = indexOrderBefore.join('') !== indexOrderAfter.join('');
-
-      orderedThresholds.forEach(a => (delete a.index));
-
-      this.$store.state.thresholds = orderedThresholds;
 
       if (selectedThreshold) {
         for (let i = 0; i < this.thresholds.length; i++) {
@@ -307,13 +290,6 @@ export default {
             this.selectedIndex = i;
           }
         }
-      }
-
-      if (orderChanged) {
-        this.$store.commit('reorderThresholds', {
-          before: indexOrderBefore,
-          after: indexOrderAfter
-        });
       }
     },
     openPicker(side, index, event) {

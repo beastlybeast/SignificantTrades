@@ -221,7 +221,14 @@ const store = new Vuex.Store({
 			const threshold = state.thresholds[payload.index];
 
 			if (threshold) {
-				threshold.gif = payload.value;
+				if (payload.value.trim().length) {
+					threshold.gif = payload.value;
+				} else {
+					payload.value = threshold.gif;
+					payload.isDeleted = true;
+
+					threshold.gif = null;
+				}
 
 				Vue.set(state.thresholds, payload.index, threshold);
 			}
@@ -235,7 +242,6 @@ const store = new Vuex.Store({
 				Vue.set(state.thresholds, payload.index, threshold);
 			}
 		},
-		reorderThresholds(state, payload) {},
 		enableExchange(state, exchange) {
 			Vue.set(state.exchanges[exchange], 'disabled', false);
 		},
