@@ -101,7 +101,8 @@ export default {
 
       const element = this.$refs.countersList.children[0].querySelector('.counter__' + (side ? 'up' : 'down')).children[0];
       
-      element.style.backgroundColor = `rgba(255, 255, 255, ${(strength * .8).toFixed(2)})`;
+      element.style.background = `linear-gradient(to ${side ? 'right' : 'left'}, rgba(255, 255, 255, 0), rgba(255, 255, 255, ${(strength * .8).toFixed(2)}))`;
+      
       element.classList.remove('-highlight');
       void element.offsetWidth;
       element.classList.add('-highlight');
@@ -464,19 +465,17 @@ export default {
     line-height: 1.75em;
     z-index: 1;
   }
+}
 
-  .counter__light {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(white, .75);
-    opacity: 0;
+.counter__light {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  opacity: 0;
+  width: 2em;
 
-    &.-highlight {
-      animation: highlight .2s $easeOutExpo;
-    }
+  &.-highlight {
+    animation: highlight .5s $easeOutExpo;
   }
 }
 
@@ -484,6 +483,10 @@ export default {
   text-align: left;
   background-color: desaturate($green, 5);
   color: white;
+
+  .counter__light {
+    right: 0;
+  }
 
   &:before {
     left: .25em;
@@ -494,6 +497,10 @@ export default {
   text-align: right;
   background-color: $red;
   color: white;
+
+  .counter__light {
+    left: 0;
+  }
 
   &:before {
     right: .25em;
