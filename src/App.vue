@@ -215,6 +215,11 @@ export default {
           this.commodity = symbols[symbol][0];
         }
       }
+
+      if (/^(?!XBT|BTC).*\d+$/.test(pair)) {
+        this.currency = symbols.BTC[0];
+        this.symbol = symbols.BTC[1];
+      }
     },
     toggleAutoClearTrades(isAutoWipeCacheEnabled) {
       clearInterval(this._autoWipeCacheInterval);

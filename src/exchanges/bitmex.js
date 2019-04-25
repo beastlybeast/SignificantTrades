@@ -56,7 +56,7 @@ class Bitmex extends Exchange {
 					this.id,
 					+new Date(trade.timestamp),
 					trade.price,
-					trade.size / trade.price,
+					trade.homeNotional,
 					trade.side === 'Buy' ? 1 : 0
 				]);
 			}
@@ -87,8 +87,8 @@ class Bitmex extends Exchange {
 		} else if ((name = name.replace('BTC', 'XBT')) && this.pairs.indexOf(name) !== -1) {
 			return name;
 		}
-		
-		return false;	
+
+		return false;
 	}
 
 }
