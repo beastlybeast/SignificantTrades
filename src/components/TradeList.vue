@@ -235,7 +235,7 @@ export default {
         background: color.background,
         foreground: color.foreground,
         side: trade[4] > 0 ? 'BUY' : 'SELL',
-        size: this.$root.formatAmount(trade[3], this.decimalPrecision),
+        size: this.$root.formatAmount(trade[3]),
         exchange: trade[0],
         price: this.$root.formatPrice(trade[2]),
         amount: amount,
@@ -273,7 +273,7 @@ export default {
       if (!keyword) {
         return;
       }
-      
+
       const slug = this.slug(keyword);
 
       if (isDeleted) {
@@ -374,7 +374,7 @@ export default {
         b: Math.floor(lower.color.b * pctLower + upper.color.b * rangePct),
         a: lower.color.a * pctLower + upper.color.a * rangePct
       };
-      
+
       const background = `rgba(${backgroundRGB.r}, ${backgroundRGB.g}, ${backgroundRGB.b}, ${backgroundRGB.a})`;
       const luminance = Math.sqrt(0.299 * Math.pow(backgroundRGB.r, 2) + 0.587 * Math.pow(backgroundRGB.g, 2) + 0.114 * Math.pow(backgroundRGB.b, 2));
       const ajustedLuminance = luminance * backgroundRGB.a;
@@ -605,4 +605,29 @@ export default {
     }
   }
 }
+
+#app[data-currency='bitcoin'] .trades__item .trades__item__amount {
+  .trades__item__amount__fiat {
+    transform: translateX(-25%);
+    opacity: 0;
+  }
+
+  .trades__item__amount__coin {
+    transform: none;
+    opacity: 1;
+  }
+
+  &:hover {
+    > span.trades__item__amount__coin {
+      transform: translateX(25%);
+      opacity: 0;
+    }
+
+    > span.trades__item__amount__fiat {
+      transform: none;
+      opacity: 1;
+    }
+  }
+}
+
 </style>

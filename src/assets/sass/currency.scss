@@ -40,4 +40,32 @@
   &[data-commodity='ethereum'] .icon-commodity:before {
     content: unicode($icon-eth);
   }
+
+  &[data-commodity='xmr'] .icon-commodity:before {
+    content: unicode($icon-xmr);
+  }
+
+  &[data-commodity='ltc'] .icon-commodity:before {
+    content: unicode($icon-ltc);
+  }
+
+  &[data-commodity='xrp'] .icon-commodity:before {
+    content: unicode($icon-xrp);
+  }
+
+  &[data-commodity='ada'] .icon-commodity:before {
+    content: unicode($icon-ada);
+  }
+
+  &[data-commodity='trx'] .icon-commodity:before {
+    content: unicode($icon-trx);
+  }
+
+  &[data-commodity='neo'] .icon-commodity:before {
+    content: unicode($icon-neo);
+  }
+
+  &[data-commodity='iota'] .icon-commodity:before {
+    content: unicode($icon-iota);
+  }
 }

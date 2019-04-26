@@ -198,7 +198,14 @@ export default {
         EUR: ['euro', '€'],
         USD: ['dollar', '$'],
         JPY: ['yen', '¥'],
-        ETH: ['ethereum', 'ETH']
+        ETH: ['ethereum', 'ETH'],
+        XRP: ['xrp', 'XRP'],
+        LTC: ['ltc', 'LTC'],
+        TRX: ['trx', 'TRX'],
+        ADA: ['ada', 'ADA'],
+        IOTA: ['iota', 'IOTA'],
+        XMR: ['xmr', 'XMR'],
+        NEO: ['neo', 'NEO'],
       };
 
       this.currency = 'dollar';

@@ -245,3 +245,38 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-candlestick-chart);
   }
 }
+.icon-xrp {
+  &:before {
+    content: unicode($icon-xrp);
+  }
+}
+.icon-ada {
+  &:before {
+    content: unicode($icon-ada);
+  }
+}
+.icon-trx {
+  &:before {
+    content: unicode($icon-trx);
+  }
+}
+.icon-neo {
+  &:before {
+    content: unicode($icon-neo);
+  }
+}
+.icon-ltc {
+  &:before {
+    content: unicode($icon-ltc);
+  }
+}
+.icon-xmr {
+  &:before {
+    content: unicode($icon-xmr);
+  }
+}
+.icon-iota {
+  &:before {
+    content: unicode($icon-iota);
+  }
+}
