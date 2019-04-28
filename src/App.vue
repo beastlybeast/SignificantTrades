@@ -235,10 +235,7 @@ export default {
         return;
       }
 
-      // todo remove
-      window.clean = socket.clean.bind(socket);
-
-      this._autoWipeCacheInterval = setInterval(socket.clean.bind(socket), 1000 * 60 * 5);
+      this._autoWipeCacheInterval = setInterval(socket.cleanOldData.bind(socket), 1000 * 60 * 5);
     },
     updatePrice() {
       let price = 0;

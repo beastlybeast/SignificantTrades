@@ -52,8 +52,8 @@ export default {
     ])
   },
   created() {
-    this.getGifs();
-    this.refreshColorsPercentages();
+    this.retrieveStoredGifs();
+    this.retrieveColorSteps();
 
     socket.$on('pairing', this.onPairing);
     socket.$on('trades.instant', this.onTrades);
@@ -72,7 +72,7 @@ export default {
           break;
         case 'setThresholdColor':
         case 'setThresholdAmount':
-          this.refreshColorsPercentages();
+          this.retrieveColorSteps();
           this.trades.splice(0, this.trades.length);
 
           this.redrawList()
@@ -160,7 +160,7 @@ export default {
 
       // group by [exchange name + buy=1/sell=0] (ex bitmex1)
       const tid = trade[0] + trade[4];
-      const now = socket.getTime();
+      const now = socket.getCurrentTimestamp();
 
       if (this.thresholds[0].amount) {
         if (this.ticks[tid]) {
@@ -249,7 +249,7 @@ export default {
 
       this.trades.splice(+this.maxRows || 20, this.trades.length);
     },
-    getGifs(refresh) {
+    retrieveStoredGifs(refresh) {
       this.thresholds.forEach(threshold => {
         if (!threshold.gif) {
           return;
@@ -266,10 +266,6 @@ export default {
       });
     },
     fetchGifByKeyword(keyword, isDeleted = false) {
-      if (isDeleted) {
-        debugger;
-      }
-
       if (!keyword) {
         return;
       }
@@ -321,7 +317,7 @@ export default {
         a: typeof match[4] === 'undefined' ? 1 : +match[4]
       };
     },
-    refreshColorsPercentages() {
+    retrieveColorSteps() {
       let uniqueThresholds = [];
       let amounts = [];
 
@@ -398,11 +394,11 @@ export default {
         foreground
       }
     },
-    redrawList(lookback = 1000) {
+    redrawList(limit = 1000) {
       clearTimeout(this._refreshColorRenderList);
 
       this._refreshColorRenderList = setTimeout(() => {
-        this.onTrades(socket.trades.slice(socket.trades.length - lookback, socket.trades.length), true);
+        this.onTrades(socket.trades.slice(socket.trades.length - limit, socket.trades.length), true);
       }, 500);
     }
   }

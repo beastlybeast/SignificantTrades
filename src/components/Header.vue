@@ -90,7 +90,7 @@ export default {
       this.updateTimeframesApproximateContentSize();
     });
 
-    socket.$on('fetchProgress', event => {
+    socket.$on('loadingProgress', event => {
       if (!event || isNaN(event.progress)) {
         return;
       }

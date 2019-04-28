@@ -12,9 +12,10 @@ import Gdax from '../exchanges/gdax'
 import Hitbtc from '../exchanges/hitbtc'
 import Okex from '../exchanges/okex'
 import Poloniex from '../exchanges/poloniex'
+import Liquid from '../exchanges/liquid';
+import Deribit from '../exchanges/Deribit';
 
 import store from '../services/store'
-import Liquid from '../exchanges/liquid';
 
 const emitter = new Vue({
 	data() {
@@ -26,16 +27,17 @@ const emitter = new Vue({
 			exchanges: [
 				new Bitmex(),
 				new Bitfinex(),
-				new Coinex(),
 				new Binance(),
-				new Gdax(),
-				new Huobi(),
 				new Bitstamp(),
-				new Hitbtc(),
-				new Okex(),
+				new Gdax(),
 				new Poloniex(),
-				new Liquid(),
 				new Kraken(),
+				new Okex(),
+				new Deribit(),
+				new Huobi(),
+				new Hitbtc(),
+				new Coinex(),
+				new Liquid(),
 			],
 
 			trades: [],
@@ -84,9 +86,7 @@ const emitter = new Vue({
 		}
   },
 	created() {
-		this._fetchedTime = this._fetchedBytes = 0;
-
-		window.emitTrade = (exchange, price, amount = 1, side = 1, type = null) => {
+		/* window.emitTrade = (exchange, price, amount = 1, side = 1, type = null) => {
 			exchange = exchange || 'bitmex';
 
 			if (price === null) {
@@ -97,8 +97,8 @@ const emitter = new Vue({
 
 			this.queue = this.queue.concat([trade]);
 
-			this.emitFilteredTradesAndVolumeSum([trade]);
-		}
+			this.emitTrades([trade]);
+		} */
 
 		this.exchanges.forEach(exchange => {
 			exchange.on('live_trades', (trades) => {
@@ -114,7 +114,7 @@ const emitter = new Vue({
 				this.queue = this.queue.concat(trades);
 
 				if (!this.isReplaying) {
-					this.emitFilteredTradesAndVolumeSum(trades);
+					this.emitTrades(trades);
 				}
 			});
 
@@ -144,14 +144,6 @@ const emitter = new Vue({
 
 			exchange.on('error', event => {
 				console.log(`[socket.exchange.on.error] ${exchange.id} reported an error`);
-
-				/* if (!this.errors[exchange.id]) {
-					this.errors[exchange.id] = 0;
-				}
-
-				this.errors[exchange.id]++;
-
-				this.$emit('exchange_error', exchange.id, this.errors[exchange.id]); */
 			});
 
 			store.commit('reloadExchangeState', exchange.id);
@@ -178,17 +170,7 @@ const emitter = new Vue({
 
 			this.connectExchanges();
 
-			setInterval(() => {
-				if (this.isReplaying || !this.queue.length) {
-					return;
-				}
-
-				this.trades = this.trades.concat(this.queue);
-
-				this.emitFilteredTradesAndVolumeSum(this.queue, 'trades.queued');
-
-				this.queue = [];
-			}, 1000);
+			requestAnimationFrame(this.emitTradesAsync);
 		},
 		connectExchanges(pair = null) {
 			this.disconnectExchanges();
@@ -259,7 +241,7 @@ const emitter = new Vue({
 
 			this.exchanges.forEach(exchange => exchange.disconnect());
 		},
-		clean() {
+		cleanOldData() {
 			if (this.isLoading || this.isReplaying) {
 				return;
 			}
@@ -307,7 +289,7 @@ const emitter = new Vue({
 
 			return null;
 		},
-		emitFilteredTradesAndVolumeSum(trades, event = 'trades.instant') {
+		emitTrades(trades, event = 'trades.instant') {
 			let upVolume = 0;
 			let downVolume = 0;
 
@@ -327,6 +309,19 @@ const emitter = new Vue({
 
 			this.$emit(event, output, upVolume, downVolume);
 		},
+		emitTradesAsync() {
+			if (this.isReplaying || !this.queue.length) {
+				return requestAnimationFrame(this.emitTradesAsync);
+			}
+
+			this.trades = this.trades.concat(this.queue);
+
+			this.emitTrades(this.queue, 'trades.queued');
+
+			this.queue = [];
+
+			requestAnimationFrame(this.emitTradesAsync);
+		},
 		canFetch() {
 			return this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1);
 		},
@@ -341,13 +336,13 @@ const emitter = new Vue({
 
 			return url;
 		},
-		fetchRangeIfNeeded(range, clear = false) {
+		fetchRange(range, clear = false) {
 			if (clear) {
 				this.ticks.splice(0, this.ticks.length);
 				this._fetchedMax = false;
 			}
 			
-			if (this.isReplaying || !this.canFetch()) {
+			if (this.isLoading || this.isReplaying || !this.canFetch()) {
 				return Promise.resolve(null);
 			}
 
@@ -365,10 +360,10 @@ const emitter = new Vue({
 			from = Math.ceil(from / this.timeframe) * this.timeframe;
 			to = Math.ceil(to / this.timeframe) * this.timeframe;
 
-			console.log(`[socket.fetchRangeIfNeeded] minData: ${new Date(minData).toLocaleString()}, from: ${new Date(from).toLocaleString()}, to: ${to}`, this._fetchedMax ? '(FETCHED MAX)' : '');
+			console.log(`[socket.fetchRange] minData: ${new Date(minData).toLocaleString()}, from: ${new Date(from).toLocaleString()}, to: ${to}`, this._fetchedMax ? '(FETCHED MAX)' : '');
 
       if (!this._fetchedMax && to - from >= 60000 && from < minData) {
-				console.info(`[socket.fetchRangeIfNeeded]`, `FETCH NEEDED\n\n\tcurrent time: ${new Date(now).toLocaleString()}\n\tfrom: ${new Date(from).toLocaleString()}\n\tto: ${new Date(to).toLocaleString()} (${this.trades.length ? 'using first trade as base' : 'using now for reference'})`);
+				console.info(`[socket.fetchRange]`, `FETCH NEEDED\n\n\tcurrent time: ${new Date(now).toLocaleString()}\n\tfrom: ${new Date(from).toLocaleString()}\n\tto: ${new Date(to).toLocaleString()} (${this.trades.length ? 'using first trade as base' : 'using now for reference'})`);
 
         promise = this.fetchHistoricalData(from, to);
       } else {
@@ -424,14 +419,14 @@ const emitter = new Vue({
 				if (index) {
 					const chunk = trades.splice(0, index);
 
-					this.emitFilteredTradesAndVolumeSum(chunk);
+					this.emitTrades(chunk);
 
 					queue = queue.concat(chunk);
 
 					if (timestamp - queuedAt > 200) {
 						queuedAt = timestamp;
 
-						this.emitFilteredTradesAndVolumeSum(queue.splice(0, queue.length), 'trades.queued');
+						this.emitTrades(queue.splice(0, queue.length), 'trades.queued');
 					}
 
 					backup = backup.concat(chunk);
@@ -455,24 +450,6 @@ const emitter = new Vue({
 			window.requestAnimationFrame(step);
 		},
 		fetchHistoricalData(from, to) {
-			if (
-				this.isLoading 
-				|| this.isReplaying 
-				|| !this.canFetch()
-				|| !from 
-				|| !to 
-			) {
-				if (this.isLoading) {
-					this.$emit('alert', {
-						id: `already_fetching`,
-						type: 'info',
-						title: `Enhance your calm`
-					});
-				}
-
-				return Promise.resolve();
-			}
-
 			const url = this.getApiUrl(from, to);
 
 			if (this.lastFetchUrl === url) {
@@ -488,7 +465,7 @@ const emitter = new Vue({
 			return new Promise((resolve, reject) => {
 				Axios.get(url, {
 					onDownloadProgress: e => {
-						this.$emit('fetchProgress', {
+						this.$emit('loadingProgress', {
 							loaded: e.loaded,
 							total: e.total,
 							progress: e.loaded / e.total
@@ -502,12 +479,11 @@ const emitter = new Vue({
 							return resolve();
 						}
 
-						const format = response.data.format;
-						const results = response.data.results;
+						let data = response.data.data;
 
-						switch (format) {
+						switch (response.data.format) {
 							case 'trade':
-								results.map(a => {
+								data = data.map(a => {
 									a[1] = +a[1];
 									a[2] = +a[2];
 									a[3] = +a[3];
@@ -517,12 +493,12 @@ const emitter = new Vue({
 								});
 
 								if (!this.trades.length) {
-									console.log(`[socket.fetch] set socket.trades (${results.length} trades)`);
+									console.log(`[socket.fetch] set socket.trades (${data.length} trades)`);
 
-									this.trades = results;
+									this.trades = data;
 								} else {
-									const prepend = results.filter(trade => trade[1] <= this.trades[0][1]);
-									const append = results.filter(trade => trade[1] >= this.trades[this.trades.length - 1][1]);
+									const prepend = data.filter(trade => trade[1] <= this.trades[0][1]);
+									const append = data.filter(trade => trade[1] >= this.trades[this.trades.length - 1][1]);
 
 									if (prepend.length) {
 										console.log(`[fetch] prepend ${prepend.length} ticks`);
@@ -536,20 +512,20 @@ const emitter = new Vue({
 								}
 							break;
 							case 'tick':
-								this.ticks = results;
+								this.ticks = data;
 
-								if (results[0].timestamp > from) {
+								if (data[0].timestamp > from) {
 									console.log('[socket.fetch] fetched max');
 									this._fetchedMax = true;
 								}
 							break;
 						}
 
-						this.$emit('historical', results, format, from, to);
+						this.$emit('historical', data, format, from, to);
 
 						resolve({
-							format: format,
-							results: results,
+							format: response.data.format,
+							data: data,
 							from: from,
 							to: to
 						});
@@ -575,23 +551,14 @@ const emitter = new Vue({
 					})
 			});
 		},
-		commitQueueAndRefreshListeners() {
-			if (this.queue.length) {
-				this.trades = this.trades.concat(this.queue);
-
-				this.queue = [];
-			}
-
-			store.commit('setTimeframe', this.timeframe);
-		},
-		getTime() {
+		getCurrentTimestamp() {
 			if (this.isReplaying && this.replayTime) {
 				return this.replayTime;
 			}
 
 			return +new Date();
 		},
-		getFirstCloses() {
+		getInitialPrices() {
 			if (!this.ticks.length && !this.trades.length) {
 				return this._firstCloses;
 			}

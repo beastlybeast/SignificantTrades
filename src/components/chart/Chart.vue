@@ -218,6 +218,7 @@ export default {
       }
 
       this.chart.destroy();
+      
       delete this.chart;
     },
     setTimeframe(timeframe, snap = false, clear = false, print = true) {
@@ -228,15 +229,17 @@ export default {
       const count = ((this.chart ? this.chart.chartWidth : this.$refs.chartContainer.offsetWidth) - 20 * .1) / this.chartCandleWidth;
       const range = timeframe * 2 * count;
 
-      socket.fetchRangeIfNeeded(range, clear).then(response => {
+      socket.fetchRange(range, clear).then(response => {
         if (response) {
           console.log(`[chart.setTimeframe] done fetching (${response.results.length} new ${response.format}s)`)
         } else {
           console.log(`[chart.setTimeframe] did not fetch anything new`);
         }
-
-        this.redrawChart(range);
       })
+      .catch(() => {})
+      .then(() => {
+        this.redrawChart(range);
+      });
     },
     redrawChart(range) {
       console.log(`[chart.redrawChart]`, range ? '(& setting range to ' + range + ')' : '');
@@ -332,7 +335,7 @@ export default {
       this.updateChartedCount();
     },
     clearChart(timestamp = Infinity) {
-      const now = socket.getTime();
+      const now = socket.getCurrentTimestamp();
 
       for (let serie of this.chart.series) {
         serie.setData([], false);
@@ -464,14 +467,6 @@ export default {
       this.tickData.added = true;
 
       window.chart = this.chart;
-
-      /* if (this.busy) {
-        this._busyTimeout = setTimeout(() => {
-          this.chart.redraw();
-
-          this.busy = false;
-        }, 3000)
-      } */
     },
     createTick(timestamp = null) {
       if (timestamp) {
@@ -483,7 +478,7 @@ export default {
       } else if (this.cursor) {
         this.cursor += this.timeframe;
       } else {
-        this.cursor = Math.floor(socket.getTime() / this.timeframe) * this.timeframe;
+        this.cursor = Math.floor(socket.getCurrentTimestamp() / this.timeframe) * this.timeframe;
       }
 
       if (this.tickData) {
@@ -522,7 +517,7 @@ export default {
           added: false,
         }
 
-        const closes = socket.getFirstCloses();
+        const closes = socket.getInitialPrices();
 
         for (let exchange in closes) {
           if (this.actives.indexOf(exchange) === -1 || !this.exchanges[exchange] || this.exchanges[exchange].ohlc === false) {
@@ -789,7 +784,7 @@ export default {
       }
 
       const margin = this.chartRange * this.chartPadding;
-      const now = socket.getTime();
+      const now = socket.getCurrentTimestamp();
 
       let from;
       let to;
@@ -843,7 +838,7 @@ export default {
 
       if (this.chart) {
         const padding = this.chartRange * this.chartPadding;
-        const now = socket.getTime();
+        const now = socket.getCurrentTimestamp();
         let from = now - this.chartRange;
         let to = now;
 

@@ -30,7 +30,6 @@ class Coinex extends Exchange {
 	}
 
 	connect() {
-
 		if (!super.connect())
 			return;
 
