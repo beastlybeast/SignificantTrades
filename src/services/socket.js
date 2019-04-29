@@ -13,7 +13,7 @@ import Hitbtc from '../exchanges/hitbtc'
 import Okex from '../exchanges/okex'
 import Poloniex from '../exchanges/poloniex'
 import Liquid from '../exchanges/liquid';
-import Deribit from '../exchanges/Deribit';
+import Deribit from '../exchanges/deribit';
 
 import store from '../services/store'
 
