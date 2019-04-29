@@ -11,7 +11,7 @@
         <div class="form-group settings-pair mb8">
           <label>Pair <span class="icon-info-circle" title="The pair to aggregate from" v-tippy></span></label>
           <input type="string" placeholder="BTCUSD" class="form-control" v-bind:value="pair" @change="$store.commit('setPair', $event.target.value)">
-          <small class="help-text mt8" v-if="showPairSubdomainHelp"><i class="icon-info-circle"></i> Consider using <a :href="'https://' + pair.toLowerCase() + '.aggr.trade'">https://{{pair.toLowerCase()}}.aggr.trade</a> hook your settings to <strong>{{pair}}</strong> indefinitely !</small>
+          <small class="help-text mt8" v-if="showPairSubdomainHelp"><i class="icon-info-circle"></i> Consider using <a :href="'https://' + pair.toLowerCase() + '.aggr.trade'">https://{{pair.toLowerCase()}}.aggr.trade</a> to hook your settings to <strong>{{pair}}</strong> indefinitely !</small>
         </div>
         <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'list')" v-bind:class="{closed: settings.indexOf('list') > -1}">Trades list <i class="icon-up"></i></div>
         <div class="mb8">
