@@ -352,7 +352,7 @@ export default {
       return "rgb("+(Math.round((t-R)*p)+R)+","+(Math.round((t-G)*p)+G)+","+(Math.round((t-B)*p)+B)+")";
     },
     getTradeColor(trade, multiplier = 1) {
-      const amount = trade[2] * trade[3];
+      const amount = this.preferBaseCurrencySize ? trade[3] : trade[2] * trade[3];
       const pct = amount / (this.thresholds[this.thresholds.length - 1].amount * multiplier);
       const palette = this.colors[trade[4] > 0 ? 'buys': 'sells'];
 
