@@ -63,6 +63,7 @@ const DEFAULTS = {
 	isSnaped: true,
 	isLoading: false,
 	isReplaying: false,
+	preferBaseCurrencySize: false,
 	actives: []
 }
 
@@ -132,6 +133,7 @@ const EPHEMERAL_PROPERTIES = [
 	'isSnaped',
 	'isLoading',
 	'isReplaying',
+	'preferBaseCurrencySize',
 	'actives'
 ];
 
@@ -336,6 +338,9 @@ const store = new Vuex.Store({
 		},
 
 		// runtime commit
+		toggleBaseCurrencySize(state, value) {
+			state.preferBaseCurrencySize = value ? true : false;
+		},
 		toggleSnap(state, value) {
 			state.isSnaped = value ? true : false;
 		},

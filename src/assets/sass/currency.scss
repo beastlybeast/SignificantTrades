@@ -1,10 +1,10 @@
-#app {
-  .icon-commodity,
-  .icon-currency {
-    top: 1px;
-    position: relative;
-  }
+.icon-commodity,
+.icon-currency {
+  top: 1px;
+  position: relative;
+}
 
+#app {
   .icon-commodity:before {
     content: unicode($icon-coin);
   }

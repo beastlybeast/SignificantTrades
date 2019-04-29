@@ -47,6 +47,7 @@ export default {
       'exchanges',
       'useAudio',
       'audioIncludeInsignificants',
+      'preferBaseCurrencySize',
       'decimalPrecision',
       'showLogos'
     ])
@@ -129,7 +130,7 @@ export default {
       }
     },
     processTrade(trade, silent = false) {
-      const size = trade[2] * trade[3];
+      const size = this.preferBaseCurrencySize ? trade[3] : trade[2] * trade[3];
 
       const multiplier = typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1;
 
@@ -139,13 +140,17 @@ export default {
         }
 
         if (size >= this.thresholds[0].amount * multiplier) {
-          this.appendRow(
-            trade,
-            ['liquidation'],
-            `${app.getAttribute('data-symbol')}<strong>${this.$root.formatAmount(size, 1)}</strong> liquidated <strong>${
-              trade[4] > 0 ? 'SHORT' : 'LONG'
-            }</strong> @ ${app.getAttribute('data-symbol')}${this.$root.formatPrice(trade[2])}`
-          );
+          let liquidationMessage;
+
+          if (this.preferBaseCurrencySize) {
+            liquidationMessage = `<i class="icon-commodity"></i> <strong>${this.$root.formatAmount(size, 1)}</strong>`;
+          } else {
+            liquidationMessage = `<i class="icon-currency"></i> <strong>${this.$root.formatAmount(size, 1)}</strong>`;
+          }
+
+          liquidationMessage += `&nbsp;liquidated <strong>${trade[4] > 0 ? 'SHORT' : 'LONG'}</strong> @ <i class="icon-currency"></i> ${this.$root.formatPrice(trade[2])}`;
+
+          this.appendRow(trade, ['liquidation'], liquidationMessage);
         }
         return;
       }
@@ -168,7 +173,7 @@ export default {
             delete this.ticks[tid];
           } else {
             // average group prices
-            this.ticks[tid][2] = (this.ticks[tid][2] * this.ticks[tid][3] + size) / 2 / ((this.ticks[tid][3] + trade[3]) / 2);
+            this.ticks[tid][2] = (this.ticks[tid][2] * this.ticks[tid][3] + trade[2] * trade[3]) / 2 / ((this.ticks[tid][3] + trade[3]) / 2);
 
             // sum volume
             this.ticks[tid][3] += trade[3];
@@ -194,7 +199,7 @@ export default {
     appendRow(trade, classname = [], message = null) {
       let icon;
       let image;
-      let amount = trade[2] * trade[3];
+      let amount = this.preferBaseCurrencySize ? trade[3] : trade[2] * trade[3];
 
       classname.push(trade[0]);
 
@@ -224,7 +229,7 @@ export default {
         classname.push('level-' + i);
       }
 
-      amount = this.$root.formatAmount(amount);
+      amount = this.$root.formatAmount(trade[2] * trade[3]);
 
       if (image) {
         image = 'url(' + image + ')';
@@ -477,6 +482,7 @@ export default {
   }
 
   &.trades__item--sell {
+    background-blend-mode: soft-light;
     background-color: lighten($red, 35%);
     color: $red;
 

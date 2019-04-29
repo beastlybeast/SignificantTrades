@@ -10,9 +10,8 @@
         <a href="#" class="stack__toggler icon-cross" v-on:click="$emit('close')"></a>
         <div class="form-group settings-pair mb8">
           <label>Pair <span class="icon-info-circle" title="The pair to aggregate from" v-tippy></span></label>
-          <div class="settings-pair__container">
-            <input type="string" placeholder="BTCUSD" class="form-control" v-bind:value="pair" @change="$store.commit('setPair', $event.target.value)">
-          </div>
+          <input type="string" placeholder="BTCUSD" class="form-control" v-bind:value="pair" @change="$store.commit('setPair', $event.target.value)">
+          <small class="help-text mt8" v-if="showPairSubdomainHelp"><i class="icon-info-circle"></i> Considers using <a :href="'https://' + pair.toLowerCase() + '.aggr.trade'">https://{{pair.toLowerCase()}}.aggr.trade</a> in order to attach your settings to <strong>{{pair}}</strong> indefinitely !</small>
         </div>
         <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'list')" v-bind:class="{closed: settings.indexOf('list') > -1}">Trades list <i class="icon-up"></i></div>
         <div class="mb8">
@@ -249,6 +248,19 @@ export default {
     ]),
     exchanges: () => {
       return socket.exchanges;
+    },
+    showPairSubdomainHelp: (state) => {
+      if (!state.$root.isAggrTrade || !state.pair) {
+        return false;
+      }
+
+      const match = window.location.hostname.match(/^([\d\w]+)\..*\./i);
+
+      if (match && match.length >= 2) {
+        return match[1].toLowerCase() === state.pair.toLowerCase();
+      } else {
+        return false;
+      }
     }
   },
   created() {
@@ -440,7 +452,11 @@ export default {
     flex-direction: column;
 
     .help-text {
-      opacity: .6;
+      color: rgba(white, .6);
+
+      a {
+        text-decoration: underline;
+      }
     }
 
     label + .help-text {
@@ -838,7 +854,7 @@ export default {
 
   .settings-thresholds {
     position: relative;
-    
+
     &__display-toggle {
       position: absolute;
       right: 0;

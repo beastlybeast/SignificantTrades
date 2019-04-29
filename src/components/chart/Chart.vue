@@ -4,7 +4,7 @@
       <div class="chart__notice" v-if="isDirty" v-tippy="{ placement: 'bottom' }" :title="`${pendingExchanges.join(pendingExchanges.length === 2 ? ' and ' : ', ')} did not send any trades since the beginning of the session.<br>Chart will be updated automaticaly once the data is received`">
         <i class="icon-warning"></i> {{ pendingExchanges.length }} exchange{{ pendingExchanges.length > 1 ? 's are' : ' is' }} still silent
       </div>
-      
+
       <div class="chart__controls chart-controls" v-if="showControls">
         <div class="chart-controls__left">
         </div>
@@ -218,7 +218,7 @@ export default {
       }
 
       this.chart.destroy();
-      
+
       delete this.chart;
     },
     setTimeframe(timeframe, snap = false, clear = false, print = true) {
@@ -246,7 +246,7 @@ export default {
 
       let min;
       let max;
-      
+
       if (range) {
         this.setRange(range);
       } else if (this.chart) {
@@ -276,6 +276,8 @@ export default {
     },
     onTrades(trades) {
       this.tickTrades(trades, true);
+
+      this.updateChartedCount();
     },
     tickHistoricals(ticks) {
       if (!this.chart) {
@@ -370,7 +372,7 @@ export default {
         trades = this.queuedTrades.splice(0, this.queuedTrades.length).concat(trades);
 
       }
-      
+
       // first we trim trades
       // - equal or higer than current tick
       // - only from actives exchanges (enabled, matched and visible exchange)
@@ -459,7 +461,7 @@ export default {
           this.addTickToSeries(ticks[i], live, i === ticks.length - 1);
         }
       }
-      
+
       if (ticks.length) {
         this.chart.xAxis[0].setExtremes(this.chart.xAxis[0].min, this.chart.xAxis[0].max)
       }
@@ -663,6 +665,10 @@ export default {
     },
 
     updateChartHeight(height = null) {
+      if (!this.chart) {
+        return;
+      }
+
       const size = this.getChartSize();
 
       if (window.innerWidth >= 768) {
@@ -806,14 +812,14 @@ export default {
 
       this.chart.xAxis[0].setExtremes(from, to, redraw);
     },
-    
+
     updateChartedCount() {
       let pendingExchanges = this.actives.filter(id => this.exchanges[id].ohlc !== false);
 
       if (this.tickData) {
         pendingExchanges = pendingExchanges.filter(id => Object.keys(this.tickData.exchanges).indexOf(id) === -1);
       }
-      
+
       if (this.pendingExchanges.length !== pendingExchanges.length) {
         this.redrawChart();
       }
@@ -899,7 +905,7 @@ export default {
       // price MA
       options.series[6].lineColor = this.theme.priceMA;
       options.series[7] && (options.series[7].lineColor = this.theme.priceMA);
-      
+
       // Tooltip value formatter
       const formatPrice = this.$root.formatPrice;
       const formatAmount = this.$root.formatAmount;
@@ -910,10 +916,10 @@ export default {
       options.tooltip.pointFormatter = function() {
         if (!this.y) return '';
 
-        const isPrice = 
-          this.series.options.id === 'price' 
+        const isPrice =
+          this.series.options.id === 'price'
           || (this.series.linkedParent && this.series.linkedParent.options.id === 'price')
-        
+
         const formatter = isPrice ? formatPrice : formatAmount;
 
         return `<b>${this.series.name}</b> ${(formatter)(this.y)}`;
@@ -979,7 +985,7 @@ export default {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-  
+
   .highcharts-container {
     width: 100% !important;
   }

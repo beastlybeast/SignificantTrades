@@ -18,6 +18,7 @@ export default {
     };
   },
   created() {
+    console.log('listen alert');
     socket.$on('alert', alert => {
       if (alert === 'clear') {
         this.alerts.splice(0, this.alerts.length);

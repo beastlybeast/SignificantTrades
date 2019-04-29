@@ -37,6 +37,12 @@ class Deribit extends Exchange {
 				}
 			}));
 
+			this.keepalive = setInterval(() => {
+				this.api.send(JSON.stringify({
+					method: 'public/ping',
+				}));
+			}, 60000);
+
 			this.emitOpen(event);
 		};
 
@@ -60,13 +66,13 @@ class Deribit extends Exchange {
 
 	formatLiveTrades(json) {
 		if (
-			!json.params 
-			|| !json.params.data 
+			!json.params
+			|| !json.params.data
 			|| !json.params.data.length
 		) {
 			return;
 		}
-		
+
 		return json.params.data.map(trade => {
 			return [
 				this.id,

@@ -86,7 +86,7 @@ const emitter = new Vue({
 		}
   },
 	created() {
-		/* window.emitTrade = (exchange, price, amount = 1, side = 1, type = null) => {
+		/*window.emitTrade = (exchange, price, amount = 1, side = 1, type = null) => {
 			exchange = exchange || 'bitmex';
 
 			if (price === null) {
@@ -98,7 +98,7 @@ const emitter = new Vue({
 			this.queue = this.queue.concat([trade]);
 
 			this.emitTrades([trade]);
-		} */
+		}*/
 
 		this.exchanges.forEach(exchange => {
 			exchange.on('live_trades', (trades) => {
@@ -152,7 +152,7 @@ const emitter = new Vue({
 	methods: {
 		initialize() {
 			console.log(`[sockets] initializing ${this.exchanges.length} exchange(s)`);
-	
+
 			if (process.env.API_URL) {
 				this.API_URL = process.env.API_URL;
 				console.info(`[sockets] API_URL = ${this.API_URL}`);
@@ -168,12 +168,21 @@ const emitter = new Vue({
 				console.info(`[sockets] PROXY_URL = ${this.PROXY_URL}`);
 			}
 
-			this.connectExchanges();
+			setTimeout(this.connectExchanges.bind(this));
 
-			requestAnimationFrame(this.emitTradesAsync);
+			setInterval(this.emitTradesAsync.bind(this), 1000);
 		},
 		connectExchanges(pair = null) {
 			this.disconnectExchanges();
+
+			if (!pair && !this.pair) {
+				return this.$emit('alert', {
+					id: `server_status`,
+					type: 'error',
+					title: `No pair`,
+					message: `Type the name of the pair you want to watch in the pair section of the settings panel`
+				});
+			}
 
 			if (pair) {
 				this.pair = pair.toUpperCase();
@@ -222,7 +231,7 @@ const emitter = new Vue({
 				console.log(`[socket.connect] ${validExchanges.length} successfully matched with ${this.pair}`);
 
 				validExchanges = validExchanges.filter(exchange => !this.exchangesSettings[exchange.id].disabled);
-				
+
 				this.$emit('alert', {
 					id: `server_status`,
 					type: 'info',
@@ -311,7 +320,7 @@ const emitter = new Vue({
 		},
 		emitTradesAsync() {
 			if (this.isReplaying || !this.queue.length) {
-				return requestAnimationFrame(this.emitTradesAsync);
+				return;
 			}
 
 			this.trades = this.trades.concat(this.queue);
@@ -319,8 +328,6 @@ const emitter = new Vue({
 			this.emitTrades(this.queue, 'trades.queued');
 
 			this.queue = [];
-
-			requestAnimationFrame(this.emitTradesAsync);
 		},
 		canFetch() {
 			return this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1);
@@ -341,7 +348,7 @@ const emitter = new Vue({
 				this.ticks.splice(0, this.ticks.length);
 				this._fetchedMax = false;
 			}
-			
+
 			if (this.isLoading || this.isReplaying || !this.canFetch()) {
 				return Promise.resolve(null);
 			}
@@ -457,7 +464,7 @@ const emitter = new Vue({
 			}
 
 			this.lastFetchUrl = url;
-			
+
 			store.commit('toggleLoading', true);
 
 			this.$emit('fetchStart', to - from);
@@ -470,7 +477,7 @@ const emitter = new Vue({
 							total: e.total,
 							progress: e.loaded / e.total
 						});
-						
+
 						this._fetchedBytes += e.loaded;
 					}
 				})
@@ -479,7 +486,8 @@ const emitter = new Vue({
 							return resolve();
 						}
 
-						let data = response.data.data;
+						const format = response.data.format;
+						let data = response.data.results;
 
 						switch (response.data.format) {
 							case 'trade':
@@ -524,7 +532,7 @@ const emitter = new Vue({
 						this.$emit('historical', data, format, from, to);
 
 						resolve({
-							format: response.data.format,
+							format: format,
 							data: data,
 							from: from,
 							to: to
@@ -565,7 +573,7 @@ const emitter = new Vue({
 
 			const closesByExchanges = this.exchanges.reduce((obj, exchange) => {
 				obj[exchange.id] = null
-				
+
 				return obj
 			}, {});
 
@@ -582,9 +590,9 @@ const emitter = new Vue({
 
 				closesByExchanges[tick.exchange] = tick.close;
 
-				if (gotAllCloses || !Object.keys(closesByExchanges).map(id => closesByExchanges[id]).filter(close => close === null).length) {					
+				if (gotAllCloses || !Object.keys(closesByExchanges).map(id => closesByExchanges[id]).filter(close => close === null).length) {
 					gotAllCloses = true;
-					
+
 					break;
 				}
 			}
@@ -596,7 +604,7 @@ const emitter = new Vue({
 
 				closesByExchanges[trade[0]] = trade[2];
 
-				if (gotAllCloses || !Object.keys(closesByExchanges).map(id => closesByExchanges[id]).filter(close => close === null).length) {					
+				if (gotAllCloses || !Object.keys(closesByExchanges).map(id => closesByExchanges[id]).filter(close => close === null).length) {
 					gotAllCloses = true;
 
 					break;

@@ -228,7 +228,7 @@
 			.stats__label {
 				font-size: .89em;
 			}
-			
+
 			.stats__value {
 				font-weight: 400;
 			}
@@ -263,6 +263,10 @@
 
 @media screen and (min-width: 768px) {
 	.min-768 {
-		display: block;
+		display: inline-block;
+	}
+
+	.max-767 {
+		display: none;
 	}
 }

@@ -6,6 +6,8 @@
       <tr v-for="(threshold, index) in thresholds" :key="`threshold-${index}`">
         <td class="thresholds-table__input">
           <input type="number" placeholder="Amount*" :value="thresholds[index].amount" @change="$store.commit('setThresholdAmount', {index: index, value: $event.target.value})">
+          <i v-if="preferBaseCurrencySize" class="icon icon-commodity"></i>
+          <i v-else class="icon icon-currency"></i>
         </td>
         <td class="thresholds-table__input">
           <input type="text" placeholder="Keyword" :value="thresholds[index].gif" @change="$store.commit('setThresholdGif', {index: index, value: $event.target.value})">
@@ -73,7 +75,8 @@ export default {
   computed: {
     ...mapState([
       'thresholds',
-      'showThresholdsAsTable'
+      'showThresholdsAsTable',
+      'preferBaseCurrencySize'
     ])
   },
   created() {
@@ -446,8 +449,15 @@ export default {
   padding: .5em 0 .75em;
 
   &__input {
+    position: relative;
     background-color: transparent;
     padding: .5em;
+
+    i.icon {
+      position: absolute;
+      right: 7px;
+      top: 7px;
+    }
 
     input {
       width: 100%;
@@ -494,7 +504,7 @@ export default {
   tr:last-child .__input {
     border-bottom: 0;
   }
-  
+
   &__color {
     width: 2em;
     transition: box-shadow .2s $easeOutExpo;

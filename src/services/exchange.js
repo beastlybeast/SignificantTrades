@@ -201,7 +201,7 @@ class Exchange extends EventEmitter {
       return this.fetchProducts().then(data => this.validatePair(pair));
     }
 
-    if (pair && (!(this.pair = pair) || !this.pair)) {
+    if (!pair || (pair && (!(this.pair = pair) || !this.pair))) {
       console.log(`[${this.id}] unknown pair ${pair}`);
 
       this.emit('error', new Error(`Unknown pair ${pair}`));

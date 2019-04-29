@@ -17,8 +17,8 @@
         @toggleSettings="showSettings = !showSettings"
       />
       <div class="app__layout">
-        <div class="app__left">
-          <Chart v-if="showChart"/>
+        <div class="app__left" v-if="showChart">
+          <Chart/>
           <Exchanges/>
         </div>
         <div class="app__right">
@@ -78,12 +78,13 @@ export default {
       'showChart',
       'decimalPrecision',
       'autoClearTrades',
-      'isLoading'
+      'isLoading',
+      'preferBaseCurrencySize',
     ])
   },
   created() {
+    this.$root.isAggrTrade = /aggr.trade$/.test(window.location.hostname);
     this.$root.isTouchSupported = touchevent();
-
     this.$root.applicationStartTime = +new Date();
     this.$root.formatPrice = this.formatPrice.bind(this);
     this.$root.formatAmount = this.formatAmount.bind(this);
@@ -227,6 +228,8 @@ export default {
         this.currency = symbols.BTC[0];
         this.symbol = symbols.BTC[1];
       }
+
+      this.$store.commit('toggleBaseCurrencySize', this.currency === 'bitcoin');
     },
     toggleAutoClearTrades(isAutoWipeCacheEnabled) {
       clearInterval(this._autoWipeCacheInterval);
