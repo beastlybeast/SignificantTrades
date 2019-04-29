@@ -207,6 +207,7 @@ export default {
         IOTA: ['iota', 'IOTA'],
         XMR: ['xmr', 'XMR'],
         NEO: ['neo', 'NEO'],
+        EOS: ['eos', 'EOS'],
       };
 
       this.currency = 'dollar';

@@ -68,4 +68,8 @@
   &[data-commodity='iota'] .icon-commodity:before {
     content: unicode($icon-iota);
   }
+
+  &[data-commodity='eos'] .icon-commodity:before {
+    content: unicode($icon-eos);
+  }
 }

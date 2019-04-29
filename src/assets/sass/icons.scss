@@ -280,3 +280,8 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-iota);
   }
 }
+.icon-eos {
+  &:before {
+    content: unicode($icon-eos);
+  }
+}
