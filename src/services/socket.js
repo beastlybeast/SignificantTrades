@@ -14,6 +14,7 @@ import Okex from '../exchanges/okex'
 import Poloniex from '../exchanges/poloniex'
 import Liquid from '../exchanges/liquid';
 import Deribit from '../exchanges/deribit';
+import Bybit from '../exchanges/bybit';
 
 import store from '../services/store'
 
@@ -25,7 +26,7 @@ const emitter = new Vue({
 			PROXY_URL: null,
 
 			exchanges: [
-				new Bitmex(),
+				/* new Bitmex(),
 				new Bitfinex(),
 				new Binance(),
 				new Bitstamp(),
@@ -37,7 +38,8 @@ const emitter = new Vue({
 				new Huobi(),
 				new Hitbtc(),
 				new Coinex(),
-				new Liquid(),
+				new Liquid(), */
+				new Bybit()
 			],
 
 			trades: [],
@@ -86,7 +88,7 @@ const emitter = new Vue({
 		}
   },
 	created() {
-		/*window.emitTrade = (exchange, price, amount = 1, side = 1, type = null) => {
+		window.emitTrade = (exchange, price, amount = 1, side = 1, type = null) => {
 			exchange = exchange || 'bitmex';
 
 			if (price === null) {
@@ -98,7 +100,7 @@ const emitter = new Vue({
 			this.queue = this.queue.concat([trade]);
 
 			this.emitTrades([trade]);
-		}*/
+		}
 
 		this.exchanges.forEach(exchange => {
 			exchange.on('live_trades', (trades) => {

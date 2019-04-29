@@ -1,19 +1,21 @@
 import Exchange from '../services/exchange'
 
-class Deribit extends Exchange {
+class Bybit extends Exchange {
 
 	constructor(options) {
 		super(options);
 
-		this.id = 'deribit';
+		this.id = 'bybit';
+
+		this.pairs = ['BTCUSD', 'ETHUSD', 'EOSUSD', 'XRPUSD'];
 
 		this.endpoints = {
-			PRODUCTS: 'https://www.deribit.com/api/v1/public/getinstruments'
+			// PRODUCTS: 'not available yet'
 		}
 
 		this.options = Object.assign({
 			url: () => {
-				return `wss://www.deribit.com/ws/api/v2`
+				return `wss://stream.bybit.com/realtime`
 			},
 		}, this.options);
 	}
@@ -30,17 +32,15 @@ class Deribit extends Exchange {
 			this.skip = true;
 
 			this.api.send(JSON.stringify({
-				method: 'public/subscribe',
-				params: {
-					channels: ['trades.' + this.pair + '.raw'],
-				}
+				op: 'subscribe',
+				args: ['trade']
 			}));
 
-			this.keepalive = setInterval(() => {
+			/* this.keepalive = setInterval(() => {
 				this.api.send(JSON.stringify({
-					method: 'public/ping',
+					op: 'ping',
 				}));
-			}, 60000);
+			}, 60000); */
 
 			this.emitOpen(event);
 		};
@@ -65,20 +65,20 @@ class Deribit extends Exchange {
 
 	formatLiveTrades(json) {
 		if (
-			!json.params
-			|| !json.params.data
-			|| !json.params.data.length
+			!json.data
+			|| json.topic !== 'trade.' + this.pair
+			|| !json.data.length
 		) {
 			return;
 		}
 
-		return json.params.data.map(trade => {
+		return json.data.map(trade => {
 			return [
 				this.id,
-				+trade.timestamp,
+				+new Date(trade.timestamp),
 				+trade.price,
-				trade.amount / trade.price,
-				trade.direction === 'buy' ? 1 : 0
+				trade.size / trade.price,
+				trade.side === 'Buy' ? 1 : 0
 			]
 		});
 	}
@@ -92,4 +92,4 @@ class Deribit extends Exchange {
 
 }
 
-export default Deribit;
+export default Bybit;
