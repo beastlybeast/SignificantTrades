@@ -256,11 +256,7 @@ export default {
 
       const match = window.location.hostname.match(/^([\d\w]+)\..*\./i);
 
-      if (match && match.length >= 2) {
-        return match[1].toLowerCase() === state.pair.toLowerCase();
-      } else {
-        return false;
-      }
+      return !match || match.length < 2 || (match[1].toLowerCase() !== state.pair.toLowerCase());
     }
   },
   created() {
