@@ -11,7 +11,7 @@
         <div class="form-group settings-pair mb8">
           <label>Pair <span class="icon-info-circle" title="The pair to aggregate from" v-tippy></span></label>
           <input type="string" placeholder="BTCUSD" class="form-control" v-bind:value="pair" @change="$store.commit('setPair', $event.target.value)">
-          <small class="help-text mt8" v-if="showPairSubdomainHelp"><i class="icon-info-circle"></i> Considers using <a :href="'https://' + pair.toLowerCase() + '.aggr.trade'">https://{{pair.toLowerCase()}}.aggr.trade</a> in order to attach your settings to <strong>{{pair}}</strong> indefinitely !</small>
+          <small class="help-text mt8" v-if="showPairSubdomainHelp"><i class="icon-info-circle"></i> Consider using <a :href="'https://' + pair.toLowerCase() + '.aggr.trade'">https://{{pair.toLowerCase()}}.aggr.trade</a> hook your settings to <strong>{{pair}}</strong> indefinitely !</small>
         </div>
         <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'list')" v-bind:class="{closed: settings.indexOf('list') > -1}">Trades list <i class="icon-up"></i></div>
         <div class="mb8">
@@ -25,9 +25,16 @@
               <input type="number" min="0" max="10" step="1" placeholder="auto" class="form-control" v-bind:value="decimalPrecision" @change="$store.commit('setDecimalPrecision', $event.target.value)">
             </div>
             <div class="form-group column__tight" title="Show exchange's logo" v-tippy>
-              <label>Logos</label>
+              <label>Logo</label>
               <label class="checkbox-control checkbox-control-input flex-right">
                 <input type="checkbox" class="form-control" v-bind:checked="showLogos" @change="$store.commit('toggleLogos', $event.target.checked)">
+                <div></div>
+              </label>
+            </div>
+            <div class="form-group column__tight" title="ONLY show liquidations" v-tippy>
+              <label>Liqs</label>
+              <label class="checkbox-control checkbox-control-input flex-right">
+                <input type="checkbox" class="form-control" v-bind:checked="liquidationsOnlyList" @change="$store.commit('toggleLiquidationsOnlyList', $event.target.checked)">
                 <div></div>
               </label>
             </div>
@@ -217,6 +224,7 @@ export default {
       'maxRows',
       'decimalPrecision',
       'showLogos',
+      'liquidationsOnlyList',
       'showCounters',
       'showStats',
       'statsPeriod',

@@ -46,6 +46,7 @@ export default {
       'thresholds',
       'exchanges',
       'useAudio',
+      'liquidationsOnlyList',
       'audioIncludeInsignificants',
       'preferBaseCurrencySize',
       'decimalPrecision',
@@ -152,6 +153,8 @@ export default {
 
           this.appendRow(trade, ['liquidation'], liquidationMessage);
         }
+        return;
+      } else if (this.liquidationsOnlyList) {
         return;
       }
 
