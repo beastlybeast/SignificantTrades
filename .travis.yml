@@ -6,5 +6,4 @@ cache:
   - node_modules
 script:
   - npm install
-  - npm rebuild node-sass
   - npm run build
