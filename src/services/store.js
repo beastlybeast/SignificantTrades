@@ -70,14 +70,6 @@ const DEFAULTS = {
 }
 
 /**
- *  SUBDOMAIN EXTRA
- * 	automaticaly map subdomain as a *pair* and replace it in options
- * 	eg: ethusd.aggr.trade will set the *pair* options to ethusd.
- */
-
-const subdomain = window.location.hostname.match(/^([\d\w]+)\..*\./i);
-
-/**
  *  QUERY STRING PARSER
  * 	every options should be settable from querystring using encoded json
  */
@@ -93,10 +85,6 @@ try {
 	QUERY_STRING = {};
 }
 
-if (subdomain && subdomain.length >= 2) {
-	QUERY_STRING.pair = subdomain[1].toUpperCase();
-}
-
 for (let name in QUERY_STRING) {
 	try {
 		QUERY_STRING[name] = JSON.parse(QUERY_STRING[name]);
@@ -108,6 +96,21 @@ for (let name in QUERY_STRING) {
  */
 
 const STORED = JSON.parse(localStorage.getItem('settings'));
+
+/**
+ * 	EXTRA
+ *
+ * 	1.SUBDOMAIN
+ * 	automaticaly map subdomain as a *pair* and replace it in options
+ * 	eg: ethusd.aggr.trade will set the *pair* options to ethusd.
+ */
+const EXTRA = {};
+
+const subdomain = window.location.hostname.match(/^([\d\w]+)\..*\./i);
+
+if (subdomain && subdomain.length >= 2) {
+	EXTRA.pair = subdomain[1].toUpperCase();
+}
 
 // <migrations>
 
@@ -141,7 +144,7 @@ const EPHEMERAL_PROPERTIES = [
 
 const store = new Vuex.Store({
 	defaults: DEFAULTS,
-	state: Object.assign({}, DEFAULTS, STORED || {}, QUERY_STRING),
+	state: Object.assign({}, DEFAULTS, EXTRA, STORED || {}, QUERY_STRING),
 	mutations: {
 		setPair(state, value) {
 			state.pair = value.toString().toUpperCase();
