@@ -28,7 +28,7 @@
 			<div class="form-group">
 				<label>Threshold <span v-if="exchanges[exchange.id].threshold !== 1">x{{exchanges[exchange.id].threshold}}</span></label>
         <slider :step=".01" :min="0" :max="2" :value="exchanges[exchange.id].threshold"
-        v-on:dblclick.native="$store.commit('setExchangeThreshold', {exchange: exchange.id, threshold: 1})"
+        @reset="$store.commit('setExchangeThreshold', {exchange: exchange.id, threshold: 1})"
         @output="$store.commit('setExchangeThreshold', {exchange: exchange.id, threshold: $event})" />
 			</div>
 			<div class="form-group mt8">
