@@ -78,9 +78,13 @@ export default {
       'chartPadding',
       'chartGridlines',
       'chartGridlinesGap',
+      'chartSma',
+      'chartSmaLength',
       'chartVolume',
+      'chartVolumeThreshold',
       'chartVolumeOpacity',
-      'chartVolumeThreshold'
+      'chartVolumeAverage',
+      'chartVolumeAverageLength',
 		])
   },
   created() {
@@ -126,6 +130,12 @@ export default {
         case 'setVolumeAverageLength':
           this.chart.series[4].update({params: {period: +mutation.payload || 14}});
           this.chart.series[5].update({params: {period: +mutation.payload || 14}});
+        break;
+        case 'toggleSma':
+          this.chart.series[6].update({visible: mutation.payload});
+        break;
+        case 'setSmaLength':
+          this.chart.series[6].update({params: {period: +mutation.payload || 14}});
         break;
         case 'toggleReplaying':
           if (mutation.payload) {
@@ -946,6 +956,20 @@ export default {
       if (this.chartVolumeOpacity < 1) {
         this.chart.series[1].group.element.style.opacity = this.chartVolumeOpacity;
         this.chart.series[2].group.element.style.opacity = this.chartVolumeOpacity;
+      }
+
+      if (!this.chartSma) {
+        this.chart.series[6].update({visible: false});
+      } else if (this.chartSmaLength) {
+        this.chart.series[6].update({params: {period: this.chartSmaLength}});
+      }
+
+      if (!this.chartVolumeAverage) {
+        this.chart.series[4].update({visible: false});
+        this.chart.series[5].update({visible: false});
+      } else if (this.chartVolumeAverageLength) {
+        this.chart.series[4].update({params: {period: this.chartVolumeAverageLength}});
+        this.chart.series[5].update({params: {period: this.chartVolumeAverageLength}});
       }
     },
     onClean(min) {

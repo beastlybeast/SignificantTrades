@@ -12,17 +12,13 @@ const DEFAULTS = {
 		{ amount: 10000000, gif: 'explosion', buyColor: 'rgb(255,160,0)', sellColor: 'rgb(233,30,99)' },
 	],
 	exchanges: {
-		gdax: {threshold: .50},
-		bitfinex: {threshold: .75},
-		binance: {threshold: .75},
-		deribit: {threshold: .66},
-		huobi: {disabled: true, threshold: .66},
+		huobi: {disabled: true},
 		okex: {disabled: true},
 		liquid: {disabled: true},
 		bithumb: {disabled: true},
 		hitbtc: {disabled: true},
 		coinex: {disabled: true},
-		bybit: {disabled: true, threshold: .66},
+		bybit: {disabled: true},
 	},
 	maxRows: 20,
 	decimalPrecision: null,
@@ -58,6 +54,8 @@ const DEFAULTS = {
 	chartVolumeOpacity: .75,
 	chartVolumeAverage: true,
 	chartVolumeAverageLength: 14,
+	chartSma: true,
+	chartSmaLength: 14,
 	chartAutoScale: true,
 	showThresholdsAsTable: false,
 
@@ -310,6 +308,12 @@ const store = new Vuex.Store({
 		},
 		setVolumeAverageLength(state, value) {
 			state.chartVolumeAverageLength = parseInt(value) || 14;
+		},
+		toggleSma(state, value) {
+			state.chartSma = value ? true : false;
+		},
+		setSmaLength(state, value) {
+			state.chartSmaLength = parseInt(value) || 14;
 		},
 		toggleAutoClearTrades(state, value) {
 			state.autoClearTrades = value ? true : false;

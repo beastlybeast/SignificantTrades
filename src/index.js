@@ -17,9 +17,11 @@ Vue.use(VueTippy, {
 
 import Editable from './components/ui/Editable'
 import Dropdown from './components/ui/Dropdown'
+import Slider from './components/ui/Slider'
 
 Vue.component('dropdown', Dropdown);
 Vue.component('editable', Editable);
+Vue.component('slider', Slider);
 
 new Vue({
 	el: '#app',

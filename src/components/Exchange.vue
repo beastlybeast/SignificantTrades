@@ -11,8 +11,11 @@
 			'-expanded': expanded
 		}">
 		<div class="settings-exchange__header" v-on:click="toggleExchange(exchange)">
+      <span v-if="!isNaN(settings.threshold) && settings.threshold !== 1" class="settings-exchange__threshold">×{{ settings.threshold }}</span>
 			<div class="settings-exchange__identity">
-				<div class="settings-exchange__name">{{ exchange.id }} <i v-if="settings.ohlc !== false" class="icon-line-chart"></i></div>
+				<div class="settings-exchange__name">{{ exchange.id }}
+          <i v-if="settings.ohlc !== false" class="icon-line-chart"></i>
+        </div>
 				<small class="settings-exchange__error" v-if="exchange.error">{{ exchange.error }}</small>
 				<small class="settings-exchange__price" v-if="exchange.price" v-html="$root.formatPrice(exchange.price)"></small>
 			</div>
@@ -24,7 +27,9 @@
 		<div class="settings-exchange__detail" v-if="expanded">
 			<div class="form-group">
 				<label>Threshold <span v-if="exchanges[exchange.id].threshold !== 1">x{{exchanges[exchange.id].threshold}}</span></label>
-				<input type="range" min="0" max="2" step="0.01" v-bind:value="exchanges[exchange.id].threshold" @change="$store.commit('setExchangeThreshold', {exchange: exchange.id, threshold: $event.target.value})">
+        <slider :step=".01" :min="0" :max="2" :value="exchanges[exchange.id].threshold"
+        v-on:dblclick.native="$store.commit('setExchangeThreshold', {exchange: exchange.id, threshold: 1})"
+        @output="$store.commit('setExchangeThreshold', {exchange: exchange.id, threshold: $event})" />
 			</div>
 			<div class="form-group mt8">
 				<label class="checkbox-control" v-tippy title="Include exchange in main candlestick chart">
@@ -83,8 +88,8 @@ export default {
 	transition: all 0.2s $easeOutExpo;
 	border-radius: 2px;
 	margin-bottom: 8px;
-	overflow: hidden;
 	flex-basis: calc(50% - 4px);
+  max-width: calc(50% - 4px);
 
 	&:nth-child(odd) {
 		margin-right: 8px;
@@ -103,6 +108,10 @@ export default {
 	}
 
 	&.-enabled {
+		.settings-exchange__threshold {
+			display: block;
+		}
+
 		.settings-exchange__name:before {
 			width: 0%;
 		}
@@ -186,6 +195,20 @@ export default {
 
 .settings-exchange__price {
 	opacity: .8;
+}
+
+.settings-exchange__threshold {
+  display: none;
+  position: absolute;
+  top: -.5em;
+  right: -.5em;
+  pointer-events: none;
+  font-size: 90%;
+  background-color: $blue;
+  border-radius: 2px;
+  color: white;
+  padding: .1em .2em;
+  box-shadow: 0 0 0 1px rgba(black, .2);
 }
 
 .settings-exchange__header {

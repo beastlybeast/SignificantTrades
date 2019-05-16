@@ -149,6 +149,16 @@
               </div>
             </div>
             <div class="form-group mb8">
+              <label class="checkbox-control flex-left" v-tippy title="Toggle Price Simple Moving Average">
+                <input type="checkbox" class="form-control" v-bind:checked="chartSma" @change="$store.commit('toggleSma', $event.target.checked)">
+                <div></div>
+                <span v-on:click.stop.prevent>Price SMA</span>
+              </label>
+              <div v-if="chartSma" class="settings-chart__sub-settings">
+                period <editable :content="chartSmaLength" @output="$store.commit('setSmaLength', $event)"></editable>
+              </div>
+            </div>
+            <div class="form-group mb8">
               <label class="checkbox-control flex-left" v-tippy title="Toggle Volume (buys / sells) Exponential Moving Average">
                 <input type="checkbox" class="form-control" v-bind:checked="chartVolumeAverage" @change="$store.commit('toggleVolumeAverage', $event.target.checked)">
                 <div></div>
@@ -246,6 +256,8 @@ export default {
       'chartGridlines',
       'chartGridlinesGap',
       'chartCandlestick',
+      'chartSma',
+      'chartSmaLength',
       'chartVolume',
       'chartVolumeThreshold',
       'chartVolumeOpacity',

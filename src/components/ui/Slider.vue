@@ -1,0 +1,38 @@
+<template>
+	<input type="range" :min="min" :max="max" :step="step" v-bind:value="value">
+</template>
+
+<script>
+
+export default {
+	props: ['min', 'max', 'step', 'value'],
+
+	mounted() {
+    this._onMouseDownHandler = this.onMouseDown.bind(this);
+
+    this.$el.addEventListener(this.$root.isTouchSupported ? 'touchstart' : 'mousedown', this._onMouseDownHandler, false);
+  },
+
+  beforeDestroy() {
+    this.$el.removeEventListener(this.$root.isTouchSupported ? 'touchstart' : 'mousedown', this._onMouseDownHandler);
+  },
+
+  methods: {
+    onMouseDown() {
+      this._onMouseMoveHandler = this.onMouseMove.bind(this);
+      document.addEventListener(this.$root.isTouchSupported ? 'touchmove' : 'mousemove', this._onMouseMoveHandler, false);
+
+      this._onMouseUpHandler = this.onMouseUp.bind(this);
+      document.addEventListener(this.$root.isTouchSupported ? 'touchend' : 'mouseup', this._onMouseUpHandler, false);
+    },
+    onMouseMove() {
+      this.$emit('output', this.$el.value);
+    },
+    onMouseUp() {
+      document.removeEventListener(this.$root.isTouchSupported ? 'touchmove' : 'mousemove', this._onMouseMoveHandler);
+      document.removeEventListener(this.$root.isTouchSupported ? 'touchend' : 'mouseup', this._onMouseUpHandler);
+    },
+  }
+}
+
+</script>
