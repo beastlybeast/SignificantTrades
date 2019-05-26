@@ -1,75 +1,87 @@
 <template>
-	<div class="alerts">
-		<div v-for="(alert, index) in alerts" class="alert" :key="alert.id" :class="'alert--' + alert.type" v-on:click="alert.click ? alert.click(alert) && dismiss(index) : dismiss(index)">
-			<span class="alert__icon icon-"></span>
-			<div class="alert__title">{{ alert.title }}</div>
-			<div v-if="alert.message" class="alert__message" v-html="alert.message"></div>
-		</div>
-	</div>
+  <div class="alerts">
+    <div
+      v-for="(alert, index) in alerts"
+      class="alert"
+      :key="alert.id"
+      :class="'alert--' + alert.type"
+      @click="
+        alert.click ? alert.click(alert) && dismiss(index) : dismiss(index)
+      "
+    >
+      <span class="alert__icon icon-"></span>
+      <div class="alert__title">{{ alert.title }}</div>
+      <div
+        v-if="alert.message"
+        class="alert__message"
+        v-html="alert.message"
+      ></div>
+    </div>
+  </div>
 </template>
 
 <script>
-import socket from "../services/socket";
+import socket from '../services/socket'
 
 export default {
   data() {
     return {
-      alerts: []
-    };
+      alerts: [],
+    }
   },
   created() {
-    console.log('listen alert');
-    socket.$on('alert', alert => {
+    console.log('listen alert')
+    socket.$on('alert', (alert) => {
       if (alert === 'clear') {
-        this.alerts.splice(0, this.alerts.length);
-        return;
+        this.alerts.splice(0, this.alerts.length)
+        return
       }
 
       if (alert.id) {
         for (let _alert of this.alerts) {
           if (_alert.id === alert.id) {
-            this.alerts.splice(this.alerts.indexOf(_alert), 1);
+            this.alerts.splice(this.alerts.indexOf(_alert), 1)
 
-            break;
+            break
           }
         }
       } else {
         alert.id = Math.random()
           .toString(36)
-          .substring(7);
+          .substring(7)
       }
 
-      alert.timestamp = +new Date();
+      alert.timestamp = +new Date()
 
       if (!alert.title) {
-        alert.title = alert.message;
+        alert.title = alert.message
 
-        delete alert.message;
+        delete alert.message
       }
 
       if (!alert.title && !alert.message) {
-        return;
+        return
       }
 
       if (alert.message) {
-        alert.message = alert.message.trim().replace(/\n/, '<br>');
+        alert.message = alert.message.trim().replace(/\n/, '<br>')
       }
 
-      this.alerts.push(alert);
+      this.alerts.push(alert)
 
       if (alert.type !== 'error') {
         setTimeout(() => {
-          this.dismiss(this.alerts.indexOf(alert));
-        }, alert.delay || 1000 * 30);
+          this.dismiss(this.alerts.indexOf(alert))
+        }, alert.delay || 1000 * 30)
       }
-    });
+    })
   },
   methods: {
     dismiss(index) {
-      this.alerts.splice(index, 1);
-    }
-  }
-};
+      this.alerts.splice(index, 1)
+    },
+  },
+}
 </script>
 
 <style lang="scss">

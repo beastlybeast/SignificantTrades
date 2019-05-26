@@ -1,47 +1,57 @@
 <template>
-	<div class="dropdown">
-		<div class="dropdown__selected" @click="toggle" v-html="options[selected]"></div>
-		<div class="dropdown__options" v-show="isOpen">
-			<div class="dropdown__option" v-for="(value, index) in options" v-bind:key="index" v-bind:class="{active: index === selected}" @click="set(index)" v-html="value"></div>
-		</div>
-	</div>
+  <div class="dropdown">
+    <div
+      class="dropdown__selected"
+      @click="toggle"
+      v-html="options[selected]"
+    ></div>
+    <div class="dropdown__options" v-show="isOpen">
+      <div
+        class="dropdown__option"
+        v-for="(value, index) in options"
+        :key="index"
+        :class="{ active: index === selected }"
+        @click="set(index)"
+        v-html="value"
+      ></div>
+    </div>
+  </div>
 </template>
 
 <script>
-
 export default {
-	props: ['options', 'selected'],
+  props: ['options', 'selected'],
 
-  data: function() {
+  data() {
     return {
-      isOpen: false
-    };
+      isOpen: false,
+    }
   },
-	
-	created() {
-		if (!this.selected) {
-			this.selected = Object.keys(this.options)[0];
-		}
-	},
+
+  created() {
+    if (!this.selected) {
+      this.selected = Object.keys(this.options)[0]
+    }
+  },
 
   methods: {
-    toggle: function() {
-      this.isOpen = !this.isOpen;
+    toggle() {
+      this.isOpen = !this.isOpen
     },
-    show: function() {
-      this.isOpen = true;
-    },
-    hide: function() {
-      this.isOpen = false;
-    },
-    set: function(index) {
-      this.selected = index;
 
-      this.$emit('output', index);
-      
-      this.hide();
-    }
-  }
+    show() {
+      this.isOpen = true
+    },
+
+    hide() {
+      this.isOpen = false
+    },
+
+    set(index) {
+      this.selected = index
+      this.$emit('output', index)
+      this.hide()
+    },
+  },
 }
-
 </script>

@@ -12,14 +12,14 @@
 import store from '../../services/store'
 
 const enablePanning = (H, chart) => {
-  'use strict';
-  
+  'use strict'
+
   var addEvent = H.addEvent,
     fireEvent = H.fireEvent,
     doc = document,
-    body = doc.body;
-  
-  console.info('[pan.js] initialize');
+    body = doc.body
+
+  console.info('[pan.js] initialize')
 
   var options = chart.options,
     panning = options.chart.panning || true,
@@ -32,46 +32,46 @@ const enablePanning = (H, chart) => {
     downYPixels,
     downYValue,
     isDragging = false,
-    hasDragged = 0;
+    hasDragged = 0
 
-  var _event;
+  var _event
 
   if (panning && zoomType === '') {
-    addEvent(container, 'mousedown', beforePan);
-    addEvent(doc, 'mousemove', e => (_event = e));
-    addEvent(doc, 'mouseup', afterPan);
+    addEvent(container, 'mousedown', beforePan)
+    addEvent(doc, 'mousemove', (e) => (_event = e))
+    addEvent(doc, 'mouseup', afterPan)
   }
 
   function beforePan(e) {
-    body.style.cursor = 'move';
+    body.style.cursor = 'move'
 
-    downYPixels = chart.pointer.normalize(e).chartY;
-    downYValue = yAxis.toValue(downYPixels);
+    downYPixels = chart.pointer.normalize(e).chartY
+    downYValue = yAxis.toValue(downYPixels)
 
-    downXPixels = chart.pointer.normalize(e).chartX;
-    downXValue = xAxis.toValue(downXPixels);
+    downXPixels = chart.pointer.normalize(e).chartX
+    downXValue = xAxis.toValue(downXPixels)
 
-    isDragging = true;
-    
-    fireEvent(chart, '_panStart');
+    isDragging = true
 
-    smoothPan();
+    fireEvent(chart, '_panStart')
+
+    smoothPan()
   }
 
   function afterPan(e) {
     if (isDragging) {
-      isDragging = false;
+      isDragging = false
 
-      body.style.cursor = '';
+      body.style.cursor = ''
 
-      fireEvent(chart, '_panEnd');
+      fireEvent(chart, '_panEnd')
     }
   }
 
   function doPan(e) {
     if (isDragging) {
       var dragYPixels = chart.pointer.normalize(e).chartY,
-          dragYValue = yAxis.toValue(dragYPixels);
+        dragYValue = yAxis.toValue(dragYPixels)
 
       if (!store.state.chartAutoScale) {
         var yExtremes = yAxis.getExtremes(),
@@ -79,10 +79,12 @@ const enablePanning = (H, chart) => {
           yUserMax = yExtremes.userMax,
           yDataMin = yExtremes.dataMin,
           yDataMax = yExtremes.dataMax,
-          yMin = yUserMin !== undefined && yUserMin !== null ? yUserMin : yDataMin,
-          yMax = yUserMax !== undefined && yUserMax !== null ? yUserMax : yDataMax,
+          yMin =
+            yUserMin !== undefined && yUserMin !== null ? yUserMin : yDataMin,
+          yMax =
+            yUserMax !== undefined && yUserMax !== null ? yUserMax : yDataMax,
           newMinY,
-          newMaxY;
+          newMaxY
       }
 
       var dragXPixels = chart.pointer.normalize(e).chartX,
@@ -92,46 +94,48 @@ const enablePanning = (H, chart) => {
         xUserMax = xExtremes.userMax,
         xDataMin = xExtremes.dataMin,
         xDataMax = xExtremes.dataMax,
-        xMin = xUserMin !== undefined && xUserMin !== null ? xUserMin : xDataMin,
-        xMax = xUserMax !== undefined && xUserMax !== null ? xUserMax : xDataMax,
+        xMin =
+          xUserMin !== undefined && xUserMin !== null ? xUserMin : xDataMin,
+        xMax =
+          xUserMax !== undefined && xUserMax !== null ? xUserMax : xDataMax,
         newMinX,
-        newMaxX;
-        
+        newMaxX
+
       // determine if the mouse has moved more than 10px
       hasDragged = Math.max(
         Math.abs(downYPixels - dragYPixels),
         Math.abs(downXPixels - dragXPixels)
-      );
+      )
 
       if (hasDragged > 2) {
         if (!store.state.chartAutoScale) {
-          newMinY = yMin - (dragYValue - downYValue);
-          newMaxY = yMax - (dragYValue - downYValue);
-          yAxis.setExtremes(newMinY, newMaxY, false, false);
+          newMinY = yMin - (dragYValue - downYValue)
+          newMaxY = yMax - (dragYValue - downYValue)
+          yAxis.setExtremes(newMinY, newMaxY, false, false)
         }
 
-        newMinX = xMin - (dragXValue - downXValue);
-        newMaxX = xMax - (dragXValue - downXValue);
-        xAxis.setExtremes(newMinX, newMaxX, true, false);
+        newMinX = xMin - (dragXValue - downXValue)
+        newMaxX = xMax - (dragXValue - downXValue)
+        xAxis.setExtremes(newMinX, newMaxX, true, false)
 
-        fireEvent(chart, '_pan');
+        fireEvent(chart, '_pan')
       }
     }
   }
 
   function smoothPan() {
     if (!isDragging) {
-      return;
+      return
     }
 
     if (_event) {
-      doPan(_event);
+      doPan(_event)
 
-      _event = null;
+      _event = null
     }
 
-    return requestAnimationFrame(smoothPan);
+    return requestAnimationFrame(smoothPan)
   }
-};
+}
 
-export default enablePanning;
+export default enablePanning

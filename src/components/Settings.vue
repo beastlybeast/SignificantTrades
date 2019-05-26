@@ -1,219 +1,629 @@
 <template>
-	<div id="settings" class="settings__container stack__container" v-on:click="$event.target === $el && $emit('close')">
+  <div
+    id="settings"
+    class="settings__container stack__container"
+    @click="$event.target === $el && $emit('close')"
+  >
     <div ref="tippin" v-if="tippin" class="tippin-me">
-      <iframe src="https://tippin.me/buttons/send-lite.php?u=Tucsky" frameborder="0" scrolling="no"></iframe>
+      <iframe
+        src="https://tippin.me/buttons/send-lite.php?u=Tucsky"
+        frameborder="0"
+        scrolling="no"
+      ></iframe>
     </div>
     <div class="stack__backdrop"></div>
     <div class="stack__scroller">
       <!-- <a href="https://github.com/Tucsky/SignificantTrades/issues" target="_blank" class="settings__report"><i class="icon-warning"></i> Found a bug or feedback ? Let me know on Github !</a> -->
       <div class="stack__wrapper">
-        <a href="#" class="stack__toggler icon-cross" v-on:click="$emit('close')"></a>
+        <a
+          href="#"
+          class="stack__toggler icon-cross"
+          @click="$emit('close')"
+        ></a>
         <div class="form-group settings-pair mb8">
-          <label>Pair <span class="icon-info-circle" title="The pair to aggregate from" v-tippy></span></label>
-          <input type="string" placeholder="BTCUSD" class="form-control" v-bind:value="pair" @change="$store.commit('setPair', $event.target.value)">
-          <small class="help-text mt8" v-if="showPairSubdomainHelp"><i class="icon-info-circle"></i> Consider using <a :href="'https://' + pair.toLowerCase() + '.aggr.trade'">https://{{pair.toLowerCase()}}.aggr.trade</a> to hook your settings to <strong>{{pair}}</strong> indefinitely !</small>
+          <label
+            >Pair
+            <span
+              class="icon-info-circle"
+              title="The pair to aggregate from"
+              v-tippy
+            ></span
+          ></label>
+          <input
+            type="string"
+            placeholder="BTCUSD"
+            class="form-control"
+            :value="pair"
+            @change="$store.commit('setPair', $event.target.value)"
+          />
+          <small class="help-text mt8" v-if="showPairSubdomainHelp"
+            ><i class="icon-info-circle"></i> Consider using
+            <a :href="'https://' + pair.toLowerCase() + '.aggr.trade'"
+              >https://{{ pair.toLowerCase() }}.aggr.trade</a
+            >
+            to hook your settings to <strong>{{ pair }}</strong> indefinitely
+            !</small
+          >
         </div>
-        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'list')" v-bind:class="{closed: settings.indexOf('list') > -1}">Trades list <i class="icon-up"></i></div>
+        <div
+          class="settings__title"
+          @click="$store.commit('toggleSettingsPanel', 'list')"
+          :class="{ closed: settings.indexOf('list') > -1 }"
+        >
+          Trades list <i class="icon-up"></i>
+        </div>
         <div class="mb8">
           <div class="column">
             <div class="form-group column__fill">
-              <label>Max rows <span class="icon-info-circle" title="Numbers of trades to keep visible" v-tippy></span></label>
-              <input type="number" min="0" max="1000" step="1" class="form-control" v-bind:value="maxRows" @change="$store.commit('setMaxRows', $event.target.value)">
+              <label
+                >Max rows
+                <span
+                  class="icon-info-circle"
+                  title="Numbers of trades to keep visible"
+                  v-tippy
+                ></span
+              ></label>
+              <input
+                type="number"
+                min="0"
+                max="1000"
+                step="1"
+                class="form-control"
+                :value="maxRows"
+                @change="$store.commit('setMaxRows', $event.target.value)"
+              />
             </div>
             <div class="form-group column__tight">
-              <label>Precision <span class="icon-info-circle" title="Round prices to n decimals" v-tippy></span></label>
-              <input type="number" min="0" max="10" step="1" placeholder="auto" class="form-control" v-bind:value="decimalPrecision" @change="$store.commit('setDecimalPrecision', $event.target.value)">
+              <label
+                >Precision
+                <span
+                  class="icon-info-circle"
+                  title="Round prices to n decimals"
+                  v-tippy
+                ></span
+              ></label>
+              <input
+                type="number"
+                min="0"
+                max="10"
+                step="1"
+                placeholder="auto"
+                class="form-control"
+                :value="decimalPrecision"
+                @change="
+                  $store.commit('setDecimalPrecision', $event.target.value)
+                "
+              />
             </div>
-            <div class="form-group column__tight" title="Show exchange's logo" v-tippy>
+            <div
+              class="form-group column__tight"
+              title="Show exchange's logo"
+              v-tippy
+            >
               <label>Logo</label>
               <label class="checkbox-control checkbox-control-input flex-right">
-                <input type="checkbox" class="form-control" v-bind:checked="showLogos" @change="$store.commit('toggleLogos', $event.target.checked)">
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="showLogos"
+                  @change="$store.commit('toggleLogos', $event.target.checked)"
+                />
                 <div></div>
               </label>
             </div>
-            <div class="form-group column__tight" title="ONLY show liquidations" v-tippy>
+            <div
+              class="form-group column__tight"
+              title="ONLY show liquidations"
+              v-tippy
+            >
               <label>Liqs</label>
               <label class="checkbox-control checkbox-control-input flex-right">
-                <input type="checkbox" class="form-control" v-bind:checked="liquidationsOnlyList" @change="$store.commit('toggleLiquidationsOnlyList', $event.target.checked)">
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="liquidationsOnlyList"
+                  @change="
+                    $store.commit(
+                      'toggleLiquidationsOnlyList',
+                      $event.target.checked
+                    )
+                  "
+                />
                 <div></div>
               </label>
             </div>
           </div>
         </div>
-        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'thresholds')" v-bind:class="{closed: settings.indexOf('thresholds') > -1}">Thresholds <i class="icon-up"></i></div>
+        <div
+          class="settings__title"
+          @click="$store.commit('toggleSettingsPanel', 'thresholds')"
+          :class="{ closed: settings.indexOf('thresholds') > -1 }"
+        >
+          Thresholds <i class="icon-up"></i>
+        </div>
         <div class="settings-thresholds">
-          <a href="javascript:void(0);" class="settings-thresholds__display-toggle" v-tippy title="Switch thresholds display" @click="$store.commit('toggleTresholdsTable', !showThresholdsAsTable)">{{ showThresholdsAsTable ? 'slider' : 'table' }}</a>
+          <a
+            href="javascript:void(0);"
+            class="settings-thresholds__display-toggle"
+            v-tippy
+            title="Switch thresholds display"
+            @click="
+              $store.commit('toggleTresholdsTable', !showThresholdsAsTable)
+            "
+            >{{ showThresholdsAsTable ? 'slider' : 'table' }}</a
+          >
           <Thresholds ref="thresholdsComponent" />
         </div>
-        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'audio')" v-bind:class="{closed: settings.indexOf('audio') > -1}">Audio <i class="icon-up"></i></div>
-        <div class="settings-audio settings__activable column" v-bind:class="{active: useAudio}">
+        <div
+          class="settings__title"
+          @click="$store.commit('toggleSettingsPanel', 'audio')"
+          :class="{ closed: settings.indexOf('audio') > -1 }"
+        >
+          Audio <i class="icon-up"></i>
+        </div>
+        <div
+          class="settings-audio settings__activable column"
+          :class="{ active: useAudio }"
+        >
           <div class="form-group column__tight">
-            <label class="checkbox-control -on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable audio">
-              <input type="checkbox" class="form-control" v-bind:checked="useAudio" @change="$store.commit('toggleAudio', $event.target.checked)">
+            <label
+              class="checkbox-control -on-off checkbox-control-input flex-right"
+              v-tippy="{ placement: 'bottom' }"
+              title="Enable audio"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="useAudio"
+                @change="$store.commit('toggleAudio', $event.target.checked)"
+              />
               <div></div>
             </label>
           </div>
           <div class="form-group column__tight">
-            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Include orders down to 10% of significant orders">
-              <input type="checkbox" class="form-control" v-bind:checked="audioIncludeInsignificants" @change="$store.commit('toggleAudioIncludeInsignificants', $event.target.checked)">
+            <label
+              class="checkbox-control checkbox-control-input flex-right"
+              v-tippy
+              title="Include orders down to 10% of significant orders"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="audioIncludeInsignificants"
+                @change="
+                  $store.commit(
+                    'toggleAudioIncludeInsignificants',
+                    $event.target.checked
+                  )
+                "
+              />
               <div class="icon-expand"></div>
             </label>
           </div>
           <div class="form-group column__fill">
-            <input type="range" min="0" max="10" step=".1" v-bind:value="audioVolume" @change="$store.commit('setAudioVolume', $event.target.value)">
+            <input
+              type="range"
+              min="0"
+              max="10"
+              step=".1"
+              :value="audioVolume"
+              @change="$store.commit('setAudioVolume', $event.target.value)"
+            />
           </div>
         </div>
-        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'stats')" v-bind:class="{closed: settings.indexOf('stats') > -1}">Stats <i class="icon-up"></i></div>
-        <div class="settings-stats settings__activable column" v-bind:class="{active: showStats}">
+        <div
+          class="settings__title"
+          @click="$store.commit('toggleSettingsPanel', 'stats')"
+          :class="{ closed: settings.indexOf('stats') > -1 }"
+        >
+          Stats <i class="icon-up"></i>
+        </div>
+        <div
+          class="settings-stats settings__activable column"
+          :class="{ active: showStats }"
+        >
           <div class="form-group column__tight">
-            <label class="checkbox-control -on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable stats">
-              <input type="checkbox" class="form-control" v-bind:checked="showStats" @change="$store.commit('toggleStats', $event.target.checked)">
+            <label
+              class="checkbox-control -on-off checkbox-control-input flex-right"
+              v-tippy="{ placement: 'bottom' }"
+              title="Enable stats"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="showStats"
+                @change="$store.commit('toggleStats', $event.target.checked)"
+              />
               <div></div>
             </label>
           </div>
           <div class="form-group column__fill">
-            <input v-tippy title="Timeframe to watch (ie: 1m)" type="string" class="form-control" v-bind:value="statsPeriodStringified" @change="$store.commit('setStatsPeriod', $event.target.value)" placeholder="Enter a timeframe (ie: 1m)">
+            <input
+              v-tippy
+              title="Timeframe to watch (ie: 1m)"
+              type="string"
+              class="form-control"
+              :value="statsPeriodStringified"
+              @change="$store.commit('setStatsPeriod', $event.target.value)"
+              placeholder="Enter a timeframe (ie: 1m)"
+            />
           </div>
           <div class="form-group column__tight">
-            <label class="checkbox-control -commodity-currency checkbox-control-input flex-right" v-tippy v-bind:title="help.statsCurrency">
-              <input type="checkbox" class="form-control" v-bind:checked="statsCurrency" @change="$store.commit('toggleStatsCurrency', $event.target.checked)">
+            <label
+              class="checkbox-control -commodity-currency checkbox-control-input flex-right"
+              v-tippy
+              :title="help.statsCurrency"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="statsCurrency"
+                @change="
+                  $store.commit('toggleStatsCurrency', $event.target.checked)
+                "
+              />
               <div></div>
             </label>
           </div>
         </div>
-        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'counters')" v-bind:class="{closed: settings.indexOf('counters') > -1}">Counter <i class="icon-up"></i></div>
-        <div class="settings-counters settings__activable column" v-bind:class="{active: showCounters}">
+        <div
+          class="settings__title"
+          @click="$store.commit('toggleSettingsPanel', 'counters')"
+          :class="{ closed: settings.indexOf('counters') > -1 }"
+        >
+          Counter <i class="icon-up"></i>
+        </div>
+        <div
+          class="settings-counters settings__activable column"
+          :class="{ active: showCounters }"
+        >
           <div class="form-group column__tight">
-            <label class="checkbox-control -on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable counters">
-              <input type="checkbox" class="form-control" v-bind:checked="showCounters" @change="$store.commit('toggleCounters', $event.target.checked)">
+            <label
+              class="checkbox-control -on-off checkbox-control-input flex-right"
+              v-tippy="{ placement: 'bottom' }"
+              title="Enable counters"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="showCounters"
+                @change="$store.commit('toggleCounters', $event.target.checked)"
+              />
               <div></div>
             </label>
           </div>
           <div class="form-group column__tight">
-            <label class="checkbox-control -cml-abs checkbox-control-input flex-right" v-tippy v-bind:title="cumulativeCounters ? 'Cumulative mode' : 'Absolute mode'">
-              <input type="checkbox" class="form-control" v-bind:checked="cumulativeCounters" @change="$store.commit('toggleCumulativeCounters', $event.target.checked)">
+            <label
+              class="checkbox-control -cml-abs checkbox-control-input flex-right"
+              v-tippy
+              :title="
+                cumulativeCounters ? 'Cumulative mode' : 'Absolute mode'
+              "
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="cumulativeCounters"
+                @change="
+                  $store.commit(
+                    'toggleCumulativeCounters',
+                    $event.target.checked
+                  )
+                "
+              />
               <div></div>
             </label>
           </div>
           <div class="form-group column__fill">
-            <input v-tippy title="Counters step separed by a comma (ie: 1m, 5m, 10m, 15m)" type="string" placeholder="Enter a set of timeframe (ie 1m, 15m)" class="form-control" v-bind:value="countersStepsStringified" @change="replaceCounters($event.target.value)">
+            <input
+              v-tippy
+              title="Counters step separed by a comma (ie: 1m, 5m, 10m, 15m)"
+              type="string"
+              placeholder="Enter a set of timeframe (ie 1m, 15m)"
+              class="form-control"
+              :value="countersStepsStringified"
+              @change="replaceCounters($event.target.value)"
+            />
             <small class="mt8">Volume sum by time</small>
           </div>
         </div>
-        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'chart')" v-bind:class="{closed: settings.indexOf('chart') > -1}">Chart <i class="icon-up"></i></div>
-        <div class="settings-chart settings__activable column" v-bind:class="{active: showChart}">
+        <div
+          class="settings__title"
+          @click="$store.commit('toggleSettingsPanel', 'chart')"
+          :class="{ closed: settings.indexOf('chart') > -1 }"
+        >
+          Chart <i class="icon-up"></i>
+        </div>
+        <div
+          class="settings-chart settings__activable column"
+          :class="{ active: showChart }"
+        >
           <div class="form-group column__tight">
-            <label class="checkbox-control -on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable chart">
-              <input type="checkbox" class="form-control" v-bind:checked="showChart" @change="$store.commit('toggleChart', $event.target.checked)">
+            <label
+              class="checkbox-control -on-off checkbox-control-input flex-right"
+              v-tippy="{ placement: 'bottom' }"
+              title="Enable chart"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="showChart"
+                @change="$store.commit('toggleChart', $event.target.checked)"
+              />
               <div></div>
             </label>
           </div>
           <div class="column__fill">
             <div class="form-group mb8">
-              <label class="checkbox-control flex-left" v-tippy title="Gridlines (horizontal tick lines)">
-                <input type="checkbox" class="form-control" v-bind:checked="chartGridlines" @change="$store.commit('toggleChartGridlines', $event.target.checked)">
+              <label
+                class="checkbox-control flex-left"
+                v-tippy
+                title="Gridlines (horizontal tick lines)"
+              >
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="chartGridlines"
+                  @change="
+                    $store.commit('toggleChartGridlines', $event.target.checked)
+                  "
+                />
                 <div></div>
-                <span v-on:click.stop.prevent>Horizontal ticks (every <editable :content="chartGridlinesGap" @output="$store.commit('setChartGridlinesGap', $event)"></editable> px)</span>
+                <span @click.stop.prevent
+                  >Horizontal ticks (every
+                  <editable
+                    :content="chartGridlinesGap"
+                    @output="$store.commit('setChartGridlinesGap', $event)"
+                  ></editable>
+                  px)</span
+                >
               </label>
             </div>
             <div class="form-group mb8">
-              <label class="checkbox-control flex-left" v-tippy title="Pad chart">
-                <input type="checkbox" class="form-control" v-bind:checked="chartPadding" @change="$store.commit('setChartPadding', $event.target.checked ? .05 : 0)">
+              <label
+                class="checkbox-control flex-left"
+                v-tippy
+                title="Pad chart"
+              >
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="chartPadding"
+                  @change="
+                    $store.commit(
+                      'setChartPadding',
+                      $event.target.checked ? 0.05 : 0
+                    )
+                  "
+                />
                 <div></div>
-                <span v-on:click.stop.prevent>Add <editable :content="(chartPadding * 100).toFixed(2)" @output="$store.commit('setChartPadding', ($event || 0) / 100)"></editable> % margin on the right</span>
+                <span @click.stop.prevent
+                  >Add
+                  <editable
+                    :content="(chartPadding * 100).toFixed(2)"
+                    @output="
+                      $store.commit('setChartPadding', ($event || 0) / 100)
+                    "
+                  ></editable>
+                  % margin on the right</span
+                >
               </label>
             </div>
             <div class="form-group mb8">
-              <label class="checkbox-control flex-left" v-tippy title="Show price as candlestick instead of line">
-                <input type="checkbox" class="form-control" v-bind:checked="chartCandlestick" @change="$store.commit('toggleCandlestick', $event.target.checked)">
+              <label
+                class="checkbox-control flex-left"
+                v-tippy
+                title="Show price as candlestick instead of line"
+              >
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="chartCandlestick"
+                  @change="
+                    $store.commit('toggleCandlestick', $event.target.checked)
+                  "
+                />
                 <div></div>
                 <span>Enable candlestick</span>
               </label>
             </div>
             <div class="form-group mb8">
-              <label class="checkbox-control flex-left" v-tippy title="Show liquidation volume bars">
-                <input type="checkbox" class="form-control" v-bind:checked="chartLiquidations" @change="$store.commit('toggleLiquidations', $event.target.checked)">
+              <label
+                class="checkbox-control flex-left"
+                v-tippy
+                title="Show liquidation volume bars"
+              >
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="chartLiquidations"
+                  @change="
+                    $store.commit('toggleLiquidations', $event.target.checked)
+                  "
+                />
                 <div></div>
                 <span>Liquidation bars</span>
               </label>
             </div>
             <div class="form-group mb8">
-              <label class="checkbox-control flex-left" v-tippy title="Toggle Volume (buys / sells)">
-                <input type="checkbox" class="form-control" v-bind:checked="chartVolume" @change="$store.commit('toggleVolume', $event.target.checked)">
+              <label
+                class="checkbox-control flex-left"
+                v-tippy
+                title="Toggle Volume (buys / sells)"
+              >
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="chartVolume"
+                  @change="$store.commit('toggleVolume', $event.target.checked)"
+                />
                 <div></div>
-                <span v-on:click.stop.prevent>Volume</span>
+                <span @click.stop.prevent>Volume</span>
               </label>
               <div v-if="chartVolume" class="settings-chart__sub-settings">
-                <div>only sum trades above <i class="icon-currency"></i> <editable :content="chartVolumeThreshold" @output="$store.commit('setVolumeThreshold', $event)"></editable></div>
-                <div>serie opacity <input type="range" min="0" max="1" step=".01" v-bind:value="chartVolumeOpacity" @change="$store.commit('setVolumeOpacity', $event.target.value)"></div>
+                <div>
+                  only sum trades above <i class="icon-currency"></i>
+                  <editable
+                    :content="chartVolumeThreshold"
+                    @output="$store.commit('setVolumeThreshold', $event)"
+                  ></editable>
+                </div>
+                <div>
+                  serie opacity
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step=".01"
+                    :value="chartVolumeOpacity"
+                    @change="
+                      $store.commit('setVolumeOpacity', $event.target.value)
+                    "
+                  />
+                </div>
               </div>
             </div>
             <div class="form-group mb8">
-              <label class="checkbox-control flex-left" v-tippy title="Toggle Price Simple Moving Average">
-                <input type="checkbox" class="form-control" v-bind:checked="chartSma" @change="$store.commit('toggleSma', $event.target.checked)">
+              <label
+                class="checkbox-control flex-left"
+                v-tippy
+                title="Toggle Price Simple Moving Average"
+              >
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="chartSma"
+                  @change="$store.commit('toggleSma', $event.target.checked)"
+                />
                 <div></div>
-                <span v-on:click.stop.prevent>Price SMA</span>
+                <span @click.stop.prevent>Price SMA</span>
               </label>
               <div v-if="chartSma" class="settings-chart__sub-settings">
-                period <editable :content="chartSmaLength" @output="$store.commit('setSmaLength', $event)"></editable>
+                period
+                <editable
+                  :content="chartSmaLength"
+                  @output="$store.commit('setSmaLength', $event)"
+                ></editable>
               </div>
             </div>
             <div class="form-group mb8">
-              <label class="checkbox-control flex-left" v-tippy title="Toggle Volume (buys / sells) Exponential Moving Average">
-                <input type="checkbox" class="form-control" v-bind:checked="chartVolumeAverage" @change="$store.commit('toggleVolumeAverage', $event.target.checked)">
+              <label
+                class="checkbox-control flex-left"
+                v-tippy
+                title="Toggle Volume (buys / sells) Exponential Moving Average"
+              >
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="chartVolumeAverage"
+                  @change="
+                    $store.commit('toggleVolumeAverage', $event.target.checked)
+                  "
+                />
                 <div></div>
-                <span v-on:click.stop.prevent>Volume EMA</span>
+                <span @click.stop.prevent>Volume EMA</span>
               </label>
-              <div v-if="chartVolumeAverage" class="settings-chart__sub-settings">
-                period <editable :content="chartVolumeAverageLength" @output="$store.commit('setVolumeAverageLength', $event)"></editable>
+              <div
+                v-if="chartVolumeAverage"
+                class="settings-chart__sub-settings"
+              >
+                period
+                <editable
+                  :content="chartVolumeAverageLength"
+                  @output="$store.commit('setVolumeAverageLength', $event)"
+                ></editable>
               </div>
             </div>
             <div class="form-group mb8">
-              <label class="checkbox-control flex-left" v-tippy title="Check this or RIP your computer">
-                <input type="checkbox" class="form-control" v-bind:checked="autoClearTrades" @change="$store.commit('toggleAutoClearTrades', $event.target.checked)">
+              <label
+                class="checkbox-control flex-left"
+                v-tippy
+                title="Check this or RIP your computer"
+              >
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="autoClearTrades"
+                  @change="
+                    $store.commit(
+                      'toggleAutoClearTrades',
+                      $event.target.checked
+                    )
+                  "
+                />
                 <div></div>
                 <span>Auto clean</span>
               </label>
             </div>
           </div>
         </div>
-        <div class="settings__title" v-on:click="$store.commit('toggleSettingsPanel', 'exchanges')" v-bind:class="{closed: settings.indexOf('exchanges') > -1}">Exchanges <i class="icon-up"></i></div>
+        <div
+          class="settings__title"
+          @click="$store.commit('toggleSettingsPanel', 'exchanges')"
+          :class="{ closed: settings.indexOf('exchanges') > -1 }"
+        >
+          Exchanges <i class="icon-up"></i>
+        </div>
         <div class="form-group">
           <div class="settings-exchanges">
-            <Exchange v-for="(exchange, index) in exchanges" v-bind:key="index"  :exchange="exchange" />
-            <div v-if="!exchanges.length" class="mb8">You are not connected to any exchanges</div>
+            <Exchange
+              v-for="(exchange, index) in exchanges"
+              :key="index"
+              :exchange="exchange"
+            />
+            <div v-if="!exchanges.length" class="mb8">
+              You are not connected to any exchanges
+            </div>
           </div>
         </div>
         <div class="mt15 column settings__footer flex-middle">
           <div class="form-group">
             <div v-if="version.number">
-              <span>v{{ version.number }} <sup class="version-date">{{ version.date }}</sup></span>
+              <span>
+                v{{ version.number }}
+                <sup class="version-date">{{ version.date }}</sup>
+              </span>
               <i class="divider">|</i>
-              <a href="javascript:void(0);" v-on:click="reset()"> reset</a>
+              <a href="javascript:void(0);" @click="reset()"> reset</a>
               <i class="divider">|</i>
-              <a target="_blank" href="https://github.com/Tucsky/SignificantTrades" title="Run your own instance !">github</a>
+              <a
+                target="_blank"
+                href="https://github.com/Tucsky/SignificantTrades"
+                title="Run your own instance !"
+              >github</a>
               <i class="divider">|</i>
-              <a target="_blank" href="https://tippin.me/@Tucsky" @click="openTippin" title="Bitcoin for more <3" v-tippy="{animateFill: false, interactive: true, theme: 'blue'}">donate</a>
+              <a
+                target="_blank"
+                href="https://tippin.me/@Tucsky"
+                @click="openTippin"
+                title="Bitcoin for more <3"
+                v-tippy="{
+                  animateFill: false,
+                  interactive: true,
+                  theme: 'blue',
+                }"
+              >donate</a
+              >
             </div>
           </div>
         </div>
       </div>
     </div>
-	</div>
+  </div>
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapState } from 'vuex'
 
-import socket from '../services/socket';
+import socket from '../services/socket'
 
-import Exchange from './Exchange.vue';
-import Thresholds from './Thresholds.vue';
+import Exchange from './Exchange.vue'
+import Thresholds from './Thresholds.vue'
 
 export default {
   components: {
     Exchange,
-    Thresholds
+    Thresholds,
   },
   data() {
     return {
@@ -224,9 +634,9 @@ export default {
       },
       version: {
         number: process.env.VERSION || 'DEV',
-        date: process.env.BUILD_DATE || 'now'
-      }
-    };
+        date: process.env.BUILD_DATE || 'now',
+      },
+    }
   },
   computed: {
     ...mapState([
@@ -267,99 +677,108 @@ export default {
       'settings',
     ]),
     exchanges: () => {
-      return socket.exchanges;
+      return socket.exchanges
     },
     showPairSubdomainHelp: (state) => {
       if (!state.$root.isAggrTrade || !state.pair) {
-        return false;
+        return false
       }
 
-      const match = window.location.hostname.match(/^([\d\w]+)\..*\./i);
+      const match = window.location.hostname.match(/^([\d\w]+)\..*\./i)
 
-      return !match || match.length < 2 || (match[1].toLowerCase() !== state.pair.toLowerCase());
-    }
+      return (
+        !match ||
+        match.length < 2 ||
+        match[1].toLowerCase() !== state.pair.toLowerCase()
+      )
+    },
   },
   created() {
-    this.stringifyCounters();
-    this.stringifyStatsPeriod();
+    this.stringifyCounters()
+    this.stringifyStatsPeriod()
   },
   beforeDestroy() {
-    document.removeEventListener('click', this._closeTippinHandler);
+    document.removeEventListener('click', this._closeTippinHandler)
   },
   methods: {
     stringifyStatsPeriod() {
-      this.statsPeriodStringified = this.$root.ago(+new Date() - this.statsPeriod);
+      this.statsPeriodStringified = this.$root.ago(
+        +new Date() - this.statsPeriod
+      )
     },
     stringifyCounters() {
-      const now = +new Date();
-      this.countersStepsStringified = this.countersSteps.map(a => this.$root.ago(now - a)).join(', ');
+      const now = +new Date()
+      this.countersStepsStringified = this.countersSteps
+        .map((a) => this.$root.ago(now - a))
+        .join(', ')
     },
     replaceCounters(value) {
-      const counters = value.split(',')
-        .map(a => {
-          a = a.trim();
+      const counters = value
+        .split(',')
+        .map((a) => {
+          a = a.trim()
 
           if (/[\d.]+s/.test(a)) {
-            return parseFloat(a) * 1000;
+            return parseFloat(a) * 1000
           } else if (/[\d.]+h/.test(a)) {
-            return parseFloat(a) * 1000 * 60 * 60;
+            return parseFloat(a) * 1000 * 60 * 60
           } else {
-            return parseFloat(a) * 1000 * 60;
+            return parseFloat(a) * 1000 * 60
           }
-        }).filter(function(item, pos, self) {
-          return self.indexOf(item) == pos;
-        });
+        })
+        .filter(function(item, pos, self) {
+          return self.indexOf(item) == pos
+        })
 
-
-      if (counters.filter(a => isNaN(a)).length) {
+      if (counters.filter((a) => isNaN(a)).length) {
         socket.$emit('alert', {
           type: 'error',
           title: `Invalid counter`,
           message: `Your counters (${value}) contains invalid steps.`,
-          id: `counter_replace_error`
-        });
-        return;
+          id: `counter_replace_error`,
+        })
+        return
       }
 
-      this.$store.commit('replaceCounterSteps', counters);
+      this.$store.commit('replaceCounterSteps', counters)
 
-      this.stringifyCounters();
-      this.stringifyStatsPeriod();
+      this.stringifyCounters()
+      this.stringifyStatsPeriod()
     },
     reset() {
-      window.localStorage && window.localStorage.clear();
+      window.localStorage && window.localStorage.clear()
 
-      window.location.reload(true);
+      window.location.reload(true)
     },
     openTippin(e) {
-      e.preventDefault();
+      e.preventDefault()
 
-      this.tippin = true;
+      this.tippin = true
 
       this._closeTippinHandlerTimeout = setTimeout(() => {
-        this._closeTippinHandler = this.closeTippin.bind(this);
+        this._closeTippinHandler = this.closeTippin.bind(this)
 
-        document.addEventListener('click', this._closeTippinHandler);
+        document.addEventListener('click', this._closeTippinHandler)
       })
     },
     closeTippin(e) {
-      e.preventDefault();
+      e.preventDefault()
 
-      clearTimeout(this._closeTippinHandlerTimeout);
+      clearTimeout(this._closeTippinHandlerTimeout)
 
       if (!document.querySelector('.tippin-me').contains(e.target)) {
-        this.tippin = false;
+        this.tippin = false
 
-        document.removeEventListener('click', this._closeTippinHandler);
+        document.removeEventListener('click', this._closeTippinHandler)
 
-        e.stopPropagation();
+        e.stopPropagation()
       }
-    }
-  }
-};
+    },
+  },
+}
 </script>
 
-<style lang='scss'>
+<style lang="scss">
 @import '../assets/sass/variables';
 
 .settings__report {
@@ -468,7 +887,7 @@ export default {
     flex-direction: column;
 
     .help-text {
-      color: rgba(white, .6);
+      color: rgba(white, 0.6);
 
       a {
         text-decoration: underline;
@@ -476,7 +895,7 @@ export default {
     }
 
     label + .help-text {
-      margin: -.5em 0 .5em;
+      margin: -0.5em 0 0.5em;
     }
 
     .form-control {
@@ -534,7 +953,7 @@ export default {
           bottom: 0;
           left: -1.5em;
           width: 2px;
-          background-color: rgba(white, .2);
+          background-color: rgba(white, 0.2);
         }
       }
 
@@ -575,7 +994,7 @@ export default {
 
         &:before,
         &:after {
-          font-family: "icon";
+          font-family: 'icon';
           font-size: 1em;
           position: absolute;
           left: 0;
@@ -593,7 +1012,7 @@ export default {
           pointer-events: none;
         }
 
-        &:not([class^="icon-"]):before {
+        &:not([class^='icon-']):before {
           content: unicode($icon-check);
         }
 
@@ -617,7 +1036,7 @@ export default {
 
       &.checkbox-control-input {
         > div {
-          padding: .8em;
+          padding: 0.8em;
         }
       }
 
@@ -707,7 +1126,7 @@ export default {
     }
   }
 
-  input[type="range"] {
+  input[type='range'] {
     -webkit-appearance: none; /* Override default CSS styles */
     appearance: none;
     height: 2.5em; /* Specified height */
@@ -723,14 +1142,14 @@ export default {
     &::-webkit-slider-thumb {
       -webkit-appearance: none; /* Override default look */
       appearance: none;
-      width: .5em; /* Set a specific slider handle width */
+      width: 0.5em; /* Set a specific slider handle width */
       height: 2em; /* Slider handle height */
       background: lighten($green, 20%); /* Green background */
       cursor: ew-resize;
     }
 
     &::-moz-range-thumb {
-      width: .5em; /* Set a specific slider handle width */
+      width: 0.5em; /* Set a specific slider handle width */
       height: 2em; /* Slider handle height */
       background: lighten($green, 20%); /* Green background */
       cursor: ew-resize;
@@ -806,7 +1225,7 @@ export default {
   .settings__title {
     display: flex;
     align-items: center;
-    padding: .5em 0;
+    padding: 0.5em 0;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     opacity: 0.5;
@@ -824,7 +1243,7 @@ export default {
 
     .icon-up {
       transition: transform 0.2s $easeElastic;
-      margin-left: .5em;
+      margin-left: 0.5em;
     }
 
     &.closed {
@@ -862,7 +1281,7 @@ export default {
       margin: 0;
     }
 
-    input[type="range"] {
+    input[type='range'] {
       width: 100%;
       margin: 0;
     }
@@ -899,20 +1318,20 @@ export default {
   .settings-chart {
     &__sub-settings {
       margin-left: 2.4em;
-      margin-bottom: .5em;
+      margin-bottom: 0.5em;
 
       > div {
         + div {
-          margin-top: .75em;
+          margin-top: 0.75em;
         }
       }
 
       > div + div {
-        margin-top: .75em;
+        margin-top: 0.75em;
       }
 
-      input[type="range"] {
-        font-size: .5em;
+      input[type='range'] {
+        font-size: 0.5em;
         vertical-align: middle;
       }
     }
@@ -920,35 +1339,35 @@ export default {
 }
 
 .tippin-me {
-    position: fixed;
-    z-index: 10000;
-    width: 280px;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: white;
-    border-radius: 4px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.1);
-    border: 2em solid white;
-    height: 470px;
-		animation: .33s $easeElastic tippin-in;
+  position: fixed;
+  z-index: 10000;
+  width: 280px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.1);
+  border: 2em solid white;
+  height: 470px;
+  animation: 0.33s $easeElastic tippin-in;
 
-    @keyframes tippin-in {
-      from {
-        transform: translate(-50%, -50%) scale(.5);
-        opacity: .1;
-      }
-      to {
-        transform: translate(-50%, -50%) scale(1);
-        opacity: 1;
-      }
+  @keyframes tippin-in {
+    from {
+      transform: translate(-50%, -50%) scale(0.5);
+      opacity: 0.1;
     }
+    to {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+  }
 
-    iframe {
-      width: 100%;
-      height: 100%;
-      padding: 0;
-      margin: 0;
-    }
+  iframe {
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+  }
 }
 </style>

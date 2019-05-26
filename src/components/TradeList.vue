@@ -1,43 +1,68 @@
 <template>
-	<div id="trades" class="trades" :class="{ '-logos': this.showLogos }">
-		<ul v-if="trades.length">
-			<li v-for="trade in trades" class="trades__item" :key="trade.id" :class="trade.classname" :style="{ backgroundImage: trade.image, backgroundColor: trade.background, color: trade.foreground }">
-				<template v-if="trade.message">
-					<div class="trades__item__side icon-side"></div>
-					<div class="trades__item__message" v-html="trade.message"></div>
-					<div class="trades__item__date" :timestamp="trade.timestamp">{{ trade.date }}</div>
-				</template>
-				<template v-else>
-					<div class="trades__item__side icon-side"></div>
-					<div class="trades__item__exchange" :title="trade.exchange">{{ trade.exchange }}</div>
-					<div class="trades__item__price"><span class="icon-currency"></span> <span v-html="trade.price"></span></div>
-					<div class="trades__item__amount">
-						<span class="trades__item__amount__fiat"><span class="icon-currency"></span> <span v-html="trade.amount"></span></span>
-						<span class="trades__item__amount__coin"><span class="icon-commodity"></span> <span v-html="trade.size"></span></span>
-					</div>
-					<div class="trades__item__date" :timestamp="trade.timestamp">{{ trade.date }}</div>
-				</template>
-			</li>
-		</ul>
-		<div v-else class="trades__item trades__item--empty">
-			Nothing to show, yet.
-		</div>
-	</div>
+  <div id="trades" class="trades" :class="{ '-logos': this.showLogos }">
+    <ul v-if="trades.length">
+      <li
+        v-for="trade in trades"
+        class="trades__item"
+        :key="trade.id"
+        :class="trade.classname"
+        :style="{
+          backgroundImage: trade.image,
+          backgroundColor: trade.background,
+          color: trade.foreground,
+        }"
+      >
+        <template v-if="trade.message">
+          <div class="trades__item__side icon-side"></div>
+          <div class="trades__item__message" v-html="trade.message"></div>
+          <div class="trades__item__date" :timestamp="trade.timestamp">
+            {{ trade.date }}
+          </div>
+        </template>
+        <template v-else>
+          <div class="trades__item__side icon-side"></div>
+          <div class="trades__item__exchange" :title="trade.exchange">
+            {{ trade.exchange }}
+          </div>
+          <div class="trades__item__price">
+            <span class="icon-currency"></span>
+            <span v-html="trade.price"></span>
+          </div>
+          <div class="trades__item__amount">
+            <span class="trades__item__amount__fiat"
+              ><span class="icon-currency"></span>
+              <span v-html="trade.amount"></span
+            ></span>
+            <span class="trades__item__amount__coin"
+              ><span class="icon-commodity"></span>
+              <span v-html="trade.size"></span
+            ></span>
+          </div>
+          <div class="trades__item__date" :timestamp="trade.timestamp">
+            {{ trade.date }}
+          </div>
+        </template>
+      </li>
+    </ul>
+    <div v-else class="trades__item trades__item--empty">
+      Nothing to show, yet.
+    </div>
+  </div>
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapState } from 'vuex'
 
-import socket from '../services/socket';
-import Sfx from '../services/sfx';
+import socket from '../services/socket'
+import Sfx from '../services/sfx'
 
 export default {
   data() {
     return {
       ticks: {},
       trades: [],
-      gifs: {}
-    };
+      gifs: {},
+    }
   },
   computed: {
     ...mapState([
@@ -50,196 +75,238 @@ export default {
       'audioIncludeInsignificants',
       'preferBaseCurrencySize',
       'decimalPrecision',
-      'showLogos'
-    ])
+      'showLogos',
+    ]),
   },
   created() {
-    this.retrieveStoredGifs();
-    this.retrieveColorSteps();
+    this.retrieveStoredGifs()
+    this.retrieveColorSteps()
 
-    socket.$on('pairing', this.onPairing);
-    socket.$on('trades.instant', this.onTrades);
+    socket.$on('pairing', this.onPairing)
+    socket.$on('trades.instant', this.onTrades)
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
         case 'toggleAudio':
           if (mutation.payload) {
-            this.sfx = new Sfx();
+            this.sfx = new Sfx()
           } else {
-            this.sfx && this.sfx.disconnect() && delete this.sfx;
+            this.sfx && this.sfx.disconnect() && delete this.sfx
           }
-          break;
+          break
         case 'setThresholdGif':
-          this.fetchGifByKeyword(mutation.payload.value, mutation.payload.isDeleted);
-          break;
+          this.fetchGifByKeyword(
+            mutation.payload.value,
+            mutation.payload.isDeleted
+          )
+          break
         case 'setThresholdColor':
         case 'setThresholdAmount':
-          this.retrieveColorSteps();
-          this.trades.splice(0, this.trades.length);
+          this.retrieveColorSteps()
+          this.trades.splice(0, this.trades.length)
 
           this.redrawList()
-          break;
+          break
       }
-    });
+    })
   },
   mounted() {
     if (this.useAudio) {
-      this.sfx = new Sfx();
+      this.sfx = new Sfx()
 
       if (this.sfx.context.state === 'suspended') {
         const resumeOnFocus = (() => {
           if (this.useAudio) {
-            this.sfx.context.resume();
+            this.sfx.context.resume()
           }
 
           if (!this.useAudio || this.sfx.context.state !== 'suspended') {
-             window.removeEventListener('focus', resumeOnFocus, false);
-             window.removeEventListener('blur', resumeOnFocus, false);
+            window.removeEventListener('focus', resumeOnFocus, false)
+            window.removeEventListener('blur', resumeOnFocus, false)
           }
         }).bind(this)
 
-        window.addEventListener('blur', resumeOnFocus, false);
-        window.addEventListener('focus', resumeOnFocus, false);
+        window.addEventListener('blur', resumeOnFocus, false)
+        window.addEventListener('focus', resumeOnFocus, false)
       }
     }
 
     this.timeAgoInterval = setInterval(() => {
       for (let element of this.$el.querySelectorAll('[timestamp]')) {
-        element.innerHTML = this.$root.ago(element.getAttribute('timestamp'));
+        element.innerHTML = this.$root.ago(element.getAttribute('timestamp'))
       }
-    }, 1000);
+    }, 1000)
 
-    this.redrawList();
+    this.redrawList()
   },
   beforeDestroy() {
-    socket.$off('pairing', this.onPairing);
-    socket.$off('trades.instant', this.onTrades);
+    socket.$off('pairing', this.onPairing)
+    socket.$off('trades.instant', this.onTrades)
 
-    this.onStoreMutation();
+    this.onStoreMutation()
 
-    clearInterval(this.timeAgoInterval);
+    clearInterval(this.timeAgoInterval)
 
-    this.sfx && this.sfx.disconnect();
+    this.sfx && this.sfx.disconnect()
   },
   methods: {
     onPairing() {
-      this.trades = [];
+      this.trades = []
     },
     onTrades(trades, silent = false) {
       for (let trade of trades) {
-        this.processTrade(trade, Math.min(2000, trades[trades.length - 1][1] - trades[0][1]), silent);
+        this.processTrade(
+          trade,
+          Math.min(2000, trades[trades.length - 1][1] - trades[0][1]),
+          silent
+        )
       }
     },
     processTrade(trade, silent = false) {
-      const size = this.preferBaseCurrencySize ? trade[3] : trade[2] * trade[3];
+      const size = this.preferBaseCurrencySize ? trade[3] : trade[2] * trade[3]
 
-      const multiplier = typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1;
+      const multiplier =
+        typeof this.exchanges[trade[0]].threshold !== 'undefined'
+          ? +this.exchanges[trade[0]].threshold
+          : 1
 
       if (trade[5] === 1) {
         if (!silent && this.sfx) {
-          this.sfx.liquidation();
+          this.sfx.liquidation()
         }
 
         if (size >= this.thresholds[0].amount * multiplier) {
-          let liquidationMessage;
+          let liquidationMessage
 
           if (this.preferBaseCurrencySize) {
-            liquidationMessage = `<i class="icon-commodity"></i> <strong>${this.$root.formatAmount(size, 1)}</strong>`;
+            liquidationMessage = `<i class="icon-commodity"></i> <strong>${this.$root.formatAmount(
+              size,
+              1
+            )}</strong>`
           } else {
-            liquidationMessage = `<i class="icon-currency"></i> <strong>${this.$root.formatAmount(size, 1)}</strong>`;
+            liquidationMessage = `<i class="icon-currency"></i> <strong>${this.$root.formatAmount(
+              size,
+              1
+            )}</strong>`
           }
 
-          liquidationMessage += `&nbsp;liquidated <strong>${trade[4] > 0 ? 'SHORT' : 'LONG'}</strong> @ <i class="icon-currency"></i> ${this.$root.formatPrice(trade[2])}`;
+          liquidationMessage += `&nbsp;liquidated <strong>${
+            trade[4] > 0 ? 'SHORT' : 'LONG'
+          }</strong> @ <i class="icon-currency"></i> ${this.$root.formatPrice(
+            trade[2]
+          )}`
 
-          this.appendRow(trade, ['liquidation'], liquidationMessage);
+          this.appendRow(trade, ['liquidation'], liquidationMessage)
         }
-        return;
+        return
       } else if (this.liquidationsOnlyList) {
-        return;
+        return
       }
 
       if (
-        !silent && this.useAudio &&
-        ((this.audioIncludeInsignificants && size > this.thresholds[1].amount * Math.max(0.1, multiplier) * 0.1) ||
+        !silent &&
+        this.useAudio &&
+        ((this.audioIncludeInsignificants &&
+          size > this.thresholds[1].amount * Math.max(0.1, multiplier) * 0.1) ||
           size > this.thresholds[1].amount * Math.max(0.1, multiplier))
       ) {
-        this.sfx && this.sfx.tradeToSong(size / (this.thresholds[1].amount * Math.max(0.1, multiplier)), trade[4]);
+        this.sfx &&
+          this.sfx.tradeToSong(
+            size / (this.thresholds[1].amount * Math.max(0.1, multiplier)),
+            trade[4]
+          )
       }
 
       // group by [exchange name + buy=1/sell=0] (ex bitmex1)
-      const tid = trade[0] + trade[4];
-      const now = socket.getCurrentTimestamp();
+      const tid = trade[0] + trade[4]
+      const now = socket.getCurrentTimestamp()
 
       if (this.thresholds[0].amount) {
         if (this.ticks[tid]) {
           if (now - this.ticks[tid][2] > 5000) {
-            delete this.ticks[tid];
+            delete this.ticks[tid]
           } else {
             // average group prices
-            this.ticks[tid][2] = (this.ticks[tid][2] * this.ticks[tid][3] + trade[2] * trade[3]) / 2 / ((this.ticks[tid][3] + trade[3]) / 2);
+            this.ticks[tid][2] =
+              (this.ticks[tid][2] * this.ticks[tid][3] + trade[2] * trade[3]) /
+              2 /
+              ((this.ticks[tid][3] + trade[3]) / 2)
 
             // sum volume
-            this.ticks[tid][3] += trade[3];
+            this.ticks[tid][3] += trade[3]
 
-            if (this.ticks[tid][2] * this.ticks[tid][3] >= this.thresholds[0].amount * multiplier) {
-              this.appendRow(this.ticks[tid]);
-              delete this.ticks[tid];
+            if (
+              this.ticks[tid][2] * this.ticks[tid][3] >=
+              this.thresholds[0].amount * multiplier
+            ) {
+              this.appendRow(this.ticks[tid])
+              delete this.ticks[tid]
             }
 
-            return;
+            return
           }
         }
 
         if (!this.ticks[tid] && size < this.thresholds[0].amount * multiplier) {
-          this.ticks[tid] = trade;
-          return;
+          this.ticks[tid] = trade
+          return
         }
       }
 
-      this.appendRow(trade);
+      this.appendRow(trade)
       // }, delay)
     },
     appendRow(trade, classname = [], message = null) {
-      let icon;
-      let image;
-      let amount = this.preferBaseCurrencySize ? trade[3] : trade[2] * trade[3];
+      let icon
+      let image
+      let amount = this.preferBaseCurrencySize ? trade[3] : trade[2] * trade[3]
 
-      classname.push(trade[0]);
+      classname.push(trade[0])
 
-      const multiplier = this.exchanges[trade[0]] && typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1;
+      const multiplier =
+        this.exchanges[trade[0]] &&
+        typeof this.exchanges[trade[0]].threshold !== 'undefined'
+          ? +this.exchanges[trade[0]].threshold
+          : 1
 
-      let color = this.getTradeColor(trade, multiplier);
+      let color = this.getTradeColor(trade, multiplier)
 
       if (trade[4]) {
-        classname.push('buy');
+        classname.push('buy')
       } else {
-        classname.push('sell');
+        classname.push('sell')
       }
 
       if (amount >= this.thresholds[1].amount * multiplier) {
-        classname.push('significant');
+        classname.push('significant')
       }
 
       for (let i = 0; i < this.thresholds.length; i++) {
         if (amount < this.thresholds[i].amount * multiplier) {
-          break;
+          break
         }
 
         if (this.thresholds[i].gif && this.gifs[this.thresholds[i].gif]) {
-          image = this.gifs[this.thresholds[i].gif][Math.floor(Math.random() * (this.gifs[this.thresholds[i].gif].length - 1))];
+          image = this.gifs[this.thresholds[i].gif][
+            Math.floor(
+              Math.random() * (this.gifs[this.thresholds[i].gif].length - 1)
+            )
+          ]
         }
 
-        classname.push('level-' + i);
+        classname.push('level-' + i)
       }
 
-      amount = this.$root.formatAmount(trade[2] * trade[3]);
+      amount = this.$root.formatAmount(trade[2] * trade[3])
 
       if (image) {
-        image = 'url(' + image + ')';
+        image = 'url(' + image + ')'
       }
 
       this.trades.unshift({
-        id: Math.random().toString(36).substring(7),
+        id: Math.random()
+          .toString(36)
+          .substring(7),
         background: color.background,
         foreground: color.foreground,
         side: trade[4] > 0 ? 'BUY' : 'SELL',
@@ -247,173 +314,220 @@ export default {
         exchange: trade[0],
         price: this.$root.formatPrice(trade[2]),
         amount: amount,
-        classname: classname.map(a => 'trades__item--' + a).join(' '),
+        classname: classname.map((a) => 'trades__item--' + a).join(' '),
         icon: icon,
         date: this.$root.ago(trade[1]),
         timestamp: trade[1],
         image: image,
-        message: message
-      });
+        message: message,
+      })
 
-      this.trades.splice(+this.maxRows || 20, this.trades.length);
+      this.trades.splice(+this.maxRows || 20, this.trades.length)
     },
     retrieveStoredGifs(refresh) {
-      this.thresholds.forEach(threshold => {
+      this.thresholds.forEach((threshold) => {
         if (!threshold.gif) {
-          return;
+          return
         }
 
-        const slug = this.slug(threshold.gif);
-        const storage = localStorage ? JSON.parse(localStorage.getItem('threshold_' + slug + '_gifs')) : null;
+        const slug = this.slug(threshold.gif)
+        const storage = localStorage
+          ? JSON.parse(localStorage.getItem('threshold_' + slug + '_gifs'))
+          : null
 
-        if (!refresh && storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7) {
-          this.gifs[threshold.gif] = storage.data;
+        if (
+          !refresh &&
+          storage &&
+          +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7
+        ) {
+          this.gifs[threshold.gif] = storage.data
         } else {
-          this.fetchGifByKeyword(threshold.gif);
+          this.fetchGifByKeyword(threshold.gif)
         }
-      });
+      })
     },
     fetchGifByKeyword(keyword, isDeleted = false) {
       if (!keyword) {
-        return;
+        return
       }
 
-      const slug = this.slug(keyword);
+      const slug = this.slug(keyword)
 
       if (isDeleted) {
         if (this.gifs[keyword]) {
-          delete this.gifs[keyword];
+          delete this.gifs[keyword]
         }
 
-        localStorage.removeItem('threshold_' + slug + '_gifs');
+        localStorage.removeItem('threshold_' + slug + '_gifs')
 
-        return;
+        return
       }
 
-      fetch('https://api.giphy.com/v1/gifs/search?q=' + keyword + '&rating=r&limit=100&api_key=b5Y5CZcpj9spa0xEfskQxGGnhChYt3hi')
-        .then(res => res.json())
-        .then(res => {
+      fetch(
+        'https://api.giphy.com/v1/gifs/search?q=' +
+          keyword +
+          '&rating=r&limit=100&api_key=b5Y5CZcpj9spa0xEfskQxGGnhChYt3hi'
+      )
+        .then((res) => res.json())
+        .then((res) => {
           if (!res.data || !res.data.length) {
-            return;
+            return
           }
 
-          this.gifs[keyword] = [];
+          this.gifs[keyword] = []
 
           for (let item of res.data) {
-            this.gifs[keyword].push(item.images.original.url);
+            this.gifs[keyword].push(item.images.original.url)
           }
 
           localStorage.setItem(
             'threshold_' + slug + '_gifs',
             JSON.stringify({
               timestamp: +new Date(),
-              data: this.gifs[keyword]
+              data: this.gifs[keyword],
             })
-          );
-        });
+          )
+        })
     },
     slug(keyword) {
-      return keyword.toLowerCase().trim().replace(/[^a-zA-Z0-9]+/g, '-');
+      return keyword
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-zA-Z0-9]+/g, '-')
     },
     formatRgba(string) {
-      const match = string.match(/rgba?\((\d+)[\s\,]*(\d+)[\s\,]*(\d+)(?:[\s\,]*([\d\.]+))?\)/);
+      const match = string.match(
+        /rgba?\((\d+)[\s\,]*(\d+)[\s\,]*(\d+)(?:[\s\,]*([\d\.]+))?\)/
+      )
 
       return {
         r: +match[1],
         g: +match[2],
         b: +match[3],
-        a: typeof match[4] === 'undefined' ? 1 : +match[4]
-      };
+        a: typeof match[4] === 'undefined' ? 1 : +match[4],
+      }
     },
     retrieveColorSteps() {
-      let uniqueThresholds = [];
-      let amounts = [];
+      let uniqueThresholds = []
+      let amounts = []
 
       for (let i = this.thresholds.length - 1; i >= 0; i--) {
         if (amounts.indexOf(+this.thresholds[i].amount) === -1) {
-          uniqueThresholds.unshift(this.thresholds[i]);
-          amounts.push(+this.thresholds[i].amount);
+          uniqueThresholds.unshift(this.thresholds[i])
+          amounts.push(+this.thresholds[i].amount)
         }
       }
 
-      const maximum = uniqueThresholds[uniqueThresholds.length - 1].amount;
+      const maximum = uniqueThresholds[uniqueThresholds.length - 1].amount
 
-      this.colors = {};
+      this.colors = {}
 
       this.colors.buys = uniqueThresholds.map((threshold, index) => ({
         pct: threshold.amount / maximum,
-        color: this.formatRgba(threshold.buyColor)
-      }));
+        color: this.formatRgba(threshold.buyColor),
+      }))
 
       this.colors.sells = uniqueThresholds.map((threshold, index) => ({
         pct: threshold.amount / maximum,
-        color: this.formatRgba(threshold.sellColor)
-      }));
+        color: this.formatRgba(threshold.sellColor),
+      }))
     },
     shadeRGBColor(color, percent) {
-      var f=color.split(","),t=percent<0?0:255,p=percent<0?percent*-1:percent,R=parseInt(f[0].slice(4)),G=parseInt(f[1]),B=parseInt(f[2]);
-      return "rgb("+(Math.round((t-R)*p)+R)+","+(Math.round((t-G)*p)+G)+","+(Math.round((t-B)*p)+B)+")";
+      var f = color.split(','),
+        t = percent < 0 ? 0 : 255,
+        p = percent < 0 ? percent * -1 : percent,
+        R = parseInt(f[0].slice(4)),
+        G = parseInt(f[1]),
+        B = parseInt(f[2])
+      return (
+        'rgb(' +
+        (Math.round((t - R) * p) + R) +
+        ',' +
+        (Math.round((t - G) * p) + G) +
+        ',' +
+        (Math.round((t - B) * p) + B) +
+        ')'
+      )
     },
     getTradeColor(trade, multiplier = 1) {
-      const amount = this.preferBaseCurrencySize ? trade[3] : trade[2] * trade[3];
-      const pct = amount / (this.thresholds[this.thresholds.length - 1].amount * multiplier);
-      const palette = this.colors[trade[4] > 0 ? 'buys': 'sells'];
+      const amount = this.preferBaseCurrencySize
+        ? trade[3]
+        : trade[2] * trade[3]
+      const pct =
+        amount /
+        (this.thresholds[this.thresholds.length - 1].amount * multiplier)
+      const palette = this.colors[trade[4] > 0 ? 'buys' : 'sells']
 
       for (var i = 1; i < palette.length - 1; i++) {
         if (pct < palette[i].pct) {
-          break;
+          break
         }
       }
 
-      const lower = palette[i - 1];
-      const upper = palette[i];
-      const range = upper.pct - lower.pct;
-      let rangePct = (pct - lower.pct) / range;
-      let pctLower = 1 - rangePct;
-      const pctUpper = rangePct;
+      const lower = palette[i - 1]
+      const upper = palette[i]
+      const range = upper.pct - lower.pct
+      let rangePct = (pct - lower.pct) / range
+      let pctLower = 1 - rangePct
+      const pctUpper = rangePct
 
       const backgroundRGB = {
         r: Math.floor(lower.color.r * pctLower + upper.color.r * rangePct),
         g: Math.floor(lower.color.g * pctLower + upper.color.g * rangePct),
         b: Math.floor(lower.color.b * pctLower + upper.color.b * rangePct),
-        a: lower.color.a * pctLower + upper.color.a * rangePct
-      };
+        a: lower.color.a * pctLower + upper.color.a * rangePct,
+      }
 
-      const background = `rgba(${backgroundRGB.r}, ${backgroundRGB.g}, ${backgroundRGB.b}, ${backgroundRGB.a})`;
-      const luminance = Math.sqrt(0.299 * Math.pow(backgroundRGB.r, 2) + 0.587 * Math.pow(backgroundRGB.g, 2) + 0.114 * Math.pow(backgroundRGB.b, 2));
-      const ajustedLuminance = luminance * backgroundRGB.a;
+      const background = `rgba(${backgroundRGB.r}, ${backgroundRGB.g}, ${
+        backgroundRGB.b
+      }, ${backgroundRGB.a})`
+      const luminance = Math.sqrt(
+        0.299 * Math.pow(backgroundRGB.r, 2) +
+          0.587 * Math.pow(backgroundRGB.g, 2) +
+          0.114 * Math.pow(backgroundRGB.b, 2)
+      )
+      const ajustedLuminance = luminance * backgroundRGB.a
 
-      let foreground;
+      let foreground
 
       if (backgroundRGB.a === 1 && luminance < 200) {
-        foreground = 'white';
+        foreground = 'white'
       } else if (luminance > 200) {
-        foreground = 'black';
+        foreground = 'black'
       } else if (luminance < 10) {
-        foreground = 'white';
+        foreground = 'white'
       } else {
-        rangePct *= (3 * ((200 - ajustedLuminance) / 200));
+        rangePct *= 3 * ((200 - ajustedLuminance) / 200)
 
-        foreground = this.shadeRGBColor(`rgb(${backgroundRGB.r}, ${backgroundRGB.g}, ${backgroundRGB.b})`, Math.max(.25, rangePct));
+        foreground = this.shadeRGBColor(
+          `rgb(${backgroundRGB.r}, ${backgroundRGB.g}, ${backgroundRGB.b})`,
+          Math.max(0.25, rangePct)
+        )
       }
 
       return {
         background,
-        foreground
+        foreground,
       }
     },
     redrawList(limit = 1000) {
-      clearTimeout(this._refreshColorRenderList);
+      clearTimeout(this._refreshColorRenderList)
 
       this._refreshColorRenderList = setTimeout(() => {
-        this.onTrades(socket.trades.slice(socket.trades.length - limit, socket.trades.length), true);
-      }, 500);
-    }
-  }
-};
+        this.onTrades(
+          socket.trades.slice(
+            socket.trades.length - limit,
+            socket.trades.length
+          ),
+          true
+        )
+      }, 500)
+    },
+  },
+}
 </script>
 
-<style lang='scss'>
+<style lang="scss">
 @import '../assets/sass/variables';
 
 @keyframes highlight {
@@ -427,7 +541,7 @@ export default {
 }
 
 .trades {
-  background-color: rgba(black, .2);
+  background-color: rgba(black, 0.2);
 
   ul {
     margin: 0;
@@ -445,7 +559,7 @@ export default {
 
     @each $exchange in $exchanges {
       .trades__item--#{$exchange} .trades__item__exchange {
-        background-image: url("/static/exchanges/#{$exchange}.svg");
+        background-image: url('/static/exchanges/#{$exchange}.svg');
       }
     }
   }
@@ -634,5 +748,4 @@ export default {
     }
   }
 }
-
 </style>

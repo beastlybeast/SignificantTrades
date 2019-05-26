@@ -1,47 +1,74 @@
 <template>
-	<div id="stats" class="stats">
+  <div id="stats" class="stats">
     <div class="stats__infos">
-      <div>{{periodLabel}}</div>
+      <div>{{ periodLabel }}</div>
     </div>
     <ul class="stats__items">
-      <li v-tippy v-bind:title="`Number of trades in the last ${periodLabel}`" v-bind:class="{ up: rate.live > rate.average }">
+      <li
+        v-tippy
+        :title="`Number of trades in the last ${periodLabel}`"
+        :class="{ up: rate.live > rate.average }"
+      >
         <div class="stats__label">TRADES</div>
         <div class="stats__value">
           {{ $root.formatAmount(rate.live) }}
         </div>
       </li>
-      <li v-tippy v-bind:title="`Average amount per trade over the last ${periodLabel}`">
+      <li
+        v-tippy
+        :title="`Average amount per trade over the last ${periodLabel}`"
+      >
         <div class="stats__label">AVG trd.</div>
         <div class="stats__value">
-          <span class="icon-currency" :class="{ 'icon-commodity': !this.statsCurrency }"></span> {{ $root.formatAmount(avgtrade / rate.live, 2) }}
+          <span
+            class="icon-currency"
+            :class="{ 'icon-commodity': !this.statsCurrency }"
+          ></span>
+          {{ $root.formatAmount(avgtrade / rate.live, 2) }}
         </div>
       </li>
-      <li v-tippy v-bind:title="`Buys in the last ${periodLabel}`"  v-bind:class="{ up: up.live > up.average }">
+      <li
+        v-tippy
+        :title="`Buys in the last ${periodLabel}`"
+        :class="{ up: up.live > up.average }"
+      >
         <div class="stats__label">BUYS</div>
         <div class="stats__value">
-          <span class="icon-currency" :class="{ 'icon-commodity': !this.statsCurrency }"></span> {{ $root.formatAmount(up.live, 1) }}
+          <span
+            class="icon-currency"
+            :class="{ 'icon-commodity': !this.statsCurrency }"
+          ></span>
+          {{ $root.formatAmount(up.live, 1) }}
         </div>
       </li>
-      <li v-tippy v-bind:title="`Sells in the last ${periodLabel}`" v-bind:class="{ up: down.live > down.average }">
+      <li
+        v-tippy
+        :title="`Sells in the last ${periodLabel}`"
+        :class="{ up: down.live > down.average }"
+      >
         <div class="stats__label">SELLS</div>
         <div class="stats__value">
-          <span class="icon-currency" :class="{ 'icon-commodity': !this.statsCurrency }"></span> {{ $root.formatAmount(down.live, 1) }}
+          <span
+            class="icon-currency"
+            :class="{ 'icon-commodity': !this.statsCurrency }"
+          ></span>
+          {{ $root.formatAmount(down.live, 1) }}
         </div>
       </li>
       <!--
         // Maybe useless
-        <li v-tippy v-bind:title="`Total volume in the last ${periodLabel}`">
+        <li v-tippy :title="`Total volume in the last ${periodLabel}`">
         <div class="stats__label">VOL</div>
         <div class="stats__value"><span class="icon-commodity"></span> {{$root.formatAmount(up.live + down.live, 1)}}</div>
       </li> -->
     </ul>
-	</div>
+  </div>
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapState } from 'vuex'
 
-import socket from '../services/socket';
+import socket from '../services/socket'
 
 export default {
   data() {
@@ -62,143 +89,159 @@ export default {
         average: null,
         live: null,
         count: 0,
-      }
-    };
+      },
+    }
   },
   computed: {
-     avgtrade() {
-    	return this.up.live + this.down.live;
+    avgtrade() {
+      return this.up.live + this.down.live
     },
-    ...mapState([
-			'statsPeriod',
-      'statsCurrency',
-      'actives',
-    ])
+    ...mapState(['statsPeriod', 'statsCurrency', 'actives']),
   },
   created() {
-    const now = +new Date();
+    const now = +new Date()
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
         case 'reloadExchangeState':
         case 'setStatsPeriod':
         case 'toggleStatsCurrency':
-          this.rebuildStats();
-          break;
+          this.rebuildStats()
+          break
       }
-    });
+    })
 
-    socket.$on('trades.instant', this.onTrades);
-    socket.$on('historical', this.onFetch);
+    socket.$on('trades.instant', this.onTrades)
+    socket.$on('historical', this.onFetch)
 
-    this.rebuildStats();
+    this.rebuildStats()
   },
   beforeDestroy() {
-    socket.$off('trades.instant', this.onTrades);
-    socket.$off('historical', this.onFetch);
+    socket.$off('trades.instant', this.onTrades)
+    socket.$off('historical', this.onFetch)
 
-		clearInterval(this.statsRefreshCycleInterval);
+    clearInterval(this.statsRefreshCycleInterval)
 
-    this.onStoreMutation();
+    this.onStoreMutation()
   },
   methods: {
     onTrades(trades, upVolume, downVolume) {
-      this.rate.count += trades.length;
+      this.rate.count += trades.length
 
       if (this.statsCurrency) {
-        const upTrades = trades.filter(trade => trade[4] > 0);
-        const downTrades = trades.filter(trade => trade[4] < 1);
+        const upTrades = trades.filter((trade) => trade[4] > 0)
+        const downTrades = trades.filter((trade) => trade[4] < 1)
 
         if (upTrades.length) {
-          this.up.count += upTrades.map(trade => trade[3] * trade[2]).reduce((a, b) => a +b);
+          this.up.count += upTrades
+            .map((trade) => trade[3] * trade[2])
+            .reduce((a, b) => a + b)
         }
         if (downTrades.length) {
-          this.down.count += downTrades.map(trade => trade[3] * trade[2]).reduce((a, b) => a +b);
+          this.down.count += downTrades
+            .map((trade) => trade[3] * trade[2])
+            .reduce((a, b) => a + b)
         }
       } else {
-        this.up.count += upVolume;
-        this.down.count += downVolume;
+        this.up.count += upVolume
+        this.down.count += downVolume
       }
     },
     onFetch(trades, from, to) {
-      const now = +new Date();
+      const now = +new Date()
 
-			if (to > now - this.statsPeriod) {
-        this.rebuildStats();
+      if (to > now - this.statsPeriod) {
+        this.rebuildStats()
       }
     },
     rebuildStats() {
-      clearInterval(this.statsRefreshCycleInterval);
+      clearInterval(this.statsRefreshCycleInterval)
 
-      const now = +new Date();
+      const now = +new Date()
 
-      this.periodLabel = this.$root.ago(now - this.statsPeriod);
-      this.timestamp = now - this.statsPeriod;
-      this.rate.average = this.up.average = this.down.average = null;
-      this.rate.count = this.up.count = this.down.count = 0;
+      this.periodLabel = this.$root.ago(now - this.statsPeriod)
+      this.timestamp = now - this.statsPeriod
+      this.rate.average = this.up.average = this.down.average = null
+      this.rate.count = this.up.count = this.down.count = 0
 
       socket.trades
-        .filter(trade => this.actives.indexOf(trade[0]) !== -1 && trade[1] >= now - this.statsPeriod)
-        .forEach(trade => {
-          this.rate.count++;
+        .filter(
+          (trade) =>
+            this.actives.indexOf(trade[0]) !== -1 &&
+            trade[1] >= now - this.statsPeriod
+        )
+        .forEach((trade) => {
+          this.rate.count++
 
           if (this.statsCurrency) {
-            this[+trade[4] > 0 ? 'up' : 'down'].count += (trade[3] * trade[2]);
+            this[+trade[4] > 0 ? 'up' : 'down'].count += trade[3] * trade[2]
           } else {
-            this[+trade[4] > 0 ? 'up' : 'down'].count += trade[3];
+            this[+trade[4] > 0 ? 'up' : 'down'].count += trade[3]
           }
         })
 
-      this.updateStats(now);
+      this.updateStats(now)
 
-      this.statsRefreshCycleInterval = window.setInterval(this.updateStats.bind(this), 1000);
+      this.statsRefreshCycleInterval = window.setInterval(
+        this.updateStats.bind(this),
+        1000
+      )
     },
     updateStats(timestamp = null) {
-      const now = timestamp || +new Date();
+      const now = timestamp || +new Date()
 
       if (this.rate.average !== null) {
-        this.rate.live = Math.ceil((this.rate.count + this.rate.average) / (1 + (now - this.timestamp) / this.statsPeriod));
-        this.up.live = parseFloat((this.up.count + this.up.average) / (1 + (now - this.timestamp) / this.statsPeriod));
-        this.down.live = parseFloat((this.down.count + this.down.average) / (1 + (now - this.timestamp) / this.statsPeriod));
-        this.rate.side = this.rate.live > this.rate.average ? '+' : '';
-        this.up.side = this.up.live > this.up.average ? '+' : '';
-        this.down.side = this.down.live > this.down.average ? '+' : '';
+        this.rate.live = Math.ceil(
+          (this.rate.count + this.rate.average) /
+            (1 + (now - this.timestamp) / this.statsPeriod)
+        )
+        this.up.live = parseFloat(
+          (this.up.count + this.up.average) /
+            (1 + (now - this.timestamp) / this.statsPeriod)
+        )
+        this.down.live = parseFloat(
+          (this.down.count + this.down.average) /
+            (1 + (now - this.timestamp) / this.statsPeriod)
+        )
+        this.rate.side = this.rate.live > this.rate.average ? '+' : ''
+        this.up.side = this.up.live > this.up.average ? '+' : ''
+        this.down.side = this.down.live > this.down.average ? '+' : ''
       } else {
-        this.rate.live = this.rate.count;
-        this.up.live = this.up.count;
-        this.down.live = this.down.count;
+        this.rate.live = this.rate.count
+        this.up.live = this.up.count
+        this.down.live = this.down.count
       }
 
       if (now - this.timestamp >= this.statsPeriod) {
-        this.timestamp = now;
-        this.rate.average = parseInt(this.rate.live);
-        this.up.average = parseFloat(this.up.live);
-        this.down.average = parseFloat(this.down.live);
-        this.rate.count = this.up.count = this.down.count = 0;
+        this.timestamp = now
+        this.rate.average = parseInt(this.rate.live)
+        this.up.average = parseFloat(this.up.live)
+        this.down.average = parseFloat(this.down.live)
+        this.rate.count = this.up.count = this.down.count = 0
       }
-    }
-  }
-};
+    },
+  },
+}
 </script>
 
-<style lang='scss'>
+<style lang="scss">
 @import '../assets/sass/variables';
 
 .stats {
   position: relative;
-  background-color: rgba(white, .05);
+  background-color: rgba(white, 0.05);
 
   .stats__label {
-    opacity: .5;
-    font-size: .75em;
-    padding: .75em 0 .25em;
+    opacity: 0.5;
+    font-size: 0.75em;
+    padding: 0.75em 0 0.25em;
   }
 
   .stats__value {
     text-align: right;
     font-weight: 600;
     white-space: nowrap;
-    padding: .25em 0 .75em;
+    padding: 0.25em 0 0.75em;
     font-family: 'Roboto Condensed';
 
     &:after {
@@ -271,7 +314,7 @@ export default {
       position: absolute;
       content: unicode($icon-stopwatch);
       font-family: 'icon';
-      opacity: .33;
+      opacity: 0.33;
       pointer-events: none;
       font-size: 120px;
       bottom: 0;
