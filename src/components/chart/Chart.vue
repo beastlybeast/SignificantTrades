@@ -1,45 +1,89 @@
 <template>
-	<div id="chart">
-		<div class="chart__container" ref="chartContainer" v-bind:class="{fetching: fetching}" v-bind:style="{ height: chartHeight }" @mouseenter="showControls = true" @mouseleave="showControls = false">
-      <div class="chart__notice" v-if="isDirty" v-tippy="{ placement: 'bottom' }" :title="`${pendingExchanges.join(pendingExchanges.length === 2 ? ' and ' : ', ')} did not send any trades since the beginning of the session.<br>Chart will be updated automaticaly once the data is received`">
-        <i class="icon-warning"></i> {{ pendingExchanges.length }} exchange{{ pendingExchanges.length > 1 ? 's are' : ' is' }} still silent
+  <div id="chart">
+    <div
+      class="chart__container"
+      ref="chartContainer"
+      :class="{ fetching: fetching }"
+      :style="{ height: chartHeight }"
+      @mouseenter="showControls = true"
+      @mouseleave="showControls = false"
+    >
+      <div
+        class="chart__notice"
+        v-if="isDirty"
+        v-tippy="{ placement: 'bottom' }"
+        :title="
+          `${pendingExchanges.join(
+            pendingExchanges.length === 2 ? ' and ' : ', '
+          )} did not send any trades since the beginning of the session.<br>Chart will be updated automaticaly once the data is received`
+        "
+      >
+        <i class="icon-warning"></i> {{ pendingExchanges.length }} exchange{{
+          pendingExchanges.length > 1 ? 's are' : ' is'
+        }}
+        still silent
       </div>
 
       <div class="chart__controls chart-controls" v-if="showControls">
-        <div class="chart-controls__left">
-        </div>
+        <div class="chart-controls__left"></div>
         <div class="chart-controls__right">
-          <div class="chart__scale-mode" v-on:click="$store.commit('toggleChartAutoScale', !chartAutoScale)" v-tippy v-bind:title="chartAutoScale ? 'Unlock price axis' : 'Lock price axis'">
-            <span class="min-768">{{ chartAutoScale ? "AUTO" : "FREE" }}</span> <i v-bind:class="{ 'icon-locked': chartAutoScale, 'icon-unlocked': !chartAutoScale }"></i>
+          <div
+            class="chart__scale-mode"
+            @click="$store.commit('toggleChartAutoScale', !chartAutoScale)"
+            v-tippy
+            :title="chartAutoScale ? 'Unlock price axis' : 'Lock price axis'"
+          >
+            <span class="min-768">{{ chartAutoScale ? 'AUTO' : 'FREE' }}</span>
+            <i
+              :class="{
+                'icon-locked': chartAutoScale,
+                'icon-unlocked': !chartAutoScale,
+              }"
+            ></i>
           </div>
         </div>
       </div>
 
-      <div class="chart__scale-handler -y" ref="chartScaleHandler" v-on:mousedown="startScale('y', $event)" v-on:dblclick.stop.prevent="resetScale('y')"></div>
-      <div class="chart__scale-handler -x" ref="chartScaleHandler" v-on:mousedown="startScale('x', $event)" v-on:dblclick.stop.prevent="resetScale('x')"></div>
-      <div class="chart__height-handler" ref="chartHeightHandler" v-on:mousedown="startResize" v-on:dblclick.stop.prevent="resetHeight"></div>
+      <div
+        class="chart__scale-handler -y"
+        ref="chartScaleHandler"
+        @mousedown="startScale('y', $event)"
+        @dblclick.stop.prevent="resetScale('y')"
+      ></div>
+      <div
+        class="chart__scale-handler -x"
+        ref="chartScaleHandler"
+        @mousedown="startScale('x', $event)"
+        @dblclick.stop.prevent="resetScale('x')"
+      ></div>
+      <div
+        class="chart__height-handler"
+        ref="chartHeightHandler"
+        @mousedown="startResize"
+        @dblclick.stop.prevent="resetHeight"
+      ></div>
 
       <div class="chart__canvas"></div>
-		</div>
-	</div>
+    </div>
+  </div>
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapState } from 'vuex'
 
-import socket from "../../services/socket";
-import chartOptions from "./options.json";
+import socket from '../../services/socket'
+import chartOptions from './options.json'
 
-import Highcharts from 'highcharts/highstock';
-import Indicators from 'highcharts/indicators/indicators';
-import EMA from 'highcharts/indicators/ema';
+import Highcharts from 'highcharts/highstock'
+import Indicators from 'highcharts/indicators/indicators'
+import EMA from 'highcharts/indicators/ema'
 // import ATR from 'highcharts/indicators/atr';
 // import BB from 'highcharts/indicators/bollinger-bands';
 
-import enablePanning from './pan.js';
+import enablePanning from './pan.js'
 
-Indicators(Highcharts);
-EMA(Highcharts);
+Indicators(Highcharts)
+EMA(Highcharts)
 // ATR(Highcharts);
 // BB(Highcharts); // is bugged on highchart 7 :-(
 
@@ -49,7 +93,7 @@ export default {
       panning: false,
       fetching: false,
       showControls: false,
-			chart: null,
+      chart: null,
       tick: null,
       cursor: null,
       queuedTrades: [],
@@ -58,8 +102,8 @@ export default {
       isDirty: false,
       isMini: false,
 
-      _timeframe: null
-    };
+      _timeframe: null,
+    }
   },
   computed: {
     ...mapState([
@@ -85,28 +129,35 @@ export default {
       'chartVolumeOpacity',
       'chartVolumeAverage',
       'chartVolumeAverageLength',
-		])
+    ]),
   },
   created() {
-    socket.$on('trades.queued', this.onTrades);
+    socket.$on('trades.queued', this.onTrades)
 
-    socket.$on('clean', this.onClean);
+    socket.$on('clean', this.onClean)
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
         case 'setPair':
-          this.chart.series[0].update({name: mutation.payload.toUpperCase()}, false);
-        break;
+          this.chart.series[0].update(
+            { name: mutation.payload.toUpperCase() },
+            false
+          )
+          break
         case 'setTimeframe':
-          this.setTimeframe(mutation.payload, true, this._timeframe !== this.timeframe);
-          this._timeframe = parseInt(this.timeframe);
-          break;
+          this.setTimeframe(
+            mutation.payload,
+            true,
+            this._timeframe !== this.timeframe
+          )
+          this._timeframe = parseInt(this.timeframe)
+          break
         case 'toggleSnap':
-          mutation.payload && this.snapRight(true);
-          break;
+          mutation.payload && this.snapRight(true)
+          break
         case 'setExchangeMatch':
-          this.updateChartHeight();
-          break;
+          this.updateChartHeight()
+          break
         case 'reloadExchangeState':
         case 'toggleLiquidations':
         case 'setChartPadding':
@@ -115,210 +166,239 @@ export default {
           if (+new Date() - this.$root.applicationStartTime > 1000) {
             this.redrawChart()
           }
-          break;
+          break
         case 'toggleCandlestick':
         case 'toggleChartGridlines':
         case 'setChartGridlinesGap':
         case 'setVolumeOpacity':
-          this.createChart();
-          this.setTimeframe(this.timeframe);
-        break;
+          this.createChart()
+          this.setTimeframe(this.timeframe)
+          break
         case 'toggleVolumeAverage':
-          this.chart.series[4].update({visible: mutation.payload});
-          this.chart.series[5].update({visible: mutation.payload});
-        break;
+          this.chart.series[4].update({ visible: mutation.payload })
+          this.chart.series[5].update({ visible: mutation.payload })
+          break
         case 'setVolumeAverageLength':
-          this.chart.series[4].update({params: {period: +mutation.payload || 14}});
-          this.chart.series[5].update({params: {period: +mutation.payload || 14}});
-        break;
+          this.chart.series[4].update({
+            params: { period: +mutation.payload || 14 },
+          })
+          this.chart.series[5].update({
+            params: { period: +mutation.payload || 14 },
+          })
+          break
         case 'toggleSma':
-          this.chart.series[6].update({visible: mutation.payload});
-        break;
+          this.chart.series[6].update({ visible: mutation.payload })
+          break
         case 'setSmaLength':
-          this.chart.series[6].update({params: {period: +mutation.payload || 14}});
-        break;
+          this.chart.series[6].update({
+            params: { period: +mutation.payload || 14 },
+          })
+          break
         case 'toggleReplaying':
           if (mutation.payload) {
-            this.clearChart(mutation.payload.timestamp);
-            this.setRange(+new Date() - mutation.payload.timestamp);
+            this.clearChart(mutation.payload.timestamp)
+            this.setRange(+new Date() - mutation.payload.timestamp)
           } else {
-            this.setTimeframe(this.timeframe);
+            this.setTimeframe(this.timeframe)
           }
-        break;
+          break
         case 'toggleChartAutoScale':
-          this.resetScale('x');
-          this.resetScale('y');
-        break;
+          this.resetScale('x')
+          this.resetScale('y')
+          break
       }
-    });
+    })
 
-    this._timeframe = parseInt(this.timeframe);
-    this._scaling = {};
+    this._timeframe = parseInt(this.timeframe)
+    this._scaling = {}
   },
-	mounted() {
-    console.log(`[chart.mounted]`);
+  mounted() {
+    console.log(`[chart.mounted]`)
 
-    this.$refs.chartContainer.style.height = this.getChartSize().height + 'px';
+    this.$refs.chartContainer.style.height = this.getChartSize().height + 'px'
 
-    window.setTimeout(() => this.createChart());
+    window.setTimeout(() => this.createChart())
 
-    this._doResize = this.doResize.bind(this);
+    this._doResize = this.doResize.bind(this)
 
-    window.addEventListener('resize', this._doResize, false);
+    window.addEventListener('resize', this._doResize, false)
 
-    this._doDrag = this.doDrag.bind(this);
+    this._doDrag = this.doDrag.bind(this)
 
-    window.addEventListener('mousemove', this._doDrag, false);
+    window.addEventListener('mousemove', this._doDrag, false)
 
-    this._stopDrag = this.stopDrag.bind(this);
+    this._stopDrag = this.stopDrag.bind(this)
 
-    window.addEventListener('mouseup', this._stopDrag, false);
+    window.addEventListener('mouseup', this._stopDrag, false)
 
-    this.setTimeframe(this.timeframe, true);
-	},
+    this.setTimeframe(this.timeframe, true)
+  },
   beforeDestroy() {
-    this.destroyChart();
+    this.destroyChart()
 
-    socket.$off('trades.queued', this.onTrades);
+    socket.$off('trades.queued', this.onTrades)
 
-    socket.$off('clean', this.onClean);
+    socket.$off('clean', this.onClean)
 
-    window.removeEventListener('resize', this._doResize);
-    window.removeEventListener('mousemove', this._doDrag);
-    window.removeEventListener('mouseup', this._stopDrag);
+    window.removeEventListener('resize', this._doResize)
+    window.removeEventListener('mousemove', this._doDrag)
+    window.removeEventListener('mouseup', this._stopDrag)
 
     // this.$el.removeEventListener('wheel', this.doZoom);
 
-    this.onStoreMutation();
+    this.onStoreMutation()
   },
   methods: {
     createChart() {
-      this.destroyChart();
+      this.destroyChart()
 
-      this.theme = JSON.parse(JSON.stringify(chartOptions)).theme;
+      this.theme = JSON.parse(JSON.stringify(chartOptions)).theme
 
-      const options = this.getChartOptions();
+      const options = this.getChartOptions()
 
-      this.chart = Highcharts.stockChart(this.$el.querySelector('.chart__canvas'), options);
+      this.chart = Highcharts.stockChart(
+        this.$el.querySelector('.chart__canvas'),
+        options
+      )
 
-      enablePanning(Highcharts, this.chart);
+      enablePanning(Highcharts, this.chart)
 
-      this.updateChartHeight();
+      this.updateChartHeight()
 
-      this.isMini = false;
-      this.updateMiniMode();
+      this.isMini = false
+      this.updateMiniMode()
 
       if (this.queuedTicks.length) {
-        this.tickHistoricals(this.queuedTicks.splice(0, this.queuedTicks.length));
+        this.tickHistoricals(
+          this.queuedTicks.splice(0, this.queuedTicks.length)
+        )
 
-        this.chart.redraw();
+        this.chart.redraw()
       }
 
       if (this.queuedTrades.length) {
-        this.tickTrades(this.queuedTrades.splice(0, this.queuedTrades.length));
+        this.tickTrades(this.queuedTrades.splice(0, this.queuedTrades.length))
 
-        this.chart.redraw();
+        this.chart.redraw()
       }
 
-      this.$refs.chartContainer.style.height = '';
+      this.$refs.chartContainer.style.height = ''
     },
     destroyChart() {
       if (!this.chart) {
-        return;
+        return
       }
 
-      this.chart.destroy();
+      this.chart.destroy()
 
-      delete this.chart;
+      delete this.chart
     },
     setTimeframe(timeframe, snap = false, clear = false, print = true) {
-      clearTimeout(this._renderEndTimeout);
+      clearTimeout(this._renderEndTimeout)
 
-      console.log(`[chart.setTimeframe]`, timeframe);
+      console.log(`[chart.setTimeframe]`, timeframe)
 
-      const count = ((this.chart ? this.chart.chartWidth : this.$refs.chartContainer.offsetWidth) - 20 * .1) / this.chartCandleWidth;
-      const range = timeframe * 2 * count;
+      const count =
+        ((this.chart
+          ? this.chart.chartWidth
+          : this.$refs.chartContainer.offsetWidth) -
+          20 * 0.1) /
+        this.chartCandleWidth
+      const range = timeframe * 2 * count
 
-      socket.fetchRange(range, clear).then(response => {
-        if (response) {
-          console.log(`[chart.setTimeframe] done fetching (${response.results.length} new ${response.format}s)`)
-        } else {
-          console.log(`[chart.setTimeframe] did not fetch anything new`);
-        }
-      })
-      .catch(() => {})
-      .then(() => {
-        this.redrawChart(range);
-      });
+      socket
+        .fetchRange(range, clear)
+        .then((response) => {
+          if (response) {
+            console.log(
+              `[chart.setTimeframe] done fetching (${
+                response.results.length
+              } new ${response.format}s)`
+            )
+          } else {
+            console.log(`[chart.setTimeframe] did not fetch anything new`)
+          }
+        })
+        .catch(() => {})
+        .then(() => {
+          this.redrawChart(range)
+        })
     },
     redrawChart(range) {
-      console.log(`[chart.redrawChart]`, range ? '(& setting range to ' + range + ')' : '');
+      console.log(
+        `[chart.redrawChart]`,
+        range ? '(& setting range to ' + range + ')' : ''
+      )
 
-      let min;
-      let max;
+      let min
+      let max
 
       if (range) {
-        this.setRange(range);
+        this.setRange(range)
       } else if (this.chart) {
-        min = this.chart.xAxis[0].min;
-        max = this.chart.xAxis[0].max;
+        min = this.chart.xAxis[0].min
+        max = this.chart.xAxis[0].max
 
-        this.chart.xAxis[0].setExtremes(min - (max - min), max, false);
+        this.chart.xAxis[0].setExtremes(min - (max - min), max, false)
       }
 
       if (this.chart) {
-        this.clearChart(+new Date() - this.chartRange / 2);
+        this.clearChart(+new Date() - this.chartRange / 2)
       }
 
-      if (!print || !socket.ticks.length && !socket.trades.length) {
-        return;
+      if (!print || (!socket.ticks.length && !socket.trades.length)) {
+        return
       }
 
-      this.tickHistoricals(socket.ticks);
+      this.tickHistoricals(socket.ticks)
 
-      this.tickTrades(socket.trades);
+      this.tickTrades(socket.trades)
 
       if (range) {
-        this.setRange(range / 2);
+        this.setRange(range / 2)
       } else if (this.chart) {
-        this.chart.xAxis[0].setExtremes(min, max, true);
+        this.chart.xAxis[0].setExtremes(min, max, true)
       }
     },
     onTrades(trades) {
-      this.tickTrades(trades, true);
+      this.tickTrades(trades, true)
 
-      this.updateChartedCount();
+      this.updateChartedCount()
     },
     tickHistoricals(ticks) {
       if (!this.chart) {
-        this.queuedTicks = this.queuedTicks.concat(ticks);
+        this.queuedTicks = this.queuedTicks.concat(ticks)
 
-        return;
+        return
       } else if (this.queuedTicks.length) {
-        ticks = ticks.concat(this.queuedTicks.splice(0, this.queuedTicks.length));
+        ticks = ticks.concat(
+          this.queuedTicks.splice(0, this.queuedTicks.length)
+        )
       }
 
-      ticks = ticks.filter(tick =>
-        this.actives.indexOf(tick.exchange) !== -1
-        && this.exchanges[tick.exchange] && this.exchanges[tick.exchange].ohlc !== false
-      );
+      ticks = ticks.filter(
+        (tick) =>
+          this.actives.indexOf(tick.exchange) !== -1 &&
+          this.exchanges[tick.exchange] &&
+          this.exchanges[tick.exchange].ohlc !== false
+      )
 
       if (!ticks.length) {
-        return;
+        return
       }
 
       this.createTick(ticks[0].timestamp)
 
-      const formatedTicks = [];
+      const formatedTicks = []
 
       ticks.forEach((tick, index) => {
         if (this.chartVolume) {
-          this.tickData.buys += tick.buys;
-          this.tickData.sells += tick.sells;
+          this.tickData.buys += tick.buys
+          this.tickData.sells += tick.sells
         }
 
         if (this.chartLiquidations) {
-          this.tickData.liquidations += tick.liquidations || 0;
+          this.tickData.liquidations += tick.liquidations || 0
         }
 
         this.tickData.exchanges[tick.exchange] = {
@@ -328,102 +408,111 @@ export default {
           close: tick.close,
         }
 
-        if (!ticks[index + 1] || this.tickData.timestamp !== ticks[index + 1].timestamp) {
-          const formatedTick = this.formatTickData(this.tickData);
-          this.addTickToSeries(formatedTick);
+        if (
+          !ticks[index + 1] ||
+          this.tickData.timestamp !== ticks[index + 1].timestamp
+        ) {
+          const formatedTick = this.formatTickData(this.tickData)
+          this.addTickToSeries(formatedTick)
 
-          formatedTicks.push(formatedTick);
+          formatedTicks.push(formatedTick)
 
           if (ticks[index + 1]) {
-            this.createTick(ticks[index + 1].timestamp);
+            this.createTick(ticks[index + 1].timestamp)
           }
         }
-      });
+      })
 
-      this.tickData.added = true;
+      this.tickData.added = true
 
-      this.chart.redraw();
+      this.chart.redraw()
 
-      this.updateChartedCount();
+      this.updateChartedCount()
     },
     clearChart(timestamp = Infinity) {
-      const now = socket.getCurrentTimestamp();
+      const now = socket.getCurrentTimestamp()
 
       for (let serie of this.chart.series) {
-        serie.setData([], false);
+        serie.setData([], false)
       }
 
-      this.tickData = null;
-      this.cursor = null;
+      this.tickData = null
+      this.cursor = null
 
-      this.createTick(Math.floor(
-        (Math.min(timestamp, socket.ticks[0] ? socket.ticks[0].timestamp : Infinity, socket.trades[0] ? socket.trades[0][1] : Infinity)  / this.timeframe)
-      ) * this.timeframe);
+      this.createTick(
+        Math.floor(
+          Math.min(
+            timestamp,
+            socket.ticks[0] ? socket.ticks[0].timestamp : Infinity,
+            socket.trades[0] ? socket.trades[0][1] : Infinity
+          ) / this.timeframe
+        ) * this.timeframe
+      )
 
-      this.chart.redraw();
+      this.chart.redraw()
     },
     tickTrades(trades, live = false) {
-      const ticks = [];
+      const ticks = []
 
       if (!trades || !trades.length) {
-        trades = [];
+        trades = []
       }
 
       // chart doesn't allow edit on invisible ticks when it is panned
       // we just process them when will get there
       if (this.busy || this.panning || this.isPanned()) {
-        this.queuedTrades = this.queuedTrades.concat(trades);
+        this.queuedTrades = this.queuedTrades.concat(trades)
 
-        return;
-
+        return
       } else if (this.queuedTrades.length) {
-
         // right here
-        trades = this.queuedTrades.splice(0, this.queuedTrades.length).concat(trades);
-
+        trades = this.queuedTrades
+          .splice(0, this.queuedTrades.length)
+          .concat(trades)
       }
 
       // first we trim trades
       // - equal or higer than current tick
       // - only from actives exchanges (enabled, matched and visible exchange)
       trades = trades
-        .filter(a =>
-            a[1] >= this.cursor // only process trades >= current tick time
-            && this.actives.indexOf(a[0]) !== -1 // only process trades from enabled exchanges (client side)
+        .filter(
+          (a) => a[1] >= this.cursor && this.actives.indexOf(a[0]) !== -1 // only process trades >= current tick time // only process trades from enabled exchanges (client side)
         )
-        .sort((a, b) => a[1] - b[1]);
+        .sort((a, b) => a[1] - b[1])
 
       if (!trades.length) {
-        return;
+        return
       }
 
       // define range rounded to the current timeframe
-      const from = Math.floor(trades[0][1] / this.timeframe) * this.timeframe;
-      const to = Math.ceil(trades[trades.length - 1][1] / this.timeframe) * this.timeframe;
+      const from = Math.floor(trades[0][1] / this.timeframe) * this.timeframe
+      const to =
+        Math.ceil(trades[trades.length - 1][1] / this.timeframe) *
+        this.timeframe
 
       // loop through ticks in range
       for (let t = from; t < to; t += this.timeframe) {
-        let i;
+        let i
 
         if (!this.tickData || this.cursor < t) {
-          this.createTick(t);
+          this.createTick(t)
         }
 
         for (i = 0; i < trades.length; i++) {
           if (trades[i][1] >= t + this.timeframe) {
-            break;
+            break
           }
 
           if (trades[i][5]) {
             switch (+trades[i][5]) {
               case 1:
                 if (this.chartLiquidations) {
-                  this.tickData.liquidations += trades[i][3] * trades[i][2];
+                  this.tickData.liquidations += trades[i][3] * trades[i][2]
                 }
-                break;
+                break
             }
 
-            continue;
+            continue
           }
 
           if (this.exchanges[trades[i][0]].ohlc !== false) {
@@ -433,86 +522,108 @@ export default {
                 high: +trades[i][2],
                 low: +trades[i][2],
                 close: +trades[i][2],
-                size: 0
-              };
+                size: 0,
+              }
             }
 
-            this.tickData.exchanges[trades[i][0]].count++;
+            this.tickData.exchanges[trades[i][0]].count++
 
-            this.tickData.exchanges[trades[i][0]].high = Math.max(this.tickData.exchanges[trades[i][0]].high, +trades[i][2]);
-            this.tickData.exchanges[trades[i][0]].low = Math.min(this.tickData.exchanges[trades[i][0]].low, +trades[i][2]);
-            this.tickData.exchanges[trades[i][0]].close = +trades[i][2];
-            this.tickData.exchanges[trades[i][0]].size += +trades[i][3];
+            this.tickData.exchanges[trades[i][0]].high = Math.max(
+              this.tickData.exchanges[trades[i][0]].high,
+              +trades[i][2]
+            )
+            this.tickData.exchanges[trades[i][0]].low = Math.min(
+              this.tickData.exchanges[trades[i][0]].low,
+              +trades[i][2]
+            )
+            this.tickData.exchanges[trades[i][0]].close = +trades[i][2]
+            this.tickData.exchanges[trades[i][0]].size += +trades[i][3]
 
-            if (this.chartVolume && (!this.chartVolumeThreshold || trades[i][3] * trades[i][2] > this.chartVolumeThreshold)) {
-              this.tickData[(trades[i][4] > 0 ? 'buys' : 'sells') + 'Count']++;
-              this.tickData[trades[i][4] > 0 ? 'buys' : 'sells'] += trades[i][3] * trades[i][2];
+            if (
+              this.chartVolume &&
+              (!this.chartVolumeThreshold ||
+                trades[i][3] * trades[i][2] > this.chartVolumeThreshold)
+            ) {
+              this.tickData[(trades[i][4] > 0 ? 'buys' : 'sells') + 'Count']++
+              this.tickData[trades[i][4] > 0 ? 'buys' : 'sells'] +=
+                trades[i][3] * trades[i][2]
             }
           }
         }
 
         if (i) {
-          trades.splice(0, i);
+          trades.splice(0, i)
         }
 
-        ticks.push(this.formatTickData(this.tickData));
+        ticks.push(this.formatTickData(this.tickData))
       }
 
       if (!this.chart.series[0].data.length) {
-        this.replaceEntireChart(ticks, live);
+        this.replaceEntireChart(ticks, live)
       } else {
         if (ticks.length && ticks[0].added) {
-          this.updateLatestPoints(ticks[0], live);
+          this.updateLatestPoints(ticks[0], live)
 
-          ticks.splice(0, 1);
+          ticks.splice(0, 1)
         }
 
         for (let i = 0; i < ticks.length; i++) {
-          this.addTickToSeries(ticks[i], live, i === ticks.length - 1);
+          this.addTickToSeries(ticks[i], live, i === ticks.length - 1)
         }
       }
 
       if (ticks.length) {
-        this.chart.xAxis[0].setExtremes(this.chart.xAxis[0].min, this.chart.xAxis[0].max)
+        this.chart.xAxis[0].setExtremes(
+          this.chart.xAxis[0].min,
+          this.chart.xAxis[0].max
+        )
       }
 
-      this.tickData.added = true;
+      this.tickData.added = true
 
-      window.chart = this.chart;
+      window.chart = this.chart
     },
     createTick(timestamp = null) {
       if (timestamp) {
         if (isFinite(timestamp)) {
-          this.cursor = timestamp;
+          this.cursor = timestamp
         } else {
-          this.cursor = timestamp;
+          this.cursor = timestamp
         }
       } else if (this.cursor) {
-        this.cursor += this.timeframe;
+        this.cursor += this.timeframe
       } else {
-        this.cursor = Math.floor(socket.getCurrentTimestamp() / this.timeframe) * this.timeframe;
+        this.cursor =
+          Math.floor(socket.getCurrentTimestamp() / this.timeframe) *
+          this.timeframe
       }
 
       if (this.tickData) {
-        this.tickData.timestamp = this.cursor;
+        this.tickData.timestamp = this.cursor
 
         for (let exchange in this.tickData.exchanges) {
-          this.tickData.exchanges[exchange].count = 0;
-          this.tickData.exchanges[exchange].open = this.tickData.exchanges[exchange].close;
-          this.tickData.exchanges[exchange].high = this.tickData.exchanges[exchange].close;
-          this.tickData.exchanges[exchange].low = this.tickData.exchanges[exchange].close;
+          this.tickData.exchanges[exchange].count = 0
+          this.tickData.exchanges[exchange].open = this.tickData.exchanges[
+            exchange
+          ].close
+          this.tickData.exchanges[exchange].high = this.tickData.exchanges[
+            exchange
+          ].close
+          this.tickData.exchanges[exchange].low = this.tickData.exchanges[
+            exchange
+          ].close
         }
 
-        this.tickData.open = parseFloat(this.tickData.close);
-        this.tickData.high = null;
-        this.tickData.low = null;
-        this.tickData.close = 0;
-        this.tickData.liquidations = 0;
-        this.tickData.buys = 0;
-        this.tickData.sells = 0;
-        this.tickData.buysCount = 0;
-        this.tickData.sellsCount = 0;
-        this.tickData.added = false;
+        this.tickData.open = parseFloat(this.tickData.close)
+        this.tickData.high = null
+        this.tickData.low = null
+        this.tickData.close = 0
+        this.tickData.liquidations = 0
+        this.tickData.buys = 0
+        this.tickData.sells = 0
+        this.tickData.buysCount = 0
+        this.tickData.sellsCount = 0
+        this.tickData.added = false
       } else {
         this.tickData = {
           timestamp: this.cursor,
@@ -529,11 +640,15 @@ export default {
           added: false,
         }
 
-        const closes = socket.getInitialPrices();
+        const closes = socket.getInitialPrices()
 
         for (let exchange in closes) {
-          if (this.actives.indexOf(exchange) === -1 || !this.exchanges[exchange] || this.exchanges[exchange].ohlc === false) {
-            continue;
+          if (
+            this.actives.indexOf(exchange) === -1 ||
+            !this.exchanges[exchange] ||
+            this.exchanges[exchange].ohlc === false
+          ) {
+            continue
           }
 
           this.tickData.exchanges[exchange] = {
@@ -542,26 +657,26 @@ export default {
             open: closes[exchange],
             high: closes[exchange],
             low: closes[exchange],
-            close: closes[exchange]
+            close: closes[exchange],
           }
         }
       }
     },
     replaceEntireChart(ticks, live = false, snap = false) {
-      const seriesData = {};
+      const seriesData = {}
 
       for (let tick of ticks) {
         for (let serieIndex of Object.keys(tick)) {
           if (isNaN(serieIndex)) {
-            continue;
+            continue
           }
 
           if (!seriesData[serieIndex]) {
-            seriesData[serieIndex] = [];
+            seriesData[serieIndex] = []
           }
 
           if (tick[serieIndex]) {
-            seriesData[serieIndex].push(tick[serieIndex]);
+            seriesData[serieIndex].push(tick[serieIndex])
           }
         }
       }
@@ -573,413 +688,470 @@ export default {
     addTickToSeries(tick, live = false, snap = false) {
       for (let serieIndex in tick) {
         if (!isNaN(serieIndex) && tick[serieIndex]) {
-          this.chart.series[serieIndex].addPoint(tick[serieIndex], false);
+          this.chart.series[serieIndex].addPoint(tick[serieIndex], false)
         }
       }
 
       if (snap && this.isSnaped) {
-        this.snapRight(live);
+        this.snapRight(live)
       }
     },
     updateLatestPoints(tick, live = false) {
       for (let serieIndex in tick) {
         if (!isNaN(serieIndex) && tick[serieIndex]) {
-          const point = this.chart.series[serieIndex].points[this.chart.series[serieIndex].points.length - 1];
+          const point = this.chart.series[serieIndex].points[
+            this.chart.series[serieIndex].points.length - 1
+          ]
 
           if (point.y !== tick[serieIndex][1]) {
-            point.update(tick[serieIndex], false);
+            point.update(tick[serieIndex], false)
           }
         }
       }
 
-      this.chart.redraw();
+      this.chart.redraw()
     },
     formatTickData(tickData) {
       return {
         0: this.getExchangesAveragedOHLC(tickData.exchanges, tickData),
         1: this.chartVolume ? [tickData.timestamp, tickData.buys] : null,
         2: this.chartVolume ? [tickData.timestamp, tickData.sells] : null,
-        3: this.chartLiquidations ? [tickData.timestamp, tickData.liquidations] : null,
-        added: tickData.added
+        3: this.chartLiquidations
+          ? [tickData.timestamp, tickData.liquidations]
+          : null,
+        added: tickData.added,
       }
     },
     getExchangesAveragedOHLC(exchanges, tickData) {
-      let totalWeight = 0;
-      let setOpen = false;
+      let totalWeight = 0
+      let setOpen = false
 
       if (tickData.open === null) {
-        setOpen = true;
-        tickData.open = 0;
+        setOpen = true
+        tickData.open = 0
       }
 
-      let high = 0;
-      let low = 0;
+      let high = 0
+      let low = 0
 
-      tickData.close = 0;
+      tickData.close = 0
 
       for (let exchange in exchanges) {
-        let exchangeWeight = 1;
+        let exchangeWeight = 1
 
         if (setOpen) {
-          tickData.open += exchanges[exchange].open * exchangeWeight;
+          tickData.open += exchanges[exchange].open * exchangeWeight
         }
 
-        high += exchanges[exchange].high * exchangeWeight;
-        low += exchanges[exchange].low * exchangeWeight;
-        tickData.close += ((exchanges[exchange].close + exchanges[exchange].high + exchanges[exchange].low) / 3) * exchangeWeight;
+        high += exchanges[exchange].high * exchangeWeight
+        low += exchanges[exchange].low * exchangeWeight
+        tickData.close +=
+          ((exchanges[exchange].close +
+            exchanges[exchange].high +
+            exchanges[exchange].low) /
+            3) *
+          exchangeWeight
 
-        totalWeight += exchangeWeight;
+        totalWeight += exchangeWeight
       }
 
       if (setOpen) {
-        tickData.open /= totalWeight;
+        tickData.open /= totalWeight
       }
 
-      high /= totalWeight;
-      low /= totalWeight;
-      tickData.close /= totalWeight;
+      high /= totalWeight
+      low /= totalWeight
+      tickData.close /= totalWeight
 
-      tickData.high = Math.max(tickData.high === null ? 0 : tickData.high, setOpen ? 0 : tickData.open, high);
-      tickData.low = Math.min(tickData.low === null ? Infinity : tickData.low, setOpen ? Infinity : tickData.open, low);
+      tickData.high = Math.max(
+        tickData.high === null ? 0 : tickData.high,
+        setOpen ? 0 : tickData.open,
+        high
+      )
+      tickData.low = Math.min(
+        tickData.low === null ? Infinity : tickData.low,
+        setOpen ? Infinity : tickData.open,
+        low
+      )
 
       return [
         tickData.timestamp,
         tickData.open,
         tickData.high,
         tickData.low,
-        tickData.close
-      ];
+        tickData.close,
+      ]
     },
     startResize(event) {
       if (event.which === 3) {
-        return;
+        return
       }
 
-      this.resizing = event.pageY;
+      this.resizing = event.pageY
     },
 
     resetHeight(event) {
-      delete this.resizing;
+      delete this.resizing
 
-      this.$store.commit('setChartHeight', null);
+      this.$store.commit('setChartHeight', null)
 
-      this.updateChartHeight();
+      this.updateChartHeight()
     },
 
     startScale(axis, event) {
       if (event.which === 3) {
-        return;
+        return
       }
 
-      this._scaling[axis] = event['page' + axis.toUpperCase()];
+      this._scaling[axis] = event['page' + axis.toUpperCase()]
     },
 
     updateChartHeight(height = null) {
       if (!this.chart) {
-        return;
+        return
       }
 
-      const size = this.getChartSize();
+      const size = this.getChartSize()
 
       if (window.innerWidth >= 768) {
-        height = this.$el.clientHeight;
+        height = this.$el.clientHeight
       }
 
-      this.chart.setSize(
-        size.width,
-        height || size.height,
-        false
-      );
+      this.chart.setSize(size.width, height || size.height, false)
     },
 
     updateMiniMode() {
-      const isMini = window.innerWidth < 380;
+      const isMini = window.innerWidth < 380
 
       if (this.isMini !== isMini) {
-        this.chart.yAxis[1].update({
-          top: isMini ? '40%' : '75%',
-          height: isMini ? '60%' : '25%'
-        }, false)
+        this.chart.yAxis[1].update(
+          {
+            top: isMini ? '40%' : '75%',
+            height: isMini ? '60%' : '25%',
+          },
+          false
+        )
 
-        this.chart.yAxis[2].update({
-          top: isMini ? '40%' : '75%',
-          height: isMini ? '60%' : '25%'
-        }, false);
+        this.chart.yAxis[2].update(
+          {
+            top: isMini ? '40%' : '75%',
+            height: isMini ? '60%' : '25%',
+          },
+          false
+        )
 
-        setTimeout(this.chart.redraw.bind(this.chart), 1000);
+        setTimeout(this.chart.redraw.bind(this.chart), 1000)
       }
 
-      this.isMini = isMini;
+      this.isMini = isMini
     },
 
     resetScale(axis) {
-      delete this._scaling[axis];
+      delete this._scaling[axis]
 
-      this.updateChartScale(axis, null);
+      this.updateChartScale(axis, null)
     },
 
     updateChartScale(axis, scale) {
-      let min = this.chart[axis + 'Axis'][0].min;
-      let max = this.chart[axis + 'Axis'][0].max;
+      let min = this.chart[axis + 'Axis'][0].min
+      let max = this.chart[axis + 'Axis'][0].max
 
-      let range;
+      let range
 
       if (scale === null) {
-        min = max = null;
+        min = max = null
       } else if (scale) {
-        range = (max - min) * (scale * (axis === 'x' ? -1 : 1));
+        range = (max - min) * (scale * (axis === 'x' ? -1 : 1))
 
-        min -= range;
-        max += range;
+        min -= range
+        max += range
       }
 
-      this.chart[axis + 'Axis'][0].setExtremes(min, max);
+      this.chart[axis + 'Axis'][0].setExtremes(min, max)
 
       if (axis === 'x') {
-        range = this.chart.xAxis[0].max - this.chart.xAxis[0].min;
+        range = this.chart.xAxis[0].max - this.chart.xAxis[0].min
 
-        this.$store.commit('setChartRange', range);
-        this.$store.commit('setChartCandleWidth', this.chart.chartWidth / (range / this.timeframe));
+        this.$store.commit('setChartRange', range)
+        this.$store.commit(
+          'setChartCandleWidth',
+          this.chart.chartWidth / (range / this.timeframe)
+        )
       }
     },
 
     getChartSize() {
-      const w = this.$refs.chartContainer.offsetWidth;
-      const h = document.documentElement.clientHeight;
+      const w = this.$refs.chartContainer.offsetWidth
+      const h = document.documentElement.clientHeight
 
       return {
         width: w,
-        height: this.chartHeight > 0 ? this.chartHeight : +Math.min(w / 2, Math.max(300, h / 3)).toFixed()
-      };
+        height:
+          this.chartHeight > 0
+            ? this.chartHeight
+            : +Math.min(w / 2, Math.max(300, h / 3)).toFixed(),
+      }
     },
 
     doResize(event) {
-      clearTimeout(this._resizeTimeout);
+      clearTimeout(this._resizeTimeout)
 
       this._resizeTimeout = setTimeout(() => {
-        this.updateMiniMode();
-        this.updateChartHeight();
-      }, 250);
+        this.updateMiniMode()
+        this.updateChartHeight()
+      }, 250)
     },
 
     doDrag(event) {
       if (!isNaN(this.resizing)) {
-        this.updateChartHeight(this.chart.chartHeight + (event.pageY - this.resizing));
+        this.updateChartHeight(
+          this.chart.chartHeight + (event.pageY - this.resizing)
+        )
 
-        this.resizing = event.pageY;
-      } else if (typeof this._scaling['x'] !== 'undefined' && !isNaN(this._scaling['x'])) {
-        this.updateChartScale('x', (event.pageX - this._scaling['x']) / 100, true);
+        this.resizing = event.pageY
+      } else if (
+        typeof this._scaling['x'] !== 'undefined' &&
+        !isNaN(this._scaling['x'])
+      ) {
+        this.updateChartScale(
+          'x',
+          (event.pageX - this._scaling['x']) / 100,
+          true
+        )
 
-        this._scaling['x'] = event.pageX;
-      } else if (typeof this._scaling['y'] !== 'undefined' && !isNaN(this._scaling['y'])) {
-        this.updateChartScale('y', (event.pageY - this._scaling['y']) / 100, true);
+        this._scaling['x'] = event.pageX
+      } else if (
+        typeof this._scaling['y'] !== 'undefined' &&
+        !isNaN(this._scaling['y'])
+      ) {
+        this.updateChartScale(
+          'y',
+          (event.pageY - this._scaling['y']) / 100,
+          true
+        )
 
-        this._scaling['y'] = event.pageY;
+        this._scaling['y'] = event.pageY
       }
     },
 
     stopDrag(event) {
       if (this.resizing) {
-        this.$store.commit('setChartHeight', this.chart.chartHeight);
+        this.$store.commit('setChartHeight', this.chart.chartHeight)
 
-        delete this.resizing;
+        delete this.resizing
       }
 
       for (let axis in this._scaling) {
-        delete this._scaling[axis];
+        delete this._scaling[axis]
       }
     },
 
     snapRight(redraw = false) {
       if (this.busy || this.panning) {
-        return;
+        return
       }
 
       if (Object.keys(this._scaling).length) {
-        return;
+        return
       }
 
-      const margin = this.chartRange * this.chartPadding;
-      const now = socket.getCurrentTimestamp();
+      const margin = this.chartRange * this.chartPadding
+      const now = socket.getCurrentTimestamp()
 
-      let from;
-      let to;
+      let from
+      let to
 
       if (this.isReplaying) {
-        from = this.chart.xAxis[0].dataMin;
+        from = this.chart.xAxis[0].dataMin
       } else {
-        from = now - this.chartRange + margin;
+        from = now - this.chartRange + margin
       }
 
-      to = now + margin;
+      to = now + margin
 
       if (to < this.chart.xAxis[0].max) {
-        return;
+        return
       }
 
-      from = Math.ceil(from / this.timeframe) * this.timeframe;
-      to = Math.ceil(to / this.timeframe) * this.timeframe;
+      from = Math.ceil(from / this.timeframe) * this.timeframe
+      to = Math.ceil(to / this.timeframe) * this.timeframe
 
-      this.chart.xAxis[0].setExtremes(from, to, redraw);
+      this.chart.xAxis[0].setExtremes(from, to, redraw)
     },
 
     updateChartedCount() {
-      let pendingExchanges = this.actives.filter(id => this.exchanges[id].ohlc !== false);
+      let pendingExchanges = this.actives.filter(
+        (id) => this.exchanges[id].ohlc !== false
+      )
 
       if (this.tickData) {
-        pendingExchanges = pendingExchanges.filter(id => Object.keys(this.tickData.exchanges).indexOf(id) === -1);
+        pendingExchanges = pendingExchanges.filter(
+          (id) => Object.keys(this.tickData.exchanges).indexOf(id) === -1
+        )
       }
 
       if (this.pendingExchanges.length !== pendingExchanges.length) {
-        this.redrawChart();
+        this.redrawChart()
       }
 
-      this.pendingExchanges = pendingExchanges.map(a => a.toUpperCase());
+      this.pendingExchanges = pendingExchanges.map((a) => a.toUpperCase())
 
-      this.isDirty = !this.isReplaying && this.pendingExchanges.length;
+      this.isDirty = !this.isReplaying && this.pendingExchanges.length
 
-      return this.isDirty;
+      return this.isDirty
     },
 
     isPanned() {
       if (!this.chart || !this.chart.series.length) {
-        return true;
+        return true
       }
 
-      return this.tickData && this.chart.series[0].points.length && this.chart.series[0].points[this.chart.series[0].points.length - 1].x < this.tickData.timestamp
+      return (
+        this.tickData &&
+        this.chart.series[0].points.length &&
+        this.chart.series[0].points[this.chart.series[0].points.length - 1].x <
+          this.tickData.timestamp
+      )
     },
 
     setRange(range, setExtremes = true) {
-      this.$store.commit('setChartRange', range);
+      this.$store.commit('setChartRange', range)
 
       if (this.chart) {
-        const padding = this.chartRange * this.chartPadding;
-        const now = socket.getCurrentTimestamp();
-        let from = now - this.chartRange;
-        let to = now;
+        const padding = this.chartRange * this.chartPadding
+        const now = socket.getCurrentTimestamp()
+        let from = now - this.chartRange
+        let to = now
 
         if (!this.isReplaying) {
-          from += padding;
-          to += padding;
+          from += padding
+          to += padding
         }
 
         if (setExtremes) {
-          this.chart.xAxis[0].setExtremes(from, to, true);
+          this.chart.xAxis[0].setExtremes(from, to, true)
         }
       }
     },
     getChartOptions() {
-      const options = JSON.parse(JSON.stringify(chartOptions));
+      const options = JSON.parse(JSON.stringify(chartOptions))
 
       // time axis
-      options.xAxis.labels.color = this.theme.labels;
-      options.xAxis.crosshair.color = this.theme.crosshair;
+      options.xAxis.labels.color = this.theme.labels
+      options.xAxis.crosshair.color = this.theme.crosshair
 
       // price axis
       if (this.chartGridlines) {
-        options.yAxis[0].labels.color = this.theme.labels;
-        options.yAxis[0].gridLineColor = this.theme.gridline;
-        options.yAxis[0].crosshair.color = this.theme.crosshair;
-        options.yAxis[0].tickPixelInterval = this.chartGridlinesGap || null;
+        options.yAxis[0].labels.color = this.theme.labels
+        options.yAxis[0].gridLineColor = this.theme.gridline
+        options.yAxis[0].crosshair.color = this.theme.crosshair
+        options.yAxis[0].tickPixelInterval = this.chartGridlinesGap || null
       } else {
-        options.yAxis[0].visible = false;
+        options.yAxis[0].visible = false
       }
 
       // candlesticks
-      options.series[0].upColor = this.theme.up;
-      options.series[0].upLineColor = this.theme.up;
-      options.series[0].color = this.theme.down;
-      options.series[0].lineColor = this.theme.down;
-      options.series[0].name = this.pair;
+      options.series[0].upColor = this.theme.up
+      options.series[0].upLineColor = this.theme.up
+      options.series[0].color = this.theme.down
+      options.series[0].lineColor = this.theme.down
+      options.series[0].name = this.pair
 
       // line
-      options.series[0].type = this.chartCandlestick ? 'candlestick' : 'spline';
-      options.series[0].lineColor = this.chartCandlestick ? options.series[0].down : 'white';
-      options.series[0].lineWidth = this.chartCandlestick ? 1 : 2;
+      options.series[0].type = this.chartCandlestick ? 'candlestick' : 'spline'
+      options.series[0].lineColor = this.chartCandlestick
+        ? options.series[0].down
+        : 'white'
+      options.series[0].lineWidth = this.chartCandlestick ? 1 : 2
 
       // buys
-      options.series[1].color = this.theme.buys;
+      options.series[1].color = this.theme.buys
 
       // sells
-      options.series[2].color = this.theme.sells;
+      options.series[2].color = this.theme.sells
 
       // liquidations bars
-      options.series[3].color = this.theme.liquidations;
+      options.series[3].color = this.theme.liquidations
 
       // sells EMA
-      options.series[4].lineColor = this.theme.sellsMA;
+      options.series[4].lineColor = this.theme.sellsMA
 
       // buys EMA
-      options.series[5].lineColor = this.theme.buysMA;
+      options.series[5].lineColor = this.theme.buysMA
 
       // price MA
-      options.series[6].lineColor = this.theme.priceMA;
-      options.series[7] && (options.series[7].lineColor = this.theme.priceMA);
+      options.series[6].lineColor = this.theme.priceMA
+      options.series[7] && (options.series[7].lineColor = this.theme.priceMA)
 
       // Tooltip value formatter
-      const formatPrice = this.$root.formatPrice;
-      const formatAmount = this.$root.formatAmount;
+      const formatPrice = this.$root.formatPrice
+      const formatAmount = this.$root.formatAmount
 
-      options.tooltip.backgroundColor = this.theme.tooltipBackground;
-      options.tooltip.style.color = this.theme.tooltipColor;
+      options.tooltip.backgroundColor = this.theme.tooltipBackground
+      options.tooltip.style.color = this.theme.tooltipColor
 
       options.tooltip.pointFormatter = function() {
-        if (!this.y) return '';
+        if (!this.y) return ''
 
         const isPrice =
-          this.series.options.id === 'price'
-          || (this.series.linkedParent && this.series.linkedParent.options.id === 'price')
+          this.series.options.id === 'price' ||
+          (this.series.linkedParent &&
+            this.series.linkedParent.options.id === 'price')
 
-        const formatter = isPrice ? formatPrice : formatAmount;
+        const formatter = isPrice ? formatPrice : formatAmount
 
-        return `<b>${this.series.name}</b> ${(formatter)(this.y)}`;
+        return `<b>${this.series.name}</b> ${formatter(this.y)}`
       }
 
       options.chart.events = {
         _panStart: () => (this.panning = true),
         _panEnd: () => (this.panning = false),
         _pan: () => {
-          const isPanned = this.chart.xAxis[0].max < this.chart.xAxis[0].dataMax;
+          const isPanned = this.chart.xAxis[0].max < this.chart.xAxis[0].dataMax
 
           if (!isPanned !== this.isSnaped) {
-            this.$store.commit('toggleSnap', !isPanned);
+            this.$store.commit('toggleSnap', !isPanned)
           }
         },
         load: () => {
-          setTimeout(this.applyChartStyles.bind(this), 200);
-        }
+          setTimeout(this.applyChartStyles.bind(this), 200)
+        },
       }
 
-      return options;
+      return options
     },
     applyChartStyles() {
       if (this.chartVolumeOpacity < 1) {
-        this.chart.series[1].group.element.style.opacity = this.chartVolumeOpacity;
-        this.chart.series[2].group.element.style.opacity = this.chartVolumeOpacity;
+        this.chart.series[1].group.element.style.opacity = this.chartVolumeOpacity
+        this.chart.series[2].group.element.style.opacity = this.chartVolumeOpacity
       }
 
       if (!this.chartSma) {
-        this.chart.series[6].update({visible: false});
+        this.chart.series[6].update({ visible: false })
       } else if (this.chartSmaLength) {
-        this.chart.series[6].update({params: {period: this.chartSmaLength}});
+        this.chart.series[6].update({ params: { period: this.chartSmaLength } })
       }
 
       if (!this.chartVolumeAverage) {
-        this.chart.series[4].update({visible: false});
-        this.chart.series[5].update({visible: false});
+        this.chart.series[4].update({ visible: false })
+        this.chart.series[5].update({ visible: false })
       } else if (this.chartVolumeAverageLength) {
-        this.chart.series[4].update({params: {period: this.chartVolumeAverageLength}});
-        this.chart.series[5].update({params: {period: this.chartVolumeAverageLength}});
+        this.chart.series[4].update({
+          params: { period: this.chartVolumeAverageLength },
+        })
+        this.chart.series[5].update({
+          params: { period: this.chartVolumeAverageLength },
+        })
       }
     },
     onClean(min) {
-      this.redrawChart();
-    }
-  }
-};
+      this.redrawChart()
+    },
+  },
+}
 </script>
 
-<style lang='scss'>
+<style lang="scss">
 @import '../../assets/sass/variables';
 
 .chart__range {
@@ -1086,7 +1258,7 @@ export default {
 }
 
 .chart__dirty-notice {
-  background-color: rgba(black, .5);
+  background-color: rgba(black, 0.5);
   position: absolute;
   top: 0;
   left: 0;
@@ -1126,7 +1298,7 @@ export default {
   transform: translateX(-50%);
 
   text-align: center;
-  font-size: .75em;
+  font-size: 0.75em;
   margin-top: 1em;
 
   color: lighten($red, 10%);

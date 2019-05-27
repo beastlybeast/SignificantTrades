@@ -1,45 +1,65 @@
 <template>
-	<header id="header" class="header">
+  <header id="header" class="header">
     <div class="header__wrapper">
-      <div class="header__title"> <span class="pair" v-if="pair">{{pair}}</span> <span class="icon-currency"></span> <span v-html="price || 'SignificantTrades'"></span></div>
-      <dropdown :options="timeframes" :selected="timeframe" @output="setTimeframe(+$event)"></dropdown>
+      <div class="header__title">
+        <span class="pair" v-if="pair">{{ pair }}</span>
+        <span class="icon-currency"></span>
+        <span v-html="price || 'SignificantTrades'"></span>
+      </div>
+      <dropdown
+        :options="timeframes"
+        :selected="timeframe"
+        @output="setTimeframe(+$event)"
+      ></dropdown>
       <!-- <button type="button"
-        v-bind:class="{active: isReplaying}"
-        v-on:click="replay" title="Replay"
+        :class="{active: isReplaying}"
+        @click="replay" title="Replay"
         v-tippy="{placement: 'bottom'}">
         <span class="icon-history"></span>
       </button> -->
-      <button type="button" v-if="!isPopupMode" v-on:click="togglePopup" title="Open as popup" v-tippy="{placement: 'bottom'}">
+      <button
+        type="button"
+        v-if="!isPopupMode"
+        @click="togglePopup"
+        title="Open as popup"
+        v-tippy="{ placement: 'bottom' }"
+      >
         <span class="icon-external-link"></span>
       </button>
-      <button type="button"
-        v-bind:class="{active: isSnaped}"
-        v-on:click="$store.commit('toggleSnap', !isSnaped)"
-        v-bind:title="isSnaped ? 'Disable auto snap' : 'Auto snap chart to the latest candle'"
-        v-tippy="{placement: 'bottom'}">
+      <button
+        type="button"
+        :class="{ active: isSnaped }"
+        @click="$store.commit('toggleSnap', !isSnaped)"
+        :title="
+          isSnaped
+            ? 'Disable auto snap'
+            : 'Auto snap chart to the latest candle'
+        "
+        v-tippy="{ placement: 'bottom' }"
+      >
         <span class="icon-play"></span>
       </button>
-      <button type="button"
-        v-bind:class="{active: useAudio}"
-        v-on:click="$store.commit('toggleAudio', !useAudio)">
+      <button
+        type="button"
+        :class="{ active: useAudio }"
+        @click="$store.commit('toggleAudio', !useAudio)"
+      >
         <span class="icon-volume-muted"></span>
       </button>
-      <button type="button" v-on:click="$emit('toggleSettings')">
+      <button type="button" @click="$emit('toggleSettings')">
         <span class="icon-cog"></span>
       </button>
     </div>
-	</header>
+  </header>
 </template>
 
 <script>
-import { mapState } from 'vuex';
+import { mapState } from 'vuex'
 
-import socket from '../services/socket';
+import socket from '../services/socket'
 
 export default {
-  props: [
-    'price'
-  ],
+  props: ['price'],
   data() {
     return {
       pair: '',
@@ -48,8 +68,8 @@ export default {
       canFetch: false,
       showTimeframeDropdown: false,
       timeframeLabel: '15m',
-      timeframes: {}
-    };
+      timeframes: {},
+    }
   },
   computed: {
     ...mapState([
@@ -58,113 +78,122 @@ export default {
       'isSnaped',
       'timeframe',
       'chartRange',
-      'isReplaying'
-		])
+      'isReplaying',
+    ]),
   },
   created() {
-    this._fetchLabel = this.fetchLabel.substr();
-    this.canFetch = socket.canFetch();
+    this._fetchLabel = this.fetchLabel.substr()
+    this.canFetch = socket.canFetch()
 
-    const now = +new Date();
+    const now = +new Date()
 
-    [
+    ;[
       1000 * 10,
       1000 * 30,
       1000 * 60,
       1000 * 60 * 3,
       1000 * 60 * 5,
       1000 * 60 * 10,
-    ].forEach(span => (this.timeframes[span] = this.$root.ago(now - span)));
+    ].forEach((span) => (this.timeframes[span] = this.$root.ago(now - span)))
 
     socket.$on('pairing', (pair, canFetch) => {
-      this.pair = pair;
+      this.pair = pair
 
-      this.canFetch = canFetch && this.showChart;
-    });
+      this.canFetch = canFetch && this.showChart
+    })
 
     socket.$on('fetchStart', () => {
       //
-    });
+    })
 
     socket.$on('fetchEnd', () => {
-      this.updateTimeframesApproximateContentSize();
-    });
+      this.updateTimeframesApproximateContentSize()
+    })
 
-    socket.$on('loadingProgress', event => {
+    socket.$on('loadingProgress', (event) => {
       if (!event || isNaN(event.progress)) {
-        return;
+        return
       }
 
       this.fetchLabel = !Math.floor(this.dashoffset)
         ? this._fetchLabel
-        : this.sizeOf(event.loaded);
-    });
+        : this.sizeOf(event.loaded)
+    })
 
-    this.updateTimeframeLabel();
-    this.updateTimeframesApproximateContentSize();
+    this.updateTimeframeLabel()
+    this.updateTimeframesApproximateContentSize()
   },
   methods: {
     replay() {
       if (this.isReplaying) {
-        this.$store.state.isReplaying = false;
+        this.$store.state.isReplaying = false
       } else {
-        socket.replay(10);
+        socket.replay(10)
       }
     },
     setTimeframe(timeframe) {
-      document.activeElement.blur();
+      document.activeElement.blur()
 
-      this.updateTimeframeLabel(timeframe);
+      this.updateTimeframeLabel(timeframe)
 
       setTimeout(() => {
-        this.$store.commit('setTimeframe', timeframe);
-      }, 50);
+        this.$store.commit('setTimeframe', timeframe)
+      }, 50)
     },
     updateTimeframeLabel(timeframe) {
-      this.timeframeLabel = this.$root.ago(+new Date() - (timeframe || this.timeframe));
+      this.timeframeLabel = this.$root.ago(
+        +new Date() - (timeframe || this.timeframe)
+      )
     },
     togglePopup() {
       window.open(
         window.location.href,
         'Hey hey hey',
         'toolbar=no,status=no,width=350,height=500'
-      );
+      )
 
       setTimeout(() => {
-        window.close();
-      }, 500);
+        window.close()
+      }, 500)
     },
     sizeOf(bytes, si) {
-      var thresh = si ? 1000 : 1024;
-      if(Math.abs(bytes) < thresh) {
-          return bytes + ' B';
+      var thresh = si ? 1000 : 1024
+      if (Math.abs(bytes) < thresh) {
+        return bytes + ' B'
       }
       var units = si
-          ? ['kB','MB','GB','TB','PB','EB','ZB','YB']
-          : ['KiB','MiB','GiB','TiB','PiB','EiB','ZiB','YiB'];
-      var u = -1;
+        ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+        : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
+      var u = -1
       do {
-          bytes /= thresh;
-          ++u;
-      } while(Math.abs(bytes) > thresh && u < units.length - 1);
-      return bytes.toFixed(1)+' '+units[u];
+        bytes /= thresh
+        ++u
+      } while (Math.abs(bytes) > thresh && u < units.length - 1)
+      return bytes.toFixed(1) + ' ' + units[u]
     },
     updateTimeframesApproximateContentSize() {
-      const now = +new Date();
-      const candleCount = this.chartRange / this.timeframe;
+      const now = +new Date()
+      const candleCount = this.chartRange / this.timeframe
 
       if (socket._fetchedTime && socket._fetchedBytes) {
         for (let span in this.timeframes) {
-          this.timeframes[span] = '<span>~' + this.sizeOf(socket._fetchedBytes * ((span * candleCount) / socket._fetchedTime)) + '</span> ' + this.$root.ago(now - span).trim();
+          this.timeframes[span] =
+            '<span>~' +
+            this.sizeOf(
+              socket._fetchedBytes *
+                ((span * candleCount) / socket._fetchedTime)
+            ) +
+            '</span> ' +
+            this.$root.ago(now - span).trim()
         }
       }
-    }
-  }
-};
+    },
+  },
+}
 </script>
 
 <style lang="scss">
-@import "../assets/sass/variables";
+@import '../assets/sass/variables';
 
 header#header {
   background-color: lighten($dark, 10%);
@@ -180,11 +209,11 @@ header#header {
 
     > button,
     .dropdown__selected {
-      padding: .2em .4em;
+      padding: 0.2em 0.4em;
       font-size: 1em;
 
       @media screen and (min-width: 480px) {
-        padding: .2em .6em;
+        padding: 0.2em 0.6em;
       }
     }
 
@@ -205,7 +234,7 @@ header#header {
     white-space: nowrap;
 
     .pair {
-      opacity: .5;
+      opacity: 0.5;
     }
 
     sup {
@@ -310,19 +339,21 @@ header#header {
     bottom: 0;
     display: block;
     background-clip: padding-box;
-    transition: background-color .4s $easeOutExpo;
+    transition: background-color 0.4s $easeOutExpo;
   }
 }
 
 #app.loading header#header {
   &:before {
     background-color: lighten($dark, 28%);
-    animation: indeterminate-loading-bar-slow 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+    animation: indeterminate-loading-bar-slow 2.1s
+      cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
   }
 
   &:after {
     background-color: lighten($dark, 28%);
-    animation: indeterminate-loading-bar-fast 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
+    animation: indeterminate-loading-bar-fast 2.1s
+      cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
     animation-delay: 1.15s;
   }
 }

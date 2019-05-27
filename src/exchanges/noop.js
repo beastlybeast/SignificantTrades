@@ -1,17 +1,15 @@
 import Exchange from '../services/exchange'
 
 class Noop extends Exchange {
+  constructor(options) {
+    super(options)
 
-	constructor(options) {
-		super(options);
+    this.id = 'noop'
+  }
 
-		this.id = 'noop';
-	}
-
-	connect() {
-		return false;
-	}
-
+  connect() {
+    return false
+  }
 }
 
-export default Noop;
+export default Noop
