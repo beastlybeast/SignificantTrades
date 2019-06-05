@@ -168,6 +168,11 @@
             </div>
           </div>
         </div>
+        <div class="form-group mb8 threshold-panel__gif">
+          <label>Show themed gif</label>
+          <small class="help-text">Random gif based on <a href="https://gfycat.com" target="_blank">Gifycat</a> keyword</small>
+          <input type="text" class="form-control" :value="thresholds[selectedIndex].gif" @change="$store.commit('setThresholdGif', {index: selectedIndex, value: $event.target.value})">
+        </div>
       </div>
     </div>
   </div>

@@ -75,7 +75,7 @@
             </div>
             <div class="form-group column__tight">
               <label
-                >Precision
+                >Decimals
                 <span
                   class="icon-info-circle"
                   title="Round prices to n decimals"

@@ -127,8 +127,6 @@ class Exchange extends EventEmitter {
       return
     }
 
-    let emittedTrades = !isNaN(this.price)
-
     const output = this.groupTrades(trades)
 
     let isFirstTrade = !this.price
@@ -138,38 +136,44 @@ class Exchange extends EventEmitter {
     this.emit('live_trades', output, isFirstTrade)
   }
 
+  /**
+   * Larges trades are often sent in the form on multiples trades
+   * For example a $1000000 trade on BitMEX can be received as 20 "small" trades, registered on the same timestamp (and side)
+   * groupTrades makes sure the output is a single $1000000 
+   * and not 20 multiple trades which would show as multiple 100k$ in the TradeList
+   *
+   * @param {*} trades
+   * @returns
+   * @memberof Exchange
+   */
   groupTrades(trades) {
     const group = {}
-    const now = +new Date()
+    const sums = {}
+    const output = []
 
     for (let trade of trades) {
       const id = parseInt(trade[1]).toFixed() + '_' + trade[4] // timestamp + side
 
-      if (group[id] && !group[id][5]) {
-        group[id][2].push(trade[2])
-        group[id][3].push(trade[3])
+      if (trade[5]) {
+        output.push(trade);
+      } else if (group[id]) {
+        group[id][2] += +trade[2]
+        group[id][3] += +trade[3]
+        sums[id] += trade[2] * trade[3]
       } else {
-        trade[1] = Math.min(now + 1000, trade[1])
-        trade[2] = [trade[2]]
-        trade[3] = [trade[3]]
         group[id] = trade
+
+        sums[id] = trade[2] * trade[3];
       }
     }
 
-    const output = Object.keys(group).map((id, index) => {
-      group[id][2] =
-        group[id][2]
-          .map((price, index) => price * group[id][3][index])
-          .reduce((a, b) => a + b) /
-        group[id][2].length /
-        (group[id][3].reduce((a, b) => a + b) / group[id][3].length)
-      group[id][3] = group[id][3].reduce((a, b) => a + b)
+    const ids = Object.keys(group);
 
-      group[id][2] = this.toFixed(group[id][2], 10)
-      group[id][3] = this.toFixed(group[id][3], 10)
+    for (let i = 0; i < ids.length; i++) {
+      group[ids[i]][2] = sums[ids[i]] / group[ids[i]][3]
 
-      return group[id]
-    })
+      output.push(group[ids[i]]);
+    }
 
     return output
   }

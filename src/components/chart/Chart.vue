@@ -824,6 +824,22 @@ export default {
       const isMini = window.innerWidth < 380
 
       if (this.isMini !== isMini) {
+        this.chart.update(
+          {
+            chart: {
+              spacingBottom: isMini ? 0 : 5
+            }
+          },
+          false
+        )
+
+        this.chart.xAxis[0].update(
+          {
+            visible: !isMini
+          },
+          false
+        )
+
         this.chart.yAxis[1].update(
           {
             top: isMini ? '40%' : '75%',

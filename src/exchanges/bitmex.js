@@ -31,7 +31,7 @@ class Bitmex extends Exchange {
 
     this.api = new WebSocket(this.getUrl())
 
-    this.isPerpetual = /USD$/.test(this.pair)
+    this.quotedInUSD = /USD$/.test(this.pair) || /^XBT/.test(this.pair)
 
     this.api.onmessage = (event) =>
       this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)))
@@ -55,7 +55,7 @@ class Bitmex extends Exchange {
           this.id,
           +new Date(),
           trade.price,
-          trade.leavesQty / (this.isPerpetual ? trade.price : 1),
+          trade.leavesQty / (this.quotedInUSD ? trade.price : 1),
           trade.side === 'Buy' ? 1 : 0,
           1,
         ])
@@ -64,7 +64,7 @@ class Bitmex extends Exchange {
           this.id,
           +new Date(trade.timestamp),
           trade.price,
-          trade.homeNotional,
+          trade.size / (this.quotedInUSD ? trade.price : 1),
           trade.side === 'Buy' ? 1 : 0,
         ])
       }

@@ -47,13 +47,15 @@ export default {
         false
       )
 
-      this.$emit('output', this.$el.value)
-
       // next click might be double click, for the next 300ms
       this.pendingDblClick = true
       this._dblClickTimeout = window.setTimeout(() => {
-        this.pendingDblClick = false
-      }, 300)
+        this.pendingDblClick = false;
+      }, 300);
+
+      setTimeout(() => {
+        this.$emit('output', this.$el.value);
+      });
     },
     onMouseMove() {
       this.$emit('output', this.$el.value)
