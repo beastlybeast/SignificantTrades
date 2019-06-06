@@ -154,6 +154,9 @@ class Exchange extends EventEmitter {
     for (let trade of trades) {
       const id = parseInt(trade[1]).toFixed() + '_' + trade[4] // timestamp + side
 
+      trade[2] = +trade[2];
+      trade[3] = +trade[3];
+
       if (trade[5]) {
         output.push(trade);
       } else if (group[id]) {
