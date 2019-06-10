@@ -17,7 +17,7 @@ class Okex extends Exchange {
     }
 
     this.matchPairName = (pair) => {
-      let id = this.pairs[pair];
+      let id = this.pairs[pair] || this.pairs[pair.replace(/USDT/i, 'USD')];
 
       if (!id) {
         for (let name in this.pairs) {

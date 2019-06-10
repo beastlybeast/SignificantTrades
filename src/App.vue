@@ -201,6 +201,8 @@ export default {
       return output
     },
     updatePairCurrency(pair) {
+      const name = pair.replace(/\-[\w\d]*$/, '')
+
       const symbols = {
         BTC: ['bitcoin', '฿'],
         GBP: ['pound', '£'],
@@ -223,17 +225,17 @@ export default {
       this.symbol = '$'
 
       for (let symbol of Object.keys(symbols)) {
-        if (new RegExp(symbol + '$').test(pair)) {
+        if (new RegExp(symbol + '$').test(name)) {
           this.currency = symbols[symbol][0]
           this.symbol = symbols[symbol][1]
         }
 
-        if (new RegExp('^' + symbol).test(pair)) {
+        if (new RegExp('^' + symbol).test(name)) {
           this.commodity = symbols[symbol][0]
         }
       }
 
-      if (/^(?!XBT|BTC).*\d+$/.test(pair)) {
+      if (/^(?!XBT|BTC).*\d+$/.test(name)) {
         this.currency = symbols.BTC[0]
         this.symbol = symbols.BTC[1]
       }
