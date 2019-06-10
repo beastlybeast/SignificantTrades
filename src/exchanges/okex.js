@@ -9,33 +9,41 @@ class Okex extends Exchange {
 
     this.endpoints = {
       PRODUCTS: [
-        'https://www.okex.com/api/v1/tickers.do',
-        'POST|https://www.okex.com/v2/futures/pc/market/futuresCoin.do',
+        'https://www.okex.com/api/spot/v3/instruments',
+        'https://www.okex.com/api/swap/v3/instruments',
+        'https://www.okex.com/api/futures/v3/instruments',
       ],
       TRADES: () => `https://www.okex.com/api/v1/trades.do?symbol=${this.pair}`,
     }
 
     this.matchPairName = (pair) => {
-      if (this.pairs.spots[pair]) {
-        this.type = 'spot'
-        return this.pairs.spots[pair]
-      } else if (this.pairs.futures[pair]) {
-        this.type = 'futures'
-        return this.pairs.futures[pair]
+      let id = this.pairs[pair];
+
+      if (!id) {
+        for (let name in this.pairs) {
+          if (pair === this.pairs[name]) {
+            id = this.pairs[name]
+            break;
+          }
+        }
       }
 
-      return false
+      if (id) {
+        if (/\d+$/.test(id)) {
+          this.type = 'futures';
+        } else if (/\-SWAP$/.test(id)) {
+          this.type = 'swap';
+        } else {
+          this.type = 'spot';
+        }
+      }
+
+      return id || false
     }
 
     this.options = Object.assign(
       {
-        url: () => {
-          if (this.type === 'futures') {
-            return 'wss://real.okex.com:10440/websocket/okexapi'
-          } else {
-            return 'wss://real.okex.com:10441/websocket'
-          }
-        },
+        url: 'wss://real.okex.com:10442/ws/v3',
       },
       this.options
     )
@@ -52,20 +60,15 @@ class Okex extends Exchange {
       this.emitTrades(this.formatLiveTrades(event.data))
 
     this.api.onopen = (event) => {
-      const channel =
-        this.type === 'futures'
-          ? 'ok_sub_futureusd_' + this.pair
-          : 'ok_sub_spot_' + this.pair + '_deals'
-
       this.api.send(
         JSON.stringify({
-          event: 'addChannel',
-          channel: channel,
+          op: 'subscribe',
+          args: [`${this.type}/trade:${this.pair}`],
         })
       )
 
       this.keepalive = setInterval(() => {
-        this.api.send(JSON.stringify({ event: 'ping' }))
+        this.api.send('ping')
       }, 30000)
 
       this.emitOpen(event)
@@ -87,14 +90,10 @@ class Okex extends Exchange {
 
     if (this.api && this.api.readyState < 2) {
       this.api.close()
-
-      delete this.reference
     }
   }
 
   formatLiveTrades(event) {
-    const initial = typeof this.reference === 'undefined'
-
     let json
 
     try {
@@ -104,43 +103,30 @@ class Okex extends Exchange {
         json = JSON.parse(pako.inflateRaw(event, { to: 'string' }))
       }
     } catch (error) {
-      console.error(`[okex] failed to parse event data`, error)
       return
     }
 
-    if (!json || !json[0] || json[0].channel === 'addChannel') {
+    if (!json || !json.data || !json.data.length) {
       return
     }
 
-    const base = new Date()
-    base.setTime(
-      base.getTime() + (8 + base.getTimezoneOffset() / 60) * 60 * 60 * 1000
-    )
+    return json.data.map(trade => {
+      let size;
 
-    const output = json[0].data.map((trade, index, array) => {
-      const timestamp = +new Date(
-        `${base.getFullYear()}-${this.pad(base.getMonth() + 1, 2)}-${this.pad(
-          base.getDate(),
-          2
-        )}T${trade[3]}+08:00`
-      )
-
-      if (index === array.length - 1) {
-        this.reference = timestamp
+      if (this.type === 'spot') {
+        size = trade.size
+      } else {
+        size = (trade.size || trade.qty) * (/^BTC/.test(this.pair) ? 100 : 10) / trade.price
       }
 
       return [
         this.id,
-        timestamp,
-        +trade[1],
-        +trade[2],
-        trade[4] === 'bid' ? 1 : 0,
+        +new Date(trade.timestamp),
+        +trade.price,
+        size,
+        trade.side === 'buy' ? 1 : 0,
       ]
     })
-
-    if (!initial) {
-      return output
-    }
   }
 
   /* formatRecentsTrades(response) {
@@ -156,39 +142,29 @@ class Okex extends Exchange {
   } */
 
   formatProducts(response) {
-    const output = {
-      futures: {},
-      spots: {},
-    }
+    const output = {}
 
-    const futuresContractsTypes = ['this_week', 'next_week', 'quarter']
+    const types = ['spot', 'swap', 'futures']
 
-    response.forEach((data) => {
-      if (data && data.tickers && data.tickers.length) {
-        data.tickers.forEach((product) => {
-          output.spots[
-            product.symbol
-              .split('_')
-              .join('')
-              .replace(/usdt$/, 'USD')
-              .toUpperCase()
-          ] = product.symbol
-        })
-      } else if (data && data.msg === 'success' && data.data) {
-        data.data.forEach((product) => {
-          product.contracts.forEach((contract, index) => {
-            output.futures[contract.desc] =
-              product.symbolDesc.toLowerCase() +
-              '_trade_' +
-              futuresContractsTypes[index]
-          })
-        })
-      }
+    response.forEach((data, index) => {
+      data.forEach(product => {
+        const pair = ((product.base_currency ? product.base_currency : product.underlying_index) + product.quote_currency.replace(/usdt$/i, 'USD')).toUpperCase() // base+quote ex: BTCUSD
+
+        switch (types[index]) {
+          case 'spot':
+            output[pair] = product.instrument_id
+          break
+          case 'swap':
+            output[pair + '-SWAP'] = product.instrument_id
+          break
+          case 'futures':
+            output[pair + '-' + product.alias.toUpperCase()] = product.instrument_id
+          break
+        }
+      })
     })
 
-    return Object.keys(output.spots).length || Object.keys(output.spots).length
-      ? output
-      : []
+    return output
   }
 
   pad(num, size) {

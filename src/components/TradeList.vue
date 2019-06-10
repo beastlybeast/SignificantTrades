@@ -223,7 +223,7 @@ export default {
 
       if (this.thresholds[0].amount) {
         if (this.ticks[tid]) {
-          if (now - this.ticks[tid][1] > 0) { // TODO: option to ajust aggregation delay (remain hidden til it reach threshold, under specific timespan, here 0 = disabled) ?
+          if (true && now - this.ticks[tid][1] > 0) { // TODO: option to ajust aggregation delay (remain hidden til it reach threshold, under specific timespan, here 0 = disabled) ?
             delete this.ticks[tid]
           } else {
             // average group prices
