@@ -159,6 +159,13 @@ export default {
       this.countUp.average = this.countDown.average = this.volUp.average = this.volDown.average = null
       this.countUp.count = this.countDown.count = this.volUp.count = this.volDown.count = 0
 
+      if (this.statsGraphs) {
+        this.$refs.tradesMeasurement.clear();
+        this.$refs.avgMeasurement.clear();
+        this.$refs.volDeltaMeasurement.clear();
+        this.$refs.countDeltaMeasurement.clear();
+      }
+
       socket.trades
         .filter(
           (trade) =>

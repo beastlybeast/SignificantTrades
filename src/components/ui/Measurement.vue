@@ -66,7 +66,6 @@ export default {
         this.refresh()
       } else {
         const points = this.$refs.polygon.getAttribute('points');
-        this.debug && console.log('update fast mode');
 
         // update last point 'fast'
         this.points[this.points.length - 1] = point;
