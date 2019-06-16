@@ -61,6 +61,8 @@ const DEFAULTS = {
   showChart: true,
   statsPeriod: 1000 * 60,
   statsGraphs: false,
+  statsGraphsTimeframe: 3000,
+  statsGraphsLength: 100,
   chartPadding: 0.075,
   chartGridlines: true,
   chartGridlinesGap: 80,
@@ -223,6 +225,12 @@ const store = new Vuex.Store({
     },
     toggleStatsGraphs(state, value) {
       state.statsGraphs = value ? true : false;
+    },
+    setStatsGraphsTimeframe(state, value) {
+      state.statsGraphsTimeframe = isNaN(+value) ? 1000 : value;
+    },
+    setStatsGraphsLength(state, value) {
+      state.statsGraphsLength = isNaN(+value) ? 50 : value;
     },
     toggleHideIncompleteCounter(state, value) {
       state.hideIncompleteCounter = value ? true : false

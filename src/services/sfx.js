@@ -36,7 +36,6 @@ class Sfx {
 
   tradeToSong(factor, side) {
     const now = +new Date()
-    const osc = []
 
     this.queued++
 
@@ -97,8 +96,8 @@ class Sfx {
         }
       }
     }, this.timestamp - now)
-
-    this.timestamp = Math.max(this.timestamp, now) + 80
+    
+    this.timestamp = Math.max(this.timestamp, now) + (this.queued > 20 ? 40 : 80)
   }
 
   play(frequency, value = 0.5, length = 0.1, type = 'triangle') {

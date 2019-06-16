@@ -196,51 +196,87 @@
           Stats <i class="icon-up"></i>
         </div>
         <div
-          class="settings-stats mb8 settings__activable column"
+          class="settings-stats mb8 settings__activable"
           :class="{ active: showStats }"
         >
-          <div class="form-group column__tight">
-            <label
-              class="checkbox-control -on-off checkbox-control-input flex-right"
-              v-tippy="{ placement: 'bottom' }"
-              title="Enable stats"
-            >
+          <div class="column">
+            <div class="form-group column__tight">
+              <label
+                class="checkbox-control -on-off checkbox-control-input flex-right"
+                v-tippy="{ placement: 'bottom' }"
+                title="Enable stats"
+              >
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="showStats"
+                  @change="$store.commit('toggleStats', $event.target.checked)"
+                />
+                <div></div>
+              </label>
+            </div>
+            <div class="form-group column__fill">
               <input
-                type="checkbox"
+                v-tippy
+                title="Timeframe to watch (ie: 1m)"
+                type="string"
                 class="form-control"
-                :checked="showStats"
-                @change="$store.commit('toggleStats', $event.target.checked)"
+                :value="statsPeriodStringified"
+                @change="$store.commit('setStatsPeriod', $event.target.value)"
+                placeholder="Enter a timeframe (ie: 1m)"
               />
-              <div></div>
-            </label>
+            </div>
+            <div class="form-group column__tight">
+              <label
+                class="checkbox-control -auto checkbox-control-input flex-right"
+                v-tippy="{ placement: 'bottom' }"
+                title="Enable graphs"
+              >
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="statsGraphs"
+                  @change="$store.commit('toggleStatsGraphs', $event.target.checked)"
+                />
+                <div>
+                  <i class="icon-line-chart"></i>
+                </div>
+              </label>
+            </div>
           </div>
-          <div class="form-group column__fill">
-            <input
-              v-tippy
-              title="Timeframe to watch (ie: 1m)"
-              type="string"
-              class="form-control"
-              :value="statsPeriodStringified"
-              @change="$store.commit('setStatsPeriod', $event.target.value)"
-              placeholder="Enter a timeframe (ie: 1m)"
-            />
-          </div>
-          <div class="form-group column__tight">
-            <label
-              class="checkbox-control -auto checkbox-control-input flex-right"
-              v-tippy="{ placement: 'bottom' }"
-              title="Enable graphs"
-            >
+          <div v-if="statsGraphs" class="column mt8">
+            <div class="form-group">
+              <label>Timeframe
+                <span
+                  class="icon-info-circle"
+                  title="Graphs timeframe"
+                  v-tippy
+                ></span
+              ></label>
               <input
-                type="checkbox"
+                type="string"
+                placeholder="time in ms"
                 class="form-control"
-                :checked="statsGraphs"
-                @change="$store.commit('toggleStatsGraphs', $event.target.checked)"
+                :value="statsGraphsTimeframe"
+                @change="$store.commit('setStatsGraphsTimeframe', $event.target.value)"
               />
-              <div>
-                <i class="icon-line-chart"></i>
-              </div>
-            </label>
+            </div>
+            <div class="form-group">
+              <label>Length
+                <span
+                  class="icon-info-circle"
+                  title="Max points to show"
+                  v-tippy
+                ></span
+              ></label>
+              <input
+                type="string"
+                placeholder="nb of ticks"
+                class="form-control"
+                :value="statsGraphsLength"
+                @change="$store.commit('setStatsGraphsLength', $event.target.value)"
+              />
+            </div>
           </div>
         </div>
         <div
@@ -712,6 +748,8 @@ export default {
       'showStats',
       'statsPeriod',
       'statsGraphs',
+      'statsGraphsTimeframe',
+      'statsGraphsLength',
       'preferQuoteCurrencySize',
       'counterPrecision',
       'cumulativeCounters',

@@ -5,7 +5,7 @@
         v-tippy
         title="Number of trades"
       >
-        <Measurement v-if="statsGraphs" ref="tradesMeasurement" />
+        <Measurement v-if="statsGraphs" ref="tradesMeasurement" :timeframe="statsGraphsTimeframe" :length="statsGraphsLength" />
         <div class="stats__label">TRADES</div>
         <div class="stats__value">
           {{ $root.formatAmount(totalOrders) }}
@@ -15,7 +15,7 @@
         v-tippy
         title="Average order"
       >
-        <Measurement v-if="statsGraphs" ref="avgMeasurement" />
+        <Measurement v-if="statsGraphs" ref="avgMeasurement" :timeframe="statsGraphsTimeframe" :length="statsGraphsLength" />
         <div class="stats__label">AVG</div>
         <div class="stats__value">
           <span class="icon-currency"></span>
@@ -26,7 +26,7 @@
         v-tippy
         title="Volume delta"
       >
-        <Measurement v-if="statsGraphs" ref="volDeltaMeasurement" />
+        <Measurement v-if="statsGraphs" ref="volDeltaMeasurement" :timeframe="statsGraphsTimeframe" :length="statsGraphsLength" />
         <div class="stats__label">VOL &Delta;</div>
         <div class="stats__value">
           <span class="icon-currency"></span>
@@ -37,7 +37,7 @@
         v-tippy
         title="Order delta"
       >
-        <Measurement v-if="statsGraphs" ref="countDeltaMeasurement" />
+        <Measurement v-if="statsGraphs" ref="countDeltaMeasurement" :timeframe="statsGraphsTimeframe" :length="statsGraphsLength" />
         <div class="stats__label">TRADES &Delta;</div>
         <div class="stats__value">
           {{ $root.formatAmount(countDelta, 1) }}
@@ -97,7 +97,14 @@ export default {
     volDelta() {
       return this.volUp.live - this.volDown.live
     },
-    ...mapState(['statsPeriod', 'statsGraphs', 'preferQuoteCurrencySize', 'actives']),
+    ...mapState([
+      'statsPeriod',
+      'statsGraphs',
+      'statsGraphsTimeframe',
+      'statsGraphsLength',
+      'preferQuoteCurrencySize',
+      'actives'
+    ]),
   },
   created() {
     const now = +new Date()
@@ -251,7 +258,7 @@ export default {
       align-items: center;
       flex-grow: 1;
       flex-direction: column;
-      flex-basis: auto;
+      flex-basis: 0;
       position: relative;
 
       &:hover .measurement {
