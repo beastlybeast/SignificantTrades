@@ -14,7 +14,7 @@ class Gdax extends Exchange {
     this.matchPairName = (pair) => {
       pair = pair.substr(0, 3) + '-' + pair.substr(3, pair.length)
 
-      if (this.pairs.indexOf(pair) !== -1) {
+      if (this.products.indexOf(pair) !== -1) {
         return pair
       }
 

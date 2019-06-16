@@ -17,12 +17,12 @@ class Okex extends Exchange {
     }
 
     this.matchPairName = (pair) => {
-      let id = this.pairs[pair] || this.pairs[pair.replace(/USDT/i, 'USD')];
+      let id = this.products[pair] || this.products[pair.replace(/USDT/i, 'USD')];
 
       if (!id) {
-        for (let name in this.pairs) {
-          if (pair === this.pairs[name]) {
-            id = this.pairs[name]
+        for (let name in this.products) {
+          if (pair === this.products[name]) {
+            id = this.products[name]
             break;
           }
         }

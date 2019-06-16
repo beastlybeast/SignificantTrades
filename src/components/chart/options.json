@@ -47,21 +47,22 @@
     },
     "scatter": {
       "tooltip": {
-        "pointFormat": "{point.name}",
-        "headerFormat": "{point.x:%Y-%m-%d %H:%M:%S}"
+        "pointFormat": "{point.name}"
       }
     }
   },
   "tooltip": {
     "split": true,
+    "shared": false,
     "hideDelay": 0,
     "borderWidth": 0,
     "shadow": false,
     "valueDecimals": 2,
-    "followPointer": true,
-    "padding": 8,
-    "backgroundColor": "rgba(0, 0, 0, .33)",
-    "style": { "color": "rgba(255, 255, 255, 1)" }
+    "followPointer": false,
+    "padding": 4,
+    "outside": true,
+    "headerFormat": "{point.x:%H:%M:%S}",
+    "style": { "fontFamily": "Roboto Condensed", "color": "white" }
   },
   "xAxis": {
     "tickWidth": 0,
@@ -187,7 +188,7 @@
     "priceMA": "rgba(255, 255, 255, .33)",
     "buysMA": "rgb(201,176,135)",
     "sellsMA": "rgb(193, 64, 71)",
-    "tooltipBackground": "rgba(0, 0, 0, .33)",
+    "tooltipBackground": "rgba(0, 0, 0, .5)",
     "tooltipColor": "rgba(255, 255, 255, 1)",
     "crosshair": "rgba(255, 255, 255, .4)",
     "gridline": "rgba(255, 255, 255, .1)"

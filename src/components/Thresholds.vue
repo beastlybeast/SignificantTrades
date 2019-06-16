@@ -24,8 +24,7 @@
               })
             "
           />
-          <i v-if="preferBaseCurrencySize" class="icon icon-commodity"></i>
-          <i v-else class="icon icon-currency"></i>
+          <i class="icon icon-currency"></i>
         </td>
         <td class="thresholds-table__input">
           <input
@@ -168,11 +167,6 @@
             </div>
           </div>
         </div>
-        <div class="form-group mb8 threshold-panel__gif">
-          <label>Show themed gif</label>
-          <small class="help-text">Random gif based on <a href="https://gfycat.com" target="_blank">Gifycat</a> keyword</small>
-          <input type="text" class="form-control" :value="thresholds[selectedIndex].gif" @change="$store.commit('setThresholdGif', {index: selectedIndex, value: $event.target.value})">
-        </div>
       </div>
     </div>
   </div>
@@ -205,7 +199,7 @@ export default {
     ...mapState([
       'thresholds',
       'showThresholdsAsTable',
-      'preferBaseCurrencySize',
+      'preferQuoteCurrencySize',
     ]),
   },
 
@@ -406,6 +400,10 @@ export default {
       this.minimum = this.thresholds[0].amount
       this.maximum = Math.max.apply(null, amounts)
 
+      if (this.showThresholdsAsTable) {
+        return
+      }
+
       const bounds = this.$refs.thresholdContainer.getBoundingClientRect()
 
       this.offsetTop = bounds.top
@@ -443,6 +441,10 @@ export default {
     },
 
     refreshGradients() {
+      if (this.showThresholdsAsTable) {
+        return
+      }
+
       const minLog = Math.max(0, Math.log(this.minimum + 1) || 0)
       const maxLog = Math.log(this.maximum + 1)
 

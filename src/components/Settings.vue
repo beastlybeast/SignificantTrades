@@ -42,8 +42,27 @@
               >https://{{ pair.toLowerCase() }}.aggr.trade</a
             >
             to hook your settings to <strong>{{ pair }}</strong> indefinitely
-            !</small
-          >
+            !</small>
+        </div>
+        <div class="mb8">
+          <div class="form-group mb8">
+            <label
+              class="checkbox-control -auto"
+              v-tippy
+              title="Size display preference"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="preferQuoteCurrencySize"
+                @change="
+                  $store.commit('toggleBaseCurrencySize', $event.target.checked)
+                "
+              />
+              <div on="quote" off="base"></div>
+              <span>Prefer <strong>{{ preferQuoteCurrencySize ? 'quote' : 'base'}}</strong> (<i :class="preferQuoteCurrencySize ? 'icon-quote' : 'icon-base'"></i>) currency</span>
+            </label>
+          </div>
         </div>
         <div
           class="settings__title"
@@ -73,31 +92,10 @@
                 @change="$store.commit('setMaxRows', $event.target.value)"
               />
             </div>
-            <div class="form-group column__tight">
-              <label
-                >Decimals
-                <span
-                  class="icon-info-circle"
-                  title="Round prices to n decimals"
-                  v-tippy
-                ></span
-              ></label>
-              <input
-                type="number"
-                min="0"
-                max="10"
-                step="1"
-                placeholder="auto"
-                class="form-control"
-                :value="decimalPrecision"
-                @change="
-                  $store.commit('setDecimalPrecision', $event.target.value)
-                "
-              />
-            </div>
+            
             <div
               class="form-group column__tight"
-              title="Show exchange's logo"
+              title="Show exchange's logo when available"
               v-tippy
             >
               <label>Logo</label>
@@ -111,27 +109,6 @@
                 <div></div>
               </label>
             </div>
-            <div
-              class="form-group column__tight"
-              title="ONLY show liquidations"
-              v-tippy
-            >
-              <label>Liqs</label>
-              <label class="checkbox-control checkbox-control-input flex-right">
-                <input
-                  type="checkbox"
-                  class="form-control"
-                  :checked="liquidationsOnlyList"
-                  @change="
-                    $store.commit(
-                      'toggleLiquidationsOnlyList',
-                      $event.target.checked
-                    )
-                  "
-                />
-                <div></div>
-              </label>
-            </div>
           </div>
         </div>
         <div
@@ -139,9 +116,9 @@
           @click="$store.commit('toggleSettingsPanel', 'thresholds')"
           :class="{ closed: settings.indexOf('thresholds') > -1 }"
         >
-          Thresholds <i class="icon-up"></i>
+          Thresholds ({{ thresholds.length }}) <i class="icon-up"></i>
         </div>
-        <div class="settings-thresholds">
+        <div class="settings-thresholds mb8">
           <a
             href="javascript:void(0);"
             class="settings-thresholds__display-toggle"
@@ -162,7 +139,7 @@
           Audio <i class="icon-up"></i>
         </div>
         <div
-          class="settings-audio settings__activable column"
+          class="settings-audio mb8 settings__activable column"
           :class="{ active: useAudio }"
         >
           <div class="form-group column__tight">
@@ -219,7 +196,7 @@
           Stats <i class="icon-up"></i>
         </div>
         <div
-          class="settings-stats settings__activable column"
+          class="settings-stats mb8 settings__activable column"
           :class="{ active: showStats }"
         >
           <div class="form-group column__tight">
@@ -250,19 +227,19 @@
           </div>
           <div class="form-group column__tight">
             <label
-              class="checkbox-control -commodity-currency checkbox-control-input flex-right"
-              v-tippy
-              :title="help.statsCurrency"
+              class="checkbox-control -auto checkbox-control-input flex-right"
+              v-tippy="{ placement: 'bottom' }"
+              title="Enable graphs"
             >
               <input
                 type="checkbox"
                 class="form-control"
-                :checked="statsCurrency"
-                @change="
-                  $store.commit('toggleStatsCurrency', $event.target.checked)
-                "
+                :checked="statsGraphs"
+                @change="$store.commit('toggleStatsGraphs', $event.target.checked)"
               />
-              <div></div>
+              <div>
+                <i class="icon-line-chart"></i>
+              </div>
             </label>
           </div>
         </div>
@@ -274,7 +251,7 @@
           Counter <i class="icon-up"></i>
         </div>
         <div
-          class="settings-counters settings__activable column"
+          class="settings-counters mb8 settings__activable column"
           :class="{ active: showCounters }"
         >
           <div class="form-group column__tight">
@@ -335,7 +312,7 @@
           Chart <i class="icon-up"></i>
         </div>
         <div
-          class="settings-chart settings__activable column"
+          class="settings-chart mb8 settings__activable column"
           :class="{ active: showChart }"
         >
           <div class="form-group column__tight">
@@ -462,7 +439,7 @@
               </label>
               <div v-if="chartVolume" class="settings-chart__sub-settings">
                 <div>
-                  only sum trades above <i class="icon-currency"></i>
+                  only sum trades above <i class="icon-quote"></i>
                   <editable
                     :content="chartVolumeThreshold"
                     @output="$store.commit('setVolumeThreshold', $event)"
@@ -538,6 +515,27 @@
               <label
                 class="checkbox-control flex-left"
                 v-tippy
+                title="Show exchanges status and last price under the chart"
+              >
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="showExchangesBar"
+                  @change="
+                    $store.commit(
+                      'toggleExchangesBar',
+                      $event.target.checked
+                    )
+                  "
+                />
+                <div></div>
+                <span>Show exchanges bar</span>
+              </label>
+            </div>
+            <div class="form-group mb8">
+              <label
+                class="checkbox-control flex-left"
+                v-tippy
                 title="Check this or RIP your computer"
               >
                 <input
@@ -576,7 +574,74 @@
             </div>
           </div>
         </div>
-        <div class="mt15 column settings__footer flex-middle">
+        <div
+          class="settings__title"
+          @click="$store.commit('toggleSettingsPanel', 'other')"
+          :class="{ closed: settings.indexOf('other') > -1 }"
+        >
+          Other <i class="icon-up"></i>
+        </div>
+        <div class="mb8">
+          <div class="form-group mb8">
+            <label
+              class="checkbox-control"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="!!decimalPrecision"
+                @change="$store.commit('setDecimalPrecision', decimalPrecision ? null : 2)"
+              />
+              <div></div>
+              <span @click.stop.prevent="$event.target.children[0].focus()">
+                Round up to
+                <editable
+                  placeholder="auto"
+                  :content="decimalPrecision"
+                  @output="$store.commit('setDecimalPrecision', $event)"
+                ></editable>
+                decimal(s)
+              </span>
+            </label>
+          </div>
+          <div class="form-group mb8">
+            <label
+              class="checkbox-control"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="!!aggregationLag"
+                @change="$store.commit('setAggregationLag', aggregationLag ? null : 1000)"
+              />
+              <div></div>
+              <span @click.stop.prevent="$event.target.children[0].focus()">
+                Stack trades to match threshold over
+                <editable
+                  placeholder="no lag"
+                  :content="aggregationLag"
+                  @output="$store.commit('setAggregationLag', $event)"
+                ></editable>
+                ms
+              </span>
+            </label>
+          </div>
+          <div class="form-group mb8">
+            <label
+              class="checkbox-control"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="liquidationsOnlyList"
+                @change="$store.commit('toggleLiquidationsOnlyList', $event.target.checked)"
+              />
+              <div></div>
+              <span><strong>ONLY</strong> show liquidations</span>
+            </label>
+          </div>
+        </div>
+        <div class="mt15 settings__footer flex-middle">
           <div class="form-group">
             <div v-if="version.number">
               <span>
@@ -629,9 +694,6 @@ export default {
     return {
       tippin: false,
       expanded: [],
-      help: {
-        statsCurrency: `Show stats in DOLLAR/CURRENCY value`,
-      },
       version: {
         number: process.env.VERSION || 'DEV',
         date: process.env.BUILD_DATE || 'now',
@@ -645,10 +707,12 @@ export default {
       'decimalPrecision',
       'showLogos',
       'liquidationsOnlyList',
+      'aggregationLag',
       'showCounters',
       'showStats',
       'statsPeriod',
-      'statsCurrency',
+      'statsGraphs',
+      'preferQuoteCurrencySize',
       'counterPrecision',
       'cumulativeCounters',
       'hideIncompleteCounter',
@@ -673,6 +737,7 @@ export default {
       'chartVolumeOpacity',
       'chartVolumeAverage',
       'chartVolumeAverageLength',
+      'showExchangesBar',
       'autoClearTrades',
       'settings',
     ]),
@@ -1070,13 +1135,42 @@ export default {
         }
       }
 
-      &.-commodity-currency input ~ div {
-        &:before {
-          content: unicode($icon-dollar);
+      &.-auto input {
+        ~ div {
+          width: auto;
+          display: flex;
+
+          &:before,
+          &:after {
+            font-family: inherit;
+            position: relative;
+            line-height: 1;
+            order: 0;
+          }
+
+          i {
+            order: 1;
+            top: 0;
+          }
+
+          &:before {
+            content: attr(on);
+            display: none;
+          }
+
+          &:after {
+            content: attr(off);
+          }
         }
 
-        &:after {
-          content: unicode($icon-btc);
+        &:checked ~ div {
+          &:before {
+            display: block;
+          }
+
+          &:after {
+            display: none;
+          }
         }
       }
 
@@ -1185,6 +1279,11 @@ export default {
     -moz-user-select: auto;
     -ms-user-select: auto;
     user-select: auto;
+
+    &:empty:before {
+      content: attr(placeholder);
+      opacity: .5;
+    }
   }
 
   .column {
@@ -1207,7 +1306,6 @@ export default {
 
     > div {
       margin-right: 8px;
-      margin-bottom: 8px;
       flex-grow: 1;
       flex-basis: 50%;
       max-width: 50%;
@@ -1275,7 +1373,6 @@ export default {
 
   .settings-audio {
     align-items: center;
-    padding-bottom: 8px;
 
     label {
       margin: 0;

@@ -8,12 +8,12 @@ class Bitstamp extends Exchange {
     this.id = 'bitstamp'
 
     this.endpoints = {
-      PRODUCTS: 'https://www.bitstamp.net/api/v2/trading-pairs-info',
+      PRODUCTS: 'https://www.bitstamp.net/api/v2/trading-pairs-info/',
       TRADES: () => `https://www.bitstamp.net/api/v2/transactions/${this.pair}`,
     }
 
     this.matchPairName = (pair) => {
-      if (this.pairs.indexOf(pair) !== -1) {
+      if (this.products.indexOf(pair) !== -1) {
         return pair.toLowerCase()
       }
 

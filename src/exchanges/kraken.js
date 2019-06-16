@@ -83,8 +83,8 @@ class Kraken extends Exchange {
     name = name.trim().replace('/', '')
 
     if (
-      this.pairs.indexOf(name) !== -1 ||
-      ((name = name.replace('BTC', 'XBT')) && this.pairs.indexOf(name) !== -1)
+      this.products.indexOf(name) !== -1 ||
+      ((name = name.replace('BTC', 'XBT')) && this.products.indexOf(name) !== -1)
     ) {
       if (name.indexOf('/') === -1) {
         name =

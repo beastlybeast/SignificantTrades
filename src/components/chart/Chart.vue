@@ -155,8 +155,10 @@ export default {
         case 'toggleSnap':
           mutation.payload && this.snapRight(true)
           break
-        case 'setExchangeMatch':
-          this.updateChartHeight()
+        case 'toggleExchangesBar':
+          setTimeout(() => {
+            this.updateChartHeight()
+          })
           break
         case 'reloadExchangeState':
         case 'toggleLiquidations':

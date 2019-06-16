@@ -5,9 +5,10 @@ Vue.use(Vuex)
 
 const DEFAULTS = {
   pair: 'BTCUSD',
+  preferQuoteCurrencySize: true,
   thresholds: [
     {
-      amount: 50000,
+      amount: 100000,
       buyColor: 'rgba(76,175,80,.33)',
       sellColor: 'rgba(229,115,115,.33)',
     },
@@ -40,6 +41,7 @@ const DEFAULTS = {
   },
   maxRows: 20,
   decimalPrecision: null,
+  aggregationLag: null,
   showLogos: false,
   liquidationsOnlyList: false,
   showCounters: false,
@@ -58,7 +60,7 @@ const DEFAULTS = {
   showStats: true,
   showChart: true,
   statsPeriod: 1000 * 60,
-  statsCurrency: true,
+  statsGraphs: false,
   chartPadding: 0.075,
   chartGridlines: true,
   chartGridlinesGap: 80,
@@ -83,13 +85,13 @@ const DEFAULTS = {
   chartSma: true,
   chartSmaLength: 14,
   chartAutoScale: true,
+  showExchangesBar: true,
   showThresholdsAsTable: false,
 
   // runtime state
   isSnaped: true,
   isLoading: false,
   isReplaying: false,
-  preferBaseCurrencySize: false,
   actives: [],
 }
 
@@ -134,7 +136,7 @@ const STORED = JSON.parse(localStorage.getItem('settings'))
  */
 const EXTRA = {}
 
-const subdomain = window.location.hostname.match(/^([\d\w]+)\..*\./i)
+const subdomain = window.location.hostname.match(/^([\d\w\-]+)\..*\./i)
 
 if (subdomain && subdomain.length >= 2) {
   EXTRA.pair = subdomain[1].toUpperCase()
@@ -166,7 +168,6 @@ const EPHEMERAL_PROPERTIES = [
   'isSnaped',
   'isLoading',
   'isReplaying',
-  'preferBaseCurrencySize',
   'actives',
 ]
 
@@ -177,11 +178,17 @@ const store = new Vuex.Store({
     setPair(state, value) {
       state.pair = value.toString().toUpperCase()
     },
+    toggleBaseCurrencySize(state, value) {
+      state.preferQuoteCurrencySize = value ? true : false
+    },
     setMaxRows(state, value) {
       state.maxRows = value
     },
     setDecimalPrecision(state, value) {
       state.decimalPrecision = value
+    },
+    setAggregationLag(state, value) {
+      state.aggregationLag = value
     },
     toggleLogos(state, value) {
       state.showLogos = value ? true : false
@@ -201,9 +208,6 @@ const store = new Vuex.Store({
     toggleStats(state, value) {
       state.showStats = value ? true : false
     },
-    toggleStatsCurrency(state, value) {
-      state.statsCurrency = value ? true : false
-    },
     setStatsPeriod(state, value) {
       let period
 
@@ -216,6 +220,9 @@ const store = new Vuex.Store({
       }
 
       state.statsPeriod = period
+    },
+    toggleStatsGraphs(state, value) {
+      state.statsGraphs = value ? true : false;
     },
     toggleHideIncompleteCounter(state, value) {
       state.hideIncompleteCounter = value ? true : false
@@ -390,11 +397,11 @@ const store = new Vuex.Store({
     toggleChartAutoScale(state, value) {
       state.chartAutoScale = value ? true : false
     },
+    toggleExchangesBar(state, value) {
+      state.showExchangesBar = value ? true : false
+    },
 
     // runtime commit
-    toggleBaseCurrencySize(state, value) {
-      state.preferBaseCurrencySize = value ? true : false
-    },
     toggleSnap(state, value) {
       state.isSnaped = value ? true : false
     },

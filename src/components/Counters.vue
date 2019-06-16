@@ -67,6 +67,7 @@ export default {
       'counterPrecision',
       'cumulativeCounters',
       'hideIncompleteCounter',
+      'preferQuoteCurrencySize'
     ]),
   },
   created() {
@@ -139,8 +140,19 @@ export default {
 
       this.strength[side] = (this.strength[side] + volume[side]) * 0.75
     },
-    appendTrades(trades, upVolume, downVolume) {
+    appendTrades(trades) {
       const now = +new Date()
+
+      let upVolume = 0
+      let downVolume = 0
+
+      for (let index = 0; index < trades.length; index++) {
+        if (trades[index][4] > 0) {
+          upVolume += trades[index][3] * (this.preferQuoteCurrencySize ? trades[index][2] : 1)
+        } else {
+          downVolume += trades[index][3] * (this.preferQuoteCurrencySize ? trades[index][2] : 1)
+        }
+      }
 
       this.queue[0] += upVolume
       this.queue[1] += downVolume
@@ -250,17 +262,18 @@ export default {
         }
 
         const isBuy = +trade[4] > 0 ? true : false
+        const amount = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
 
         if (
           stacks.length &&
           trade[1] - stacks[stacks.length - 1][0] < this.counterPrecision
         ) {
-          stacks[stacks.length - 1][isBuy ? 1 : 2] += +trade[3]
+          stacks[stacks.length - 1][isBuy ? 1 : 2] += amount
         } else {
           stacks.push([
             +trade[1],
-            isBuy ? +trade[3] : 0,
-            !isBuy ? +trade[3] : 0,
+            isBuy ? amount : 0,
+            !isBuy ? amount : 0,
           ])
         }
       }

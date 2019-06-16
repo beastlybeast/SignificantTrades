@@ -111,7 +111,7 @@ export default {
   display: flex;
   flex-direction: row;
 
-  min-height: 1.5em;
+  height: 1.5em;
 
   > div {
     padding: 0.5em;
@@ -122,7 +122,7 @@ export default {
     flex-grow: 1;
     flex-basis: 0;
     position: relative;
-    line-height: 1.1;
+    line-height: 1;
     background-position: 0.5em;
     background-repeat: no-repeat;
     background-size: 1em;

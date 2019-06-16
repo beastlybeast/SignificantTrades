@@ -12,7 +12,7 @@ class Liquid extends Exchange {
     }
 
     this.matchPairName = (pair) => {
-      if (this.pairs.indexOf(pair) !== -1) {
+      if (this.products.indexOf(pair) !== -1) {
         return pair.toLowerCase()
       }
 

@@ -3,7 +3,7 @@
     <div class="header__wrapper">
       <div class="header__title">
         <span class="pair" v-if="pair">{{ pair }}</span>
-        <span class="icon-currency"></span>
+        <span class="icon-quote"></span>
         <span v-html="price || 'SignificantTrades'"></span>
       </div>
       <dropdown
@@ -62,7 +62,6 @@ export default {
   props: ['price'],
   data() {
     return {
-      pair: '',
       fetchLabel: 'Fetch timeframe',
       isPopupMode: window.opener !== null,
       canFetch: false,
@@ -73,6 +72,7 @@ export default {
   },
   computed: {
     ...mapState([
+      'pair',
       'useAudio',
       'showChart',
       'isSnaped',
@@ -92,13 +92,9 @@ export default {
       1000 * 30,
       1000 * 60,
       1000 * 60 * 3,
-      1000 * 60 * 5,
-      1000 * 60 * 10,
     ].forEach((span) => (this.timeframes[span] = this.$root.ago(now - span)))
 
     socket.$on('pairing', (pair, canFetch) => {
-      this.pair = pair
-
       this.canFetch = canFetch && this.showChart
     })
 
@@ -148,7 +144,7 @@ export default {
     togglePopup() {
       window.open(
         window.location.href,
-        'Hey hey hey',
+        `sig${this.pair}`,
         'toolbar=no,status=no,width=350,height=500'
       )
 

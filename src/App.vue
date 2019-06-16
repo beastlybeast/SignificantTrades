@@ -1,8 +1,9 @@
 <template>
   <div
     id="app"
-    :data-currency="currency"
-    :data-commodity="commodity"
+    :data-prefer="preferQuoteCurrencySize ? 'quote' : 'base'"
+    :data-base="baseCurrency"
+    :data-quote="quoteCurrency"
     :data-symbol="symbol"
     :data-pair="pair"
     :class="{
@@ -16,7 +17,7 @@
       <div class="app__layout">
         <div class="app__left" v-if="showChart">
           <Chart />
-          <Exchanges />
+          <Exchanges v-if="showExchangesBar" />
         </div>
         <div class="app__right">
           <Stats v-if="showStats" />
@@ -58,8 +59,8 @@ export default {
   data() {
     return {
       price: null,
-      currency: 'dollar',
-      commodity: 'bitcoin',
+      baseCurrency: 'bitcoin',
+      quoteCurrency: 'dollar',
       symbol: '$',
 
       showSettings: false,
@@ -73,10 +74,11 @@ export default {
       'showCounters',
       'showStats',
       'showChart',
+      'showExchangesBar',
       'decimalPrecision',
       'autoClearTrades',
       'isLoading',
-      'preferBaseCurrencySize',
+      'preferQuoteCurrencySize',
     ]),
   },
   created() {
@@ -134,6 +136,12 @@ export default {
       return s.substr(s.length - size)
     },
     formatAmount(amount, decimals) {
+      const negative = amount < 0;
+
+      if (negative) {
+        amount = Math.abs(amount)
+      }
+
       if (amount >= 1000000) {
         amount =
           +(amount / 1000000).toFixed(isNaN(decimals) ? 1 : decimals) + 'M'
@@ -143,7 +151,11 @@ export default {
         amount = this.$root.formatPrice(amount, decimals, false)
       }
 
-      return amount
+      if (negative) {
+        return '-' + amount
+      } else {
+        return amount
+      }
     },
     formatPrice(price, decimals, sats = true) {
       price = +price
@@ -220,27 +232,25 @@ export default {
         EOS: ['eos', 'EOS'],
       }
 
-      this.currency = 'dollar'
-      this.commodity = 'coin'
+      this.baseCurrency = 'coin'
+      this.quoteCurrency = 'dollar'
       this.symbol = '$'
 
       for (let symbol of Object.keys(symbols)) {
         if (new RegExp(symbol + '$').test(name)) {
-          this.currency = symbols[symbol][0]
+          this.quoteCurrency = symbols[symbol][0]
           this.symbol = symbols[symbol][1]
         }
 
         if (new RegExp('^' + symbol).test(name)) {
-          this.commodity = symbols[symbol][0]
+          this.baseCurrency = symbols[symbol][0]
         }
       }
 
       if (/^(?!XBT|BTC).*\d+$/.test(name)) {
-        this.currency = symbols.BTC[0]
+        this.quoteCurrency = symbols.BTC[0]
         this.symbol = symbols.BTC[1]
       }
-
-      this.$store.commit('toggleBaseCurrencySize', this.currency === 'bitcoin')
     },
     toggleAutoClearTrades(isAutoWipeCacheEnabled) {
       clearInterval(this._autoWipeCacheInterval)

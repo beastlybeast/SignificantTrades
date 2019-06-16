@@ -88,12 +88,13 @@ export default {
 @import '../assets/sass/variables';
 
 .alerts {
-  position: absolute;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 5;
   display: flex;
   margin: 20px;
-  left: 0;
-  right: 0;
   flex-direction: column;
   flex-wrap: wrap;
   pointer-events: none;

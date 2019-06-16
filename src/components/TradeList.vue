@@ -25,16 +25,16 @@
             {{ trade.exchange }}
           </div>
           <div class="trades__item__price">
-            <span class="icon-currency"></span>
+            <span class="icon-quote"></span>
             <span v-html="trade.price"></span>
           </div>
           <div class="trades__item__amount">
-            <span class="trades__item__amount__fiat"
-              ><span class="icon-currency"></span>
+            <span class="trades__item__amount__quote"
+              ><span class="icon-quote"></span>
               <span v-html="trade.amount"></span
             ></span>
-            <span class="trades__item__amount__coin"
-              ><span class="icon-commodity"></span>
+            <span class="trades__item__amount__base"
+              ><span class="icon-base"></span>
               <span v-html="trade.size"></span
             ></span>
           </div>
@@ -73,8 +73,9 @@ export default {
       'useAudio',
       'liquidationsOnlyList',
       'audioIncludeInsignificants',
-      'preferBaseCurrencySize',
+      'preferQuoteCurrencySize',
       'decimalPrecision',
+      'aggregationLag',
       'showLogos',
     ]),
   },
@@ -163,7 +164,7 @@ export default {
       }
     },
     processTrade(trade, silent = false) {
-      const size = this.preferBaseCurrencySize ? trade[3] : trade[2] * trade[3]
+      const size = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
 
       const multiplier =
         typeof this.exchanges[trade[0]].threshold !== 'undefined'
@@ -176,19 +177,10 @@ export default {
         }
 
         if (size >= this.thresholds[0].amount * multiplier) {
-          let liquidationMessage
-
-          if (this.preferBaseCurrencySize) {
-            liquidationMessage = `<i class="icon-commodity"></i> <strong>${this.$root.formatAmount(
-              size,
-              1
-            )}</strong>`
-          } else {
-            liquidationMessage = `<i class="icon-currency"></i> <strong>${this.$root.formatAmount(
-              size,
-              1
-            )}</strong>`
-          }
+          let liquidationMessage = `<i class="icon-currency"></i> <strong>${this.$root.formatAmount(
+            size,
+            1
+          )}</strong>`
 
           liquidationMessage += `&nbsp;liquidated <strong>${
             trade[4] > 0 ? 'SHORT' : 'LONG'
@@ -223,7 +215,7 @@ export default {
 
       if (this.thresholds[0].amount) {
         if (this.ticks[tid]) {
-          if (true && now - this.ticks[tid][1] > 0) { // TODO: option to ajust aggregation delay (remain hidden til it reach threshold, under specific timespan, here 0 = disabled) ?
+          if (this.aggregationLag && now - this.ticks[tid][1] > this.aggregationLag) {
             delete this.ticks[tid]
           } else {
             // average group prices
@@ -259,7 +251,7 @@ export default {
     appendRow(trade, classname = [], message = null) {
       let icon
       let image
-      let amount = this.preferBaseCurrencySize ? trade[3] : trade[2] * trade[3]
+      let amount = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
 
       classname.push(trade[0])
 
@@ -450,9 +442,7 @@ export default {
       )
     },
     getTradeColor(trade, multiplier = 1) {
-      const amount = this.preferBaseCurrencySize
-        ? trade[3]
-        : trade[2] * trade[3]
+      const amount = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
       const pct =
         amount /
         (this.thresholds[this.thresholds.length - 1].amount * multiplier)
@@ -542,6 +532,7 @@ export default {
 
 .trades {
   background-color: rgba(black, 0.2);
+  line-height: 1;
 
   ul {
     margin: 0;
@@ -591,7 +582,7 @@ export default {
   &.trades__item--empty {
     justify-content: center;
     padding: 20px;
-    font-size: 80%;
+    font-size: .8rem;
 
     &:after {
       display: none;
@@ -688,23 +679,23 @@ export default {
         transition: all 0.1s ease-in-out;
         display: block;
 
-        &.trades__item__amount__fiat {
+        &.trades__item__amount__quote {
           position: absolute;
         }
 
-        &.trades__item__amount__coin {
+        &.trades__item__amount__base {
           transform: translateX(25%);
           opacity: 0;
         }
       }
 
       &:hover {
-        > span.trades__item__amount__coin {
+        > span.trades__item__amount__base {
           transform: none;
           opacity: 1;
         }
 
-        > span.trades__item__amount__fiat {
+        > span.trades__item__amount__quote {
           transform: translateX(-25%);
           opacity: 0;
         }
@@ -725,24 +716,24 @@ export default {
   }
 }
 
-#app[data-currency='bitcoin'] .trades__item .trades__item__amount {
-  .trades__item__amount__fiat {
+#app[data-prefer='base'] .trades__item .trades__item__amount {
+  .trades__item__amount__quote {
     transform: translateX(-25%);
     opacity: 0;
   }
 
-  .trades__item__amount__coin {
+  .trades__item__amount__base {
     transform: none;
     opacity: 1;
   }
 
   &:hover {
-    > span.trades__item__amount__coin {
+    > span.trades__item__amount__base {
       transform: translateX(25%);
       opacity: 0;
     }
 
-    > span.trades__item__amount__fiat {
+    > span.trades__item__amount__quote {
       transform: none;
       opacity: 1;
     }

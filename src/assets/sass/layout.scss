@@ -175,28 +175,31 @@
 
 			#stats .stats__items {
 				flex-wrap: wrap;
-				margin: 0 5% 0 10%;
-
-				@media screen and (min-width: 992px) {
-					margin: 0 5% 0 20%;
-				}
 
 				> li {
 					flex-basis: 50%;
 					max-width: 50%;
-					flex-grow: 1;
-					align-items: flex-end;
+					align-items: flex-start;
 
-					&:nth-child(-n+2) {
-						.stats__value {
-							padding-bottom: .5em;
+					> div {
+						margin-left: 1em;
+
+						&.stats__label {
+							margin-top: .5rem;
+							margin-bottom: .25rem;
+						}
+
+						&.stats__value {
+							margin-bottom: 1rem;
 						}
 					}
 
-					&:nth-child(n+3) {
-						.stats__label {
-							padding-top: .5em;
-						}
+					&:nth-child(2) {
+						order: 1;
+					}
+
+					&:nth-child(3) {
+						order: 2;
 					}
 				}
 			}
@@ -226,11 +229,12 @@
 
 		#stats {
 			.stats__label {
-				font-size: .89em;
+				display: none;
 			}
 
 			.stats__value {
 				font-weight: 400;
+				margin-top: .5rem;
 			}
 		}
 	}

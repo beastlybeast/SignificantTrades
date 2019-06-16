@@ -11,7 +11,7 @@
       '-expanded': expanded,
     }"
   >
-    <div class="settings-exchange__header" @click="toggleExchange(exchange)">
+    <div class="settings-exchange__header" @click="toggleExchange">
       <span
         v-if="!isNaN(settings.threshold) && settings.threshold !== 1"
         class="settings-exchange__threshold"
@@ -93,6 +93,9 @@
           <span>Include in OHLC</span>
         </label>
       </div>
+      <div v-if="exchange.indexedProducts.length" class="form-group mt8">
+        <button v-if="canRefreshProducts" class="btn -red -small" @click="refreshProducts">Refresh products ({{ exchange.indexedProducts.length }})</button>
+      </div>
     </div>
   </div>
 </template>
@@ -105,6 +108,7 @@ import socket from '../services/socket'
 export default {
   data() {
     return {
+      canRefreshProducts: true,
       expanded: false,
     }
   },
@@ -116,17 +120,32 @@ export default {
     },
   },
   methods: {
-    toggleExchange(exchange) {
+    toggleExchange() {
       if (!this.settings.disabled) {
-        exchange.disconnect()
+        this.exchange.disconnect()
 
-        this.$store.commit('disableExchange', exchange.id)
+        this.$store.commit('disableExchange', this.exchange.id)
       } else {
-        exchange.connect(this.pair)
+        this.exchange.connect(this.pair)
 
-        this.$store.commit('enableExchange', exchange.id)
+        this.$store.commit('enableExchange', this.exchange.id)
       }
     },
+    refreshProducts(exchange) {
+      this.canRefreshProducts = false;
+
+      setTimeout(() => {
+        this.canRefreshProducts = true;
+      }, 3000);
+
+      this.exchange.refreshProducts().then(() => {
+        socket.$emit('alert', {
+          type: 'info',
+          title: `${this.exchange.id}'s products refreshed`,
+          message: `${this.exchange.indexedProducts.length} products was saved`,
+        })
+      })
+    }
   },
 }
 </script>

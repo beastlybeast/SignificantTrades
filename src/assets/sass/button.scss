@@ -11,4 +11,24 @@
 	&:hover {
 		background-color: lighten($green, 10%);
 	}
+
+	&.-small {
+		font-size: 1em;
+	}
+
+	&.-red {
+		background-color: $red;
+	
+		&:hover {
+			background-color: lighten($red, 10%);
+		}
+	}
+
+	&.-dark {
+		background-color: $dark;
+	
+		&:hover {
+			background-color: lighten($dark, 10%);
+		}
+	}
 }

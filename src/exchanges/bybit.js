@@ -6,7 +6,7 @@ class Bybit extends Exchange {
 
     this.id = 'bybit'
 
-    this.pairs = ['BTCUSD', 'ETHUSD', 'EOSUSD', 'XRPUSD']
+    this.products = ['BTCUSD', 'ETHUSD', 'EOSUSD', 'XRPUSD']
 
     this.endpoints = {
       // PRODUCTS: 'not available yet'

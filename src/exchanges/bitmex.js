@@ -17,9 +17,7 @@ class Bitmex extends Exchange {
     this.options = Object.assign(
       {
         url: () => {
-          return `wss://www.bitmex.com/realtime?subscribe=trade:${
-            this.pair
-          },liquidation:${this.pair}`
+          return `wss://www.bitmex.com/realtime?subscribe=${this.pairs.map(pair => `trade:${pair}`)},${this.pairs.map(pair => `liquidation:${pair}`)}`
         },
       },
       this.options
@@ -90,11 +88,11 @@ class Bitmex extends Exchange {
   }
 
   matchPairName(name) {
-    if (this.pairs.indexOf(name) !== -1) {
+    if (this.products.indexOf(name) !== -1) {
       return name
     } else if (
       (name = name.replace('BTC', 'XBT')) &&
-      this.pairs.indexOf(name) !== -1
+      this.products.indexOf(name) !== -1
     ) {
       return name
     }

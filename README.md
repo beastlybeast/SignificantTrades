@@ -1,27 +1,27 @@
 # SignificantTrades [![Build Status](https://travis-ci.org/Tucsky/SignificantTrades.svg?branch=master)](https://travis-ci.org/Tucsky/SignificantTrades)
 Live cryptocurrency trades visualizer.<br>
-Currently supporting BitMEX, Bitfinex, Binance, Gdax, Bitstamp, Huobi, Okex, Hitbtc, Poloniex, Coinex and Liquid ([see server/src/exchanges/](server/src/exchanges) for detail)
+Currently supporting BitMEX, Bitfinex, Binance, Gdax, Bitstamp, Deribit, Huobi, Okex, Hitbtc, Poloniex, Coinex and Liquid ([see server/src/exchanges/](server/src/exchanges) for detail)
 
 ![screenshot](https://i.imgur.com/nHJxsdL.gif)
 
 ## What it do
-- Aggregate trades from exchanges on a specific pair (default BTCUSD)
-- Filter trades by amount (by stacking them up under very short timespan)
+- Show LIVE trades from exchanges on a specific pair (default BTCUSD)
+- Filter noise by aggregating trades with the same timestamp
 - Chart averaged price, buy & sell volume, price sma, volume ema
-- Play audio when trade show up
-- Visualize historical data
+- Play audio when trade show up based on volume
+- Visualize historical data (when available)
 
 ## How it works
 The app is written in vue.js, use the javascript WebSocket interface to connect to the exchanges API directly and listen to the trades events. From there it dispatch the trades to difference components within the app :
 - The trade list that shows the N previous significant orders
-- The chart that shows the averaged price action
+- The chart that shows the averaged price action over the different exchanges
 - The counters that sum up buy & sell volume by interval (buy/sell last 15m, last 1h, 2h etc)
 - The stats component that show basic number about whats happened under one specific interval (default 1m)
 
 ## Demo 
-[BTCUSD](https://aggr.trade/)<br>
-[ETHUSD](https://ethusd.aggr.trade/)<br>
-[XLMBTC](https://xlmbtc.aggr.trade/)<br>
+[BTCUSD](https://btcusd.aggr.trade/)<br>
+[ETHUSD](https://ethusd.aggr.trade/) (down)<br>
+[XLMBTC](https://xlmbtc.aggr.trade/) (down)<br>
 Just replace the subdomain by the pair of your choice.<br>
 Each subdomain get their own settings.
 
@@ -82,17 +82,18 @@ The app fetch the available exchanges products when it starts the first time. So
 ## Adblocker issue (and solution)
 Some adblocker restrict access to exchanges websocket feeds.
 I know uBlock origin block many thing including huobi websocket API.
-Just disable Adblock on the app and you should be alright.
+**Just disable Adblock on the app and you should be alright.**
 
 ## Cross-Domain (CORS) policy issue (and solution)
 In order to fetch the products the app need to make calls to the exchanges API. Most of thoses API tell the browser they only allow access from the exchange domain (see https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS). The only way to bypass this is to use a server that will make the call for us. The cors proxy settings let u set the url of this server, which is set to mine by default.
-Running `PROXY_URL=http://my-personnal-cors-proxy.me/ npm run dev` will start the app with another cors proxy which I encourage you to do.
+**Running `PROXY_URL=http://my-personnal-cors-proxy.me/ npm run dev` will start the app with another cors proxy which I encourage you to do.**
 
 ## About the historical data
 I use my servers (api.aggr.trade) to store and serve historical trades on demand.
 The current code for the server part is located in the [feature/server](https://github.com/Tucsky/SignificantTrades/tree/feature/server) branch.
-Once your node is up & listening, start the client with an environment variable `API_URL=http://localhost:3000/historical/{pair}/{from}/{to}/{timeframe} npm run dev`.
+Let's say you have a server instance running on port 3000, start the client with an environment variable `API_URL=http://localhost:3000/historical/{from}/{to}/{timeframe} npm run dev`.
 
 ## Donate
+LN https://tippin.me/@Tucsky ⚡️
 BTC [3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX](bitcoin:3GLyZHY8gRS96sH4J9Vw6s1NuE4tWcZ3hX)<br>
 XMR 48NJj3RJDo33zMLaudQDdM8G6MfPrQbpeZU2YnRN2Ep6hbKyYRrS2ZSdiAKpkUXBcjD2pKiPqXtQmSZjZM7fC6YT6CMmoX6

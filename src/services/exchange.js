@@ -6,13 +6,15 @@ class Exchange extends EventEmitter {
 
     this.id = this.constructor.name.toLowerCase()
 
+    this.indexedProducts = []
     this.connected = false
     this.valid = false
     this.price = null
     this.error = null
     this.shouldBeConnected = false
     this.reconnectionDelay = 5000
-    this.counters = []
+
+    this._pair = []
 
     this.options = Object.assign(
       {
@@ -31,14 +33,14 @@ class Exchange extends EventEmitter {
       ) {
         console.info(`[${this.id}] reading stored products`)
 
-        this.pairs = storage.data
+        this.products = storage.data
 
         if (
-          !this.pairs ||
-          (Array.isArray(this.pairs) && !this.pairs.length) ||
-          (typeof this.pairs === 'object' && !Object.keys(this.pairs).length)
+          !this.products ||
+          (Array.isArray(this.products) && !this.products.length) ||
+          (typeof this.products === 'object' && !Object.keys(this.products).length)
         ) {
-          this.pairs = null
+          this.products = null
         }
       } else {
         console.info(`[${this.id}] products data expired`)
@@ -46,26 +48,34 @@ class Exchange extends EventEmitter {
     } catch (error) {
       console.error(`[${this.id}] unable to retrieve stored products`, error)
     }
+
+    this.indexProducts();
   }
 
   set pair(name) {
-    if (!this.pairs) {
-      this._pair = null
+    if (!this.products || !name) {
+      this._pair = []
       return
     }
 
-    if (this.matchPairName && typeof this.matchPairName === 'function') {
-      this._pair = this.matchPairName(name)
-    } else if (Array.isArray(this.pairs) && this.pairs.indexOf(name) !== -1) {
-      this._pair = name
-    } else if (typeof this.pairs === 'object') {
-      this._pair = this.pairs[name] || null
-    } else {
-      this._pair = null
-    }
+    this._pair = name.split('+').map(a => {
+      if (this.matchPairName && typeof this.matchPairName === 'function') {
+        return this.matchPairName(a)
+      } else if (Array.isArray(this.products) && this.products.indexOf(a) !== -1) {
+        return a
+      } else if (typeof this.products === 'object') {
+        return this.products[a] || null
+      } else {
+        return null
+      }
+    }).filter(a => !!a)
   }
 
   get pair() {
+    return this._pair[0]
+  }
+
+  get pairs() {
     return this._pair
   }
 
@@ -76,7 +86,7 @@ class Exchange extends EventEmitter {
 
     if (this.valid) {
       console.log(
-        `[${this.id}] ${reconnection ? 're' : ''}connecting... (${this.pair})`
+        `[${this.id}] ${reconnection ? 're' : ''}connecting... (${this.pairs.join(', ')})`
       )
 
       this.shouldBeConnected = true
@@ -220,11 +230,11 @@ class Exchange extends EventEmitter {
   validatePair(pair) {
     this.valid = false
 
-    if (typeof this.pairs === 'undefined') {
+    if (typeof this.products === 'undefined') {
       return this.fetchProducts().then((data) => this.validatePair(pair))
     }
 
-    if (!pair || (pair && (!(this.pair = pair) || !this.pair))) {
+    if (!pair || (pair && (!(this.pair = pair) || !this.pairs.length))) {
       console.log(`[${this.id}] unknown pair ${pair}`)
 
       this.emit('error', new Error(`Unknown pair ${pair}`))
@@ -243,7 +253,7 @@ class Exchange extends EventEmitter {
 
   /* fetchRecentsTrades() {
     if (!this.endpoints || !this.endpoints.TRADES) {
-      this.pairs = [];
+      this.products = [];
 
       return Promise.resolve();
     }
@@ -284,16 +294,37 @@ class Exchange extends EventEmitter {
     });
   } */
 
+  refreshProducts() {
+    localStorage.removeItem(this.id)
+    this.products = null
+
+    return this.fetchProducts()
+  }
+
+  indexProducts() {
+    this.indexedProducts = []
+    
+    if (!this.products) {
+      return
+    }
+
+    if (Array.isArray(this.products)) {
+      this.indexedProducts = this.products.slice(0, this.products.length)
+    } else if (typeof this.products === 'object') {
+      this.indexedProducts = Object.keys(this.products)
+    }
+  }
+
   fetchProducts() {
     if (!this.endpoints || !this.endpoints.PRODUCTS) {
-      this.pairs = []
+      this.products = []
 
       return Promise.resolve()
     }
 
     let urls =
       typeof this.endpoints.PRODUCTS === 'function'
-        ? this.products(this.pair)
+        ? this.endpoints.PRODUCTS(this.pair)
         : this.endpoints.PRODUCTS
 
     if (!Array.isArray(urls)) {
@@ -337,22 +368,24 @@ class Exchange extends EventEmitter {
         }
 
         if (data) {
-          this.pairs = this.formatProducts(data) || []
+          this.products = this.formatProducts(data) || []
 
-          console.log(`[${this.id}] storing products`, this.pairs)
+          console.log(`[${this.id}] storing products`, this.products)
 
           localStorage.setItem(
             this.id,
             JSON.stringify({
               timestamp: +new Date(),
-              data: this.pairs,
+              data: this.products,
             })
           )
         } else {
-          this.pairs = null
+          this.products = null
         }
 
-        resolve(this.pairs)
+        this.indexProducts();
+
+        resolve(this.products)
       })
     })
   }

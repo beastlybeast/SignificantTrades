@@ -1,66 +1,48 @@
 <template>
   <div id="stats" class="stats">
-    <div class="stats__infos">
-      <div>{{ periodLabel }}</div>
-    </div>
     <ul class="stats__items">
       <li
         v-tippy
-        :title="`Number of trades in the last ${periodLabel}`"
-        :class="{ up: rate.live > rate.average }"
+        title="Number of trades"
       >
+        <Measurement v-if="statsGraphs" ref="tradesMeasurement" />
         <div class="stats__label">TRADES</div>
         <div class="stats__value">
-          {{ $root.formatAmount(rate.live) }}
+          {{ $root.formatAmount(totalOrders) }}
         </div>
       </li>
       <li
         v-tippy
-        :title="`Average amount per trade over the last ${periodLabel}`"
+        title="Average order"
       >
-        <div class="stats__label">AVG trd.</div>
+        <Measurement v-if="statsGraphs" ref="avgMeasurement" />
+        <div class="stats__label">AVG</div>
         <div class="stats__value">
-          <span
-            class="icon-currency"
-            :class="{ 'icon-commodity': !this.statsCurrency }"
-          ></span>
-          {{ $root.formatAmount(avgtrade / rate.live, 2) }}
+          <span class="icon-currency"></span>
+          {{ $root.formatAmount(totalVolume / totalOrders, 2) }}
         </div>
       </li>
       <li
         v-tippy
-        :title="`Buys in the last ${periodLabel}`"
-        :class="{ up: up.live > up.average }"
+        title="Volume delta"
       >
-        <div class="stats__label">BUYS</div>
+        <Measurement v-if="statsGraphs" ref="volDeltaMeasurement" />
+        <div class="stats__label">VOL &Delta;</div>
         <div class="stats__value">
-          <span
-            class="icon-currency"
-            :class="{ 'icon-commodity': !this.statsCurrency }"
-          ></span>
-          {{ $root.formatAmount(up.live, 1) }}
+          <span class="icon-currency"></span>
+          {{ $root.formatAmount(volDelta, 1) }}
         </div>
       </li>
       <li
         v-tippy
-        :title="`Sells in the last ${periodLabel}`"
-        :class="{ up: down.live > down.average }"
+        title="Order delta"
       >
-        <div class="stats__label">SELLS</div>
+        <Measurement v-if="statsGraphs" ref="countDeltaMeasurement" />
+        <div class="stats__label">TRADES &Delta;</div>
         <div class="stats__value">
-          <span
-            class="icon-currency"
-            :class="{ 'icon-commodity': !this.statsCurrency }"
-          ></span>
-          {{ $root.formatAmount(down.live, 1) }}
+          {{ $root.formatAmount(countDelta, 1) }}
         </div>
       </li>
-      <!--
-        // Maybe useless
-        <li v-tippy :title="`Total volume in the last ${periodLabel}`">
-        <div class="stats__label">VOL</div>
-        <div class="stats__value"><span class="icon-commodity"></span> {{$root.formatAmount(up.live + down.live, 1)}}</div>
-      </li> -->
     </ul>
   </div>
 </template>
@@ -70,22 +52,32 @@ import { mapState } from 'vuex'
 
 import socket from '../services/socket'
 
+import Measurement from './ui/Measurement.vue'
+
 export default {
+  components: {
+    Measurement
+  },
   data() {
     return {
       timestamp: null,
       periodLabel: null,
-      rate: {
+      countUp: {
         average: null,
         live: null,
         count: 0,
       },
-      up: {
+      countDown: {
         average: null,
         live: null,
         count: 0,
       },
-      down: {
+      volUp: {
+        average: null,
+        live: null,
+        count: 0,
+      },
+      volDown: {
         average: null,
         live: null,
         count: 0,
@@ -93,10 +85,19 @@ export default {
     }
   },
   computed: {
-    avgtrade() {
-      return this.up.live + this.down.live
+    totalOrders() {
+      return this.countUp.live + this.countDown.live
     },
-    ...mapState(['statsPeriod', 'statsCurrency', 'actives']),
+    totalVolume() {
+      return this.volUp.live + this.volDown.live
+    },
+    countDelta() {
+      return this.countUp.live - this.countDown.live
+    },
+    volDelta() {
+      return this.volUp.live - this.volDown.live
+    },
+    ...mapState(['statsPeriod', 'statsGraphs', 'preferQuoteCurrencySize', 'actives']),
   },
   created() {
     const now = +new Date()
@@ -105,7 +106,7 @@ export default {
       switch (mutation.type) {
         case 'reloadExchangeState':
         case 'setStatsPeriod':
-        case 'toggleStatsCurrency':
+        case 'toggleBaseCurrencySize':
           this.rebuildStats()
           break
       }
@@ -113,7 +114,8 @@ export default {
 
     socket.$on('trades.instant', this.onTrades)
     socket.$on('historical', this.onFetch)
-
+  },
+  mounted() {
     this.rebuildStats()
   },
   beforeDestroy() {
@@ -126,25 +128,11 @@ export default {
   },
   methods: {
     onTrades(trades, upVolume, downVolume) {
-      this.rate.count += trades.length
+      for (let i = 0; i < trades.length; i++) {
+        const side = trades[i][4] > 0 ? 'Up' : 'Down'
 
-      if (this.statsCurrency) {
-        const upTrades = trades.filter((trade) => trade[4] > 0)
-        const downTrades = trades.filter((trade) => trade[4] < 1)
-
-        if (upTrades.length) {
-          this.up.count += upTrades
-            .map((trade) => trade[3] * trade[2])
-            .reduce((a, b) => a + b)
-        }
-        if (downTrades.length) {
-          this.down.count += downTrades
-            .map((trade) => trade[3] * trade[2])
-            .reduce((a, b) => a + b)
-        }
-      } else {
-        this.up.count += upVolume
-        this.down.count += downVolume
+        this['count' + side].count++
+        this['vol' + side].count += trades[i][3] * (this.preferQuoteCurrencySize ? trades[i][2] : 1)
       }
     },
     onFetch(trades, from, to) {
@@ -161,8 +149,8 @@ export default {
 
       this.periodLabel = this.$root.ago(now - this.statsPeriod)
       this.timestamp = now - this.statsPeriod
-      this.rate.average = this.up.average = this.down.average = null
-      this.rate.count = this.up.count = this.down.count = 0
+      this.countUp.average = this.countDown.average = this.volUp.average = this.volDown.average = null
+      this.countUp.count = this.countDown.count = this.volUp.count = this.volDown.count = 0
 
       socket.trades
         .filter(
@@ -171,13 +159,10 @@ export default {
             trade[1] >= now - this.statsPeriod
         )
         .forEach((trade) => {
-          this.rate.count++
+          const side = trade[4] > 0 ? 'Up' : 'Down'
 
-          if (this.statsCurrency) {
-            this[+trade[4] > 0 ? 'up' : 'down'].count += trade[3] * trade[2]
-          } else {
-            this[+trade[4] > 0 ? 'up' : 'down'].count += trade[3]
-          }
+          this['count' + side].count++
+          this['vol' + side].count += trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
         })
 
       this.updateStats(now)
@@ -190,34 +175,44 @@ export default {
     updateStats(timestamp = null) {
       const now = timestamp || +new Date()
 
-      if (this.rate.average !== null) {
-        this.rate.live = Math.ceil(
-          (this.rate.count + this.rate.average) /
+      if (this.countUp.average !== null || this.countDown.average !== null) {
+        this.countUp.live = Math.ceil(
+          (this.countUp.count + this.countUp.average) /
             (1 + (now - this.timestamp) / this.statsPeriod)
         )
-        this.up.live = parseFloat(
-          (this.up.count + this.up.average) /
+        this.countDown.live = Math.ceil(
+          (this.countDown.count + this.countDown.average) /
             (1 + (now - this.timestamp) / this.statsPeriod)
         )
-        this.down.live = parseFloat(
-          (this.down.count + this.down.average) /
+        this.volUp.live = parseFloat(
+          (this.volUp.count + this.volUp.average) /
             (1 + (now - this.timestamp) / this.statsPeriod)
         )
-        this.rate.side = this.rate.live > this.rate.average ? '+' : ''
-        this.up.side = this.up.live > this.up.average ? '+' : ''
-        this.down.side = this.down.live > this.down.average ? '+' : ''
+        this.volDown.live = parseFloat(
+          (this.volDown.count + this.volDown.average) /
+            (1 + (now - this.timestamp) / this.statsPeriod)
+        )
       } else {
-        this.rate.live = this.rate.count
-        this.up.live = this.up.count
-        this.down.live = this.down.count
+        this.countUp.live = this.countUp.count
+        this.countDown.live = this.countDown.count
+        this.volUp.live = this.volUp.count
+        this.volDown.live = this.volDown.count
       }
 
       if (now - this.timestamp >= this.statsPeriod) {
         this.timestamp = now
-        this.rate.average = parseInt(this.rate.live)
-        this.up.average = parseFloat(this.up.live)
-        this.down.average = parseFloat(this.down.live)
-        this.rate.count = this.up.count = this.down.count = 0
+        this.countUp.average = parseInt(this.countUp.live)
+        this.countDown.average = parseInt(this.countDown.live)
+        this.volUp.average = parseFloat(this.volUp.live)
+        this.volDown.average = parseFloat(this.volDown.live)
+        this.countUp.count = this.countDown.count = this.volUp.count = this.volDown.count = 0
+      }
+
+      if (this.statsGraphs) {
+        this.$refs.tradesMeasurement.append(this.totalOrders);
+        this.$refs.avgMeasurement.append(this.totalOrders ? this.totalVolume / this.totalOrders : 0);
+        this.$refs.volDeltaMeasurement.append(this.volDelta);
+        this.$refs.countDeltaMeasurement.append(this.countDelta);
       }
     },
   },
@@ -233,28 +228,20 @@ export default {
 
   .stats__label {
     opacity: 0.5;
-    font-size: 0.75em;
-    padding: 0.75em 0 0.25em;
+    font-size: 0.6em;
+    letter-spacing: 1px;
   }
 
   .stats__value {
     text-align: right;
-    font-weight: 600;
     white-space: nowrap;
-    padding: 0.25em 0 0.75em;
     font-family: 'Roboto Condensed';
-
-    &:after {
-      font-family: 'icon';
-      content: unicode($icon-down);
-      color: white;
-    }
+    z-index: 1;
   }
 
   .stats__items {
     display: flex;
     align-items: center;
-    justify-content: space-evenly;
     list-style: none;
     padding: 0;
     margin: 0;
@@ -262,16 +249,41 @@ export default {
     > li {
       display: flex;
       align-items: center;
-      flex-grow: 0;
+      flex-grow: 1;
       flex-direction: column;
       flex-basis: auto;
+      position: relative;
 
-      &.up {
-        .stats__value:after {
-          content: unicode($icon-up);
-          color: lighten($green, 20%);
+      &:hover .measurement {
+        fill: $blue;
+        opacity: 1;
+
+        ~ .stats__label {
+          opacity: .5;
         }
       }
+    }
+
+    .stats__label {
+      margin-top: .5rem;
+      z-index: 1;
+    }
+
+    .stats__value {
+      margin-bottom: .5rem;
+    }
+
+    .measurement {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+
+      opacity: .75;
+
+      stroke: none; 
+      fill: black;
     }
 
     sup {
@@ -282,59 +294,6 @@ export default {
     @media screen and (min-width: 768px) {
       sup {
         display: inline-block;
-      }
-    }
-  }
-
-  .stats__infos {
-    display: none;
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    width: 20%;
-    flex-direction: column;
-    align-items: flex-end;
-    justify-content: center;
-    text-align: right;
-
-    > i {
-      font-size: 60%;
-      width: 70%;
-    }
-
-    > div {
-      font-size: 1.25em;
-      font-weight: 600;
-      text-align: right;
-      align-self: flex-end;
-      position: relative;
-    }
-
-    &:before {
-      position: absolute;
-      content: unicode($icon-stopwatch);
-      font-family: 'icon';
-      opacity: 0.33;
-      pointer-events: none;
-      font-size: 120px;
-      bottom: 0;
-      left: -100%;
-      color: black;
-    }
-
-    @media screen and (min-width: 768px) {
-      display: flex;
-    }
-
-    @media screen and (min-width: 992px) {
-      &:before {
-        font-size: 140px;
-      }
-    }
-
-    @media screen and (min-width: 1200px) {
-      &:before {
-        left: -60%;
       }
     }
   }
