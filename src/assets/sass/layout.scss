@@ -180,12 +180,13 @@
 					flex-basis: calc(50% - 1px);
 					max-width: calc(50% - 1px);
 					align-items: flex-start;
+					min-height: 12vh;
 
 					> div {
 						margin-left: 1em;
 
 						&.stats__label {
-							margin-top: .5rem;
+							margin-top: .75rem;
 							margin-bottom: .25rem;
 						}
 
