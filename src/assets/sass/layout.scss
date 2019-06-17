@@ -177,8 +177,8 @@
 				flex-wrap: wrap;
 
 				> li {
-					flex-basis: 50%;
-					max-width: 50%;
+					flex-basis: calc(50% - 1px);
+					max-width: calc(50% - 1px);
 					align-items: flex-start;
 
 					> div {
@@ -192,6 +192,14 @@
 						&.stats__value {
 							margin-bottom: 1rem;
 						}
+					}
+
+					&:nth-child(-n+2) {
+						margin-right: 1px;
+					}
+
+					&:nth-child(n+2):nth-child(-n+3) {
+						margin-top: 1px;
 					}
 
 					&:nth-child(2) {

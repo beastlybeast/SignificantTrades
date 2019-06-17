@@ -60,7 +60,7 @@ const DEFAULTS = {
   showStats: true,
   showChart: true,
   statsPeriod: 1000 * 60,
-  statsGraphs: false,
+  statsGraphs: true,
   statsGraphsTimeframe: 3000,
   statsGraphsLength: 100,
   chartPadding: 0.075,
@@ -138,10 +138,10 @@ const STORED = JSON.parse(localStorage.getItem('settings'))
  */
 const EXTRA = {}
 
-const subdomain = window.location.hostname.match(/^([\d\w\-]+)\..*\./i)
+const subdomain = window.location.hostname.match(/^([\d\w\-\_]+)\..*\./i)
 
 if (subdomain && subdomain.length >= 2) {
-  EXTRA.pair = subdomain[1].toUpperCase()
+  EXTRA.pair = subdomain[1].replace(/\_/g, '+').toUpperCase()
 }
 
 // <migrations>

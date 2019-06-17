@@ -294,10 +294,10 @@ export default {
       right: 0;
       bottom: 0;
 
-      opacity: .75;
+      opacity: .25;
 
       stroke: none; 
-      fill: black;
+      fill: white;
     }
 
     sup {

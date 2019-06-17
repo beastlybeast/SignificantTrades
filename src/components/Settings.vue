@@ -38,8 +38,8 @@
           />
           <small class="help-text mt8" v-if="showPairSubdomainHelp"
             ><i class="icon-info-circle"></i> Consider using
-            <a :href="'https://' + pair.toLowerCase() + '.aggr.trade'"
-              >https://{{ pair.toLowerCase() }}.aggr.trade</a
+            <a :href="'https://' + pair.replace(/\+/g, '_').toLowerCase() + '.aggr.trade'"
+              >https://{{ pair.replace(/\+/g, '_').toLowerCase() }}.aggr.trade</a
             >
             to hook your settings to <strong>{{ pair }}</strong> indefinitely
             !</small>
@@ -244,7 +244,7 @@
               </label>
             </div>
           </div>
-          <div v-if="statsGraphs" class="column mt8">
+          <!--<div v-if="statsGraphs" class="column mt8">
             <div class="form-group">
               <label>Timeframe
                 <span
@@ -277,7 +277,7 @@
                 @change="$store.commit('setStatsGraphsLength', $event.target.value)"
               />
             </div>
-          </div>
+          </div>-->
         </div>
         <div
           class="settings__title"
