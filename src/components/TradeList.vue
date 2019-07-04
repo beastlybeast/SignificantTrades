@@ -215,7 +215,7 @@ export default {
 
       if (this.thresholds[0].amount) {
         if (this.ticks[tid]) {
-          if (!this.aggregationLag || now - this.ticks[tid][1] > this.aggregationLag) {
+          if (!this.aggregationLag || trade[1] - this.ticks[tid][1] > this.aggregationLag) {
             delete this.ticks[tid]
           } else {
             // average group prices

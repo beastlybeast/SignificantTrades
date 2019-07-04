@@ -92,7 +92,7 @@
                 @change="$store.commit('setMaxRows', $event.target.value)"
               />
             </div>
-            
+
             <div
               class="form-group column__tight"
               title="Show exchange's logo when available"
@@ -629,7 +629,7 @@
                 @change="$store.commit('setDecimalPrecision', decimalPrecision ? null : 2)"
               />
               <div></div>
-              <span @click.stop.prevent="$event.target.children[0].focus()">
+              <span @click.stop.prevent="$event.currentTarget.children[0].focus()">
                 Round up to
                 <editable
                   placeholder="auto"
@@ -651,7 +651,7 @@
                 @change="$store.commit('setAggregationLag', aggregationLag ? null : 1000)"
               />
               <div></div>
-              <span @click.stop.prevent="$event.target.children[0].focus()">
+              <span @click.stop.prevent="$event.currentTarget.children[0].focus()">
                 Stack trades to match threshold over
                 <editable
                   placeholder="no lag"
