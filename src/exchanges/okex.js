@@ -81,40 +81,52 @@ class Okex extends Exchange {
 
     this.api.onmessage = (event) => {
       
+      
+      //If spot trades are received, they will be grouped accordingly so emmit them as 
+      
       //Process trade
-      let trade = this.formatLiveTrades(event.data)
+      let trades = this.formatLiveTrades(event.data)
+      
       
       //check if its actually a trade we received
-      if(trade == null ){
+      if(trades == null ){
           return
-      }else{
-          trade = trade[0]
       }
       
-       //If there are no pending trades, push this new one to stack
-       if( this.tradeStack.length == 0 ){
+      
+      if( trades.length > 1 ) { //If a group of trades is received (likely in the spot) our job is already done so push them directly.
+          
+          this.dispatchTrades() //Dispatch any old trades
+          this.tradeStack = trades
+          this.dispatchTrades() //Immediately dispatch new trades
+          
+      }else{
+       
+        //If there are no pending trades, push this new one to stack
+        if( this.tradeStack.length == 0 ){
         
-        this.tradeStack.push(trade) 
+          this.tradeStack.push(trades[0]) 
          
-       }else{
+        }else{
          
-         //Check if new trade matches timestamp of the trades in the stack
-         if( this.tradeStack[0][1] == trade[1] ){
+          //Check if new trade matches timestamp of the trades in the stack
+          if( this.tradeStack[0][1] == trades[0][1] ){
                       
-           this.tradeStack.push(trade) 
-           clearTimeout(this.dispatcher)
+            this.tradeStack.push(trades[0]) 
+            clearTimeout(this.dispatcher)
          
-         }else{
+          }else{
                  
-           //Push the last stack and add this new trade to the blank stack
-            this.dispatchTrades()
-            this.tradeStack.push(trade) 
+          //Push the last stack and add this new trade to the blank stack
+          this.dispatchTrades()
+          this.tradeStack.push(trades[0]) 
          }
        }
        
        //Set a timeout to dispatch this stack
        //During testing most trades from OKex arrived within 2-5ms, so 30ms should be sufficient
        this.dispatcher = setTimeout(this.dispatchTrades.bind(this), 30)
+      }
       
     }
     
