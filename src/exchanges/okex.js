@@ -62,16 +62,10 @@ class Okex extends Exchange {
 
     // if theres trades in the stack, dispatch them to emitter.
     if (this.tradeStack.length > 0) {
-      this.tradeStack[0][6] = Math.round(
-        ((this.tradeStackMax - this.tradeStackMin) / this.tradeStackMin) * 10000
-      )
-
       this.emitTrades(this.tradeStack)
 
       // clear stack
       this.tradeStack.splice(0, this.tradeStack.length)
-      this.tradeStackMin = Infinity
-      this.tradeStackMax = 0
     }
   }
 
@@ -100,9 +94,6 @@ class Okex extends Exchange {
         // dispatch the last stack (expired)
         this.dispatchTrades()
       }
-
-      this.tradeStackMin = Math.min(this.tradeStackMin, trades[0][2])
-      this.tradeStackMax = Math.max(this.tradeStackMax, trades[0][2])
 
         // push the last trade
       this.tradeStack.push(trades[0])
