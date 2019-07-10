@@ -684,8 +684,8 @@
               <input
                 type="checkbox"
                 class="form-control"
-                :checked="showSpray"
-                @change="$store.commit('showSpray', $event.target.checked)"
+                :checked="tradeSpray"
+                @change="$store.commit('toggleTradeSpray', $event.target.checked)"
               />
               <div></div>
               <span>Show spray in basis points</span>
@@ -759,6 +759,7 @@ export default {
       'showLogos',
       'liquidationsOnlyList',
       'aggregationLag',
+      'tradeSpray',
       'showCounters',
       'showStats',
       'statsPeriod',
