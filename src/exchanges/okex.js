@@ -52,12 +52,7 @@ class Okex extends Exchange {
     )
   }
 
-  dispatchTrades(manual = false) {
-    !manual && console.log('timer fired', this.tradeStack.map(a => {
-      const d = new Date(a[1])
-      return d.toLocaleTimeString() + '.' + d.getMilliseconds()
-    }))
-
+  dispatchTrades() {
     // check if a timeout is in progress
     if (this.dispatchTradesTimeout) {
       clearTimeout(this.dispatchTradesTimeout)
@@ -95,7 +90,7 @@ class Okex extends Exchange {
       } else if (trades.length > 1) {
         // if a group of trades is received (likely in the spot) our job is already done so push them directly.
         // dispatch any old trades
-        this.dispatchTrades(true)
+        this.dispatchTrades()
 
         // immediately dispatch new trades
         this.emitTrades(trades)
@@ -103,7 +98,7 @@ class Okex extends Exchange {
         return
       } else if (this.tradeStack.length && this.tradeStack[0][1] !== trades[0][1]) {
         // dispatch the last stack (expired)
-        this.dispatchTrades(true)
+        this.dispatchTrades()
       }
 
       this.tradeStackMin = Math.min(this.tradeStackMin, trades[0][2])
