@@ -27,6 +27,7 @@
           <div class="trades__item__price">
             <span class="icon-quote"></span>
             <span v-html="trade.price"></span>
+            <span class="trade__spray" v-html="trade.spray"></span>
           </div>
           <div class="trades__item__amount">
             <span class="trades__item__amount__quote"
@@ -311,6 +312,7 @@ export default {
         date: this.$root.ago(trade[1]),
         timestamp: trade[1],
         image: image,
+        spray:  trade[6] ? ' - ' + trade[6] + 'bps': '',
         message: message,
       })
 
@@ -716,6 +718,12 @@ export default {
   }
 }
 
+.trades__spray  {
+
+    opacity: 0;
+  
+}
+
 #app[data-prefer='base'] .trades__item .trades__item__amount {
   .trades__item__amount__quote {
     transform: translateX(-25%);
@@ -739,4 +747,11 @@ export default {
     }
   }
 }
+
+#app[data-showSpray='showSpray']  .trades__spray  {
+
+    opacity: 0;
+  
+}
+
 </style>

@@ -677,6 +677,21 @@
             </label>
           </div>
         </div>
+        <div class="form-group mb8">
+            <label
+              class="checkbox-control"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="showSpray"
+                @change="$store.commit('showSpray', $event.target.checked)"
+              />
+              <div></div>
+              <span>Show spray in basis points</span>
+            </label>
+          </div>
+        </div>
         <div class="mt15 settings__footer flex-middle">
           <div class="form-group">
             <div v-if="version.number">
