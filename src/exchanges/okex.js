@@ -6,7 +6,11 @@ class Okex extends Exchange {
     super(options)
 
     this.id = 'okex'
-
+    
+    this.tradeStack = []
+    this.dispatcher = null
+    
+    
     this.endpoints = {
       PRODUCTS: [
         'https://www.okex.com/api/spot/v3/instruments',
@@ -48,6 +52,25 @@ class Okex extends Exchange {
       this.options
     )
   }
+  
+  dispatchTrades(){
+    
+    //Check if a timeout is in progress
+    if( this.dispatcher ){
+  
+      clearTimeout(this.dispatcher)
+    }
+
+    this.dispatcher=null
+    
+    //If theres trades in the stack, dispatch them to emitter.
+    if( this.tradeStack.length > 0 ){
+      
+      this.emitTrades(this.tradeStack)
+      this.tradeStack = []
+    }
+  }
+  
 
   connect() {
     if (!super.connect()) return
@@ -56,8 +79,45 @@ class Okex extends Exchange {
 
     this.api.binaryType = 'arraybuffer'
 
-    this.api.onmessage = (event) =>
-      this.emitTrades(this.formatLiveTrades(event.data))
+    this.api.onmessage = (event) => {
+      
+      //Process trade
+      let trade = this.formatLiveTrades(event.data)
+      
+      //check if its actually a trade we received
+      if(trade == null ){
+          return
+      }else{
+          trade = trade[0]
+      }
+      
+       //If there are no pending trades, push this new one to stack
+       if( this.tradeStack.length == 0 ){
+        
+        this.tradeStack.push(trade) 
+         
+       }else{
+         
+         //Check if new trade matches timestamp of the trades in the stack
+         if( this.tradeStack[0][1] == trade[1] ){
+                      
+           this.tradeStack.push(trade) 
+           clearTimeout(this.dispatcher)
+         
+         }else{
+                 
+           //Push the last stack and add this new trade to the blank stack
+            this.dispatchTrades()
+            this.tradeStack.push(trade) 
+         }
+       }
+       
+       //Set a timeout to dispatch this stack
+       //During testing most trades from OKex arrived within 2-5ms, so 30ms should be sufficient
+       this.dispatcher = setTimeout(this.dispatchTrades.bind(this), 30)
+      
+    }
+    
 
     this.api.onopen = (event) => {
       this.api.send(
@@ -82,6 +142,8 @@ class Okex extends Exchange {
 
     this.api.onerror = this.emitError.bind(this, { message: 'Websocket error' })
   }
+  
+  
 
   disconnect() {
     if (!super.disconnect()) return
