@@ -160,8 +160,6 @@ class Exchange extends EventEmitter {
   groupTrades(trades) {
     const group = {}
     const sums = {}
-    const mins = {}
-    const maxs = {}
     const output = []
 
     for (let trade of trades) {
@@ -176,19 +174,8 @@ class Exchange extends EventEmitter {
         group[id][2] += +trade[2]
         group[id][3] += +trade[3]
         sums[id] += trade[2] * trade[3]
-        
-        //Record max and min price of the trade
-        if( trade[2] > maxs[id] ){
-            maxs[id] = trade[2]
-            
-        } else if ( trade[2] < mins[id] ){
-            mins[id] = trade[2]
-        }
-        
       } else {
         group[id] = trade
-        mins[id] = trade[2]
-        maxs[id] = trade[2]
 
         sums[id] = trade[2] * trade[3];
       }
@@ -198,8 +185,7 @@ class Exchange extends EventEmitter {
 
     for (let i = 0; i < ids.length; i++) {
       group[ids[i]][2] = sums[ids[i]] / group[ids[i]][3]
-      group[ids[i]][6] = Math.round(((maxs[ids[i]]-mins[ids[i]])/mins[ids[i]])*10000)
-      
+
       output.push(group[ids[i]]);
     }
 
