@@ -42,6 +42,7 @@ const DEFAULTS = {
   maxRows: 20,
   decimalPrecision: null,
   aggregationLag: null,
+  tradeSpray: false,
   showLogos: false,
   liquidationsOnlyList: false,
   showCounters: false,
@@ -191,6 +192,9 @@ const store = new Vuex.Store({
     },
     setAggregationLag(state, value) {
       state.aggregationLag = value
+    },
+    toggleTradeSpray(state, value) {
+      state.tradeSpray = value ? true : false
     },
     toggleLogos(state, value) {
       state.showLogos = value ? true : false

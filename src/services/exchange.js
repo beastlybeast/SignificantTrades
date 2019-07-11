@@ -1,4 +1,5 @@
 import EventEmitter from 'eventemitter3'
+import store from '../services/store'
 
 class Exchange extends EventEmitter {
   constructor(options) {
@@ -153,13 +154,15 @@ class Exchange extends EventEmitter {
    * groupTrades makes sure the output is a single $1000000 
    * and not 20 multiple trades which would show as multiple 100k$ in the TradeList
    *
-   * @param {*} trades
+   * @param {*} trades -[0]id -[1]date -[2]price -[3]size -[4]side
    * @returns
-   * @memberof Exchange
+   * @memberof Exchange 
    */
   groupTrades(trades) {
     const group = {}
     const sums = {}
+    const mins = {}
+    const maxs = {}
     const output = []
 
     for (let trade of trades) {
@@ -174,6 +177,11 @@ class Exchange extends EventEmitter {
         group[id][2] += +trade[2]
         group[id][3] += +trade[3]
         sums[id] += trade[2] * trade[3]
+
+        if (store.state.tradeSpray) {
+          mins[id] = Math.min(mins[id] || Infinity, trade[2])
+          maxs[id] = Math.max(mins[id] || 0, trade[2])
+        }
       } else {
         group[id] = trade
 
@@ -185,6 +193,10 @@ class Exchange extends EventEmitter {
 
     for (let i = 0; i < ids.length; i++) {
       group[ids[i]][2] = sums[ids[i]] / group[ids[i]][3]
+
+      if (mins[ids[i]]) {
+        group[ids[i]][6] = Math.round(((maxs[ids[i]]-mins[ids[i]])/mins[ids[i]])*10000)
+      }
 
       output.push(group[ids[i]]);
     }

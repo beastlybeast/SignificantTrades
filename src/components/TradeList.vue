@@ -27,6 +27,7 @@
           <div class="trades__item__price">
             <span class="icon-quote"></span>
             <span v-html="trade.price"></span>
+            <span v-if="trade.spray" class="trade__spray">{{ trade.spray }}</span>
           </div>
           <div class="trades__item__amount">
             <span class="trades__item__amount__quote"
@@ -76,6 +77,7 @@ export default {
       'preferQuoteCurrencySize',
       'decimalPrecision',
       'aggregationLag',
+      'tradeSpray',
       'showLogos',
     ]),
   },
@@ -295,6 +297,12 @@ export default {
         image = 'url(' + image + ')'
       }
 
+      let spray
+
+      if (this.tradeSpray && trade[6]) {
+        spray = ' - ' + trade[6] + 'bps'
+      }
+
       this.trades.unshift({
         id: Math.random()
           .toString(36)
@@ -311,6 +319,7 @@ export default {
         date: this.$root.ago(trade[1]),
         timestamp: trade[1],
         image: image,
+        spray: spray,
         message: message,
       })
 
@@ -739,4 +748,5 @@ export default {
     }
   }
 }
+
 </style>
