@@ -20,6 +20,13 @@ class Okex extends Exchange {
       TRADES: () => `https://www.okex.com/api/v1/trades.do?symbol=${this.pair}`
     }
 
+    // 2019-11-06
+    // retro compatibility for client without contract specification stored
+    // -> force refresh of stored instruments / specs
+    if (this.products && typeof this.specs === 'undefined') {
+      delete this.products;
+    }
+
     this.matchPairName = pair => {
       let id = this.products[pair] || this.products[pair.replace(/USDT/i, 'USD')]
 
