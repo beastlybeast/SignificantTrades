@@ -691,35 +691,35 @@
               <span>Show spray in basis points</span>
             </label>
           </div>
-        </div>
-        <div class="mt15 settings__footer flex-middle">
-          <div class="form-group">
-            <div v-if="version.number">
-              <span>
-                v{{ version.number }}
-                <sup class="version-date">{{ version.date }}</sup>
-              </span>
-              <i class="divider">|</i>
-              <a href="javascript:void(0);" @click="reset()"> reset</a>
-              <i class="divider">|</i>
-              <a
-                target="_blank"
-                href="https://github.com/Tucsky/SignificantTrades"
-                title="Run your own instance !"
-              >github</a>
-              <i class="divider">|</i>
-              <a
-                target="_blank"
-                href="https://tippin.me/@Tucsky"
-                @click="openTippin"
-                title="Bitcoin for more <3"
-                v-tippy="{
-                  animateFill: false,
-                  interactive: true,
-                  theme: 'blue',
-                }"
-              >donate</a
-              >
+          <div class="mt15 settings__footer flex-middle">
+            <div class="form-group">
+              <div v-if="version.number">
+                <span>
+                  v{{ version.number }}
+                  <sup class="version-date">{{ version.date }}</sup>
+                </span>
+                <i class="divider">|</i>
+                <a href="javascript:void(0);" @click="reset()"> reset</a>
+                <i class="divider">|</i>
+                <a
+                  target="_blank"
+                  href="https://github.com/Tucsky/SignificantTrades"
+                  title="Run your own instance !"
+                >github</a>
+                <i class="divider">|</i>
+                <a
+                  target="_blank"
+                  href="https://tippin.me/@Tucsky"
+                  @click="openTippin"
+                  title="Bitcoin for more <3"
+                  v-tippy="{
+                    animateFill: false,
+                    interactive: true,
+                    theme: 'blue',
+                  }"
+                >donate</a
+                >
+              </div>
             </div>
           </div>
         </div>

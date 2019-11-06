@@ -34,7 +34,13 @@ class Exchange extends EventEmitter {
       ) {
         console.info(`[${this.id}] reading stored products`)
 
-        this.products = storage.data
+        if (storage.data && typeof storage.data === 'object' && storage.data.hasOwnProperty('products')) {
+          for (let key in storage.data) {
+            this[key] = storage.data[key];
+          }
+        } else {
+          this.products = storage.data
+        }
 
         if (
           !this.products ||
@@ -151,12 +157,12 @@ class Exchange extends EventEmitter {
   /**
    * Larges trades are often sent in the form on multiples trades
    * For example a $1000000 trade on BitMEX can be received as 20 "small" trades, registered on the same timestamp (and side)
-   * groupTrades makes sure the output is a single $1000000 
+   * groupTrades makes sure the output is a single $1000000
    * and not 20 multiple trades which would show as multiple 100k$ in the TradeList
    *
    * @param {*} trades -[0]id -[1]date -[2]price -[3]size -[4]side
    * @returns
-   * @memberof Exchange 
+   * @memberof Exchange
    */
   groupTrades(trades) {
     const group = {}
@@ -315,7 +321,7 @@ class Exchange extends EventEmitter {
 
   indexProducts() {
     this.indexedProducts = []
-    
+
     if (!this.products) {
       return
     }
@@ -380,7 +386,15 @@ class Exchange extends EventEmitter {
         }
 
         if (data) {
-          this.products = this.formatProducts(data) || []
+          const formatedProducts = this.formatProducts(data) || [];
+
+          if (typeof formatedProducts === 'object' && formatedProducts.hasOwnProperty('products')) {
+            for (let key in formatedProducts) {
+              this[key] = formatedProducts[key];
+            }
+          } else {
+            this.products = formatedProducts
+          }
 
           console.log(`[${this.id}] storing products`, this.products)
 
@@ -388,7 +402,7 @@ class Exchange extends EventEmitter {
             this.id,
             JSON.stringify({
               timestamp: +new Date(),
-              data: this.products,
+              data: formatedProducts,
             })
           )
         } else {

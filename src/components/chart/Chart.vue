@@ -1352,4 +1352,9 @@ export default {
 .highcharts-yaxis-grid path:first-child {
   display: none;
 }
+
+.highcharts-tooltip-container {
+  max-width: 100%;
+  overflow: hidden;
+}
 </style>

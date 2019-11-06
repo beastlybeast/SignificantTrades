@@ -6,6 +6,7 @@ class Okex extends Exchange {
     super(options)
 
     this.id = 'okex'
+    this.types = []
 
     this.tradeStack = []
     this.dispatchTradesTimeout = null
@@ -33,11 +34,11 @@ class Okex extends Exchange {
 
       if (id) {
         if (/\d+$/.test(id)) {
-          this.type = 'futures'
+          this.types[id] = 'futures';
         } else if (/\-SWAP$/.test(id)) {
-          this.type = 'swap'
+          this.types[id] = 'swap';
         } else {
-          this.type = 'spot'
+          this.types[id] = 'spot';
         }
       }
 
@@ -106,7 +107,7 @@ class Okex extends Exchange {
       this.api.send(
         JSON.stringify({
           op: 'subscribe',
-          args: [`${this.type}/trade:${this.pair}`]
+          args: this.pairs.map(pair => `${this.types[pair]}/trade:${pair}`),
         })
       )
 
@@ -156,10 +157,10 @@ class Okex extends Exchange {
     return json.data.map(trade => {
       let size
 
-      if (this.type === 'spot') {
-        size = trade.size
+      if (typeof this.specs[trade.instrument_id] !== 'undefined') {
+        size = ((trade.size || trade.qty) * this.specs[trade.instrument_id]) / trade.price
       } else {
-        size = ((trade.size || trade.qty) * (/^BTC/.test(this.pair) ? 100 : 10)) / trade.price
+        size = trade.size
       }
 
       return [this.id, +new Date(trade.timestamp), +trade.price, size, trade.side === 'buy' ? 1 : 0]
@@ -179,7 +180,8 @@ class Okex extends Exchange {
   } */
 
   formatProducts(response) {
-    const output = {}
+    const products = {}
+    const specs = {}
 
     const types = ['spot', 'swap', 'futures']
 
@@ -187,24 +189,29 @@ class Okex extends Exchange {
       data.forEach(product => {
         const pair = (
           (product.base_currency ? product.base_currency : product.underlying_index) +
-          product.quote_currency.replace(/usdt$/i, 'USD')
+          (types[index] === 'spot' ? product.quote_currency.replace(/usdt$/i, 'USD') : product.quote_currency)
         ).toUpperCase() // base+quote ex: BTCUSD
 
         switch (types[index]) {
           case 'spot':
-            output[pair] = product.instrument_id
+            products[pair] = product.instrument_id
             break
           case 'swap':
-            output[pair + '-SWAP'] = product.instrument_id
+            products[pair + '-SWAP'] = product.instrument_id
+            specs[product.instrument_id] = +product.contract_val
             break
           case 'futures':
-            output[pair + '-' + product.alias.toUpperCase()] = product.instrument_id
+            products[pair + '-' + product.alias.toUpperCase()] = product.instrument_id
+            specs[product.instrument_id] = +product.contract_val
             break
         }
       })
     })
 
-    return output
+    return {
+      products,
+      specs
+    }
   }
 
   pad(num, size) {
