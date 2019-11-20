@@ -6,6 +6,7 @@ import Bitmex from '../exchanges/bitmex'
 import Coinex from '../exchanges/coinex'
 import Huobi from '../exchanges/huobi'
 import Binance from '../exchanges/binance'
+import BinanceFutures from '../exchanges/binance-futures'
 import Bitfinex from '../exchanges/bitfinex'
 import Bitstamp from '../exchanges/bitstamp'
 import Gdax from '../exchanges/gdax'
@@ -29,6 +30,7 @@ const emitter = new Vue({
         new Bitmex(),
         new Bitfinex(),
         new Binance(),
+        new BinanceFutures(),
         new Bitstamp(),
         new Gdax(),
         new Poloniex(),

@@ -255,7 +255,7 @@ export default {
       let image
       let amount = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
 
-      classname.push(trade[0])
+      classname.push(trade[0].replace(' ', '_'))
 
       const multiplier =
         this.exchanges[trade[0]] &&
@@ -301,6 +301,10 @@ export default {
 
       if (this.tradeSpray && trade[6]) {
         spray = ' - ' + trade[6] + 'bps'
+      }
+
+      if (trade[0].length > 10) {
+        classname.push('sm');
       }
 
       this.trades.unshift({
@@ -562,6 +566,11 @@ export default {
         background-image: url('/static/exchanges/#{$exchange}.svg');
       }
     }
+  }
+
+  &:not(.-logos) .trades__item--sm .trades__item__exchange {
+    font-size: .75em;
+    letter-spacing: -.5px;
   }
 }
 

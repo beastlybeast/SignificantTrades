@@ -62,7 +62,7 @@ $icon-xmr: \e931;
 $icon-iota: \e932;
 $icon-eos: \e933;
 
-$exchanges: bitmex binance bitfinex okex huobi bitstamp gdax hitbtc poloniex liquid coinex kraken deribit;
+$exchanges: bitmex binance binance_futures bitfinex okex huobi bitstamp gdax hitbtc poloniex liquid coinex kraken deribit;
 
 @function unicode($str) {
   @return unquote("\"") + $str + unquote("\"");
