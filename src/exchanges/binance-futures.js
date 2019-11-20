@@ -4,7 +4,7 @@ class BinanceFutures extends Exchange {
   constructor(options) {
     super(options)
 
-    this.id = 'binance futures'
+    this.id = 'binance_futures'
 
     this.endpoints = {
       PRODUCTS: 'https://fapi.binance.com/fapi/v1/exchangeInfo',

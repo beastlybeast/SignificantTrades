@@ -19,7 +19,7 @@
       >
       <div class="settings-exchange__identity">
         <div class="settings-exchange__name">
-          {{ exchange.id }}
+          {{ exchange.id.replace('_', ' ') }}
           <i v-if="settings.ohlc !== false" class="icon-line-chart"></i>
         </div>
         <small class="settings-exchange__error" v-if="exchange.error">{{

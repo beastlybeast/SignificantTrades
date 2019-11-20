@@ -255,7 +255,7 @@ export default {
       let image
       let amount = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
 
-      classname.push(trade[0].replace(' ', '_'))
+      classname.push(trade[0])
 
       const multiplier =
         this.exchanges[trade[0]] &&
@@ -315,7 +315,7 @@ export default {
         foreground: color.foreground,
         side: trade[4] > 0 ? 'BUY' : 'SELL',
         size: this.$root.formatAmount(trade[3]),
-        exchange: trade[0],
+        exchange: trade[0].replace('_', ' '),
         price: this.$root.formatPrice(trade[2]),
         amount: amount,
         classname: classname.map((a) => 'trades__item--' + a).join(' '),
