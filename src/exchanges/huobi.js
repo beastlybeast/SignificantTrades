@@ -6,24 +6,59 @@ class Huobi extends Exchange {
     super(options)
 
     this.id = 'huobi'
-
-    this.endpoints = {
-      PRODUCTS: 'http://api.huobi.pro/v1/common/symbols',
+    this.types = []
+    this.contractTypesAliases = {
+      'this_week': 'CW',
+      'next_week': 'NW',
+      'quarter': 'CQ'
     }
 
-    this.matchPairName = (pair) => {
-      pair = pair.replace(/USD$/, 'USDT')
+    this.endpoints = {
+      PRODUCTS: [
+        'http://api.huobi.pro/v1/common/symbols',
+        'https://api.hbdm.com/api/v1/contract_contract_info',
+      ]
+    }
 
-      if (this.products.indexOf(pair) !== -1) {
-        return pair.toLowerCase()
+    // 2019-12-13
+    // retro compatibility for client without contract specification stored
+    // -> force refresh of stored instruments / specs
+    if (this.products && typeof this.specs === 'undefined') {
+      delete this.products;
+    }
+
+    this.matchPairName = pair => {
+      let id = this.products[pair] || this.products[pair.replace(/USDT/i, 'USD')]
+
+      if (!id) {
+        for (let name in this.products) {
+          if (pair === this.products[name]) {
+            id = this.products[name]
+            break
+          }
+        }
       }
 
-      return false
+      if (id) {
+        if (id.indexOf('_') !== -1) {
+          this.types[id] = 'futures';
+        } else {
+          this.types[id] = 'spot';
+        }
+      }
+
+      return id || false
     }
 
     this.options = Object.assign(
       {
-        url: 'wss://api.huobi.pro/ws',
+        url: (pair) => {
+          if (this.types[pair] === 'futures') {
+            return 'wss://www.hbdm.com/ws';
+          } else {
+            return 'wss://api.huobi.pro/ws';
+          }
+        }
       },
       this.options
     )
@@ -32,7 +67,7 @@ class Huobi extends Exchange {
   connect() {
     if (!super.connect()) return
 
-    this.api = new WebSocket(this.getUrl())
+    this.api = new WebSocket(this.getUrl(this.pair))
 
     this.api.binaryType = 'arraybuffer'
 
@@ -40,12 +75,14 @@ class Huobi extends Exchange {
       this.emitTrades(this.formatLiveTrades(event.data))
 
     this.api.onopen = (event) => {
-      this.api.send(
-        JSON.stringify({
-          sub: 'market.' + this.pair + '.trade.detail',
-          id: this.pair,
-        })
-      )
+      for (let pair of this.pairs) {
+        this.api.send(
+          JSON.stringify({
+            sub: 'market.' + pair + '.trade.detail',
+            id: pair,
+          })
+        )
+      }
 
       this.emitOpen(event)
     }
@@ -74,22 +111,54 @@ class Huobi extends Exchange {
       this.api.send(JSON.stringify({ pong: json.ping }))
       return
     } else if (json.tick && json.tick.data && json.tick.data.length) {
-      return json.tick.data.map((trade) => [
-        this.id,
-        trade.ts,
-        +trade.price,
-        +trade.amount,
-        trade.direction === 'buy' ? 1 : 0,
-      ])
+      const pair = json.ch.replace(/market.(.*).trade.detail/, '$1')
+
+      return json.tick.data.map((trade) => {
+        let amount = +trade.amount;
+
+        if (typeof this.specs[pair] !== 'undefined') {
+          amount = amount * this.specs[pair] / trade.price
+        }
+
+        return [
+          this.id,
+          trade.ts,
+          +trade.price,
+          amount,
+          trade.direction === 'buy' ? 1 : 0,
+        ]
+      })
     }
   }
 
   formatProducts(response) {
-    return Object.keys(response.data).map((a) =>
-      (
-        response.data[a]['base-currency'] + response.data[a]['quote-currency']
-      ).toUpperCase()
-    )
+    const products = {}
+    const specs = {}
+
+    const types = ['spot', 'futures']
+
+    response.forEach((_data, index) => {
+      _data.data.forEach(product => {
+        let pair;
+
+        switch (types[index]) {
+          case 'spot':
+            pair = (product['base-currency'] + product['quote-currency']).toUpperCase();
+            products[pair] = pair
+            break
+          case 'futures':
+            pair = product.symbol + '_' + this.contractTypesAliases[product.contract_type];
+            products[product.symbol + 'USD' + '-' + product.contract_type.toUpperCase()] = pair
+            specs[pair] = +product.contract_size
+            break
+        }
+      })
+    })
+
+    return {
+      products,
+      specs
+    }
   }
 }
 
