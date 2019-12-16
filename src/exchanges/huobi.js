@@ -149,6 +149,7 @@ class Huobi extends Exchange {
           case 'futures':
             pair = product.symbol + '_' + this.contractTypesAliases[product.contract_type];
             products[product.symbol + 'USD' + '-' + product.contract_type.toUpperCase()] = pair
+            products[product.contract_code] = pair
             specs[pair] = +product.contract_size
             break
         }
