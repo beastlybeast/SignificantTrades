@@ -28,7 +28,7 @@ class Huobi extends Exchange {
     }
 
     this.matchPairName = pair => {
-      let id = this.products[pair] || this.products[pair.replace(/USDT/i, 'USD')]
+      let id = this.products[pair] || this.products[pair.replace(/USD$/, 'USDT')]
 
       if (!id) {
         for (let name in this.products) {
