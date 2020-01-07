@@ -78,7 +78,7 @@ class Huobi extends Exchange {
       for (let pair of this.pairs) {
         this.api.send(
           JSON.stringify({
-            sub: 'market.' + pair + '.trade.detail',
+            sub: 'market.' + pair.toLowerCase() + '.trade.detail',
             id: pair,
           })
         )
