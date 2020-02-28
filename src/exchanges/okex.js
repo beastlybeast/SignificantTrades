@@ -54,7 +54,7 @@ class Okex extends Exchange {
 
     this.options = Object.assign(
       {
-        url: 'wss://real.okex.com:10442/ws/v3'
+        url: 'wss://real.okex.com:8443/ws/v3'
       },
       this.options
     )
