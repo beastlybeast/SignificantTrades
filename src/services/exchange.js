@@ -82,17 +82,7 @@ class Exchange extends EventEmitter {
           return null
         }
       })
-      .reduce((pairs, pair) => {
-        if (pair) {
-          if (!Array.isArray(pair)) {
-            pair = [pair]
-          }
-
-          pair.forEach(a => pairs.indexOf(a) === -1 && pairs.push(a))
-        }
-
-        return pairs
-      }, [])
+      .filter(a => !!a)
   }
 
   get pair() {

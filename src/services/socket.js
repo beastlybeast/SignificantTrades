@@ -337,7 +337,9 @@ const emitter = new Vue({
         return
       }
 
-      this.trades = this.trades.concat(this.queue)
+      if (this.showChart) {
+        this.trades = this.trades.concat(this.queue)
+      }
 
       this.emitTrades(this.queue, 'trades.queued')
 
