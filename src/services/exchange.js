@@ -383,7 +383,9 @@ class Exchange extends EventEmitter {
       ).then(data => {
         console.log(`[${this.id}] received API products response => format products`)
 
-        if (data.length === 1) {
+        if (data.indexOf(null) !== -1) {
+          data = null
+        } else if (data.length === 1) {
           data = data[0]
         }
 

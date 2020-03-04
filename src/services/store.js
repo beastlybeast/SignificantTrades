@@ -10,34 +10,32 @@ const DEFAULTS = {
     {
       amount: 100000,
       buyColor: 'rgba(76,175,80,.33)',
-      sellColor: 'rgba(229,115,115,.33)',
+      sellColor: 'rgba(229,115,115,.33)'
     },
     {
       amount: 100000,
       buyColor: 'rgb(91,130,48)',
-      sellColor: 'rgb(224,91,82)',
+      sellColor: 'rgb(224,91,82)'
     },
     {
       amount: 1000000,
       gif: 'cash',
       buyColor: 'rgb(156,204,101)',
-      sellColor: 'rgb(244,67,54)',
+      sellColor: 'rgb(244,67,54)'
     },
     {
       amount: 10000000,
       gif: 'explosion',
       buyColor: 'rgb(255,160,0)',
-      sellColor: 'rgb(233,30,99)',
-    },
+      sellColor: 'rgb(233,30,99)'
+    }
   ],
   exchanges: {
     huobi: { disabled: true },
-    okex: { disabled: true },
     liquid: { disabled: true },
     bithumb: { disabled: true },
     hitbtc: { disabled: true },
-    coinex: { disabled: true },
-    bybit: { disabled: true },
+    coinex: { disabled: true }
   },
   maxRows: 20,
   decimalPrecision: null,
@@ -54,14 +52,14 @@ const DEFAULTS = {
     1000 * 60 * 30,
     1000 * 60 * 60,
     1000 * 60 * 60 * 2,
-    1000 * 60 * 60 * 4,
+    1000 * 60 * 60 * 4
   ],
   hideIncompleteCounter: true,
   cumulativeCounters: true,
   showStats: true,
   showChart: true,
   statsPeriod: 1000 * 60,
-  statsGraphs: true,
+  statsGraphs: false,
   statsGraphsTimeframe: 3000,
   statsGraphsLength: 100,
   chartPadding: 0.075,
@@ -95,7 +93,7 @@ const DEFAULTS = {
   isSnaped: true,
   isLoading: false,
   isReplaying: false,
-  actives: [],
+  actives: []
 }
 
 /**
@@ -167,12 +165,7 @@ if (STORED && STORED.thresholds && STORED.thresholds.length) {
  * NON PERSISTENT DATA
  * thoses properties are used in the store logic, but shouldn't be stored in the client storage
  */
-const EPHEMERAL_PROPERTIES = [
-  'isSnaped',
-  'isLoading',
-  'isReplaying',
-  'actives',
-]
+const EPHEMERAL_PROPERTIES = ['isSnaped', 'isLoading', 'isReplaying', 'actives']
 
 const store = new Vuex.Store({
   defaults: DEFAULTS,
@@ -228,13 +221,13 @@ const store = new Vuex.Store({
       state.statsPeriod = period
     },
     toggleStatsGraphs(state, value) {
-      state.statsGraphs = value ? true : false;
+      state.statsGraphs = value ? true : false
     },
     setStatsGraphsTimeframe(state, value) {
-      state.statsGraphsTimeframe = isNaN(+value) ? 1000 : value;
+      state.statsGraphsTimeframe = isNaN(+value) ? 1000 : value
     },
     setStatsGraphsLength(state, value) {
-      state.statsGraphsLength = isNaN(+value) ? 50 : value;
+      state.statsGraphsLength = isNaN(+value) ? 50 : value
     },
     toggleHideIncompleteCounter(state, value) {
       state.hideIncompleteCounter = value ? true : false
@@ -372,11 +365,7 @@ const store = new Vuex.Store({
       state.autoClearTrades = value ? true : false
     },
     setExchangeThreshold(state, payload) {
-      Vue.set(
-        state.exchanges[payload.exchange],
-        'threshold',
-        +payload.threshold
-      )
+      Vue.set(state.exchanges[payload.exchange], 'threshold', +payload.threshold)
     },
     setExchangeMatch(state, payload) {
       Vue.set(state.exchanges[payload.exchange], 'match', payload.match)
@@ -449,8 +438,8 @@ const store = new Vuex.Store({
       } else if (!active && index >= 0) {
         state.actives.splice(index, 1)
       }
-    },
-  },
+    }
+  }
 })
 
 store.subscribe((mutation, state) => {
@@ -462,11 +451,7 @@ store.subscribe((mutation, state) => {
     }
   }
 
-  if (
-    ['reloadExchangeState', 'setExchangeMatch', 'toggleSnap'].indexOf(
-      mutation.type
-    ) === -1
-  ) {
+  if (['reloadExchangeState', 'setExchangeMatch', 'toggleSnap'].indexOf(mutation.type) === -1) {
     localStorage.setItem('settings', JSON.stringify(copy))
   }
 
