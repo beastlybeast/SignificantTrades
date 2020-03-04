@@ -16,6 +16,7 @@ import Poloniex from '../exchanges/poloniex'
 import Liquid from '../exchanges/liquid'
 import Deribit from '../exchanges/deribit'
 import Bybit from '../exchanges/bybit'
+import Ftx from '../exchanges/ftx'
 
 import store from '../services/store'
 
@@ -42,6 +43,7 @@ const emitter = new Vue({
         new Coinex(),
         new Liquid(),
         new Bybit(),
+        new Ftx()
       ],
 
       trades: [],
@@ -54,7 +56,7 @@ const emitter = new Vue({
       _fetchedTime: 0,
       _fetchedBytes: 0,
       _firstCloses: {},
-      _replayTime: 0,
+      _replayTime: 0
     }
   },
   computed: {
@@ -87,7 +89,7 @@ const emitter = new Vue({
     },
     isReplaying() {
       return store.state.isReplaying
-    },
+    }
   },
   created() {
     /*window.emitTrade = (exchange, price, amount = 1, side = 1, type = null) => {
@@ -104,8 +106,8 @@ const emitter = new Vue({
       this.emitTrades([trade]);
     }*/
 
-    this.exchanges.forEach((exchange) => {
-      exchange.on('live_trades', (trades) => {
+    this.exchanges.forEach(exchange => {
+      exchange.on('live_trades', trades => {
         if (!trades || !trades.length) {
           return
         }
@@ -121,37 +123,32 @@ const emitter = new Vue({
         }
       })
 
-      exchange.on('open', (event) => {
+      exchange.on('open', event => {
         console.log(`[socket.exchange.on.open] ${exchange.id} opened`)
 
         this.$emit('connected', exchange.id)
       })
 
-      exchange.on('close', (event) => {
+      exchange.on('close', event => {
         console.log(`[socket.exchange.on.close] ${exchange.id} closed`)
 
         this.$emit('disconnected', exchange.id)
 
-        if (
-          exchange.shouldBeConnected &&
-          !this.exchangesSettings[exchange.id].disabled
-        ) {
+        if (exchange.shouldBeConnected && !this.exchangesSettings[exchange.id].disabled) {
           exchange.reconnect(this.pair)
         }
       })
 
-      exchange.on('match', (pair) => {
+      exchange.on('match', pair => {
         console.log(`[socket.exchange.on.match] ${exchange.id} matched ${pair}`)
         store.commit('setExchangeMatch', {
           exchange: exchange.id,
-          match: pair,
+          match: pair
         })
       })
 
-      exchange.on('error', (event) => {
-        console.log(
-          `[socket.exchange.on.error] ${exchange.id} reported an error`
-        )
+      exchange.on('error', event => {
+        console.log(`[socket.exchange.on.error] ${exchange.id} reported an error`)
       })
 
       store.commit('reloadExchangeState', exchange.id)
@@ -166,12 +163,8 @@ const emitter = new Vue({
         console.info(`[sockets] API_URL = ${this.API_URL}`)
 
         if (process.env.API_SUPPORTED_PAIRS) {
-          this.API_SUPPORTED_PAIRS = process.env.API_SUPPORTED_PAIRS.map((a) =>
-            a.toUpperCase()
-          )
-          console.info(
-            `[sockets] API_SUPPORTED_PAIRS = ${this.API_SUPPORTED_PAIRS}`
-          )
+          this.API_SUPPORTED_PAIRS = process.env.API_SUPPORTED_PAIRS.map(a => a.toUpperCase())
+          console.info(`[sockets] API_SUPPORTED_PAIRS = ${this.API_SUPPORTED_PAIRS}`)
         }
       }
 
@@ -192,7 +185,7 @@ const emitter = new Vue({
           id: `server_status`,
           type: 'error',
           title: `No pair`,
-          message: `Type the name of the pair you want to watch in the pair section of the settings panel`,
+          message: `Type the name of the pair you want to watch in the pair section of the settings panel`
         })
       }
 
@@ -210,20 +203,18 @@ const emitter = new Vue({
         id: `server_status`,
         type: 'info',
         title: `Loading`,
-        message: `Fetching products...`,
+        message: `Fetching products...`
       })
 
-      Promise.all(
-        this.exchanges.map((exchange) => exchange.validatePair(this.pair))
-      ).then(() => {
-        let validExchanges = this.exchanges.filter((exchange) => exchange.valid)
+      Promise.all(this.exchanges.map(exchange => exchange.validatePair(this.pair))).then(() => {
+        let validExchanges = this.exchanges.filter(exchange => exchange.valid)
 
         if (!validExchanges.length) {
           this.$emit('alert', {
             id: `server_status`,
             type: 'error',
             title: `No match`,
-            message: `"${pair}" did not matched with any active pairs`,
+            message: `"${pair}" did not matched with any active pairs`
           })
 
           return
@@ -233,7 +224,7 @@ const emitter = new Vue({
           id: `server_status`,
           type: 'info',
           title: `Loading`,
-          message: `${validExchanges.length} exchange(s) matched ${pair}`,
+          message: `${validExchanges.length} exchange(s) matched ${pair}`
         })
 
         if (this._pair !== this.pair) {
@@ -243,38 +234,32 @@ const emitter = new Vue({
         }
 
         console.log(
-          `[socket.connect] ${
-            validExchanges.length
-          } successfully matched with ${this.pair}`
+          `[socket.connect] ${validExchanges.length} successfully matched with ${this.pair}`
         )
 
         validExchanges = validExchanges.filter(
-          (exchange) => !this.exchangesSettings[exchange.id].disabled
+          exchange => !this.exchangesSettings[exchange.id].disabled
         )
 
         this.$emit('alert', {
           id: `server_status`,
           type: 'info',
           title: `Loading`,
-          message: `Subscribing to ${this.pair} on ${
-            validExchanges.length
-          } exchange(s)`,
-          delay: 1000 * 5,
+          message: `Subscribing to ${this.pair} on ${validExchanges.length} exchange(s)`,
+          delay: 1000 * 5
         })
 
         console.log(
-          `[socket.connect] batch connect to ${validExchanges
-            .map((a) => a.id)
-            .join(' / ')}`
+          `[socket.connect] batch connect to ${validExchanges.map(a => a.id).join(' / ')}`
         )
 
-        validExchanges.forEach((exchange) => exchange.connect())
+        validExchanges.forEach(exchange => exchange.connect())
       })
     },
     disconnectExchanges() {
       console.log(`[socket.connect] disconnect exchanges asynchronously`)
 
-      this.exchanges.forEach((exchange) => exchange.disconnect())
+      this.exchanges.forEach(exchange => exchange.disconnect())
     },
     cleanOldData() {
       if (this.isLoading || this.isReplaying) {
@@ -288,13 +273,10 @@ const emitter = new Vue({
       }
 
       const minTimestamp =
-        Math.ceil((+new Date() - requiredTimeframe) / this.timeframe) *
-        this.timeframe
+        Math.ceil((+new Date() - requiredTimeframe) / this.timeframe) * this.timeframe
 
       console.log(
-        `[socket.clean] remove trades older than ${new Date(
-          minTimestamp
-        ).toLocaleString()}`
+        `[socket.clean] remove trades older than ${new Date(minTimestamp).toLocaleString()}`
       )
 
       let i
@@ -334,7 +316,7 @@ const emitter = new Vue({
       let upVolume = 0
       let downVolume = 0
 
-      const output = trades.filter((a) => {
+      const output = trades.filter(a => {
         if (this.actives.indexOf(a[0]) === -1) {
           return false
         }
@@ -364,8 +346,7 @@ const emitter = new Vue({
     canFetch() {
       return (
         this.API_URL &&
-        (!this.API_SUPPORTED_PAIRS ||
-          this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1)
+        (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1)
       )
     },
     getApiUrl(from, to) {
@@ -404,9 +385,7 @@ const emitter = new Vue({
       to = Math.ceil(to / this.timeframe) * this.timeframe
 
       console.log(
-        `[socket.fetchRange] minData: ${new Date(
-          minData
-        ).toLocaleString()}, from: ${new Date(
+        `[socket.fetchRange] minData: ${new Date(minData).toLocaleString()}, from: ${new Date(
           from
         ).toLocaleString()}, to: ${to}`,
         this._fetchedMax ? '(FETCHED MAX)' : ''
@@ -415,14 +394,10 @@ const emitter = new Vue({
       if (!this._fetchedMax && to - from >= 60000 && from < minData) {
         console.info(
           `[socket.fetchRange]`,
-          `FETCH NEEDED\n\n\tcurrent time: ${new Date(
-            now
-          ).toLocaleString()}\n\tfrom: ${new Date(
+          `FETCH NEEDED\n\n\tcurrent time: ${new Date(now).toLocaleString()}\n\tfrom: ${new Date(
             from
           ).toLocaleString()}\n\tto: ${new Date(to).toLocaleString()} (${
-            this.trades.length
-              ? 'using first trade as base'
-              : 'using now for reference'
+            this.trades.length ? 'using first trade as base' : 'using now for reference'
           })`
         )
 
@@ -448,7 +423,7 @@ const emitter = new Vue({
       let queuedAt = 0
       let startedAt
 
-      const step = (timestamp) => {
+      const step = timestamp => {
         if (!startedAt) {
           startedAt = timestamp
         }
@@ -504,7 +479,7 @@ const emitter = new Vue({
 
       store.commit('toggleReplaying', {
         timestamp: start,
-        speed: speed,
+        speed: speed
       })
 
       window.requestAnimationFrame(step)
@@ -524,22 +499,18 @@ const emitter = new Vue({
 
       return new Promise((resolve, reject) => {
         Axios.get(url, {
-          onDownloadProgress: (e) => {
+          onDownloadProgress: e => {
             this.$emit('loadingProgress', {
               loaded: e.loaded,
               total: e.total,
-              progress: e.loaded / e.total,
+              progress: e.loaded / e.total
             })
 
             this._fetchedBytes += e.loaded
-          },
+          }
         })
-          .then((response) => {
-            if (
-              !response.data ||
-              !response.data.format ||
-              !response.data.results.length
-            ) {
+          .then(response => {
+            if (!response.data || !response.data.format || !response.data.results.length) {
               return resolve()
             }
 
@@ -548,7 +519,7 @@ const emitter = new Vue({
 
             switch (response.data.format) {
               case 'trade':
-                data = data.map((a) => {
+                data = data.map(a => {
                   a[1] = +a[1]
                   a[2] = +a[2]
                   a[3] = +a[3]
@@ -558,18 +529,13 @@ const emitter = new Vue({
                 })
 
                 if (!this.trades.length) {
-                  console.log(
-                    `[socket.fetch] set socket.trades (${data.length} trades)`
-                  )
+                  console.log(`[socket.fetch] set socket.trades (${data.length} trades)`)
 
                   this.trades = data
                 } else {
-                  const prepend = data.filter(
-                    (trade) => trade[1] <= this.trades[0][1]
-                  )
+                  const prepend = data.filter(trade => trade[1] <= this.trades[0][1])
                   const append = data.filter(
-                    (trade) =>
-                      trade[1] >= this.trades[this.trades.length - 1][1]
+                    trade => trade[1] >= this.trades[this.trades.length - 1][1]
                   )
 
                   if (prepend.length) {
@@ -599,10 +565,10 @@ const emitter = new Vue({
               format: format,
               data: data,
               from: from,
-              to: to,
+              to: to
             })
           })
-          .catch((err) => {
+          .catch(err => {
             this._fetchedMax = true
 
             err &&
@@ -613,7 +579,7 @@ const emitter = new Vue({
                   err.response && err.response.data && err.response.data.error
                     ? err.response.data.error
                     : err.message,
-                id: `fetch_error`,
+                id: `fetch_error`
               })
 
             reject()
@@ -664,8 +630,8 @@ const emitter = new Vue({
         if (
           gotAllCloses ||
           !Object.keys(closesByExchanges)
-            .map((id) => closesByExchanges[id])
-            .filter((close) => close === null).length
+            .map(id => closesByExchanges[id])
+            .filter(close => close === null).length
         ) {
           gotAllCloses = true
 
@@ -674,10 +640,7 @@ const emitter = new Vue({
       }
 
       for (let trade of this.trades) {
-        if (
-          typeof closesByExchanges[trade[0]] === 'undefined' ||
-          closesByExchanges[trade[0]]
-        ) {
+        if (typeof closesByExchanges[trade[0]] === 'undefined' || closesByExchanges[trade[0]]) {
           continue
         }
 
@@ -686,8 +649,8 @@ const emitter = new Vue({
         if (
           gotAllCloses ||
           !Object.keys(closesByExchanges)
-            .map((id) => closesByExchanges[id])
-            .filter((close) => close === null).length
+            .map(id => closesByExchanges[id])
+            .filter(close => close === null).length
         ) {
           gotAllCloses = true
 
@@ -704,8 +667,8 @@ const emitter = new Vue({
       this._firstCloses = closesByExchanges
 
       return closesByExchanges
-    },
-  },
+    }
+  }
 })
 
 export default emitter

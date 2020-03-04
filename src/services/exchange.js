@@ -34,9 +34,13 @@ class Exchange extends EventEmitter {
       ) {
         console.info(`[${this.id}] reading stored products`)
 
-        if (storage.data && typeof storage.data === 'object' && storage.data.hasOwnProperty('products')) {
+        if (
+          storage.data &&
+          typeof storage.data === 'object' &&
+          storage.data.hasOwnProperty('products')
+        ) {
           for (let key in storage.data) {
-            this[key] = storage.data[key];
+            this[key] = storage.data[key]
           }
         } else {
           this.products = storage.data
@@ -56,7 +60,7 @@ class Exchange extends EventEmitter {
       console.error(`[${this.id}] unable to retrieve stored products`, error)
     }
 
-    this.indexProducts();
+    this.indexProducts()
   }
 
   set pair(name) {
@@ -65,17 +69,30 @@ class Exchange extends EventEmitter {
       return
     }
 
-    this._pair = name.split('+').map(a => {
-      if (this.matchPairName && typeof this.matchPairName === 'function') {
-        return this.matchPairName(a)
-      } else if (Array.isArray(this.products) && this.products.indexOf(a) !== -1) {
-        return a
-      } else if (typeof this.products === 'object') {
-        return this.products[a] || null
-      } else {
-        return null
-      }
-    }).filter(a => !!a)
+    this._pair = name
+      .split('+')
+      .map(a => {
+        if (this.matchPairName && typeof this.matchPairName === 'function') {
+          return this.matchPairName(a)
+        } else if (Array.isArray(this.products) && this.products.indexOf(a) !== -1) {
+          return a
+        } else if (typeof this.products === 'object') {
+          return this.products[a] || null
+        } else {
+          return null
+        }
+      })
+      .reduce((pairs, pair) => {
+        if (pair) {
+          if (!Array.isArray(pair)) {
+            pair = [pair]
+          }
+
+          pair.forEach(a => pairs.indexOf(a) === -1 && pairs.push(a))
+        }
+
+        return pairs
+      }, [])
   }
 
   get pair() {
@@ -119,9 +136,7 @@ class Exchange extends EventEmitter {
       return
     }
 
-    console.log(
-      `[${this.id}] schedule reconnection (${this.reconnectionDelay} ms)`
-    )
+    console.log(`[${this.id}] schedule reconnection (${this.reconnectionDelay} ms)`)
 
     this.reconnectionTimeout = setTimeout(() => {
       if (!this.connected) {
@@ -174,11 +189,11 @@ class Exchange extends EventEmitter {
     for (let trade of trades) {
       const id = parseInt(trade[1]).toFixed() + '_' + trade[4] // timestamp + side
 
-      trade[2] = +trade[2];
-      trade[3] = +trade[3];
+      trade[2] = +trade[2]
+      trade[3] = +trade[3]
 
       if (trade[5]) {
-        output.push(trade);
+        output.push(trade)
       } else if (group[id]) {
         group[id][2] += +trade[2]
         group[id][3] += +trade[3]
@@ -191,20 +206,20 @@ class Exchange extends EventEmitter {
       } else {
         group[id] = trade
 
-        sums[id] = trade[2] * trade[3];
+        sums[id] = trade[2] * trade[3]
       }
     }
 
-    const ids = Object.keys(group);
+    const ids = Object.keys(group)
 
     for (let i = 0; i < ids.length; i++) {
       group[ids[i]][2] = sums[ids[i]] / group[ids[i]][3]
 
       if (mins[ids[i]]) {
-        group[ids[i]][6] = Math.round(((maxs[ids[i]]-mins[ids[i]])/mins[ids[i]])*10000)
+        group[ids[i]][6] = Math.round(((maxs[ids[i]] - mins[ids[i]]) / mins[ids[i]]) * 10000)
       }
 
-      output.push(group[ids[i]]);
+      output.push(group[ids[i]])
     }
 
     return output
@@ -249,7 +264,7 @@ class Exchange extends EventEmitter {
     this.valid = false
 
     if (typeof this.products === 'undefined') {
-      return this.fetchProducts().then((data) => this.validatePair(pair))
+      return this.fetchProducts().then(data => this.validatePair(pair))
     }
 
     if (!pair || (pair && (!(this.pair = pair) || !this.pairs.length))) {
@@ -362,12 +377,11 @@ class Exchange extends EventEmitter {
           return new Promise((resolve, reject) => {
             setTimeout(() => {
               resolve(
-                fetch(
-                  `${process.env.PROXY_URL ? process.env.PROXY_URL : ''}${url}`,
-                  { method: method }
-                )
-                  .then((response) => response.json())
-                  .catch((err) => {
+                fetch(`${process.env.PROXY_URL ? process.env.PROXY_URL : ''}${url}`, {
+                  method: method
+                })
+                  .then(response => response.json())
+                  .catch(err => {
                     console.log(err)
 
                     return null
@@ -376,21 +390,19 @@ class Exchange extends EventEmitter {
             }, 500)
           })
         })
-      ).then((data) => {
-        console.log(
-          `[${this.id}] received API products response => format products`
-        )
+      ).then(data => {
+        console.log(`[${this.id}] received API products response => format products`)
 
         if (data.length === 1) {
           data = data[0]
         }
 
         if (data) {
-          const formatedProducts = this.formatProducts(data) || [];
+          const formatedProducts = this.formatProducts(data) || []
 
           if (typeof formatedProducts === 'object' && formatedProducts.hasOwnProperty('products')) {
             for (let key in formatedProducts) {
-              this[key] = formatedProducts[key];
+              this[key] = formatedProducts[key]
             }
           } else {
             this.products = formatedProducts
@@ -402,14 +414,14 @@ class Exchange extends EventEmitter {
             this.id,
             JSON.stringify({
               timestamp: +new Date(),
-              data: formatedProducts,
+              data: formatedProducts
             })
           )
         } else {
           this.products = null
         }
 
-        this.indexProducts();
+        this.indexProducts()
 
         resolve(this.products)
       })
