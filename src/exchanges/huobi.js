@@ -8,15 +8,15 @@ class Huobi extends Exchange {
     this.id = 'huobi'
     this.types = []
     this.contractTypesAliases = {
-      'this_week': 'CW',
-      'next_week': 'NW',
-      'quarter': 'CQ'
+      this_week: 'CW',
+      next_week: 'NW',
+      quarter: 'CQ'
     }
 
     this.endpoints = {
       PRODUCTS: [
         'http://api.huobi.pro/v1/common/symbols',
-        'https://api.hbdm.com/api/v1/contract_contract_info',
+        'https://api.hbdm.com/api/v1/contract_contract_info'
       ]
     }
 
@@ -24,7 +24,7 @@ class Huobi extends Exchange {
     // retro compatibility for client without contract specification stored
     // -> force refresh of stored instruments / specs
     if (this.products && typeof this.specs === 'undefined') {
-      delete this.products;
+      delete this.products
     }
 
     this.matchPairName = pair => {
@@ -41,9 +41,9 @@ class Huobi extends Exchange {
 
       if (id) {
         if (id.indexOf('_') !== -1) {
-          this.types[id] = 'futures';
+          this.types[id] = 'futures'
         } else {
-          this.types[id] = 'spot';
+          this.types[id] = 'spot'
         }
       }
 
@@ -52,11 +52,11 @@ class Huobi extends Exchange {
 
     this.options = Object.assign(
       {
-        url: (pair) => {
+        url: pair => {
           if (this.types[pair] === 'futures') {
-            return 'wss://www.hbdm.com/ws';
+            return 'wss://www.hbdm.com/ws'
           } else {
-            return 'wss://api.huobi.pro/ws';
+            return 'wss://api.huobi.pro/ws'
           }
         }
       },
@@ -71,15 +71,17 @@ class Huobi extends Exchange {
 
     this.api.binaryType = 'arraybuffer'
 
-    this.api.onmessage = (event) =>
-      this.emitTrades(this.formatLiveTrades(event.data))
+    this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(event.data))
 
-    this.api.onopen = (event) => {
+    this.api.onopen = event => {
       for (let pair of this.pairs) {
         this.api.send(
           JSON.stringify({
-            sub: 'market.' + pair.toLowerCase() + '.trade.detail',
-            id: pair,
+            sub:
+              'market.' +
+              (this.types[pair] === 'futures' ? pair.toUpperCase() : pair.toLowerCase()) +
+              '.trade.detail',
+            id: pair
           })
         )
       }
@@ -113,20 +115,14 @@ class Huobi extends Exchange {
     } else if (json.tick && json.tick.data && json.tick.data.length) {
       const pair = json.ch.replace(/market.(.*).trade.detail/, '$1')
 
-      return json.tick.data.map((trade) => {
-        let amount = +trade.amount;
+      return json.tick.data.map(trade => {
+        let amount = +trade.amount
 
         if (typeof this.specs[pair] !== 'undefined') {
-          amount = amount * this.specs[pair] / trade.price
+          amount = (amount * this.specs[pair]) / trade.price
         }
 
-        return [
-          this.id,
-          trade.ts,
-          +trade.price,
-          amount,
-          trade.direction === 'buy' ? 1 : 0,
-        ]
+        return [this.id, trade.ts, +trade.price, amount, trade.direction === 'buy' ? 1 : 0]
       })
     }
   }
@@ -139,15 +135,15 @@ class Huobi extends Exchange {
 
     response.forEach((_data, index) => {
       _data.data.forEach(product => {
-        let pair;
+        let pair
 
         switch (types[index]) {
           case 'spot':
-            pair = (product['base-currency'] + product['quote-currency']).toUpperCase();
+            pair = (product['base-currency'] + product['quote-currency']).toUpperCase()
             products[pair] = pair
             break
           case 'futures':
-            pair = product.symbol + '_' + this.contractTypesAliases[product.contract_type];
+            pair = product.symbol + '_' + this.contractTypesAliases[product.contract_type]
             products[product.symbol + 'USD' + '-' + product.contract_type.toUpperCase()] = pair
             products[product.contract_code] = pair
             specs[pair] = +product.contract_size
