@@ -73,14 +73,20 @@ class Deribit extends Exchange {
       return
     }
 
-    return json.params.data.map((trade) => {
-      return [
+    return json.params.data.map(a => {
+      const trade = [
         this.id,
-        +trade.timestamp,
-        +trade.price,
-        trade.amount / trade.price,
-        trade.direction === 'buy' ? 1 : 0,
+        +a.timestamp,
+        +a.price,
+        a.amount / a.price,
+        a.direction === 'buy' ? 1 : 0,
       ]
+
+      if (a.liquidation) {
+        trade[5] = 1;
+      }
+
+      return trade;
     })
   }
 
