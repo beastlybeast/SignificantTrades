@@ -27,7 +27,7 @@ class BinanceFutures extends Exchange {
     this.options = Object.assign(
       {
         url: () => {
-          return `wss://fstream.binance.com/stream?streams=${this.pairs.map(pair => `${pair}@aggTrade`).join('/')}`
+          return `wss://fstream.binance.com/stream?streams=${this.pairs.map(pair => `${pair}@aggTrade/${pair}@forceOrder`).join('/')}`
         },
       },
       this.options
@@ -58,8 +58,12 @@ class BinanceFutures extends Exchange {
   }
 
   formatLiveTrades(json) {
-    if (json.data) {
-      return [[this.id, json.data.T, +json.data.p, +json.data.q, json.data.m ? 0 : 1]]
+    if (json && json.data) {
+      if (json.data.e === 'aggTrade') {
+        return [[this.id, json.data.T, +json.data.p, +json.data.q, json.data.m ? 0 : 1]]
+      } else if (json.data.e === 'forceOrder') {
+        return [[this.id, json.data.o.T, +json.data.o.p, +json.data.o.q, json.data.o.S === 'BUY' ? 1 : 0, 1]]
+      }
     }
 
     return false
