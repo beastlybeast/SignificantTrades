@@ -6,22 +6,22 @@
   background-color: $dark;
   color: white;
 
-	@media screen and (min-width: 768px) {
-		height: 100vh;
-	}
+  @media screen and (min-width: 768px) {
+    height: 100vh;
+  }
 
-	&.loading {
-		.app__layout {
-			transition: opacity 5s $easeElastic;
-			opacity: .7;
-			pointer-events: none;
-		}
-	}
+  &.loading {
+    .app__layout {
+      transition: opacity 5s $easeElastic;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+  }
 }
 
 .app__wrapper {
   height: 100%;
-  transition: transform .3s $easeOutExpo;
+  transition: transform 0.3s $easeOutExpo;
 }
 
 .stack__container {
@@ -57,7 +57,7 @@
     opacity: 0.2;
     padding: 8px;
     z-index: 1;
-		color: white;
+    color: white;
 
     &:hover {
       opacity: 1;
@@ -89,196 +89,205 @@
 }
 
 .app__wrapper {
-	display: flex;
-	flex-direction: column;
+  display: flex;
+  flex-direction: column;
 
-	@media screen and (min-width: 768px) {
-		height: 100vh;
+  @media screen and (min-width: 768px) {
+    height: 100vh;
 
-		#header {
-			flex-grow: 0;
-			flex-basis: auto;
-			flex-shrink: 0;
-		}
+    #header {
+      flex-grow: 0;
+      flex-basis: auto;
+      flex-shrink: 0;
+    }
 
-		.app__layout {
-			flex-grow: 1;
-			min-height: 0px;
-		}
-	}
+    .app__layout {
+      flex-grow: 1;
+      min-height: 0px;
+    }
+  }
 }
 
 .app__layout {
-	display: flex;
-	flex-direction: column;
+  display: flex;
+  flex-direction: column;
 
-	#exchanges {
-		display: none;
-	}
+  #exchanges {
+    display: none;
+  }
 
-	.app__left {
-		display: flex;
-		flex-direction: column;
-	}
+  .app__left {
+    display: flex;
+    flex-direction: column;
+  }
 
-	.app__right {
-		display: flex;
-		flex-direction: column;
-	}
+  .app__right {
+    display: flex;
+    flex-direction: column;
+  }
 
+  @media screen and (min-width: 480px) and (max-width: 767px) {
+    .app__right {
+      font-size: 1.1em;
+    }
+  }
 
-	@media screen and (min-width: 480px) and (max-width: 767px) {
-		.app__right {
-			font-size: 1.1em;
-		}
-	}
+  @media screen and (min-width: 768px) {
+    flex-direction: row;
+    flex-wrap: wrap;
 
-	@media screen and (min-width: 768px) {
-		flex-direction: row;
-		flex-wrap: wrap;
+    #trades {
+      position: relative;
 
-		#trades {
-			position: relative;
+      ul {
+        position: absolute;
+        left: 0;
+        right: 0;
+      }
+    }
 
-			ul {
-				position: absolute;
-				left: 0;
-				right: 0;
-			}
-		}
+    #exchanges {
+      display: flex;
+    }
 
-		#exchanges {
-			display: flex;
-		}
+    .app__left {
+      overflow: hidden;
+      flex-basis: calc(100% - 290px);
+      flex-grow: 0;
+      max-height: 100%;
 
-		.app__left {
-			overflow: hidden;
-			flex-basis: calc(100% - 290px);
-			flex-grow: 0;
-			max-height: 100%;
+      #chart {
+        overflow: hidden;
+        flex-grow: 1;
+      }
+    }
 
-			#chart {
-				overflow: hidden;
-				flex-grow: 1;
-			}
-		}
+    .app__right {
+      overflow: hidden;
+      flex-basis: 290px;
 
-		.app__right {
-			overflow: hidden;
-			flex-basis: 290px;
+      font-size: 0.8em;
+      flex-grow: 1;
 
-			font-size: .8em;
-			flex-grow: 1;
+      font-size: 1.05em;
 
-			font-size: 1.05em;
+      #stats .stats__items {
+        flex-wrap: wrap;
 
-			#stats .stats__items {
-				flex-wrap: wrap;
+        > li {
+          flex-basis: calc(50% - 1px);
+          max-width: calc(50% - 1px);
+          align-items: flex-start;
+          min-height: 12vh;
 
-				> li {
-					flex-basis: calc(50% - 1px);
-					max-width: calc(50% - 1px);
-					align-items: flex-start;
-					min-height: 12vh;
+          > div {
+            margin-left: 1em;
 
-					> div {
-						margin-left: 1em;
+            &.stats__label {
+              margin-top: 0.75rem;
+              margin-bottom: 0.25rem;
+            }
 
-						&.stats__label {
-							margin-top: .75rem;
-							margin-bottom: .25rem;
-						}
+            &.stats__value {
+              margin-bottom: 1rem;
+            }
+          }
 
-						&.stats__value {
-							margin-bottom: 1rem;
-						}
-					}
+          &:nth-child(-n + 2) {
+            margin-right: 1px;
+          }
 
-					&:nth-child(-n+2) {
-						margin-right: 1px;
-					}
+          &:nth-child(n + 2):nth-child(-n + 3) {
+            margin-top: 1px;
+          }
 
-					&:nth-child(n+2):nth-child(-n+3) {
-						margin-top: 1px;
-					}
+          &:nth-child(2) {
+            order: 1;
+          }
 
-					&:nth-child(2) {
-						order: 1;
-					}
+          &:nth-child(3) {
+            order: 2;
+          }
+        }
+      }
 
-					&:nth-child(3) {
-						order: 2;
-					}
-				}
-			}
+      #trades {
+        flex-grow: 1;
+        overflow: auto;
+        font-size: 0.8em;
+      }
+    }
+  }
 
-			#trades {
-				flex-grow: 1;
-				overflow: auto;
-				font-size: .8em;
-			}
-		}
-	}
+  @media screen and (max-width: 379px) {
+    .highcharts-series-1,
+    .highcharts-series-2 {
+      visibility: hidden;
+    }
 
-	@media screen and (max-width: 379px) {
-		.highcharts-series-1,
-		.highcharts-series-2 {
-			visibility: hidden;
-		}
+    .highcharts-xaxis-labels {
+      transform: translateY(2px);
+    }
 
-		.highcharts-xaxis-labels {
-			transform: translateY(2px);
-		}
+    #trades,
+    #stats {
+      font-size: 0.8em;
+    }
 
-		#trades,
-		#stats {
-			font-size: .8em;
-		}
+    #stats {
+      .stats__label {
+        display: none;
+      }
 
-		#stats {
-			.stats__label {
-				display: none;
-			}
+      .stats__value {
+        font-weight: 400;
+        margin-top: 0.5rem;
+      }
+    }
+  }
 
-			.stats__value {
-				font-weight: 400;
-				margin-top: .5rem;
-			}
-		}
-	}
+  @media screen and (min-width: 1200px) {
+    .app__left {
+      flex-basis: 75%;
+    }
 
-	@media screen and (min-width: 1200px) {
-		.app__left {
-			flex-basis: 75%;
-		}
+    .app__right {
+      font-size: 1.1em;
+      flex-basis: 25%;
 
-		.app__right {
-			font-size: 1.1em;
-			flex-basis: 25%;
+      #trades {
+        font-size: 0.9em;
+      }
+    }
+  }
 
-			#trades {
-				font-size: .9em;
-			}
-		}
-	}
-
-	@media screen and (min-width: 1600px) {
-		.app__right {
-			font-size: 1.2em;
-		}
-	}
+  @media screen and (min-width: 1600px) {
+    .app__right {
+      font-size: 1.2em;
+    }
+  }
 }
 
 .min-768 {
-	display: none;
+  display: none;
 }
 
 @media screen and (min-width: 768px) {
-	.min-768 {
-		display: inline-block;
-	}
+  .min-768 {
+    display: inline-block;
+  }
 
-	.max-767 {
-		display: none;
-	}
+  .max-767 {
+    display: none;
+  }
+}
+
+.min-280 {
+  display: none;
+}
+
+@media screen and (min-width: 280px) {
+  .min-280 {
+    display: inline-block;
+  }
 }

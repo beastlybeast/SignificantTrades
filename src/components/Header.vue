@@ -7,6 +7,7 @@
         <span v-html="price || 'SignificantTrades'"></span>
       </div>
       <dropdown
+        v-if="showChart"
         :options="timeframes"
         :selected="timeframe"
         @output="setTimeframe(+$event)"
@@ -16,7 +17,7 @@
         @click="replay" title="Replay"
         v-tippy="{placement: 'bottom'}">
         <span class="icon-history"></span>
-      </button> -->
+      </button>-->
       <button
         type="button"
         v-if="!isPopupMode"
@@ -54,32 +55,32 @@
 </template>
 
 <script>
-import { mapState } from 'vuex'
+import { mapState } from "vuex"
 
-import socket from '../services/socket'
+import socket from "../services/socket"
 
 export default {
-  props: ['price'],
+  props: ["price"],
   data() {
     return {
-      fetchLabel: 'Fetch timeframe',
+      fetchLabel: "Fetch timeframe",
       isPopupMode: window.opener !== null,
       canFetch: false,
       showTimeframeDropdown: false,
-      timeframeLabel: '15m',
-      timeframes: {},
+      timeframeLabel: "15m",
+      timeframes: {}
     }
   },
   computed: {
     ...mapState([
-      'pair',
-      'useAudio',
-      'showChart',
-      'isSnaped',
-      'timeframe',
-      'chartRange',
-      'isReplaying',
-    ]),
+      "pair",
+      "useAudio",
+      "showChart",
+      "isSnaped",
+      "timeframe",
+      "chartRange",
+      "isReplaying"
+    ])
   },
   created() {
     this._fetchLabel = this.fetchLabel.substr()
@@ -87,26 +88,23 @@ export default {
 
     const now = +new Date()
 
-    ;[
-      1000 * 10,
-      1000 * 30,
-      1000 * 60,
-      1000 * 60 * 3,
-    ].forEach((span) => (this.timeframes[span] = this.$root.ago(now - span)))
+    ;[1000 * 10, 1000 * 30, 1000 * 60, 1000 * 60 * 3].forEach(
+      span => (this.timeframes[span] = this.$root.ago(now - span))
+    )
 
-    socket.$on('pairing', (pair, canFetch) => {
+    socket.$on("pairing", (pair, canFetch) => {
       this.canFetch = canFetch && this.showChart
     })
 
-    socket.$on('fetchStart', () => {
+    socket.$on("fetchStart", () => {
       //
     })
 
-    socket.$on('fetchEnd', () => {
+    socket.$on("fetchEnd", () => {
       this.updateTimeframesApproximateContentSize()
     })
 
-    socket.$on('loadingProgress', (event) => {
+    socket.$on("loadingProgress", event => {
       if (!event || isNaN(event.progress)) {
         return
       }
@@ -133,7 +131,7 @@ export default {
       this.updateTimeframeLabel(timeframe)
 
       setTimeout(() => {
-        this.$store.commit('setTimeframe', timeframe)
+        this.$store.commit("setTimeframe", timeframe)
       }, 50)
     },
     updateTimeframeLabel(timeframe) {
@@ -145,7 +143,7 @@ export default {
       window.open(
         window.location.href,
         `sig${this.pair}`,
-        'toolbar=no,status=no,width=350,height=500'
+        "toolbar=no,status=no,width=350,height=500"
       )
 
       setTimeout(() => {
@@ -155,17 +153,17 @@ export default {
     sizeOf(bytes, si) {
       var thresh = si ? 1000 : 1024
       if (Math.abs(bytes) < thresh) {
-        return bytes + ' B'
+        return bytes + " B"
       }
       var units = si
-        ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-        : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
+        ? ["kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]
+        : ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
       var u = -1
       do {
         bytes /= thresh
         ++u
       } while (Math.abs(bytes) > thresh && u < units.length - 1)
-      return bytes.toFixed(1) + ' ' + units[u]
+      return bytes.toFixed(1) + " " + units[u]
     },
     updateTimeframesApproximateContentSize() {
       const now = +new Date()
@@ -174,22 +172,22 @@ export default {
       if (socket._fetchedTime && socket._fetchedBytes) {
         for (let span in this.timeframes) {
           this.timeframes[span] =
-            '<span>~' +
+            "<span>~" +
             this.sizeOf(
               socket._fetchedBytes *
                 ((span * candleCount) / socket._fetchedTime)
             ) +
-            '</span> ' +
+            "</span> " +
             this.$root.ago(now - span).trim()
         }
       }
-    },
-  },
+    }
+  }
 }
 </script>
 
 <style lang="scss">
-@import '../assets/sass/variables';
+@import "../assets/sass/variables";
 
 header#header {
   background-color: lighten($dark, 10%);
@@ -328,7 +326,7 @@ header#header {
 
   &:after,
   &:before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;

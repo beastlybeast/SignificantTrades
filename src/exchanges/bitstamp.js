@@ -60,6 +60,14 @@ class Bitstamp extends Exchange {
     this.api.onerror = this.emitError.bind(this, { message: 'Websocket error' })
   }
 
+  disconnect() {
+    if (!super.disconnect()) return
+
+    if (this.api && this.api.readyState < 2) {
+      this.api.close()
+    }
+  }
+
   formatLiveTrades(event) {
     const trade = event.data
 

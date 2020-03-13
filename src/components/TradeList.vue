@@ -14,12 +14,13 @@
       >
         <template v-if="trade.message">
           <div class="trades__item__side icon-side"></div>
+          <div class="trades__item__exchange" :title="trade.exchange" v-html="trade.exchange"></div>
           <div class="trades__item__message" v-html="trade.message"></div>
           <div class="trades__item__date" :timestamp="trade.timestamp">{{ trade.date }}</div>
         </template>
         <template v-else>
           <div class="trades__item__side icon-side"></div>
-          <div class="trades__item__exchange" :title="trade.exchange">{{ trade.exchange }}</div>
+          <div class="trades__item__exchange" :title="trade.exchange" v-html="trade.exchange"></div>
           <div class="trades__item__price">
             <span class="icon-quote"></span>
             <span v-html="trade.price"></span>
@@ -183,7 +184,7 @@ export default {
             1
           )}</strong>`
 
-          liquidationMessage += `&nbsp;liquidated <strong>${
+          liquidationMessage += `&nbsp;liq<span class="min-280">uidate</span>d <strong>${
             trade[4] > 0 ? "SHORT" : "LONG"
           }</strong> @ <i class="icon-currency"></i> ${this.$root.formatPrice(
             trade[2]
@@ -317,7 +318,7 @@ export default {
         foreground: color.foreground,
         side: trade[4] > 0 ? "BUY" : "SELL",
         size: this.$root.formatAmount(trade[3]),
-        exchange: trade[0].replace("_", " "),
+        exchange: trade[0].replace("_", "<br>"),
         price: this.$root.formatPrice(trade[2]),
         amount: amount,
         classname: classname.map(a => "trades__item--" + a).join(" "),
@@ -571,6 +572,8 @@ export default {
   &:not(.-logos) .trades__item--sm .trades__item__exchange {
     font-size: 0.75em;
     letter-spacing: -0.5px;
+    margin-top: -5px;
+    margin-bottom: -5px;
   }
 }
 
@@ -633,6 +636,11 @@ export default {
   &.trades__item--liquidation {
     background-color: $pink !important;
     color: white !important;
+
+    .trades__item__exchange {
+      flex-grow: 0;
+      flex-basis: auto;
+    }
   }
 
   &.trades__item--level-2 {
@@ -665,72 +673,72 @@ export default {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
 
-    &.trades__item__side {
-      flex-grow: 0;
-      flex-basis: 1em;
-      font-size: 1em;
-      line-height: 1.06;
+  .trades__item__side {
+    flex-grow: 0;
+    flex-basis: 1em;
+    font-size: 1em;
+    line-height: 1.06;
 
-      + .trades__item__message {
-        margin-left: 0.5em;
+    + .trades__item__message {
+      margin-left: 0.5em;
+    }
+  }
+
+  .trades__item__exchange {
+    background-repeat: no-repeat;
+    background-position: center center;
+    flex-grow: 0.75;
+
+    small {
+      opacity: 0.8;
+    }
+  }
+
+  .trades__item__amount {
+    position: relative;
+
+    > span {
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: all 0.1s ease-in-out;
+      display: block;
+
+      &.trades__item__amount__quote {
+        position: absolute;
+      }
+
+      &.trades__item__amount__base {
+        transform: translateX(25%);
+        opacity: 0;
       }
     }
 
-    &.trades__item__exchange {
-      background-repeat: no-repeat;
-      background-position: center center;
-      flex-grow: 0.75;
-
-      small {
-        opacity: 0.8;
-      }
-    }
-
-    &.trades__item__amount {
-      position: relative;
-
-      > span {
-        max-width: 100%;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        transition: all 0.1s ease-in-out;
-        display: block;
-
-        &.trades__item__amount__quote {
-          position: absolute;
-        }
-
-        &.trades__item__amount__base {
-          transform: translateX(25%);
-          opacity: 0;
-        }
+    &:hover {
+      > span.trades__item__amount__base {
+        transform: none;
+        opacity: 1;
       }
 
-      &:hover {
-        > span.trades__item__amount__base {
-          transform: none;
-          opacity: 1;
-        }
-
-        > span.trades__item__amount__quote {
-          transform: translateX(-25%);
-          opacity: 0;
-        }
+      > span.trades__item__amount__quote {
+        transform: translateX(-25%);
+        opacity: 0;
       }
     }
+  }
 
-    &.trades__item__date {
-      text-align: right;
-      flex-basis: 2.5em;
-      flex-grow: 0;
-    }
+  .trades__item__date {
+    text-align: right;
+    flex-basis: 2.5em;
+    flex-grow: 0;
+  }
 
-    &.trades__item__message {
-      flex-grow: 2;
-      text-align: center;
-      font-size: 90%;
-    }
+  .trades__item__message {
+    flex-grow: 2;
+    text-align: center;
+    font-size: 90%;
   }
 }
 
