@@ -175,7 +175,7 @@ export default {
 
       if (trade[5] === 1) {
         if (!silent && this.sfx) {
-          this.sfx.liquidation()
+          this.sfx.liquidation(size / this.thresholds[0].amount)
         }
 
         if (size >= this.thresholds[0].amount * multiplier) {
