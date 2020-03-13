@@ -81,7 +81,7 @@ class Sfx {
       }
     }, this.timestamp - now)
 
-    this.timestamp = Math.max(this.timestamp, now) + (this.queued > 20 ? 40 : 80)
+    this.timestamp = Math.max(this.timestamp, now) + (this.queued > 10 ? this.queued > 20 ? 20 : 40 : 80)
   }
 
   play(frequency, value = 0.5, length = 0.1, type = 'triangle') {
@@ -119,6 +119,8 @@ class Sfx {
     this.queued++
 
     setTimeout(() => {
+      this.queued--;
+
       ;[329.63, 329.63].forEach((f, i, a) => {
         size = Math.sqrt(size) / 3
 
@@ -126,7 +128,7 @@ class Sfx {
       })
     }, this.timestamp - now)
 
-    this.timestamp = Math.max(this.timestamp, now) + (this.queued > 20 ? 40 : 80)
+    this.timestamp = Math.max(this.timestamp, now) + (this.queued > 10 ? this.queued > 20 ? 20 : 40 : 80)
   }
 
   disconnect() {
