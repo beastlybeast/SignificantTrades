@@ -37,11 +37,11 @@ const DEFAULTS = {
     hitbtc: { disabled: true },
     coinex: { disabled: true }
   },
-  maxRows: 20,
+  maxRows: 30,
   decimalPrecision: null,
   aggregationLag: null,
   tradeSpray: false,
-  showLogos: false,
+  showLogos: true,
   liquidationsOnlyList: false,
   showCounters: false,
   counterPrecision: 1000 * 10,
@@ -56,8 +56,8 @@ const DEFAULTS = {
   ],
   hideIncompleteCounter: true,
   cumulativeCounters: true,
-  showStats: true,
-  showChart: true,
+  showStats: false,
+  showChart: false,
   statsPeriod: 1000 * 60,
   statsGraphs: false,
   statsGraphsTimeframe: 3000,
@@ -86,7 +86,7 @@ const DEFAULTS = {
   chartSma: true,
   chartSmaLength: 14,
   chartAutoScale: true,
-  showExchangesBar: true,
+  showExchangesBar: false,
   showThresholdsAsTable: false,
 
   // runtime state

@@ -30,19 +30,19 @@
 </template>
 
 <script>
-import { mapState } from 'vuex'
+import { mapState } from "vuex"
 
-import socket from './services/socket'
-import touchevent from './utils/touchevent'
+import socket from "./services/socket"
+import touchevent from "./utils/touchevent"
 
-import Alerts from './components/Alerts.vue'
-import Header from './components/Header.vue'
-import Settings from './components/Settings.vue'
-import TradeList from './components/TradeList.vue'
-import Chart from './components/chart/Chart.vue'
-import Counters from './components/Counters.vue'
-import Stats from './components/Stats.vue'
-import Exchanges from './components/Exchanges.vue'
+import Alerts from "./components/Alerts.vue"
+import Header from "./components/Header.vue"
+import Settings from "./components/Settings.vue"
+import TradeList from "./components/TradeList.vue"
+import Chart from "./components/chart/Chart.vue"
+import Counters from "./components/Counters.vue"
+import Stats from "./components/Stats.vue"
+import Exchanges from "./components/Exchanges.vue"
 
 export default {
   components: {
@@ -53,33 +53,33 @@ export default {
     Chart,
     Counters,
     Stats,
-    Exchanges,
+    Exchanges
   },
-  name: 'app',
+  name: "app",
   data() {
     return {
       price: null,
-      baseCurrency: 'bitcoin',
-      quoteCurrency: 'dollar',
-      symbol: '$',
+      baseCurrency: "bitcoin",
+      quoteCurrency: "dollar",
+      symbol: "$",
 
       showSettings: false,
-      showStatistics: false,
+      showStatistics: false
     }
   },
   computed: {
     ...mapState([
-      'pair',
-      'actives',
-      'showCounters',
-      'showStats',
-      'showChart',
-      'showExchangesBar',
-      'decimalPrecision',
-      'autoClearTrades',
-      'isLoading',
-      'preferQuoteCurrencySize',
-    ]),
+      "pair",
+      "actives",
+      "showCounters",
+      "showStats",
+      "showChart",
+      "showExchangesBar",
+      "decimalPrecision",
+      "autoClearTrades",
+      "isLoading",
+      "preferQuoteCurrencySize"
+    ])
   },
   created() {
     this.$root.isAggrTrade = /aggr.trade$/.test(window.location.hostname)
@@ -90,16 +90,16 @@ export default {
     this.$root.padNumber = this.padNumber.bind(this)
     this.$root.ago = this.ago.bind(this)
 
-    socket.$on('pairing', (value) => {
+    socket.$on("pairing", value => {
       this.updatePairCurrency(this.pair)
     })
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
-        case 'toggleAutoClearTrades':
+        case "toggleAutoClearTrades":
           this.toggleAutoClearTrades(mutation.payload)
           break
-        case 'setPair':
+        case "setPair":
           socket.connectExchanges(mutation.payload)
           break
       }
@@ -109,14 +109,14 @@ export default {
 
     // Is request blocked by browser ?
     // If true notice user that most of the exchanges may be unavailable
-    fetch('showads.js')
+    fetch("showads.js")
       .then(() => {})
       .catch((response, a) => {
-        socket.$emit('alert', {
-          type: 'error',
+        socket.$emit("alert", {
+          type: "error",
           title: `Disable your AdBlocker`,
           message: `Some adblockers may block access to exchanges api.\nMake sure to turn it off, you wont find any ads here ever :-)`,
-          id: `adblock_error`,
+          id: `adblock_error`
         })
       })
 
@@ -132,11 +132,11 @@ export default {
   },
   methods: {
     padNumber(num, size) {
-      var s = '000000000' + num
+      var s = "000000000" + num
       return s.substr(s.length - size)
     },
     formatAmount(amount, decimals) {
-      const negative = amount < 0;
+      const negative = amount < 0
 
       if (negative) {
         amount = Math.abs(amount)
@@ -144,15 +144,15 @@ export default {
 
       if (amount >= 1000000) {
         amount =
-          +(amount / 1000000).toFixed(isNaN(decimals) ? 1 : decimals) + 'M'
+          +(amount / 1000000).toFixed(isNaN(decimals) ? 1 : decimals) + "M"
       } else if (amount >= 1000) {
-        amount = +(amount / 1000).toFixed(isNaN(decimals) ? 1 : decimals) + 'K'
+        amount = +(amount / 1000).toFixed(isNaN(decimals) ? 1 : decimals) + "K"
       } else {
         amount = this.$root.formatPrice(amount, decimals, false)
       }
 
       if (negative) {
-        return '-' + amount
+        return "-" + amount
       } else {
         return amount
       }
@@ -199,50 +199,50 @@ export default {
       let interval, output
 
       if ((interval = Math.floor(seconds / 31536000)) > 1)
-        output = interval + 'y'
+        output = interval + "y"
       else if ((interval = Math.floor(seconds / 2592000)) >= 1)
-        output = interval + 'm'
+        output = interval + "m"
       else if ((interval = Math.floor(seconds / 86400)) >= 1)
-        output = interval + 'd'
+        output = interval + "d"
       else if ((interval = Math.floor(seconds / 3600)) >= 1)
-        output = interval + 'h'
+        output = interval + "h"
       else if ((interval = Math.floor(seconds / 60)) >= 1)
-        output = interval + 'm'
-      else output = Math.ceil(seconds) + 's'
+        output = interval + "m"
+      else output = Math.ceil(seconds) + "s"
 
       return output
     },
     updatePairCurrency(pair) {
-      const name = pair.replace(/\-[\w\d]*$/, '')
+      const name = pair.replace(/\-[\w\d]*$/, "")
 
       const symbols = {
-        BTC: ['bitcoin', '฿'],
-        GBP: ['pound', '£'],
-        EUR: ['euro', '€'],
-        USD: ['dollar', '$'],
-        JPY: ['yen', '¥'],
-        ETH: ['ethereum', 'ETH'],
-        XRP: ['xrp', 'XRP'],
-        LTC: ['ltc', 'LTC'],
-        TRX: ['trx', 'TRX'],
-        ADA: ['ada', 'ADA'],
-        IOTA: ['iota', 'IOTA'],
-        XMR: ['xmr', 'XMR'],
-        NEO: ['neo', 'NEO'],
-        EOS: ['eos', 'EOS'],
+        BTC: ["bitcoin", "฿"],
+        GBP: ["pound", "£"],
+        EUR: ["euro", "€"],
+        USD: ["dollar", "$"],
+        JPY: ["yen", "¥"],
+        ETH: ["ethereum", "ETH"],
+        XRP: ["xrp", "XRP"],
+        LTC: ["ltc", "LTC"],
+        TRX: ["trx", "TRX"],
+        ADA: ["ada", "ADA"],
+        IOTA: ["iota", "IOTA"],
+        XMR: ["xmr", "XMR"],
+        NEO: ["neo", "NEO"],
+        EOS: ["eos", "EOS"]
       }
 
-      this.baseCurrency = 'coin'
-      this.quoteCurrency = 'dollar'
-      this.symbol = '$'
+      this.baseCurrency = "coin"
+      this.quoteCurrency = "dollar"
+      this.symbol = "$"
 
       for (let symbol of Object.keys(symbols)) {
-        if (new RegExp(symbol + '$').test(name)) {
+        if (new RegExp(symbol + "$").test(name)) {
           this.quoteCurrency = symbols[symbol][0]
           this.symbol = symbols[symbol][1]
         }
 
-        if (new RegExp('^' + symbol).test(name)) {
+        if (new RegExp("^" + symbol).test(name)) {
           this.baseCurrency = symbols[symbol][0]
         }
       }
@@ -284,9 +284,8 @@ export default {
 
       this.price = this.$root.formatPrice(price)
 
-      window.document.title = this.price
-        .toString()
-        .replace(/<\/?[^>]+(>|$)/g, '')
+      window.document.title =
+        this.pair + " " + this.price.toString().replace(/<\/?[^>]+(>|$)/g, "")
 
       /* if (direction) {
         let favicon = document.getElementById('favicon');
@@ -308,18 +307,18 @@ export default {
       } */
 
       this._updatePriceTimeout = setTimeout(this.updatePrice, 1000)
-    },
-  },
+    }
+  }
 }
 </script>
 
 <style lang="scss">
-@import './assets/sass/variables';
-@import './assets/sass/helper';
-@import './assets/sass/layout';
-@import './assets/sass/icons';
-@import './assets/sass/currency';
-@import './assets/sass/tooltip';
-@import './assets/sass/dropdown';
-@import './assets/sass/button';
+@import "./assets/sass/variables";
+@import "./assets/sass/helper";
+@import "./assets/sass/layout";
+@import "./assets/sass/icons";
+@import "./assets/sass/currency";
+@import "./assets/sass/tooltip";
+@import "./assets/sass/dropdown";
+@import "./assets/sass/button";
 </style>

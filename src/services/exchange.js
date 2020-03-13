@@ -5,7 +5,7 @@ class Exchange extends EventEmitter {
   constructor(options) {
     super()
 
-    this.id = this.constructor.name.toLowerCase()
+    this.id = this.constructor.name.replace(/([a-z])([A-Z][a-z])/g, '$1_$2').toLowerCase()
 
     this.indexedProducts = []
     this.connected = false

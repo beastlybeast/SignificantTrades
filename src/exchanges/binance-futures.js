@@ -7,10 +7,10 @@ class BinanceFutures extends Exchange {
     this.id = 'binance_futures'
 
     this.endpoints = {
-      PRODUCTS: 'https://fapi.binance.com/fapi/v1/exchangeInfo',
+      PRODUCTS: 'https://fapi.binance.com/fapi/v1/exchangeInfo'
     }
 
-    this.matchPairName = (pair) => {
+    this.matchPairName = pair => {
       if (this.products.indexOf(pair) !== -1) {
         return pair.toLowerCase()
       }
@@ -27,8 +27,10 @@ class BinanceFutures extends Exchange {
     this.options = Object.assign(
       {
         url: () => {
-          return `wss://fstream.binance.com/stream?streams=${this.pairs.map(pair => `${pair}@aggTrade/${pair}@forceOrder`).join('/')}`
-        },
+          return `wss://fstream.binance.com/stream?streams=${this.pairs
+            .map(pair => `${pair}@aggTrade/${pair}@forceOrder`)
+            .join('/')}`
+        }
       },
       this.options
     )
@@ -39,8 +41,7 @@ class BinanceFutures extends Exchange {
 
     this.api = new WebSocket(this.getUrl())
 
-    this.api.onmessage = (event) =>
-      this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)))
+    this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)))
 
     this.api.onopen = this.emitOpen.bind(this)
 
@@ -62,7 +63,16 @@ class BinanceFutures extends Exchange {
       if (json.data.e === 'aggTrade') {
         return [[this.id, json.data.T, +json.data.p, +json.data.q, json.data.m ? 0 : 1]]
       } else if (json.data.e === 'forceOrder') {
-        return [[this.id, json.data.o.T, +json.data.o.p, +json.data.o.q, json.data.o.S === 'BUY' ? 1 : 0, 1]]
+        return [
+          [
+            this.id,
+            json.data.o.T,
+            +json.data.o.p,
+            +json.data.o.q,
+            json.data.o.S === 'BUY' ? 1 : 0,
+            1
+          ]
+        ]
       }
     }
 
@@ -70,7 +80,7 @@ class BinanceFutures extends Exchange {
   }
 
   formatProducts(data) {
-    return data.symbols.map((a) => a.symbol)
+    return data.symbols.map(a => a.symbol)
   }
 }
 
