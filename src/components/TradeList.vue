@@ -14,13 +14,13 @@
       >
         <template v-if="trade.message">
           <div class="trades__item__side icon-side"></div>
-          <div class="trades__item__exchange" :title="trade.exchange" v-html="trade.exchange"></div>
+          <div class="trades__item__exchange" :title="trade.exchange">{{ trade.exchange }}</div>
           <div class="trades__item__message" v-html="trade.message"></div>
           <div class="trades__item__date" :timestamp="trade.timestamp">{{ trade.date }}</div>
         </template>
         <template v-else>
           <div class="trades__item__side icon-side"></div>
-          <div class="trades__item__exchange" :title="trade.exchange" v-html="trade.exchange"></div>
+          <div class="trades__item__exchange" :title="trade.exchange">{{ trade.exchange }}</div>
           <div class="trades__item__price">
             <span class="icon-quote"></span>
             <span v-html="trade.price"></span>
@@ -318,7 +318,7 @@ export default {
         foreground: color.foreground,
         side: trade[4] > 0 ? "BUY" : "SELL",
         size: this.$root.formatAmount(trade[3]),
-        exchange: trade[0].replace("_", "<br>"),
+        exchange: trade[0].replace("_", " "),
         price: this.$root.formatPrice(trade[2]),
         amount: amount,
         classname: classname.map(a => "trades__item--" + a).join(" "),
@@ -560,6 +560,7 @@ export default {
       text-indent: -9999px;
       flex-basis: 3em;
       flex-grow: 0;
+      min-width: 1em;
     }
 
     @each $exchange in $exchanges {
@@ -574,6 +575,9 @@ export default {
     letter-spacing: -0.5px;
     margin-top: -5px;
     margin-bottom: -5px;
+    white-space: normal;
+    word-break: break-word;
+    max-width: 4em;
   }
 }
 
