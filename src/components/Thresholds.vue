@@ -26,7 +26,7 @@
         <td class="thresholds-table__input">
           <input
             type="text"
-            placeholder="Keyword"
+            placeholder="Giphy"
             :value="thresholds[index].gif"
             @change="
               $store.commit('setThresholdGif', {
@@ -46,6 +46,13 @@
           :style="{ backgroundColor: thresholds[index].sellColor }"
           @click="openPicker('sellColor', index, $event)"
         ></td>
+        <td
+          class="thresholds-table__delete"
+          :class="{'-disabled': index <= 1}"
+          @click="deleteThreshold(index)"
+        >
+          <i class="icon-cross"></i>
+        </td>
       </tr>
     </table>
 
@@ -162,13 +169,13 @@
 </template>
 
 <script>
-import { mapState } from "vuex"
+import { mapState } from 'vuex'
 
-import { Chrome } from "vue-color"
+import { Chrome } from 'vue-color'
 
 export default {
   components: {
-    "chrome-picker": Chrome
+    'chrome-picker': Chrome
   },
 
   data() {
@@ -185,27 +192,21 @@ export default {
   },
 
   computed: {
-    ...mapState([
-      "thresholds",
-      "showThresholdsAsTable",
-      "preferQuoteCurrencySize"
-    ])
+    ...mapState(['thresholds', 'showThresholdsAsTable', 'preferQuoteCurrencySize'])
   },
 
   created() {
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
-        case "toggleSettingsPanel":
-        case "toggleTresholdsTable":
+        case 'toggleSettingsPanel':
+        case 'toggleTresholdsTable':
           if (this.picking) {
             this.closePicker(event)
           }
 
           if (
-            (mutation.type === "toggleSettingsPanel" &&
-              mutation.payload === "thresholds") ||
-            (mutation.type === "toggleTresholdsTable" &&
-              mutation.payload === false)
+            (mutation.type === 'toggleSettingsPanel' && mutation.payload === 'thresholds') ||
+            (mutation.type === 'toggleTresholdsTable' && mutation.payload === false)
           ) {
             this.rendering = true
 
@@ -215,11 +216,11 @@ export default {
             }, 100)
           }
           break
-        case "setThresholdAmount":
+        case 'setThresholdAmount':
           this.reorderThresholds()
           this.refreshHandlers()
           break
-        case "setThresholdColor":
+        case 'setThresholdColor':
           this.refreshGradients()
           break
       }
@@ -234,50 +235,32 @@ export default {
 
     this._startDrag = this.startDrag.bind(this)
 
-    this.$el.addEventListener(
-      this.$root.isTouchSupported ? "touchstart" : "mousedown",
-      this._startDrag,
-      false
-    )
+    this.$el.addEventListener(this.$root.isTouchSupported ? 'touchstart' : 'mousedown', this._startDrag, false)
 
     this._doDrag = this.doDrag.bind(this)
 
-    window.addEventListener(
-      this.$root.isTouchSupported ? "touchmove" : "mousemove",
-      this._doDrag,
-      false
-    )
+    window.addEventListener(this.$root.isTouchSupported ? 'touchmove' : 'mousemove', this._doDrag, false)
 
     this._endDrag = this.endDrag.bind(this)
 
-    window.addEventListener(
-      this.$root.isTouchSupported ? "touchend" : "mouseup",
-      this._endDrag,
-      false
-    )
+    window.addEventListener(this.$root.isTouchSupported ? 'touchend' : 'mouseup', this._endDrag, false)
 
     this._doResize = this.refreshHandlers.bind(this)
 
-    window.addEventListener("resize", this._doResize, false)
+    window.addEventListener('resize', this._doResize, false)
   },
 
   beforeDestroy() {
-    window.removeEventListener(
-      this.$root.isTouchSupported ? "touchmove" : "mousemove",
-      this._doDrag
-    )
-    window.removeEventListener(
-      this.$root.isTouchSupported ? "touchend" : "mouseup",
-      this._endDrag
-    )
-    window.removeEventListener("resize", this._doResize)
+    window.removeEventListener(this.$root.isTouchSupported ? 'touchmove' : 'mousemove', this._doDrag)
+    window.removeEventListener(this.$root.isTouchSupported ? 'touchend' : 'mouseup', this._endDrag)
+    window.removeEventListener('resize', this._doResize)
 
     this.onStoreMutation()
   },
 
   methods: {
     startDrag(event) {
-      if (!event.target.classList.contains("thresholds-slider__handler")) {
+      if (!event.target.classList.contains('thresholds-slider__handler')) {
         return
       }
 
@@ -287,9 +270,7 @@ export default {
         x = event.touches[0].pageX
       }
 
-      this.selectedIndex = Array.prototype.slice
-        .call(event.target.parentNode.children)
-        .indexOf(event.target)
+      this.selectedIndex = Array.prototype.slice.call(event.target.parentNode.children).indexOf(event.target)
 
       if (this.selectedIndex > -1) {
         this.selectedElement = event.target
@@ -313,8 +294,7 @@ export default {
       if (
         this.selectedElement === null ||
         !this.dragStartedAt ||
-        (new Date() - this.dragStartedAt.timestamp < 1000 &&
-          Math.abs(this.dragStartedAt.position - x) < 3)
+        (new Date() - this.dragStartedAt.timestamp < 1000 && Math.abs(this.dragStartedAt.position - x) < 3)
       ) {
         return
       }
@@ -324,26 +304,14 @@ export default {
       const minLog = Math.max(0, Math.log(this.minimum + 1) || 0)
       const minLeft = (minLog / Math.log(this.maximum + 1)) * this.width
 
-      let left = Math.max(
-        (this.width / 3) * -1,
-        Math.min(this.width * 1.5, x - this.offsetLeft)
-      )
-      let amount =
-        Math.exp(
-          ((minLeft + (left / this.width) * (this.width - minLeft)) /
-            this.width) *
-            Math.log(this.maximum + 1)
-        ) - 1
+      let left = Math.max((this.width / 3) * -1, Math.min(this.width * 1.5, x - this.offsetLeft))
+      let amount = Math.exp(((minLeft + (left / this.width) * (this.width - minLeft)) / this.width) * Math.log(this.maximum + 1)) - 1
 
       if (x < this.offsetLeft) {
-        amount =
-          this.thresholds[this.selectedIndex].amount -
-          (this.thresholds[this.selectedIndex].amount - amount) * 0.1
+        amount = this.thresholds[this.selectedIndex].amount - (this.thresholds[this.selectedIndex].amount - amount) * 0.1
         left = 0
       } else if (x > this.offsetLeft + this.width) {
-        amount =
-          this.thresholds[this.selectedIndex].amount -
-          (this.thresholds[this.selectedIndex].amount - amount) * 0.1
+        amount = this.thresholds[this.selectedIndex].amount - (this.thresholds[this.selectedIndex].amount - amount) * 0.1
         left = this.width
       }
 
@@ -351,19 +319,17 @@ export default {
         amount = 0
       }
 
-      this.selectedElement.style.transform = "translateX(" + left + "px)"
+      this.selectedElement.style.transform = 'translateX(' + left + 'px)'
 
       this.refreshCaretPosition()
 
-      this.thresholds[this.selectedIndex].amount = this.$root.formatPrice(
-        amount
-      )
+      this.thresholds[this.selectedIndex].amount = this.$root.formatPrice(amount)
     },
 
     endDrag(event) {
       if (this.selectedElement) {
         if (this.dragging) {
-          this.$store.commit("setThresholdAmount", {
+          this.$store.commit('setThresholdAmount', {
             index: this.selectedIndex,
             value: this.thresholds[this.selectedIndex].amount
           })
@@ -410,23 +376,20 @@ export default {
         const posLog = Math.log(threshold.amount + 1) - minLog
         const posPx = this.width * (posLog / maxLog)
 
-        handler.style.transform = "translateX(" + posPx + "px)"
+        handler.style.transform = 'translateX(' + posPx + 'px)'
       }
 
       this.rendering = false
     },
 
     refreshCaretPosition(selectedElement = this.selectedElement) {
-      const left =
-        parseFloat(selectedElement.style.transform.replace(/[^\d.]/g, "")) || 0
+      const left = parseFloat(selectedElement.style.transform.replace(/[^\d.]/g, '')) || 0
       const panelWidth = this.$refs.thresholdPanel.clientWidth
       const caretMargin = 12
       const panelRange = (this.width - panelWidth) / 2 + caretMargin
 
-      this.panelOffsetPosition =
-        -panelRange + panelRange * 2 * (left / this.width)
-      this.panelCaretPosition =
-        caretMargin + (panelWidth - caretMargin * 2) * (left / this.width)
+      this.panelOffsetPosition = -panelRange + panelRange * 2 * (left / this.width)
+      this.panelCaretPosition = caretMargin + (panelWidth - caretMargin * 2) * (left / this.width)
     },
 
     refreshGradients() {
@@ -446,22 +409,14 @@ export default {
             ? 0
             : i === this.thresholds.length - 1
             ? 100
-            : (
-                ((Math.log(this.thresholds[i].amount + 1) - minLog) /
-                  (maxLog - minLog)) *
-                100
-              ).toFixed(2)
+            : (((Math.log(this.thresholds[i].amount + 1) - minLog) / (maxLog - minLog)) * 100).toFixed(2)
 
         buysStops.push(`${this.thresholds[i].buyColor} ${percent}%`)
         sellsStops.push(`${this.thresholds[i].sellColor} ${percent}%`)
       }
 
-      this.$refs.buysGradient.style.backgroundImage = `linear-gradient(to right, ${buysStops.join(
-        ", "
-      )})`
-      this.$refs.sellsGradient.style.backgroundImage = `linear-gradient(to right, ${sellsStops.join(
-        ", "
-      )})`
+      this.$refs.buysGradient.style.backgroundImage = `linear-gradient(to right, ${buysStops.join(', ')})`
+      this.$refs.sellsGradient.style.backgroundImage = `linear-gradient(to right, ${sellsStops.join(', ')})`
     },
 
     reorderThresholds() {
@@ -471,46 +426,45 @@ export default {
         selectedThreshold = this.thresholds[this.selectedIndex]
       }
 
-      this.$store.state.thresholds = this.thresholds.sort(
-        (a, b) => a.amount - b.amount
-      )
+      this.$store.state.thresholds = this.thresholds.sort((a, b) => a.amount - b.amount)
 
       if (selectedThreshold) {
         for (let i = 0; i < this.thresholds.length; i++) {
-          if (
-            selectedThreshold.amount === this.thresholds[i].amount &&
-            selectedThreshold.gif === this.thresholds[i].gif
-          ) {
+          if (selectedThreshold.amount === this.thresholds[i].amount && selectedThreshold.gif === this.thresholds[i].gif) {
             this.selectedIndex = i
           }
         }
       }
     },
 
+    deleteThreshold(index) {
+      if (index <= 1) {
+        return
+      }
+
+      this.$store.commit('deleteThreshold', index)
+    },
+
     openPicker(side, index, event) {
-      if (
-        this.picking &&
-        this.picking.index === index &&
-        this.picking.side === side
-      ) {
+      if (this.picking && this.picking.index === index && this.picking.side === side) {
         return this.closePicker(event)
       }
 
       if (!this.thresholds[index][side]) {
-        this.$store.commit("setThresholdColor", {
+        this.$store.commit('setThresholdColor', {
           index: index,
           side: side,
-          value: "#ffffff"
+          value: '#ffffff'
         })
       }
 
       if (this.picking) {
-        this.picking.target.classList.remove("-active")
+        this.picking.target.classList.remove('-active')
       }
 
       this.picking = { side, index, target: event.target }
 
-      this.picking.target.classList.add("-active")
+      this.picking.target.classList.add('-active')
 
       setTimeout(() => {
         const containerBounds = this.$el.getBoundingClientRect()
@@ -520,19 +474,13 @@ export default {
           8,
           Math.min(
             this.$el.clientWidth - this.$refs.picker.$el.clientWidth - 8,
-            targetBounds.left +
-              targetBounds.width -
-              containerBounds.left -
-              this.$refs.picker.$el.clientWidth
+            targetBounds.left + targetBounds.width - containerBounds.left - this.$refs.picker.$el.clientWidth
           )
         )
-        let top =
-          targetBounds.top -
-          containerBounds.top +
-          event.target.clientHeight * 1.3
+        let top = targetBounds.top - containerBounds.top + event.target.clientHeight * 1.3
 
-        this.$refs.picker.$el.style.top = top + "px"
-        this.$refs.picker.$el.style.left = left + "px"
+        this.$refs.picker.$el.style.top = top + 'px'
+        this.$refs.picker.$el.style.left = left + 'px'
         this.$refs.picker.$el.style.opacity = 1
 
         this.$refs.picker.fieldsIndex = 1
@@ -548,7 +496,7 @@ export default {
         return
       }
 
-      this.picking.target.classList.remove("-active")
+      this.picking.target.classList.remove('-active')
 
       this.picking = null
     },
@@ -558,7 +506,7 @@ export default {
         return
       }
 
-      this.$store.commit("setThresholdColor", {
+      this.$store.commit('setThresholdColor', {
         index: this.picking.index,
         side: this.picking.side,
         value: `rgba(${color.rgba.r}, ${color.rgba.g}, ${color.rgba.b}, ${color.rgba.a})`
@@ -569,7 +517,7 @@ export default {
 </script>
 
 <style lang="scss">
-@import "../assets/sass/variables";
+@import '../assets/sass/variables';
 
 .thresholds {
   position: relative;
@@ -688,7 +636,7 @@ export default {
       background: 0;
       color: white;
 
-      &[type="number"] {
+      &[type='number'] {
         font-weight: 600;
       }
     }
@@ -736,6 +684,23 @@ export default {
       box-shadow: 0 0 0 0.5em rgba(white, 0.2);
       position: relative;
       z-index: 1;
+    }
+  }
+
+  &__delete {
+    cursor: pointer;
+    padding: 0.5em 0 0.5em 0.5em;
+
+    opacity: 0.5;
+
+    &:hover {
+      opacity: 1;
+    }
+
+    &.-disabled {
+      opacity: 0.5;
+
+      cursor: not-allowed;
     }
   }
 }
@@ -906,7 +871,7 @@ export default {
 
   &.-minimum {
     &:before {
-      content: "Minimum for a trade to show up";
+      content: 'Minimum for a trade to show up';
       display: block;
       margin-bottom: 1em;
       text-decoration: underline;

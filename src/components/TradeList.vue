@@ -305,7 +305,6 @@ export default {
       this.$refs.tradesContainer.appendChild(li)
 
       while (this.tradesCount > this.maxRows) {
-        console.log('delete')
         this.tradesCount--
         this.$refs.tradesContainer.removeChild(this.$refs.tradesContainer.firstChild)
       }

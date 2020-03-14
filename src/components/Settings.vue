@@ -119,16 +119,27 @@
           Thresholds ({{ thresholds.length }}) <i class="icon-up"></i>
         </div>
         <div class="settings-thresholds mb8">
-          <a
-            href="javascript:void(0);"
-            class="settings-thresholds__display-toggle"
-            v-tippy
-            title="Switch thresholds display"
-            @click="
-              $store.commit('toggleTresholdsTable', !showThresholdsAsTable)
-            "
-            >{{ showThresholdsAsTable ? 'slider' : 'table' }}</a
-          >
+          <div class="settings-thresholds__controls">
+            <a
+              href="javascript:void(0);"
+              class="settings-thresholds__display-toggle"
+              v-tippy
+              title="Switch thresholds display"
+              @click="
+                $store.commit('toggleTresholdsTable', !showThresholdsAsTable)
+              "
+              >{{ showThresholdsAsTable ? 'slider' : 'table' }}</a>
+            |
+            <a
+              href="javascript:void(0);"
+              class="settings-thresholds__add"
+              v-tippy
+              title="Add threshold"
+              @click="
+                $store.commit('addThreshold')
+              "
+              >Add <i class="icon-add"></i></a>
+          </div>
           <Thresholds ref="thresholdsComponent" />
         </div>
         <div
@@ -1441,16 +1452,19 @@ export default {
   .settings-thresholds {
     position: relative;
 
-    &__display-toggle {
+    &__controls {
       position: absolute;
       right: 0;
       top: -1.75em;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      opacity: 0.5;
 
-      &:hover {
-        opacity: 1;
+      > a {
+        opacity: .5;
+
+        &:hover {
+          opacity: 1;
+        }
       }
     }
   }

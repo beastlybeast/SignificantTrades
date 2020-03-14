@@ -243,6 +243,16 @@ const store = new Vuex.Store({
     toggleTresholdsTable(state, value) {
       state.showThresholdsAsTable = value ? true : false
     },
+    addThreshold(state) {
+      state.thresholds.push({
+        amount: state.thresholds[state.thresholds.length - 1].amount * 2,
+        buyColor: 'rgb(0, 255, 0)',
+        sellColor: 'rgb(255, 0, 0)'
+      })
+    },
+    deleteThreshold(state, index) {
+      state.thresholds.splice(index, 1)
+    },
     setThresholdAmount(state, payload) {
       const threshold = state.thresholds[payload.index]
 
