@@ -45,15 +45,7 @@ const DEFAULTS = {
   liquidationsOnlyList: false,
   showCounters: false,
   counterPrecision: 1000 * 10,
-  countersSteps: [
-    1000 * 60,
-    1000 * 60 * 5,
-    1000 * 60 * 15,
-    1000 * 60 * 30,
-    1000 * 60 * 60,
-    1000 * 60 * 60 * 2,
-    1000 * 60 * 60 * 4
-  ],
+  countersSteps: [1000 * 60, 1000 * 60 * 5, 1000 * 60 * 15, 1000 * 60 * 30, 1000 * 60 * 60, 1000 * 60 * 60 * 2, 1000 * 60 * 60 * 4],
   hideIncompleteCounter: true,
   cumulativeCounters: true,
   showStats: false,
@@ -72,7 +64,7 @@ const DEFAULTS = {
   useAudio: false,
   audioIncludeInsignificants: true,
   audioVolume: 1.5,
-  settings: [],
+  settings: ['other', 'chart', 'counters', 'stats', 'audio'],
   chartLiquidations: true,
   chartHeight: null,
   chartRange: 0,
@@ -87,12 +79,11 @@ const DEFAULTS = {
   chartSmaLength: 14,
   chartAutoScale: true,
   showExchangesBar: false,
-  showThresholdsAsTable: false,
+  showThresholdsAsTable: true,
 
   // runtime state
   isSnaped: true,
   isLoading: false,
-  isReplaying: false,
   actives: []
 }
 
@@ -165,7 +156,7 @@ if (STORED && STORED.thresholds && STORED.thresholds.length) {
  * NON PERSISTENT DATA
  * thoses properties are used in the store logic, but shouldn't be stored in the client storage
  */
-const EPHEMERAL_PROPERTIES = ['isSnaped', 'isLoading', 'isReplaying', 'actives']
+const EPHEMERAL_PROPERTIES = ['isSnaped', 'isLoading', 'actives']
 
 const store = new Vuex.Store({
   defaults: DEFAULTS,
@@ -306,11 +297,7 @@ const store = new Vuex.Store({
       Vue.set(state.exchanges[exchange], 'hidden', true)
     },
     toggleExchangeVisibility(state, exchange) {
-      Vue.set(
-        state.exchanges[exchange],
-        'hidden',
-        state.exchanges[exchange].hidden === true ? false : true
-      )
+      Vue.set(state.exchanges[exchange], 'hidden', state.exchanges[exchange].hidden === true ? false : true)
     },
     toggleSettingsPanel(state, value) {
       const index = state.settings.indexOf(value)
@@ -371,11 +358,7 @@ const store = new Vuex.Store({
       Vue.set(state.exchanges[payload.exchange], 'match', payload.match)
     },
     toggleExchangeOHLC(state, exchange) {
-      Vue.set(
-        state.exchanges[exchange],
-        'ohlc',
-        state.exchanges[exchange].ohlc === false ? true : false
-      )
+      Vue.set(state.exchanges[exchange], 'ohlc', state.exchanges[exchange].ohlc === false ? true : false)
     },
     setChartHeight(state, value) {
       state.chartHeight = value || null
@@ -409,9 +392,6 @@ const store = new Vuex.Store({
     toggleLoading(state, value) {
       state.isLoading = value ? true : false
     },
-    toggleReplaying(state, params) {
-      state.isReplaying = params ? true : false
-    },
     reloadExchangeState(state, exchange) {
       if (!exchange) {
         return
@@ -428,10 +408,7 @@ const store = new Vuex.Store({
       }
 
       const index = state.actives.indexOf(exchange)
-      const active =
-        state.exchanges[exchange].match &&
-        !state.exchanges[exchange].disabled &&
-        !state.exchanges[exchange].hidden
+      const active = state.exchanges[exchange].match && !state.exchanges[exchange].disabled && !state.exchanges[exchange].hidden
 
       if (active && index === -1) {
         state.actives.push(exchange)

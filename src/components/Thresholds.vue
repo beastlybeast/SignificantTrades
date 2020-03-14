@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="thresholds"
-    :class="{ '-dragging': dragging, '-rendering': rendering }"
-  >
+  <div class="thresholds" :class="{ '-dragging': dragging, '-rendering': rendering }">
     <chrome-picker
       v-if="picking !== null"
       ref="picker"
@@ -102,11 +99,11 @@
         </h3>
         <div class="form-group mb8 threshold-panel__gif">
           <label>Show themed gif</label>
-          <small class="help-text"
-            >Random gif based on
+          <small class="help-text">
+            Random gif based on
             <a href="https://gfycat.com" target="_blank">Gifycat</a>
-            keyword</small
-          >
+            keyword
+          </small>
           <input
             type="text"
             class="form-control"
@@ -123,11 +120,7 @@
           <label>Custom colors</label>
           <small class="help-text">Will show colored line</small>
           <div class="column">
-            <div
-              class="form-group"
-              title="When buy"
-              v-tippy="{ placement: 'bottom' }"
-            >
+            <div class="form-group" title="When buy" v-tippy="{ placement: 'bottom' }">
               <input
                 type="text"
                 class="form-control"
@@ -143,11 +136,7 @@
                 @click="openPicker('buyColor', selectedIndex, $event)"
               />
             </div>
-            <div
-              class="form-group"
-              title="When sell"
-              v-tippy="{ placement: 'bottom' }"
-            >
+            <div class="form-group" title="When sell" v-tippy="{ placement: 'bottom' }">
               <input
                 type="text"
                 class="form-control"
@@ -173,13 +162,13 @@
 </template>
 
 <script>
-import { mapState } from 'vuex'
+import { mapState } from "vuex"
 
-import { Chrome } from 'vue-color'
+import { Chrome } from "vue-color"
 
 export default {
   components: {
-    'chrome-picker': Chrome,
+    "chrome-picker": Chrome
   },
 
   data() {
@@ -191,31 +180,31 @@ export default {
       selectedIndex: null,
       selectedElement: null,
       panelCaretPosition: 0,
-      panelOffsetPosition: 0,
+      panelOffsetPosition: 0
     }
   },
 
   computed: {
     ...mapState([
-      'thresholds',
-      'showThresholdsAsTable',
-      'preferQuoteCurrencySize',
-    ]),
+      "thresholds",
+      "showThresholdsAsTable",
+      "preferQuoteCurrencySize"
+    ])
   },
 
   created() {
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
-        case 'toggleSettingsPanel':
-        case 'toggleTresholdsTable':
+        case "toggleSettingsPanel":
+        case "toggleTresholdsTable":
           if (this.picking) {
             this.closePicker(event)
           }
 
           if (
-            (mutation.type === 'toggleSettingsPanel' &&
-              mutation.payload === 'thresholds') ||
-            (mutation.type === 'toggleTresholdsTable' &&
+            (mutation.type === "toggleSettingsPanel" &&
+              mutation.payload === "thresholds") ||
+            (mutation.type === "toggleTresholdsTable" &&
               mutation.payload === false)
           ) {
             this.rendering = true
@@ -226,11 +215,11 @@ export default {
             }, 100)
           }
           break
-        case 'setThresholdAmount':
+        case "setThresholdAmount":
           this.reorderThresholds()
           this.refreshHandlers()
           break
-        case 'setThresholdColor':
+        case "setThresholdColor":
           this.refreshGradients()
           break
       }
@@ -246,7 +235,7 @@ export default {
     this._startDrag = this.startDrag.bind(this)
 
     this.$el.addEventListener(
-      this.$root.isTouchSupported ? 'touchstart' : 'mousedown',
+      this.$root.isTouchSupported ? "touchstart" : "mousedown",
       this._startDrag,
       false
     )
@@ -254,7 +243,7 @@ export default {
     this._doDrag = this.doDrag.bind(this)
 
     window.addEventListener(
-      this.$root.isTouchSupported ? 'touchmove' : 'mousemove',
+      this.$root.isTouchSupported ? "touchmove" : "mousemove",
       this._doDrag,
       false
     )
@@ -262,33 +251,33 @@ export default {
     this._endDrag = this.endDrag.bind(this)
 
     window.addEventListener(
-      this.$root.isTouchSupported ? 'touchend' : 'mouseup',
+      this.$root.isTouchSupported ? "touchend" : "mouseup",
       this._endDrag,
       false
     )
 
     this._doResize = this.refreshHandlers.bind(this)
 
-    window.addEventListener('resize', this._doResize, false)
+    window.addEventListener("resize", this._doResize, false)
   },
 
   beforeDestroy() {
     window.removeEventListener(
-      this.$root.isTouchSupported ? 'touchmove' : 'mousemove',
+      this.$root.isTouchSupported ? "touchmove" : "mousemove",
       this._doDrag
     )
     window.removeEventListener(
-      this.$root.isTouchSupported ? 'touchend' : 'mouseup',
+      this.$root.isTouchSupported ? "touchend" : "mouseup",
       this._endDrag
     )
-    window.removeEventListener('resize', this._doResize)
+    window.removeEventListener("resize", this._doResize)
 
     this.onStoreMutation()
   },
 
   methods: {
     startDrag(event) {
-      if (!event.target.classList.contains('thresholds-slider__handler')) {
+      if (!event.target.classList.contains("thresholds-slider__handler")) {
         return
       }
 
@@ -310,7 +299,7 @@ export default {
 
       this.dragStartedAt = {
         timestamp: +new Date(),
-        position: x,
+        position: x
       }
     },
 
@@ -362,7 +351,7 @@ export default {
         amount = 0
       }
 
-      this.selectedElement.style.transform = 'translateX(' + left + 'px)'
+      this.selectedElement.style.transform = "translateX(" + left + "px)"
 
       this.refreshCaretPosition()
 
@@ -374,9 +363,9 @@ export default {
     endDrag(event) {
       if (this.selectedElement) {
         if (this.dragging) {
-          this.$store.commit('setThresholdAmount', {
+          this.$store.commit("setThresholdAmount", {
             index: this.selectedIndex,
-            value: this.thresholds[this.selectedIndex].amount,
+            value: this.thresholds[this.selectedIndex].amount
           })
         }
 
@@ -395,7 +384,7 @@ export default {
     },
 
     refreshHandlers() {
-      const amounts = this.thresholds.map((threshold) => threshold.amount)
+      const amounts = this.thresholds.map(threshold => threshold.amount)
 
       this.minimum = this.thresholds[0].amount
       this.maximum = Math.max.apply(null, amounts)
@@ -421,7 +410,7 @@ export default {
         const posLog = Math.log(threshold.amount + 1) - minLog
         const posPx = this.width * (posLog / maxLog)
 
-        handler.style.transform = 'translateX(' + posPx + 'px)'
+        handler.style.transform = "translateX(" + posPx + "px)"
       }
 
       this.rendering = false
@@ -429,7 +418,7 @@ export default {
 
     refreshCaretPosition(selectedElement = this.selectedElement) {
       const left =
-        parseFloat(selectedElement.style.transform.replace(/[^\d.]/g, '')) || 0
+        parseFloat(selectedElement.style.transform.replace(/[^\d.]/g, "")) || 0
       const panelWidth = this.$refs.thresholdPanel.clientWidth
       const caretMargin = 12
       const panelRange = (this.width - panelWidth) / 2 + caretMargin
@@ -468,10 +457,10 @@ export default {
       }
 
       this.$refs.buysGradient.style.backgroundImage = `linear-gradient(to right, ${buysStops.join(
-        ', '
+        ", "
       )})`
       this.$refs.sellsGradient.style.backgroundImage = `linear-gradient(to right, ${sellsStops.join(
-        ', '
+        ", "
       )})`
     },
 
@@ -508,20 +497,20 @@ export default {
       }
 
       if (!this.thresholds[index][side]) {
-        this.$store.commit('setThresholdColor', {
+        this.$store.commit("setThresholdColor", {
           index: index,
           side: side,
-          value: '#ffffff',
+          value: "#ffffff"
         })
       }
 
       if (this.picking) {
-        this.picking.target.classList.remove('-active')
+        this.picking.target.classList.remove("-active")
       }
 
       this.picking = { side, index, target: event.target }
 
-      this.picking.target.classList.add('-active')
+      this.picking.target.classList.add("-active")
 
       setTimeout(() => {
         const containerBounds = this.$el.getBoundingClientRect()
@@ -542,8 +531,8 @@ export default {
           containerBounds.top +
           event.target.clientHeight * 1.3
 
-        this.$refs.picker.$el.style.top = top + 'px'
-        this.$refs.picker.$el.style.left = left + 'px'
+        this.$refs.picker.$el.style.top = top + "px"
+        this.$refs.picker.$el.style.left = left + "px"
         this.$refs.picker.$el.style.opacity = 1
 
         this.$refs.picker.fieldsIndex = 1
@@ -559,7 +548,7 @@ export default {
         return
       }
 
-      this.picking.target.classList.remove('-active')
+      this.picking.target.classList.remove("-active")
 
       this.picking = null
     },
@@ -569,20 +558,18 @@ export default {
         return
       }
 
-      this.$store.commit('setThresholdColor', {
+      this.$store.commit("setThresholdColor", {
         index: this.picking.index,
         side: this.picking.side,
-        value: `rgba(${color.rgba.r}, ${color.rgba.g}, ${color.rgba.b}, ${
-          color.rgba.a
-        })`,
+        value: `rgba(${color.rgba.r}, ${color.rgba.g}, ${color.rgba.b}, ${color.rgba.a})`
       })
-    },
-  },
+    }
+  }
 }
 </script>
 
 <style lang="scss">
-@import '../assets/sass/variables';
+@import "../assets/sass/variables";
 
 .thresholds {
   position: relative;
@@ -614,9 +601,13 @@ export default {
     opacity: 0;
     transition: all 0.2s $easeOutExpo;
 
+    .vc-chrome-fields .vc-input__label {
+      font-family: monospace;
+    }
+
     .vc-input__input {
       background: none;
-      border: 2px solid white;
+      border: 1px solid white;
       border-radius: 2px;
       color: white;
       box-shadow: none;
@@ -697,7 +688,7 @@ export default {
       background: 0;
       color: white;
 
-      &[type='number'] {
+      &[type="number"] {
         font-weight: 600;
       }
     }
@@ -915,7 +906,7 @@ export default {
 
   &.-minimum {
     &:before {
-      content: 'Minimum for a trade to show up';
+      content: "Minimum for a trade to show up";
       display: block;
       margin-bottom: 1em;
       text-decoration: underline;

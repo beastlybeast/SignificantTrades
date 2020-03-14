@@ -7,15 +7,8 @@
         v-if="!hideIncompleteCounter || index <= completed"
         class="counters__item"
       >
-        <div
-          class="counter__index"
-          v-tippy="{ placement: 'left' }"
-          title="Edit interval"
-        >
-          <editable
-            :content="labels[index]"
-            @output="updateCounterStep(index, $event)"
-          ></editable>
+        <div class="counter__index" v-tippy="{ placement: 'left' }" title="Edit interval">
+          <editable :content="labels[index]" @output="updateCounterStep(index, $event)"></editable>
         </div>
         <div
           class="counter__up"
@@ -31,10 +24,7 @@
         >
           <div v-if="index === 0" class="counter__light"></div>
         </div>
-        <div
-          class="counter__delete icon-cross"
-          @click="deleteCounter(index)"
-        ></div>
+        <div class="counter__delete icon-cross" @click="deleteCounter(index)"></div>
       </li>
     </ul>
     <!-- <div class="counters__add"><i class="icon-add"></i> Add step</div> -->
@@ -55,7 +45,7 @@ export default {
       counters: [],
       complete: 0,
       queue: [0, 0],
-      strength: [0, 0],
+      strength: [0, 0]
     }
   },
   computed: {
@@ -68,7 +58,7 @@ export default {
       'cumulativeCounters',
       'hideIncompleteCounter',
       'preferQuoteCurrencySize'
-    ]),
+    ])
   },
   created() {
     const now = +new Date()
@@ -121,18 +111,13 @@ export default {
 
       const side = volume[1] > volume[0] ? 1 : 0
 
-      const strength =
-        (this.strength[side] + volume[side]) / (this.thresholds[0].amount * 0.1)
+      const strength = (this.strength[side] + volume[side]) / (this.thresholds[0].amount * 0.1)
 
-      const element = this.$refs.countersList.children[0].querySelector(
-        '.counter__' + (side ? 'up' : 'down')
-      ).children[0]
+      const element = this.$refs.countersList.children[0].querySelector('.counter__' + (side ? 'up' : 'down')).children[0]
 
-      element.style.background = `linear-gradient(to ${
-        side ? 'right' : 'left'
-      }, rgba(255, 255, 255, 0), rgba(255, 255, 255, ${(strength * 0.8).toFixed(
-        2
-      )}))`
+      element.style.background = `linear-gradient(to ${side ? 'right' : 'left'}, rgba(255, 255, 255, 0), rgba(255, 255, 255, ${(
+        strength * 0.8
+      ).toFixed(2)}))`
 
       element.classList.remove('-highlight')
       void element.offsetWidth
@@ -158,16 +143,8 @@ export default {
       this.queue[1] += downVolume
 
       for (let index = 0; index < this.stackedSums.length; index++) {
-        this.$set(
-          this.stackedSums[index],
-          0,
-          this.stackedSums[index][0] + upVolume
-        )
-        this.$set(
-          this.stackedSums[index],
-          1,
-          this.stackedSums[index][1] + downVolume
-        )
+        this.$set(this.stackedSums[index], 0, this.stackedSums[index][0] + upVolume)
+        this.$set(this.stackedSums[index], 1, this.stackedSums[index][1] + downVolume)
 
         if (!this.cumulativeCounters) {
           break
@@ -247,34 +224,22 @@ export default {
     },
     stackTrades(trades) {
       const now = +new Date()
-      const minTimestampForCounter = this.countersSteps[
-        this.countersSteps.length - 1
-      ]
+      const minTimestampForCounter = this.countersSteps[this.countersSteps.length - 1]
 
       let stacks = []
 
       for (let trade of trades) {
-        if (
-          this.actives.indexOf(trade[0]) === -1 ||
-          trade[1] < now - minTimestampForCounter
-        ) {
+        if (this.actives.indexOf(trade[0]) === -1 || trade[1] < now - minTimestampForCounter) {
           continue
         }
 
         const isBuy = +trade[4] > 0 ? true : false
         const amount = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
 
-        if (
-          stacks.length &&
-          trade[1] - stacks[stacks.length - 1][0] < this.counterPrecision
-        ) {
+        if (stacks.length && trade[1] - stacks[stacks.length - 1][0] < this.counterPrecision) {
           stacks[stacks.length - 1][isBuy ? 1 : 2] += amount
         } else {
-          stacks.push([
-            +trade[1],
-            isBuy ? amount : 0,
-            !isBuy ? amount : 0,
-          ])
+          stacks.push([+trade[1], isBuy ? amount : 0, !isBuy ? amount : 0])
         }
       }
 
@@ -330,7 +295,7 @@ export default {
       if (!value) {
         return this.$store.commit('setCounterStep', {
           index: index,
-          value: null,
+          value: null
         })
       }
 
@@ -350,7 +315,7 @@ export default {
 
       return this.$store.commit('setCounterStep', {
         index: index,
-        value: milliseconds,
+        value: milliseconds
       })
     },
     rebuildCounters() {
@@ -376,20 +341,9 @@ export default {
 
       this.populateCounters(stacks)
 
-      console.log(
-        `[counters.rebuild]\n`,
-        this.counters
-          .map(
-            (a, index) =>
-              `\t- Counter ${this.labels[index]} got ${a.length} stacks`
-          )
-          .join('\n')
-      )
+      console.log(`[counters.rebuild]\n`, this.counters.map((a, index) => `\t- Counter ${this.labels[index]} got ${a.length} stacks`).join('\n'))
 
-      this.countersRefreshCycleInterval = window.setInterval(
-        this.updateCounters.bind(this),
-        this.counterPrecision
-      )
+      this.countersRefreshCycleInterval = window.setInterval(this.updateCounters.bind(this), this.counterPrecision)
     },
     deleteCounter(index) {
       if (this.countersSteps.length === 1) {
@@ -401,40 +355,27 @@ export default {
       this.$store.commit('setCounterStep', { index: index, value: null })
     },
     getTicksTrades() {
-      return socket.ticks
+      return socket
+        .getBars()
         .reduce((prev, curr) => {
           const ratio = {
             buys: curr.buys / (curr.sells + curr.buys),
-            sells: curr.sells / (curr.sells + curr.buys),
+            sells: curr.sells / (curr.sells + curr.buys)
           }
 
           if (curr.buys > 0) {
-            prev.push([
-              curr.exchange,
-              curr.timestamp,
-              curr.close,
-              ratio.buys * curr.volume,
-              true,
-              ratio.buys * curr.records,
-            ])
+            prev.push([curr.exchange, curr.timestamp, curr.close, ratio.buys * curr.volume, true, ratio.buys * curr.records])
           }
 
           if (curr.sells > 0) {
-            prev.push([
-              curr.exchange,
-              curr.timestamp,
-              curr.close,
-              ratio.sells * curr.volume,
-              false,
-              ratio.sells * curr.records,
-            ])
+            prev.push([curr.exchange, curr.timestamp, curr.close, ratio.sells * curr.volume, false, ratio.sells * curr.records])
           }
 
           return prev
         }, [])
-        .concat(socket.trades)
-    },
-  },
+        .concat(socket.getTrades())
+    }
+  }
 }
 </script>
 

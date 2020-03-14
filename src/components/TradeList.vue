@@ -1,105 +1,65 @@
 <template>
   <div id="trades" class="trades" :class="{ '-logos': this.showLogos }">
-    <ul v-if="trades.length">
-      <li
-        v-for="trade in trades"
-        class="trades__item"
-        :key="trade.id"
-        :class="trade.classname"
-        :style="{
-          backgroundImage: trade.image,
-          backgroundColor: trade.background,
-          color: trade.foreground,
-        }"
-      >
-        <template v-if="trade.message">
-          <div class="trades__item__side icon-side"></div>
-          <div class="trades__item__exchange" :title="trade.exchange">{{ trade.exchange }}</div>
-          <div class="trades__item__message" v-html="trade.message"></div>
-          <div class="trades__item__date" :timestamp="trade.timestamp">{{ trade.date }}</div>
-        </template>
-        <template v-else>
-          <div class="trades__item__side icon-side"></div>
-          <div class="trades__item__exchange" :title="trade.exchange">{{ trade.exchange }}</div>
-          <div class="trades__item__price">
-            <span class="icon-quote"></span>
-            <span v-html="trade.price"></span>
-            <span v-if="trade.spray" class="trade__spray">{{ trade.spray }}</span>
-          </div>
-          <div class="trades__item__amount">
-            <span class="trades__item__amount__quote">
-              <span class="icon-quote"></span>
-              <span v-html="trade.amount"></span>
-            </span>
-            <span class="trades__item__amount__base">
-              <span class="icon-base"></span>
-              <span v-html="trade.size"></span>
-            </span>
-          </div>
-          <div class="trades__item__date" :timestamp="trade.timestamp">{{ trade.date }}</div>
-        </template>
-      </li>
-    </ul>
-    <div v-else class="trades__item trades__item--empty">Nothing to show, yet.</div>
+    <ul ref="tradesContainer"></ul>
+    <div v-if="!tradesCount" class="trades__item -empty">Nothing to show, yet.</div>
   </div>
 </template>
 
 <script>
-import { mapState } from "vuex"
+import { mapState } from 'vuex'
 
-import socket from "../services/socket"
-import Sfx from "../services/sfx"
+import socket from '../services/socket'
+import Sfx from '../services/sfx'
+
+let LAST_TRADE_TIMESTAMP
 
 export default {
   data() {
     return {
       ticks: {},
-      trades: [],
-      gifs: {}
+      gifs: {},
+      tradesCount: 0,
+      lastSide: null
     }
   },
   computed: {
     ...mapState([
-      "pair",
-      "maxRows",
-      "thresholds",
-      "exchanges",
-      "useAudio",
-      "liquidationsOnlyList",
-      "audioIncludeInsignificants",
-      "preferQuoteCurrencySize",
-      "decimalPrecision",
-      "aggregationLag",
-      "tradeSpray",
-      "showLogos"
+      'pair',
+      'maxRows',
+      'thresholds',
+      'exchanges',
+      'useAudio',
+      'liquidationsOnlyList',
+      'audioIncludeInsignificants',
+      'preferQuoteCurrencySize',
+      'decimalPrecision',
+      'aggregationLag',
+      'tradeSpray',
+      'showLogos'
     ])
   },
   created() {
     this.retrieveStoredGifs()
     this.retrieveColorSteps()
 
-    socket.$on("pairing", this.onPairing)
-    socket.$on("trades.instant", this.onTrades)
+    socket.$on('pairing', this.onPairing)
+    socket.$on('trades.instant', this.onTrades)
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
-        case "toggleAudio":
+        case 'toggleAudio':
           if (mutation.payload) {
             this.sfx = new Sfx()
           } else {
             this.sfx && this.sfx.disconnect() && delete this.sfx
           }
           break
-        case "setThresholdGif":
-          this.fetchGifByKeyword(
-            mutation.payload.value,
-            mutation.payload.isDeleted
-          )
+        case 'setThresholdGif':
+          this.fetchGifByKeyword(mutation.payload.value, mutation.payload.isDeleted)
           break
-        case "setThresholdColor":
-        case "setThresholdAmount":
+        case 'setThresholdColor':
+        case 'setThresholdAmount':
           this.retrieveColorSteps()
-          this.trades.splice(0, this.trades.length)
 
           this.redrawList()
           break
@@ -110,34 +70,34 @@ export default {
     if (this.useAudio) {
       this.sfx = new Sfx()
 
-      if (this.sfx.context.state === "suspended") {
+      if (this.sfx.context.state === 'suspended') {
         const resumeOnFocus = (() => {
           if (this.useAudio) {
             this.sfx.context.resume()
           }
 
-          if (!this.useAudio || this.sfx.context.state !== "suspended") {
-            window.removeEventListener("focus", resumeOnFocus, false)
-            window.removeEventListener("blur", resumeOnFocus, false)
+          if (!this.useAudio || this.sfx.context.state !== 'suspended') {
+            window.removeEventListener('focus', resumeOnFocus, false)
+            window.removeEventListener('blur', resumeOnFocus, false)
           }
         }).bind(this)
 
-        window.addEventListener("blur", resumeOnFocus, false)
-        window.addEventListener("focus", resumeOnFocus, false)
+        window.addEventListener('blur', resumeOnFocus, false)
+        window.addEventListener('focus', resumeOnFocus, false)
       }
     }
 
     this.timeAgoInterval = setInterval(() => {
-      for (let element of this.$el.querySelectorAll("[timestamp]")) {
-        element.innerHTML = this.$root.ago(element.getAttribute("timestamp"))
+      for (let element of this.$el.querySelectorAll('[timestamp]')) {
+        element.innerHTML = this.$root.ago(element.getAttribute('timestamp'))
       }
     }, 1000)
 
     this.redrawList()
   },
   beforeDestroy() {
-    socket.$off("pairing", this.onPairing)
-    socket.$off("trades.instant", this.onTrades)
+    socket.$off('pairing', this.onPairing)
+    socket.$off('trades.instant', this.onTrades)
 
     this.onStoreMutation()
 
@@ -147,50 +107,36 @@ export default {
   },
   methods: {
     onPairing() {
-      this.trades = []
+      this.clearList()
     },
     onTrades(trades, silent = false) {
       for (let trade of trades) {
-        this.processTrade(
-          trade,
-          Math.min(2000, trades[trades.length - 1][1] - trades[0][1]),
-          silent
-        )
+        this.processTrade(trade, Math.min(2000, trades[trades.length - 1][1] - trades[0][1]), silent)
       }
     },
     processTrade(trade, silent = false) {
       const size = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
 
-      const multiplier =
-        typeof this.exchanges[trade[0]].threshold !== "undefined"
-          ? +this.exchanges[trade[0]].threshold
-          : 1
+      const multiplier = typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1
 
       if (trade[5] === 1) {
         if (
           !silent &&
           this.useAudio &&
-          ((this.audioIncludeInsignificants &&
-            size >
-              this.thresholds[1].amount * Math.max(0.1, multiplier) * 0.1) ||
+          ((this.audioIncludeInsignificants && size > this.thresholds[1].amount * Math.max(0.1, multiplier) * 0.1) ||
             size > this.thresholds[1].amount * Math.max(0.1, multiplier))
         ) {
           this.sfx.liquidation(size / this.thresholds[0].amount)
         }
 
         if (size >= this.thresholds[0].amount * multiplier) {
-          let liquidationMessage = `<i class="icon-currency"></i> <strong>${this.$root.formatAmount(
-            size,
-            1
-          )}</strong>`
+          let liquidationMessage = `<i class="icon-currency"></i> <strong>${this.$root.formatAmount(size, 1)}</strong>`
 
           liquidationMessage += `&nbsp;liq<span class="min-280">uidate</span>d <strong>${
-            trade[4] > 0 ? "SHORT" : "LONG"
-          }</strong> @ <i class="icon-currency"></i> ${this.$root.formatPrice(
-            trade[2]
-          )}`
+            trade[4] > 0 ? 'SHORT' : 'LONG'
+          }</strong> @ <i class="icon-currency"></i> ${this.$root.formatPrice(trade[2])}`
 
-          this.appendRow(trade, ["liquidation"], liquidationMessage)
+          this.appendRow(trade, '-liquidation', liquidationMessage)
         }
         return
       } else if (this.liquidationsOnlyList) {
@@ -200,15 +146,10 @@ export default {
       if (
         !silent &&
         this.useAudio &&
-        ((this.audioIncludeInsignificants &&
-          size > this.thresholds[1].amount * Math.max(0.1, multiplier) * 0.1) ||
+        ((this.audioIncludeInsignificants && size > this.thresholds[1].amount * Math.max(0.1, multiplier) * 0.1) ||
           size > this.thresholds[1].amount * Math.max(0.1, multiplier))
       ) {
-        this.sfx &&
-          this.sfx.tradeToSong(
-            size / (this.thresholds[1].amount * Math.max(0.1, multiplier)),
-            trade[4]
-          )
+        this.sfx && this.sfx.tradeToSong(size / (this.thresholds[1].amount * Math.max(0.1, multiplier)), trade[4])
       }
 
       // group by [exchange name + buy=1/sell=0] (ex bitmex1)
@@ -217,25 +158,16 @@ export default {
 
       if (this.thresholds[0].amount) {
         if (this.ticks[tid]) {
-          if (
-            !this.aggregationLag ||
-            trade[1] - this.ticks[tid][1] > this.aggregationLag
-          ) {
+          if (!this.aggregationLag || trade[1] - this.ticks[tid][1] > this.aggregationLag) {
             delete this.ticks[tid]
           } else {
             // average group prices
-            this.ticks[tid][2] =
-              (this.ticks[tid][2] * this.ticks[tid][3] + trade[2] * trade[3]) /
-              2 /
-              ((this.ticks[tid][3] + trade[3]) / 2)
+            this.ticks[tid][2] = (this.ticks[tid][2] * this.ticks[tid][3] + trade[2] * trade[3]) / 2 / ((this.ticks[tid][3] + trade[3]) / 2)
 
             // sum volume
             this.ticks[tid][3] += trade[3]
 
-            if (
-              this.ticks[tid][2] * this.ticks[tid][3] >=
-              this.thresholds[0].amount * multiplier
-            ) {
+            if (this.ticks[tid][2] * this.ticks[tid][3] >= this.thresholds[0].amount * multiplier) {
               this.appendRow(this.ticks[tid])
               delete this.ticks[tid]
             }
@@ -253,30 +185,46 @@ export default {
       this.appendRow(trade)
       // }, delay)
     },
-    appendRow(trade, classname = [], message = null) {
-      let icon
-      let image
-      let amount = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
+    appendRow(trade, classname = '', message = null) {
+      if (!this.tradesCount) {
+        this.$forceUpdate()
+      }
 
-      classname.push(trade[0])
+      this.tradesCount++
 
       const multiplier =
-        this.exchanges[trade[0]] &&
-        typeof this.exchanges[trade[0]].threshold !== "undefined"
-          ? +this.exchanges[trade[0]].threshold
-          : 1
+        this.exchanges[trade[0]] && typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1
 
-      let color = this.getTradeColor(trade, multiplier)
+      let amount = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
+
+      const li = document.createElement('li')
+      li.className = ('trades__item ' + classname).trim()
+      li.className += ' -' + trade[0]
 
       if (trade[4]) {
-        classname.push("buy")
+        li.className += ' -buy'
       } else {
-        classname.push("sell")
+        li.className += ' -sell'
+      }
+
+      if (trade[0].length > 10) {
+        li.className += ' -sm'
       }
 
       if (amount >= this.thresholds[1].amount * multiplier) {
-        classname.push("significant")
+        li.className += ' -significant'
       }
+
+      let color = this.getTradeColor(trade, multiplier)
+
+      if (color.background) {
+        li.style.backgroundColor = color.background
+      }
+      if (color.foreground) {
+        li.style.color = color.foreground
+      }
+
+      let image
 
       for (let i = 0; i < this.thresholds.length; i++) {
         if (amount < this.thresholds[i].amount * multiplier) {
@@ -284,53 +232,83 @@ export default {
         }
 
         if (this.thresholds[i].gif && this.gifs[this.thresholds[i].gif]) {
-          image = this.gifs[this.thresholds[i].gif][
-            Math.floor(
-              Math.random() * (this.gifs[this.thresholds[i].gif].length - 1)
-            )
-          ]
+          li.style.backgroundImage = `url('${
+            this.gifs[this.thresholds[i].gif][Math.floor(Math.random() * (this.gifs[this.thresholds[i].gif].length - 1))]
+          }`
         }
 
-        classname.push("level-" + i)
+        li.className += ' level-' + i
       }
 
       amount = this.$root.formatAmount(trade[2] * trade[3])
 
-      if (image) {
-        image = "url(" + image + ")"
+      if (trade[4] !== this.lastSide) {
+        const side = document.createElement('div')
+        side.className = 'trades__item__side icon-side'
+        li.appendChild(side)
       }
 
-      let spray
+      this.lastSide = trade[4]
 
-      if (this.tradeSpray && trade[6]) {
-        spray = " - " + trade[6] + "bps"
+      const exchange = document.createElement('div')
+      exchange.className = 'trades__item__exchange'
+      exchange.innerText = trade[0].replace('_', ' ')
+      li.appendChild(exchange)
+
+      if (message) {
+        this.lastSide = null
+
+        const message_div = document.createElement('div')
+        message_div.className = 'trades__item__message'
+        message_div.innerHTML = message
+        li.appendChild(message_div)
+      } else {
+        const price = document.createElement('div')
+        price.className = 'trades__item__price'
+        price.innerHTML = `<span class="icon-quote"></span> <span>${this.$root.formatPrice(trade[2])}</span>`
+        li.appendChild(price)
+
+        if (this.tradeSpray && trade[6]) {
+          price.innerHTML += `<span class="trade__spray"> - ${trade[6]}</span>`
+        }
+
+        const amount_div = document.createElement('div')
+        amount_div.className = 'trades__item__amount'
+
+        const amount_quote = document.createElement('span')
+        amount_quote.className = 'trades__item__amount__quote'
+        amount_quote.innerHTML = `<span class="icon-quote"></span> <span>${amount}</span>`
+
+        const amount_base = document.createElement('span')
+        amount_base.className = 'trades__item__amount__base'
+        amount_base.innerHTML = `<span class="icon-base"></span> <span>${this.$root.formatAmount(trade[3])}</span>`
+
+        amount_div.appendChild(amount_quote)
+        amount_div.appendChild(amount_base)
+        li.appendChild(amount_div)
       }
 
-      if (trade[0].length > 10) {
-        classname.push("sm")
+      const date = document.createElement('div')
+      date.className = 'trades__item__date'
+
+      let timestamp = Math.floor(trade[1] / 1000) * 1000
+
+      if (timestamp !== LAST_TRADE_TIMESTAMP) {
+        LAST_TRADE_TIMESTAMP = timestamp
+
+        date.setAttribute('timestamp', trade[1])
+        date.innerText = this.$root.ago(timestamp)
       }
 
-      this.trades.unshift({
-        id: Math.random()
-          .toString(36)
-          .substring(7),
-        background: color.background,
-        foreground: color.foreground,
-        side: trade[4] > 0 ? "BUY" : "SELL",
-        size: this.$root.formatAmount(trade[3]),
-        exchange: trade[0].replace("_", " "),
-        price: this.$root.formatPrice(trade[2]),
-        amount: amount,
-        classname: classname.map(a => "trades__item--" + a).join(" "),
-        icon: icon,
-        date: this.$root.ago(trade[1]),
-        timestamp: trade[1],
-        image: image,
-        spray: spray,
-        message: message
-      })
+      li.appendChild(date)
 
-      this.trades.splice(+this.maxRows || 20, this.trades.length)
+      this.$refs.tradesContainer.appendChild(li)
+
+      while (this.tradesCount > this.maxRows) {
+        console.log('delete')
+        this.tradesCount--
+        this.$refs.tradesContainer.removeChild(this.$refs.tradesContainer.firstChild)
+      }
     },
     retrieveStoredGifs(refresh) {
       this.thresholds.forEach(threshold => {
@@ -339,15 +317,9 @@ export default {
         }
 
         const slug = this.slug(threshold.gif)
-        const storage = localStorage
-          ? JSON.parse(localStorage.getItem("threshold_" + slug + "_gifs"))
-          : null
+        const storage = localStorage ? JSON.parse(localStorage.getItem('threshold_' + slug + '_gifs')) : null
 
-        if (
-          !refresh &&
-          storage &&
-          +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7
-        ) {
+        if (!refresh && storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7) {
           this.gifs[threshold.gif] = storage.data
         } else {
           this.fetchGifByKeyword(threshold.gif)
@@ -366,16 +338,12 @@ export default {
           delete this.gifs[keyword]
         }
 
-        localStorage.removeItem("threshold_" + slug + "_gifs")
+        localStorage.removeItem('threshold_' + slug + '_gifs')
 
         return
       }
 
-      fetch(
-        "https://api.giphy.com/v1/gifs/search?q=" +
-          keyword +
-          "&rating=r&limit=100&api_key=b5Y5CZcpj9spa0xEfskQxGGnhChYt3hi"
-      )
+      fetch('https://api.giphy.com/v1/gifs/search?q=' + keyword + '&rating=r&limit=100&api_key=b5Y5CZcpj9spa0xEfskQxGGnhChYt3hi')
         .then(res => res.json())
         .then(res => {
           if (!res.data || !res.data.length) {
@@ -389,7 +357,7 @@ export default {
           }
 
           localStorage.setItem(
-            "threshold_" + slug + "_gifs",
+            'threshold_' + slug + '_gifs',
             JSON.stringify({
               timestamp: +new Date(),
               data: this.gifs[keyword]
@@ -401,18 +369,16 @@ export default {
       return keyword
         .toLowerCase()
         .trim()
-        .replace(/[^a-zA-Z0-9]+/g, "-")
+        .replace(/[^a-zA-Z0-9]+/g, '-')
     },
     formatRgba(string) {
-      const match = string.match(
-        /rgba?\((\d+)[\s\,]*(\d+)[\s\,]*(\d+)(?:[\s\,]*([\d\.]+))?\)/
-      )
+      const match = string.match(/rgba?\((\d+)[\s\,]*(\d+)[\s\,]*(\d+)(?:[\s\,]*([\d\.]+))?\)/)
 
       return {
         r: +match[1],
         g: +match[2],
         b: +match[3],
-        a: typeof match[4] === "undefined" ? 1 : +match[4]
+        a: typeof match[4] === 'undefined' ? 1 : +match[4]
       }
     },
     retrieveColorSteps() {
@@ -441,28 +407,18 @@ export default {
       }))
     },
     shadeRGBColor(color, percent) {
-      var f = color.split(","),
+      var f = color.split(','),
         t = percent < 0 ? 0 : 255,
         p = percent < 0 ? percent * -1 : percent,
         R = parseInt(f[0].slice(4)),
         G = parseInt(f[1]),
         B = parseInt(f[2])
-      return (
-        "rgb(" +
-        (Math.round((t - R) * p) + R) +
-        "," +
-        (Math.round((t - G) * p) + G) +
-        "," +
-        (Math.round((t - B) * p) + B) +
-        ")"
-      )
+      return 'rgb(' + (Math.round((t - R) * p) + R) + ',' + (Math.round((t - G) * p) + G) + ',' + (Math.round((t - B) * p) + B) + ')'
     },
     getTradeColor(trade, multiplier = 1) {
       const amount = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
-      const pct =
-        amount /
-        (this.thresholds[this.thresholds.length - 1].amount * multiplier)
-      const palette = this.colors[trade[4] > 0 ? "buys" : "sells"]
+      const pct = amount / (this.thresholds[this.thresholds.length - 1].amount * multiplier)
+      const palette = this.colors[trade[4] > 0 ? 'buys' : 'sells']
 
       for (var i = 1; i < palette.length - 1; i++) {
         if (pct < palette[i].pct) {
@@ -485,28 +441,21 @@ export default {
       }
 
       const background = `rgba(${backgroundRGB.r}, ${backgroundRGB.g}, ${backgroundRGB.b}, ${backgroundRGB.a})`
-      const luminance = Math.sqrt(
-        0.299 * Math.pow(backgroundRGB.r, 2) +
-          0.587 * Math.pow(backgroundRGB.g, 2) +
-          0.114 * Math.pow(backgroundRGB.b, 2)
-      )
+      const luminance = Math.sqrt(0.299 * Math.pow(backgroundRGB.r, 2) + 0.587 * Math.pow(backgroundRGB.g, 2) + 0.114 * Math.pow(backgroundRGB.b, 2))
       const ajustedLuminance = luminance * backgroundRGB.a
 
       let foreground
 
       if (backgroundRGB.a === 1 && luminance < 200) {
-        foreground = "white"
+        foreground = 'white'
       } else if (luminance > 200) {
-        foreground = "black"
+        foreground = 'black'
       } else if (luminance < 10) {
-        foreground = "white"
+        foreground = 'white'
       } else {
         rangePct *= 3 * ((200 - ajustedLuminance) / 200)
 
-        foreground = this.shadeRGBColor(
-          `rgb(${backgroundRGB.r}, ${backgroundRGB.g}, ${backgroundRGB.b})`,
-          Math.max(0.25, rangePct)
-        )
+        foreground = this.shadeRGBColor(`rgb(${backgroundRGB.r}, ${backgroundRGB.g}, ${backgroundRGB.b})`, Math.max(0.25, rangePct))
       }
 
       return {
@@ -514,17 +463,17 @@ export default {
         foreground
       }
     },
+    clearList() {
+      this.$refs.tradesContainer.innerHTML = ''
+      this.tradesCount = 0
+    },
     redrawList(limit = 1000) {
       clearTimeout(this._refreshColorRenderList)
 
       this._refreshColorRenderList = setTimeout(() => {
-        this.onTrades(
-          socket.trades.slice(
-            socket.trades.length - limit,
-            socket.trades.length
-          ),
-          true
-        )
+        const count = socket.getTradesCount()
+
+        this.onTrades(socket.getTrades().slice(count - limit, count), true)
       }, 500)
     }
   }
@@ -532,7 +481,7 @@ export default {
 </script>
 
 <style lang="scss">
-@import "../assets/sass/variables";
+@import '../assets/sass/variables';
 
 @keyframes highlight {
   0% {
@@ -552,7 +501,7 @@ export default {
     margin: 0;
     padding: 0;
     display: flex;
-    flex-flow: column nowrap;
+    flex-flow: column-reverse nowrap;
   }
 
   &.-logos {
@@ -564,20 +513,25 @@ export default {
     }
 
     @each $exchange in $exchanges {
-      .trades__item--#{$exchange} .trades__item__exchange {
-        background-image: url("/static/exchanges/#{$exchange}.svg");
+      .-#{$exchange} .trades__item__exchange {
+        background-image: url('/static/exchanges/#{$exchange}.svg');
       }
     }
   }
 
-  &:not(.-logos) .trades__item--sm .trades__item__exchange {
-    font-size: 0.75em;
-    letter-spacing: -0.5px;
-    margin-top: -5px;
-    margin-bottom: -5px;
-    white-space: normal;
-    word-break: break-word;
-    max-width: 4em;
+  &:not(.-logos) .trades__item.-sm {
+    .trades__item__exchange {
+      font-size: 0.75em;
+      letter-spacing: -0.5px;
+      margin-top: -5px;
+      margin-bottom: -5px;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    &.-liquidation .trades__item__exchange {
+      max-width: 4em;
+    }
   }
 }
 
@@ -592,7 +546,7 @@ export default {
   align-items: center;
 
   &:after {
-    content: "";
+    content: '';
     position: absolute;
     top: 0;
     left: 0;
@@ -600,11 +554,11 @@ export default {
     bottom: 0;
     opacity: 0;
     background-color: white;
-    animation: 5s $easeOutExpo highlight;
+    animation: 1s $easeOutExpo highlight;
     pointer-events: none;
   }
 
-  &.trades__item--empty {
+  &.-empty {
     justify-content: center;
     padding: 20px;
     font-size: 0.8rem;
@@ -614,7 +568,7 @@ export default {
     }
   }
 
-  &.trades__item--sell {
+  &.-sell {
     background-blend-mode: soft-light;
     background-color: lighten($red, 35%);
     color: $red;
@@ -624,7 +578,7 @@ export default {
     }
   }
 
-  &.trades__item--buy {
+  &.-buy {
     background-color: lighten($green, 50%);
     color: $green;
 
@@ -633,11 +587,11 @@ export default {
     }
   }
 
-  &.trades__item--level-1 {
+  &.-level-1 {
     color: white;
   }
 
-  &.trades__item--liquidation {
+  &.-liquidation {
     background-color: $pink !important;
     color: white !important;
 
@@ -647,7 +601,7 @@ export default {
     }
   }
 
-  &.trades__item--level-2 {
+  &.-level-2 {
     padding: 0.5em 0.6em;
 
     > div {
@@ -655,7 +609,7 @@ export default {
     }
 
     &:before {
-      content: "";
+      content: '';
       position: absolute;
       top: 0;
       left: 0;
@@ -665,7 +619,7 @@ export default {
     }
   }
 
-  &.trades__item--level-3 {
+  &.-level-3 {
     box-shadow: 0 0 20px rgba(red, 0.5);
     z-index: 1;
   }
@@ -697,6 +651,10 @@ export default {
 
     small {
       opacity: 0.8;
+    }
+
+    &:first-child {
+      margin-left: 1em;
     }
   }
 
@@ -746,7 +704,7 @@ export default {
   }
 }
 
-#app[data-prefer="base"] .trades__item .trades__item__amount {
+#app[data-prefer='base'] .trades__item .trades__item__amount {
   .trades__item__amount__quote {
     transform: translateX(-25%);
     opacity: 0;

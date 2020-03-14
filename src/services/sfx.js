@@ -14,24 +14,41 @@ class Sfx {
     this.queued = 0
 
     var tuna = new Tuna(this.context)
-
     this.output = new tuna.PingPongDelay({
-      wetLevel: 0.5, //0 to 1
+      wetLevel: 0.6, //0 to 1
       feedback: 0.01, //0 to 1
       delayTimeLeft: 175, //1 to 10000 (milliseconds)
       delayTimeRight: 100 //1 to 10000 (milliseconds)
     })
-
+    var delay = new tuna.Delay({
+      feedback: 0.3, //0 to 1+
+      delayTime: 80, //1 to 10000 milliseconds
+      wetLevel: 0.3, //0 to 1+
+      dryLevel: 0.5, //0 to 1+
+      cutoff: 2000, //cutoff frequency of the built in lowpass-filter. 20 to 22050
+      bypass: 1
+    })
+    var compressor = new tuna.Compressor({
+      threshold: -1, //-100 to 0
+      makeupGain: 1, //0 and up (in decibels)
+      attack: 1, //0 to 1000
+      release: 0, //0 to 3000
+      ratio: 4, //1 to 20
+      knee: 5, //0 to 40
+      automakeup: true, //true/false
+      bypass: 0
+    })
     var filter = new tuna.Filter({
-      frequency: 700, //20 to 22050
+      frequency: 800, //20 to 22050
       Q: 10, //0.001 to 100
       gain: -10, //-40 to 40 (in decibels)
       filterType: 'highpass', //lowpass, highpass, bandpass, lowshelf, highshelf, peaking, notch, allpass
       bypass: 0
     })
-
     this.output.connect(filter)
-    filter.connect(this.context.destination)
+    filter.connect(delay)
+    delay.connect(compressor)
+    compressor.connect(this.context.destination)
   }
 
   tradeToSong(factor, side) {
@@ -81,7 +98,8 @@ class Sfx {
       }
     }, this.timestamp - now)
 
-    this.timestamp = Math.max(this.timestamp, now) + (this.queued > 10 ? this.queued > 20 ? 20 : 40 : 80)
+    this.timestamp =
+      Math.max(this.timestamp, now) + (this.queued > 10 ? (this.queued > 20 ? 20 : 40) : 80)
   }
 
   play(frequency, value = 0.5, length = 0.1, type = 'triangle') {
@@ -102,9 +120,11 @@ class Sfx {
 
     gain.connect(this.output)
     oscillator.connect(gain)
-    length *= 1.1
+    length *= 1.3
 
-    gain.gain.value = Math.max(0.04, Math.min(2, value)) * store.state.audioVolume
+    var volume = Math.max(0.02, Math.min(1, value)) * store.state.audioVolume
+
+    gain.gain.value = volume
 
     gain.gain.setValueAtTime(gain.gain.value, time)
     gain.gain.exponentialRampToValueAtTime(0.001, time + length)
@@ -119,16 +139,16 @@ class Sfx {
     this.queued++
 
     setTimeout(() => {
-      this.queued--;
-
+      this.queued--
       ;[329.63, 329.63].forEach((f, i, a) => {
-        size = Math.sqrt(size) / 3
+        size = Math.sqrt(size) / 4
 
         setTimeout(() => this.play(f, size, 0.25, 'sine'), i * 80)
       })
     }, this.timestamp - now)
 
-    this.timestamp = Math.max(this.timestamp, now) + (this.queued > 10 ? this.queued > 20 ? 20 : 40 : 80)
+    this.timestamp =
+      Math.max(this.timestamp, now) + (this.queued > 10 ? (this.queued > 20 ? 20 : 40) : 80)
   }
 
   disconnect() {

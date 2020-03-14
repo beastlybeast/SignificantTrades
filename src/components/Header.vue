@@ -12,12 +12,6 @@
         :selected="timeframe"
         @output="setTimeframe(+$event)"
       ></dropdown>
-      <!-- <button type="button"
-        :class="{active: isReplaying}"
-        @click="replay" title="Replay"
-        v-tippy="{placement: 'bottom'}">
-        <span class="icon-history"></span>
-      </button>-->
       <button
         type="button"
         v-if="!isPopupMode"
@@ -78,8 +72,7 @@ export default {
       "showChart",
       "isSnaped",
       "timeframe",
-      "chartRange",
-      "isReplaying"
+      "chartRange"
     ])
   },
   created() {
@@ -118,13 +111,6 @@ export default {
     this.updateTimeframesApproximateContentSize()
   },
   methods: {
-    replay() {
-      if (this.isReplaying) {
-        this.$store.state.isReplaying = false
-      } else {
-        socket.replay(10)
-      }
-    },
     setTimeframe(timeframe) {
       document.activeElement.blur()
 

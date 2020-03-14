@@ -18,8 +18,9 @@
           )} did not send any trades since the beginning of the session.<br>Chart will be updated automaticaly once the data is received`
         "
       >
-        <i class="icon-warning"></i> {{ pendingExchanges.length }} exchange{{
-          pendingExchanges.length > 1 ? 's are' : ' is'
+        <i class="icon-warning"></i>
+        {{ pendingExchanges.length }} exchange{{
+        pendingExchanges.length > 1 ? 's are' : ' is'
         }}
         still silent
       </div>
@@ -102,7 +103,7 @@ export default {
       isDirty: false,
       isMini: false,
 
-      _timeframe: null,
+      _timeframe: null
     }
   },
   computed: {
@@ -112,7 +113,6 @@ export default {
       'actives',
       'exchanges',
       'isSnaped',
-      'isReplaying',
       'chartAutoScale',
       'chartHeight',
       'chartRange',
@@ -128,8 +128,8 @@ export default {
       'chartVolumeThreshold',
       'chartVolumeOpacity',
       'chartVolumeAverage',
-      'chartVolumeAverageLength',
-    ]),
+      'chartVolumeAverageLength'
+    ])
   },
   created() {
     socket.$on('trades.queued', this.onTrades)
@@ -139,17 +139,10 @@ export default {
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
         case 'setPair':
-          this.chart.series[0].update(
-            { name: mutation.payload.toUpperCase() },
-            false
-          )
+          this.chart.series[0].update({ name: mutation.payload.toUpperCase() }, false)
           break
         case 'setTimeframe':
-          this.setTimeframe(
-            mutation.payload,
-            true,
-            this._timeframe !== this.timeframe
-          )
+          this.setTimeframe(mutation.payload, true, this._timeframe !== this.timeframe)
           this._timeframe = parseInt(this.timeframe)
           break
         case 'toggleSnap':
@@ -182,10 +175,10 @@ export default {
           break
         case 'setVolumeAverageLength':
           this.chart.series[4].update({
-            params: { period: +mutation.payload || 14 },
+            params: { period: +mutation.payload || 14 }
           })
           this.chart.series[5].update({
-            params: { period: +mutation.payload || 14 },
+            params: { period: +mutation.payload || 14 }
           })
           break
         case 'toggleSma':
@@ -193,16 +186,8 @@ export default {
           break
         case 'setSmaLength':
           this.chart.series[6].update({
-            params: { period: +mutation.payload || 14 },
+            params: { period: +mutation.payload || 14 }
           })
-          break
-        case 'toggleReplaying':
-          if (mutation.payload) {
-            this.clearChart(mutation.payload.timestamp)
-            this.setRange(+new Date() - mutation.payload.timestamp)
-          } else {
-            this.setTimeframe(this.timeframe)
-          }
           break
         case 'toggleChartAutoScale':
           this.resetScale('x')
@@ -258,10 +243,7 @@ export default {
 
       const options = this.getChartOptions()
 
-      this.chart = Highcharts.stockChart(
-        this.$el.querySelector('.chart__canvas'),
-        options
-      )
+      this.chart = Highcharts.stockChart(this.$el.querySelector('.chart__canvas'), options)
 
       enablePanning(Highcharts, this.chart)
 
@@ -271,9 +253,7 @@ export default {
       this.updateMiniMode()
 
       if (this.queuedTicks.length) {
-        this.tickHistoricals(
-          this.queuedTicks.splice(0, this.queuedTicks.length)
-        )
+        this.tickHistoricals(this.queuedTicks.splice(0, this.queuedTicks.length))
 
         this.chart.redraw()
       }
@@ -295,28 +275,19 @@ export default {
 
       delete this.chart
     },
-    setTimeframe(timeframe, snap = false, clear = false, print = true) {
+    setTimeframe(timeframe, snap = false, clear = false) {
       clearTimeout(this._renderEndTimeout)
 
       console.log(`[chart.setTimeframe]`, timeframe)
 
-      const count =
-        ((this.chart
-          ? this.chart.chartWidth
-          : this.$refs.chartContainer.offsetWidth) -
-          20 * 0.1) /
-        this.chartCandleWidth
+      const count = ((this.chart ? this.chart.chartWidth : this.$refs.chartContainer.offsetWidth) - 20 * 0.1) / this.chartCandleWidth
       const range = timeframe * 2 * count
 
       socket
         .fetchRange(range, clear)
-        .then((response) => {
+        .then(response => {
           if (response) {
-            console.log(
-              `[chart.setTimeframe] done fetching (${
-                response.results.length
-              } new ${response.format}s)`
-            )
+            console.log(`[chart.setTimeframe] done fetching (${response.results.length} new ${response.format}s)`)
           } else {
             console.log(`[chart.setTimeframe] did not fetch anything new`)
           }
@@ -327,10 +298,7 @@ export default {
         })
     },
     redrawChart(range) {
-      console.log(
-        `[chart.redrawChart]`,
-        range ? '(& setting range to ' + range + ')' : ''
-      )
+      console.log(`[chart.redrawChart]`, range ? '(& setting range to ' + range + ')' : '')
 
       let min
       let max
@@ -348,13 +316,19 @@ export default {
         this.clearChart(+new Date() - this.chartRange / 2)
       }
 
-      if (!print || (!socket.ticks.length && !socket.trades.length)) {
+      const tradesCount = socket.getTradesCount()
+      const barCount = socket.getBarCounts()
+
+      if (!tradesCount && !barCount) {
         return
       }
 
-      this.tickHistoricals(socket.ticks)
-
-      this.tickTrades(socket.trades)
+      if (barCount) {
+        this.tickHistoricals(socket.getBars())
+      }
+      if (tradesCount) {
+        this.tickTrades(socket.getTrades())
+      }
 
       if (range) {
         this.setRange(range / 2)
@@ -373,16 +347,11 @@ export default {
 
         return
       } else if (this.queuedTicks.length) {
-        ticks = ticks.concat(
-          this.queuedTicks.splice(0, this.queuedTicks.length)
-        )
+        ticks = ticks.concat(this.queuedTicks.splice(0, this.queuedTicks.length))
       }
 
       ticks = ticks.filter(
-        (tick) =>
-          this.actives.indexOf(tick.exchange) !== -1 &&
-          this.exchanges[tick.exchange] &&
-          this.exchanges[tick.exchange].ohlc !== false
+        tick => this.actives.indexOf(tick.exchange) !== -1 && this.exchanges[tick.exchange] && this.exchanges[tick.exchange].ohlc !== false
       )
 
       if (!ticks.length) {
@@ -407,13 +376,10 @@ export default {
           open: tick.open,
           high: tick.high,
           low: tick.low,
-          close: tick.close,
+          close: tick.close
         }
 
-        if (
-          !ticks[index + 1] ||
-          this.tickData.timestamp !== ticks[index + 1].timestamp
-        ) {
+        if (!ticks[index + 1] || this.tickData.timestamp !== ticks[index + 1].timestamp) {
           const formatedTick = this.formatTickData(this.tickData)
           this.addTickToSeries(formatedTick)
 
@@ -441,15 +407,7 @@ export default {
       this.tickData = null
       this.cursor = null
 
-      this.createTick(
-        Math.floor(
-          Math.min(
-            timestamp,
-            socket.ticks[0] ? socket.ticks[0].timestamp : Infinity,
-            socket.trades[0] ? socket.trades[0][1] : Infinity
-          ) / this.timeframe
-        ) * this.timeframe
-      )
+      this.createTick(Math.floor(Math.min(timestamp, socket.getFirstTimestamp()) / this.timeframe) * this.timeframe)
 
       this.chart.redraw()
     },
@@ -468,9 +426,7 @@ export default {
         return
       } else if (this.queuedTrades.length) {
         // right here
-        trades = this.queuedTrades
-          .splice(0, this.queuedTrades.length)
-          .concat(trades)
+        trades = this.queuedTrades.splice(0, this.queuedTrades.length).concat(trades)
       }
 
       // first we trim trades
@@ -478,7 +434,7 @@ export default {
       // - only from actives exchanges (enabled, matched and visible exchange)
       trades = trades
         .filter(
-          (a) => a[1] >= this.cursor && this.actives.indexOf(a[0]) !== -1 // only process trades >= current tick time // only process trades from enabled exchanges (client side)
+          a => a[1] >= this.cursor && this.actives.indexOf(a[0]) !== -1 // only process trades >= current tick time // only process trades from enabled exchanges (client side)
         )
         .sort((a, b) => a[1] - b[1])
 
@@ -488,9 +444,7 @@ export default {
 
       // define range rounded to the current timeframe
       const from = Math.floor(trades[0][1] / this.timeframe) * this.timeframe
-      const to =
-        Math.ceil(trades[trades.length - 1][1] / this.timeframe) *
-        this.timeframe
+      const to = Math.ceil(trades[trades.length - 1][1] / this.timeframe) * this.timeframe
 
       // loop through ticks in range
       for (let t = from; t < to; t += this.timeframe) {
@@ -524,31 +478,20 @@ export default {
                 high: +trades[i][2],
                 low: +trades[i][2],
                 close: +trades[i][2],
-                size: 0,
+                size: 0
               }
             }
 
             this.tickData.exchanges[trades[i][0]].count++
 
-            this.tickData.exchanges[trades[i][0]].high = Math.max(
-              this.tickData.exchanges[trades[i][0]].high,
-              +trades[i][2]
-            )
-            this.tickData.exchanges[trades[i][0]].low = Math.min(
-              this.tickData.exchanges[trades[i][0]].low,
-              +trades[i][2]
-            )
+            this.tickData.exchanges[trades[i][0]].high = Math.max(this.tickData.exchanges[trades[i][0]].high, +trades[i][2])
+            this.tickData.exchanges[trades[i][0]].low = Math.min(this.tickData.exchanges[trades[i][0]].low, +trades[i][2])
             this.tickData.exchanges[trades[i][0]].close = +trades[i][2]
             this.tickData.exchanges[trades[i][0]].size += +trades[i][3]
 
-            if (
-              this.chartVolume &&
-              (!this.chartVolumeThreshold ||
-                trades[i][3] * trades[i][2] > this.chartVolumeThreshold)
-            ) {
+            if (this.chartVolume && (!this.chartVolumeThreshold || trades[i][3] * trades[i][2] > this.chartVolumeThreshold)) {
               this.tickData[(trades[i][4] > 0 ? 'buys' : 'sells') + 'Count']++
-              this.tickData[trades[i][4] > 0 ? 'buys' : 'sells'] +=
-                trades[i][3] * trades[i][2]
+              this.tickData[trades[i][4] > 0 ? 'buys' : 'sells'] += trades[i][3] * trades[i][2]
             }
           }
         }
@@ -575,10 +518,7 @@ export default {
       }
 
       if (ticks.length) {
-        this.chart.xAxis[0].setExtremes(
-          this.chart.xAxis[0].min,
-          this.chart.xAxis[0].max
-        )
+        this.chart.xAxis[0].setExtremes(this.chart.xAxis[0].min, this.chart.xAxis[0].max)
       }
 
       this.tickData.added = true
@@ -595,9 +535,7 @@ export default {
       } else if (this.cursor) {
         this.cursor += this.timeframe
       } else {
-        this.cursor =
-          Math.floor(socket.getCurrentTimestamp() / this.timeframe) *
-          this.timeframe
+        this.cursor = Math.floor(socket.getCurrentTimestamp() / this.timeframe) * this.timeframe
       }
 
       if (this.tickData) {
@@ -605,15 +543,9 @@ export default {
 
         for (let exchange in this.tickData.exchanges) {
           this.tickData.exchanges[exchange].count = 0
-          this.tickData.exchanges[exchange].open = this.tickData.exchanges[
-            exchange
-          ].close
-          this.tickData.exchanges[exchange].high = this.tickData.exchanges[
-            exchange
-          ].close
-          this.tickData.exchanges[exchange].low = this.tickData.exchanges[
-            exchange
-          ].close
+          this.tickData.exchanges[exchange].open = this.tickData.exchanges[exchange].close
+          this.tickData.exchanges[exchange].high = this.tickData.exchanges[exchange].close
+          this.tickData.exchanges[exchange].low = this.tickData.exchanges[exchange].close
         }
 
         this.tickData.open = parseFloat(this.tickData.close)
@@ -639,17 +571,13 @@ export default {
           sells: 0,
           buysCount: 0,
           sellsCount: 0,
-          added: false,
+          added: false
         }
 
         const closes = socket.getInitialPrices()
 
         for (let exchange in closes) {
-          if (
-            this.actives.indexOf(exchange) === -1 ||
-            !this.exchanges[exchange] ||
-            this.exchanges[exchange].ohlc === false
-          ) {
+          if (this.actives.indexOf(exchange) === -1 || !this.exchanges[exchange] || this.exchanges[exchange].ohlc === false) {
             continue
           }
 
@@ -659,7 +587,7 @@ export default {
             open: closes[exchange],
             high: closes[exchange],
             low: closes[exchange],
-            close: closes[exchange],
+            close: closes[exchange]
           }
         }
       }
@@ -701,9 +629,7 @@ export default {
     updateLatestPoints(tick, live = false) {
       for (let serieIndex in tick) {
         if (!isNaN(serieIndex) && tick[serieIndex]) {
-          const point = this.chart.series[serieIndex].points[
-            this.chart.series[serieIndex].points.length - 1
-          ]
+          const point = this.chart.series[serieIndex].points[this.chart.series[serieIndex].points.length - 1]
 
           if (point.y !== tick[serieIndex][1]) {
             point.update(tick[serieIndex], false)
@@ -718,10 +644,8 @@ export default {
         0: this.getExchangesAveragedOHLC(tickData.exchanges, tickData),
         1: this.chartVolume ? [tickData.timestamp, tickData.buys] : null,
         2: this.chartVolume ? [tickData.timestamp, tickData.sells] : null,
-        3: this.chartLiquidations
-          ? [tickData.timestamp, tickData.liquidations]
-          : null,
-        added: tickData.added,
+        3: this.chartLiquidations ? [tickData.timestamp, tickData.liquidations] : null,
+        added: tickData.added
       }
     },
     getExchangesAveragedOHLC(exchanges, tickData) {
@@ -747,12 +671,7 @@ export default {
 
         high += exchanges[exchange].high * exchangeWeight
         low += exchanges[exchange].low * exchangeWeight
-        tickData.close +=
-          ((exchanges[exchange].close +
-            exchanges[exchange].high +
-            exchanges[exchange].low) /
-            3) *
-          exchangeWeight
+        tickData.close += ((exchanges[exchange].close + exchanges[exchange].high + exchanges[exchange].low) / 3) * exchangeWeight
 
         totalWeight += exchangeWeight
       }
@@ -765,24 +684,10 @@ export default {
       low /= totalWeight
       tickData.close /= totalWeight
 
-      tickData.high = Math.max(
-        tickData.high === null ? 0 : tickData.high,
-        setOpen ? 0 : tickData.open,
-        high
-      )
-      tickData.low = Math.min(
-        tickData.low === null ? Infinity : tickData.low,
-        setOpen ? Infinity : tickData.open,
-        low
-      )
+      tickData.high = Math.max(tickData.high === null ? 0 : tickData.high, setOpen ? 0 : tickData.open, high)
+      tickData.low = Math.min(tickData.low === null ? Infinity : tickData.low, setOpen ? Infinity : tickData.open, low)
 
-      return [
-        tickData.timestamp,
-        tickData.open,
-        tickData.high,
-        tickData.low,
-        tickData.close,
-      ]
+      return [tickData.timestamp, tickData.open, tickData.high, tickData.low, tickData.close]
     },
     startResize(event) {
       if (event.which === 3) {
@@ -845,7 +750,7 @@ export default {
         this.chart.yAxis[1].update(
           {
             top: isMini ? '40%' : '75%',
-            height: isMini ? '60%' : '25%',
+            height: isMini ? '60%' : '25%'
           },
           false
         )
@@ -853,7 +758,7 @@ export default {
         this.chart.yAxis[2].update(
           {
             top: isMini ? '40%' : '75%',
-            height: isMini ? '60%' : '25%',
+            height: isMini ? '60%' : '25%'
           },
           false
         )
@@ -891,10 +796,7 @@ export default {
         range = this.chart.xAxis[0].max - this.chart.xAxis[0].min
 
         this.$store.commit('setChartRange', range)
-        this.$store.commit(
-          'setChartCandleWidth',
-          this.chart.chartWidth / (range / this.timeframe)
-        )
+        this.$store.commit('setChartCandleWidth', this.chart.chartWidth / (range / this.timeframe))
       }
     },
 
@@ -904,10 +806,7 @@ export default {
 
       return {
         width: w,
-        height:
-          this.chartHeight > 0
-            ? this.chartHeight
-            : +Math.min(w / 2, Math.max(300, h / 3)).toFixed(),
+        height: this.chartHeight > 0 ? this.chartHeight : +Math.min(w / 2, Math.max(300, h / 3)).toFixed()
       }
     },
 
@@ -922,31 +821,15 @@ export default {
 
     doDrag(event) {
       if (!isNaN(this.resizing)) {
-        this.updateChartHeight(
-          this.chart.chartHeight + (event.pageY - this.resizing)
-        )
+        this.updateChartHeight(this.chart.chartHeight + (event.pageY - this.resizing))
 
         this.resizing = event.pageY
-      } else if (
-        typeof this._scaling['x'] !== 'undefined' &&
-        !isNaN(this._scaling['x'])
-      ) {
-        this.updateChartScale(
-          'x',
-          (event.pageX - this._scaling['x']) / 100,
-          true
-        )
+      } else if (typeof this._scaling['x'] !== 'undefined' && !isNaN(this._scaling['x'])) {
+        this.updateChartScale('x', (event.pageX - this._scaling['x']) / 100, true)
 
         this._scaling['x'] = event.pageX
-      } else if (
-        typeof this._scaling['y'] !== 'undefined' &&
-        !isNaN(this._scaling['y'])
-      ) {
-        this.updateChartScale(
-          'y',
-          (event.pageY - this._scaling['y']) / 100,
-          true
-        )
+      } else if (typeof this._scaling['y'] !== 'undefined' && !isNaN(this._scaling['y'])) {
+        this.updateChartScale('y', (event.pageY - this._scaling['y']) / 100, true)
 
         this._scaling['y'] = event.pageY
       }
@@ -979,11 +862,7 @@ export default {
       let from
       let to
 
-      if (this.isReplaying) {
-        from = this.chart.xAxis[0].dataMin
-      } else {
-        from = now - this.chartRange + margin
-      }
+      from = now - this.chartRange + margin
 
       to = now + margin
 
@@ -998,23 +877,19 @@ export default {
     },
 
     updateChartedCount() {
-      let pendingExchanges = this.actives.filter(
-        (id) => this.exchanges[id].ohlc !== false
-      )
+      let pendingExchanges = this.actives.filter(id => this.exchanges[id].ohlc !== false)
 
       if (this.tickData) {
-        pendingExchanges = pendingExchanges.filter(
-          (id) => Object.keys(this.tickData.exchanges).indexOf(id) === -1
-        )
+        pendingExchanges = pendingExchanges.filter(id => Object.keys(this.tickData.exchanges).indexOf(id) === -1)
       }
 
       if (this.pendingExchanges.length !== pendingExchanges.length) {
         this.redrawChart()
       }
 
-      this.pendingExchanges = pendingExchanges.map((a) => a.toUpperCase())
+      this.pendingExchanges = pendingExchanges.map(a => a.toUpperCase())
 
-      this.isDirty = !this.isReplaying && this.pendingExchanges.length
+      this.isDirty = this.pendingExchanges.length
 
       return this.isDirty
     },
@@ -1027,8 +902,7 @@ export default {
       return (
         this.tickData &&
         this.chart.series[0].points.length &&
-        this.chart.series[0].points[this.chart.series[0].points.length - 1].x <
-          this.tickData.timestamp
+        this.chart.series[0].points[this.chart.series[0].points.length - 1].x < this.tickData.timestamp
       )
     },
 
@@ -1040,11 +914,6 @@ export default {
         const now = socket.getCurrentTimestamp()
         let from = now - this.chartRange
         let to = now
-
-        if (!this.isReplaying) {
-          from += padding
-          to += padding
-        }
 
         if (setExtremes) {
           this.chart.xAxis[0].setExtremes(from, to, true)
@@ -1077,9 +946,7 @@ export default {
 
       // line
       options.series[0].type = this.chartCandlestick ? 'candlestick' : 'spline'
-      options.series[0].lineColor = this.chartCandlestick
-        ? options.series[0].down
-        : 'white'
+      options.series[0].lineColor = this.chartCandlestick ? options.series[0].down : 'white'
       options.series[0].lineWidth = this.chartCandlestick ? 1 : 2
 
       // buys
@@ -1111,10 +978,7 @@ export default {
       options.tooltip.pointFormatter = function() {
         if (!this.y) return ''
 
-        const isPrice =
-          this.series.options.id === 'price' ||
-          (this.series.linkedParent &&
-            this.series.linkedParent.options.id === 'price')
+        const isPrice = this.series.options.id === 'price' || (this.series.linkedParent && this.series.linkedParent.options.id === 'price')
 
         const formatter = isPrice ? formatPrice : formatAmount
 
@@ -1133,7 +997,7 @@ export default {
         },
         load: () => {
           setTimeout(this.applyChartStyles.bind(this), 200)
-        },
+        }
       }
 
       return options
@@ -1155,17 +1019,17 @@ export default {
         this.chart.series[5].update({ visible: false })
       } else if (this.chartVolumeAverageLength) {
         this.chart.series[4].update({
-          params: { period: this.chartVolumeAverageLength },
+          params: { period: this.chartVolumeAverageLength }
         })
         this.chart.series[5].update({
-          params: { period: this.chartVolumeAverageLength },
+          params: { period: this.chartVolumeAverageLength }
         })
       }
     },
     onClean(min) {
       this.redrawChart()
-    },
-  },
+    }
+  }
 }
 </script>
 
@@ -1356,5 +1220,6 @@ export default {
 .highcharts-tooltip-container {
   max-width: 100%;
   overflow: hidden;
+  top: 0 !important;
 }
 </style>

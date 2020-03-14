@@ -20,6 +20,9 @@ import Ftx from '../exchanges/ftx'
 
 import store from '../services/store'
 
+let STORED_TRADES = []
+let STORED_BARS = []
+
 const emitter = new Vue({
   data() {
     return {
@@ -45,9 +48,6 @@ const emitter = new Vue({
         new Bybit(),
         new Ftx()
       ],
-
-      trades: [],
-      ticks: [],
       timestamps: {},
       queue: [],
 
@@ -55,8 +55,7 @@ const emitter = new Vue({
       _fetchedMax: false,
       _fetchedTime: 0,
       _fetchedBytes: 0,
-      _firstCloses: {},
-      _replayTime: 0
+      _firstCloses: {}
     }
   },
   computed: {
@@ -86,25 +85,22 @@ const emitter = new Vue({
     },
     isLoading() {
       return store.state.isLoading
-    },
-    isReplaying() {
-      return store.state.isReplaying
     }
   },
   created() {
-    /*window.emitTrade = (exchange, price, amount = 1, side = 1, type = null) => {
-      exchange = exchange || 'bitmex';
+    window.emitTrade = (exchange, price, amount = 1, side = 1, type = null) => {
+      exchange = exchange || 'bitmex'
 
       if (price === null) {
-        price = this.getExchangeById(exchange).price;
+        price = this.getExchangeById(exchange).price
       }
 
       let trade = [exchange, +new Date(), price, amount, side ? 1 : 0, type]
 
-      this.queue = this.queue.concat([trade]);
+      this.queue = this.queue.concat([trade])
 
-      this.emitTrades([trade]);
-    }*/
+      this.emitTrades([trade])
+    }
 
     this.exchanges.forEach(exchange => {
       exchange.on('live_trades', trades => {
@@ -112,15 +108,12 @@ const emitter = new Vue({
           return
         }
 
-        this.timestamps[exchange.id] = +new Date()
+        this.timestamps[exchange.id] = trades[0][1]
 
         trades = trades.sort((a, b) => a[1] - b[1])
 
-        this.queue = this.queue.concat(trades)
-
-        if (!this.isReplaying) {
-          this.emitTrades(trades)
-        }
+        Array.prototype.push.apply(this.queue, trades)
+        this.emitTrades(trades)
       })
 
       exchange.on('open', event => {
@@ -193,7 +186,9 @@ const emitter = new Vue({
         this.pair = pair.toUpperCase()
       }
 
-      this.trades = this.queue = this.ticks = []
+      this.queue = []
+      STORED_TRADES.splice(0, STORED_TRADES.length)
+      STORED_BARS.splice(0, STORED_BARS.length)
       this.timestamps = {}
       this._fetchedMax = false
 
@@ -262,7 +257,7 @@ const emitter = new Vue({
       this.exchanges.forEach(exchange => exchange.disconnect())
     },
     cleanOldData() {
-      if (this.isLoading || this.isReplaying) {
+      if (this.isLoading) {
         return
       }
 
@@ -281,25 +276,25 @@ const emitter = new Vue({
 
       let i
 
-      for (i = 0; i < this.ticks.length; i++) {
-        if (this.ticks[i].timestamp >= minTimestamp) {
+      for (i = 0; i < STORED_BARS.length; i++) {
+        if (STORED_BARS[i].timestamp >= minTimestamp) {
           break
         }
       }
 
-      if (i && this.ticks.length) {
+      if (i && STORED_BARS.length) {
         this._fetchedMax = false
       }
 
-      this.ticks.splice(0, i)
+      STORED_BARS.splice(0, i)
 
-      for (i = 0; i < this.trades.length; i++) {
-        if (this.trades[i][1] > minTimestamp) {
+      for (i = 0; i < STORED_TRADES.length; i++) {
+        if (STORED_TRADES[i][1] > minTimestamp) {
           break
         }
       }
 
-      this.trades.splice(0, i)
+      STORED_TRADES.splice(0, i)
 
       this.$emit('clean', minTimestamp)
     },
@@ -333,12 +328,12 @@ const emitter = new Vue({
       this.$emit(event, output, upVolume, downVolume)
     },
     emitTradesAsync() {
-      if (this.isReplaying || !this.queue.length) {
+      if (!this.queue.length) {
         return
       }
 
       if (this.showChart) {
-        this.trades = this.trades.concat(this.queue)
+        Array.prototype.push.apply(STORED_TRADES, this.queue)
       }
 
       this.emitTrades(this.queue, 'trades.queued')
@@ -364,19 +359,19 @@ const emitter = new Vue({
     },
     fetchRange(range, clear = false) {
       if (clear) {
-        this.ticks.splice(0, this.ticks.length)
+        STORED_BARS.splice(0, STORED_BARS.length)
         this._fetchedMax = false
       }
 
-      if (this.isLoading || this.isReplaying || !this.canFetch()) {
+      if (this.isLoading || !this.canFetch()) {
         return Promise.resolve(null)
       }
 
       const now = +new Date()
 
       const minData = Math.min(
-        this.trades.length ? this.trades[0][1] : now,
-        this.ticks.length ? this.ticks[0].timestamp : now
+        STORED_TRADES.length ? STORED_TRADES[0][1] : now,
+        STORED_BARS.length ? STORED_BARS[0].timestamp : now
       )
 
       let promise
@@ -399,7 +394,7 @@ const emitter = new Vue({
           `FETCH NEEDED\n\n\tcurrent time: ${new Date(now).toLocaleString()}\n\tfrom: ${new Date(
             from
           ).toLocaleString()}\n\tto: ${new Date(to).toLocaleString()} (${
-            this.trades.length ? 'using first trade as base' : 'using now for reference'
+            STORED_TRADES.length ? 'using first trade as base' : 'using now for reference'
           })`
         )
 
@@ -409,82 +404,6 @@ const emitter = new Vue({
       }
 
       return promise
-    },
-    replay(speed) {
-      if (this.isReplaying || this.isLoading) {
-        return
-      }
-
-      const trades = this.trades.splice(0, this.trades.length)
-      const start = (this._replayTime = +trades[0][1] + this.timeframe)
-
-      console.log('BASE REPLAY TRADE', new Date(start).toLocaleString())
-
-      let backup = []
-      let queue = []
-      let queuedAt = 0
-      let startedAt
-
-      const step = timestamp => {
-        if (!startedAt) {
-          startedAt = timestamp
-        }
-
-        timestamp -= startedAt
-
-        if (!this.isReplaying) {
-          if (trades.length) {
-            backup = backup.concat(trades)
-          }
-
-          this.trades = backup.concat(this.trades)
-
-          store.commit('toggleReplaying', false)
-
-          return false
-        }
-
-        this._replayTime = start + timestamp * speed
-
-        let index
-
-        for (index = 0; index < trades.length; index++) {
-          if (trades[index][1] > this._replayTime) {
-            break
-          }
-        }
-
-        if (index) {
-          const chunk = trades.splice(0, index)
-
-          this.emitTrades(chunk)
-
-          queue = queue.concat(chunk)
-
-          if (timestamp - queuedAt > 200) {
-            queuedAt = timestamp
-
-            this.emitTrades(queue.splice(0, queue.length), 'trades.queued')
-          }
-
-          backup = backup.concat(chunk)
-        }
-
-        if (trades.length) {
-          window.requestAnimationFrame(step)
-        } else {
-          this.trades = backup.concat(this.trades)
-
-          store.commit('toggleReplaying', false)
-        }
-      }
-
-      store.commit('toggleReplaying', {
-        timestamp: start,
-        speed: speed
-      })
-
-      window.requestAnimationFrame(step)
     },
     fetchHistoricalData(from, to) {
       const url = this.getApiUrl(from, to)
@@ -530,29 +449,29 @@ const emitter = new Vue({
                   return a
                 })
 
-                if (!this.trades.length) {
+                if (!STORED_TRADES.length) {
                   console.log(`[socket.fetch] set socket.trades (${data.length} trades)`)
 
-                  this.trades = data
+                  Array.prototype.push.apply(STORED_TRADES, data)
                 } else {
-                  const prepend = data.filter(trade => trade[1] <= this.trades[0][1])
+                  const prepend = data.filter(trade => trade[1] <= STORED_TRADES[0][1])
                   const append = data.filter(
-                    trade => trade[1] >= this.trades[this.trades.length - 1][1]
+                    trade => trade[1] >= STORED_TRADES[STORED_TRADES.length - 1][1]
                   )
 
                   if (prepend.length) {
                     console.log(`[fetch] prepend ${prepend.length} ticks`)
-                    this.trades = prepend.concat(this.trades)
+                    STORED_TRADES = prepend.concat(STORED_TRADES)
                   }
 
                   if (append.length) {
                     console.log(`[fetch] append ${append.length} ticks`)
-                    this.trades = this.trades.concat(append)
+                    STORED_TRADES = STORED_TRADES.concat(append)
                   }
                 }
                 break
               case 'tick':
-                this.ticks = data
+                STORED_BARS = data
 
                 if (data[0].timestamp > from) {
                   console.log('[socket.fetch] fetched max')
@@ -596,14 +515,10 @@ const emitter = new Vue({
       })
     },
     getCurrentTimestamp() {
-      if (this.isReplaying && this.replayTime) {
-        return this.replayTime
-      }
-
       return +new Date()
     },
     getInitialPrices() {
-      if (!this.ticks.length && !this.trades.length) {
+      if (!STORED_BARS.length && !STORED_TRADES.length) {
         return this._firstCloses
       }
 
@@ -619,7 +534,7 @@ const emitter = new Vue({
 
       let gotAllCloses = false
 
-      for (let tick of this.ticks) {
+      for (let tick of STORED_BARS) {
         if (
           typeof closesByExchanges[tick.exchange] === 'undefined' ||
           closesByExchanges[tick.exchange]
@@ -641,7 +556,7 @@ const emitter = new Vue({
         }
       }
 
-      for (let trade of this.trades) {
+      for (let trade of STORED_TRADES) {
         if (typeof closesByExchanges[trade[0]] === 'undefined' || closesByExchanges[trade[0]]) {
           continue
         }
@@ -669,6 +584,24 @@ const emitter = new Vue({
       this._firstCloses = closesByExchanges
 
       return closesByExchanges
+    },
+    getTrades() {
+      return STORED_TRADES
+    },
+    getBars() {
+      return STORED_BARS
+    },
+    getTradesCount() {
+      return STORED_TRADES.length
+    },
+    getBarCounts() {
+      return STORED_BARS.length
+    },
+    getFirstTimestamp() {
+      return Math.min(
+        STORED_BARS[0] ? STORED_BARS[0].timestamp : Infinity,
+        STORED_TRADES[0] ? STORED_TRADES[0][1] : Infinity
+      )
     }
   }
 })

@@ -676,7 +676,6 @@
               <span><strong>ONLY</strong> show liquidations</span>
             </label>
           </div>
-        </div>
         <div class="form-group mb8">
             <label
               class="checkbox-control"
@@ -691,6 +690,7 @@
               <span>Show spray in basis points</span>
             </label>
           </div>
+        </div>
           <div class="mt15 settings__footer flex-middle">
             <div class="form-group">
               <div v-if="version.number">
