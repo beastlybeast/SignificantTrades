@@ -27,18 +27,10 @@ class Exchange extends EventEmitter {
     try {
       const storage = JSON.parse(localStorage.getItem(this.id))
 
-      if (
-        storage &&
-        +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7 &&
-        (this.id !== 'okex' || storage.timestamp > 1560235687982)
-      ) {
+      if (storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7 && (this.id !== 'okex' || storage.timestamp > 1560235687982)) {
         console.info(`[${this.id}] reading stored products`)
 
-        if (
-          storage.data &&
-          typeof storage.data === 'object' &&
-          storage.data.hasOwnProperty('products')
-        ) {
+        if (storage.data && typeof storage.data === 'object' && storage.data.hasOwnProperty('products')) {
           for (let key in storage.data) {
             this[key] = storage.data[key]
           }
@@ -99,9 +91,7 @@ class Exchange extends EventEmitter {
     }
 
     if (this.valid) {
-      console.log(
-        `[${this.id}] ${reconnection ? 're' : ''}connecting... (${this.pairs.join(', ')})`
-      )
+      console.log(`[${this.id}] ${reconnection ? 're' : ''}connecting... (${this.pairs.join(', ')})`)
 
       this.shouldBeConnected = true
 
@@ -234,9 +224,7 @@ class Exchange extends EventEmitter {
   }
 
   getUrl() {
-    return typeof this.options.url === 'function'
-      ? this.options.url.apply(this, arguments)
-      : this.options.url
+    return typeof this.options.url === 'function' ? this.options.url.apply(this, arguments) : this.options.url
   }
 
   formatLiveTrades(data) {
@@ -346,10 +334,7 @@ class Exchange extends EventEmitter {
       return Promise.resolve()
     }
 
-    let urls =
-      typeof this.endpoints.PRODUCTS === 'function'
-        ? this.endpoints.PRODUCTS(this.pair)
-        : this.endpoints.PRODUCTS
+    let urls = typeof this.endpoints.PRODUCTS === 'function' ? this.endpoints.PRODUCTS(this.pair) : this.endpoints.PRODUCTS
 
     if (!Array.isArray(urls)) {
       urls = [urls]

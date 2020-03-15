@@ -21,7 +21,6 @@ import Ftx from '../exchanges/ftx'
 import store from '../services/store'
 
 let STORED_TRADES = []
-let STORED_BARS = []
 
 const emitter = new Vue({
   data() {
@@ -188,7 +187,6 @@ const emitter = new Vue({
 
       this.queue = []
       STORED_TRADES.splice(0, STORED_TRADES.length)
-      STORED_BARS.splice(0, STORED_BARS.length)
       this.timestamps = {}
       this._fetchedMax = false
 
@@ -228,13 +226,9 @@ const emitter = new Vue({
           this._pair = this.pair
         }
 
-        console.log(
-          `[socket.connect] ${validExchanges.length} successfully matched with ${this.pair}`
-        )
+        console.log(`[socket.connect] ${validExchanges.length} successfully matched with ${this.pair}`)
 
-        validExchanges = validExchanges.filter(
-          exchange => !this.exchangesSettings[exchange.id].disabled
-        )
+        validExchanges = validExchanges.filter(exchange => !this.exchangesSettings[exchange.id].disabled)
 
         this.$emit('alert', {
           id: `server_status`,
@@ -244,9 +238,7 @@ const emitter = new Vue({
           delay: 1000 * 5
         })
 
-        console.log(
-          `[socket.connect] batch connect to ${validExchanges.map(a => a.id).join(' / ')}`
-        )
+        console.log(`[socket.connect] batch connect to ${validExchanges.map(a => a.id).join(' / ')}`)
 
         validExchanges.forEach(exchange => exchange.connect())
       })
@@ -267,26 +259,11 @@ const emitter = new Vue({
         requiredTimeframe = Math.max(requiredTimeframe, this.chartRange * 2)
       }
 
-      const minTimestamp =
-        Math.ceil((+new Date() - requiredTimeframe) / this.timeframe) * this.timeframe
+      const minTimestamp = Math.ceil((+new Date() - requiredTimeframe) / this.timeframe) * this.timeframe
 
-      console.log(
-        `[socket.clean] remove trades older than ${new Date(minTimestamp).toLocaleString()}`
-      )
+      console.log(`[socket.clean] remove trades older than ${new Date(minTimestamp).toLocaleString()}`)
 
       let i
-
-      for (i = 0; i < STORED_BARS.length; i++) {
-        if (STORED_BARS[i].timestamp >= minTimestamp) {
-          break
-        }
-      }
-
-      if (i && STORED_BARS.length) {
-        this._fetchedMax = false
-      }
-
-      STORED_BARS.splice(0, i)
 
       for (i = 0; i < STORED_TRADES.length; i++) {
         if (STORED_TRADES[i][1] > minTimestamp) {
@@ -341,10 +318,7 @@ const emitter = new Vue({
       this.queue = []
     },
     canFetch() {
-      return (
-        this.API_URL &&
-        (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1)
-      )
+      return this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1)
     },
     getApiUrl(from, to) {
       let url = this.API_URL
@@ -359,7 +333,6 @@ const emitter = new Vue({
     },
     fetchRange(range, clear = false) {
       if (clear) {
-        STORED_BARS.splice(0, STORED_BARS.length)
         this._fetchedMax = false
       }
 
@@ -369,10 +342,7 @@ const emitter = new Vue({
 
       const now = +new Date()
 
-      const minData = Math.min(
-        STORED_TRADES.length ? STORED_TRADES[0][1] : now,
-        STORED_BARS.length ? STORED_BARS[0].timestamp : now
-      )
+      const minData = STORED_TRADES.length ? STORED_TRADES[0][1] : now
 
       let promise
       let from = now - range
@@ -382,20 +352,16 @@ const emitter = new Vue({
       to = Math.ceil(to / this.timeframe) * this.timeframe
 
       console.log(
-        `[socket.fetchRange] minData: ${new Date(minData).toLocaleString()}, from: ${new Date(
-          from
-        ).toLocaleString()}, to: ${to}`,
+        `[socket.fetchRange] minData: ${new Date(minData).toLocaleString()}, from: ${new Date(from).toLocaleString()}, to: ${to}`,
         this._fetchedMax ? '(FETCHED MAX)' : ''
       )
 
       if (!this._fetchedMax && to - from >= 60000 && from < minData) {
         console.info(
           `[socket.fetchRange]`,
-          `FETCH NEEDED\n\n\tcurrent time: ${new Date(now).toLocaleString()}\n\tfrom: ${new Date(
-            from
-          ).toLocaleString()}\n\tto: ${new Date(to).toLocaleString()} (${
-            STORED_TRADES.length ? 'using first trade as base' : 'using now for reference'
-          })`
+          `FETCH NEEDED\n\n\tcurrent time: ${new Date(now).toLocaleString()}\n\tfrom: ${new Date(from).toLocaleString()}\n\tto: ${new Date(
+            to
+          ).toLocaleString()} (${STORED_TRADES.length ? 'using first trade as base' : 'using now for reference'})`
         )
 
         promise = this.fetchHistoricalData(from, to)
@@ -431,56 +397,41 @@ const emitter = new Vue({
           }
         })
           .then(response => {
-            if (!response.data || !response.data.format || !response.data.results.length) {
+            if (!response.data || !response.data.results.length) {
               return resolve()
             }
 
-            const format = response.data.format
             let data = response.data.results
 
-            switch (response.data.format) {
-              case 'trade':
-                data = data.map(a => {
-                  a[1] = +a[1]
-                  a[2] = +a[2]
-                  a[3] = +a[3]
-                  a[4] = +a[4]
+            data = data.map(a => {
+              a[1] = +a[1]
+              a[2] = +a[2]
+              a[3] = +a[3]
+              a[4] = +a[4]
 
-                  return a
-                })
+              return a
+            })
 
-                if (!STORED_TRADES.length) {
-                  console.log(`[socket.fetch] set socket.trades (${data.length} trades)`)
+            if (!STORED_TRADES.length) {
+              console.log(`[socket.fetch] set socket.trades (${data.length} trades)`)
 
-                  Array.prototype.push.apply(STORED_TRADES, data)
-                } else {
-                  const prepend = data.filter(trade => trade[1] <= STORED_TRADES[0][1])
-                  const append = data.filter(
-                    trade => trade[1] >= STORED_TRADES[STORED_TRADES.length - 1][1]
-                  )
+              Array.prototype.push.apply(STORED_TRADES, data)
+            } else {
+              const prepend = data.filter(trade => trade[1] <= STORED_TRADES[0][1])
+              const append = data.filter(trade => trade[1] >= STORED_TRADES[STORED_TRADES.length - 1][1])
 
-                  if (prepend.length) {
-                    console.log(`[fetch] prepend ${prepend.length} ticks`)
-                    STORED_TRADES = prepend.concat(STORED_TRADES)
-                  }
+              if (prepend.length) {
+                console.log(`[fetch] prepend ${prepend.length} ticks`)
+                STORED_TRADES = prepend.concat(STORED_TRADES)
+              }
 
-                  if (append.length) {
-                    console.log(`[fetch] append ${append.length} ticks`)
-                    STORED_TRADES = STORED_TRADES.concat(append)
-                  }
-                }
-                break
-              case 'tick':
-                STORED_BARS = data
-
-                if (data[0].timestamp > from) {
-                  console.log('[socket.fetch] fetched max')
-                  this._fetchedMax = true
-                }
-                break
+              if (append.length) {
+                console.log(`[fetch] append ${append.length} ticks`)
+                STORED_TRADES = STORED_TRADES.concat(append)
+              }
             }
 
-            this.$emit('historical', data, format, from, to)
+            this.$emit('historical', data, from, to)
 
             resolve({
               format: format,
@@ -496,10 +447,7 @@ const emitter = new Vue({
               this.$emit('alert', {
                 type: 'error',
                 title: `Unable to retrieve history`,
-                message:
-                  err.response && err.response.data && err.response.data.error
-                    ? err.response.data.error
-                    : err.message,
+                message: err.response && err.response.data && err.response.data.error ? err.response.data.error : err.message,
                 id: `fetch_error`
               })
 
@@ -518,7 +466,7 @@ const emitter = new Vue({
       return +new Date()
     },
     getInitialPrices() {
-      if (!STORED_BARS.length && !STORED_TRADES.length) {
+      if (!STORED_TRADES.length) {
         return this._firstCloses
       }
 
@@ -533,28 +481,6 @@ const emitter = new Vue({
       }
 
       let gotAllCloses = false
-
-      for (let tick of STORED_BARS) {
-        if (
-          typeof closesByExchanges[tick.exchange] === 'undefined' ||
-          closesByExchanges[tick.exchange]
-        ) {
-          continue
-        }
-
-        closesByExchanges[tick.exchange] = tick.close
-
-        if (
-          gotAllCloses ||
-          !Object.keys(closesByExchanges)
-            .map(id => closesByExchanges[id])
-            .filter(close => close === null).length
-        ) {
-          gotAllCloses = true
-
-          break
-        }
-      }
 
       for (let trade of STORED_TRADES) {
         if (typeof closesByExchanges[trade[0]] === 'undefined' || closesByExchanges[trade[0]]) {
@@ -588,20 +514,11 @@ const emitter = new Vue({
     getTrades() {
       return STORED_TRADES
     },
-    getBars() {
-      return STORED_BARS
-    },
     getTradesCount() {
       return STORED_TRADES.length
     },
-    getBarCounts() {
-      return STORED_BARS.length
-    },
     getFirstTimestamp() {
-      return Math.min(
-        STORED_BARS[0] ? STORED_BARS[0].timestamp : Infinity,
-        STORED_TRADES[0] ? STORED_TRADES[0][1] : Infinity
-      )
+      return STORED_TRADES[0] ? STORED_TRADES[0][1] : null
     }
   }
 })

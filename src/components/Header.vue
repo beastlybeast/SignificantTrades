@@ -49,31 +49,24 @@
 </template>
 
 <script>
-import { mapState } from "vuex"
+import { mapState } from 'vuex'
 
-import socket from "../services/socket"
+import socket from '../services/socket'
 
 export default {
-  props: ["price"],
+  props: ['price'],
   data() {
     return {
-      fetchLabel: "Fetch timeframe",
+      fetchLabel: 'Fetch timeframe',
       isPopupMode: window.opener !== null,
       canFetch: false,
       showTimeframeDropdown: false,
-      timeframeLabel: "15m",
+      timeframeLabel: '15m',
       timeframes: {}
     }
   },
   computed: {
-    ...mapState([
-      "pair",
-      "useAudio",
-      "showChart",
-      "isSnaped",
-      "timeframe",
-      "chartRange"
-    ])
+    ...mapState(['pair', 'useAudio', 'showChart', 'isSnaped', 'timeframe', 'chartRange'])
   },
   created() {
     this._fetchLabel = this.fetchLabel.substr()
@@ -81,30 +74,26 @@ export default {
 
     const now = +new Date()
 
-    ;[1000 * 10, 1000 * 30, 1000 * 60, 1000 * 60 * 3].forEach(
-      span => (this.timeframes[span] = this.$root.ago(now - span))
-    )
+    ;[1000 * 3, 1000 * 5, 1000 * 10, 1000 * 30, 1000 * 60, 1000 * 60 * 3].forEach(span => (this.timeframes[span] = this.$root.ago(now - span)))
 
-    socket.$on("pairing", (pair, canFetch) => {
+    socket.$on('pairing', (pair, canFetch) => {
       this.canFetch = canFetch && this.showChart
     })
 
-    socket.$on("fetchStart", () => {
+    socket.$on('fetchStart', () => {
       //
     })
 
-    socket.$on("fetchEnd", () => {
+    socket.$on('fetchEnd', () => {
       this.updateTimeframesApproximateContentSize()
     })
 
-    socket.$on("loadingProgress", event => {
+    socket.$on('loadingProgress', event => {
       if (!event || isNaN(event.progress)) {
         return
       }
 
-      this.fetchLabel = !Math.floor(this.dashoffset)
-        ? this._fetchLabel
-        : this.sizeOf(event.loaded)
+      this.fetchLabel = !Math.floor(this.dashoffset) ? this._fetchLabel : this.sizeOf(event.loaded)
     })
 
     this.updateTimeframeLabel()
@@ -117,20 +106,14 @@ export default {
       this.updateTimeframeLabel(timeframe)
 
       setTimeout(() => {
-        this.$store.commit("setTimeframe", timeframe)
+        this.$store.commit('setTimeframe', timeframe)
       }, 50)
     },
     updateTimeframeLabel(timeframe) {
-      this.timeframeLabel = this.$root.ago(
-        +new Date() - (timeframe || this.timeframe)
-      )
+      this.timeframeLabel = this.$root.ago(+new Date() - (timeframe || this.timeframe))
     },
     togglePopup() {
-      window.open(
-        window.location.href,
-        `sig${this.pair}`,
-        "toolbar=no,status=no,width=350,height=500"
-      )
+      window.open(window.location.href, `sig${this.pair}`, 'toolbar=no,status=no,width=350,height=500')
 
       setTimeout(() => {
         window.close()
@@ -139,17 +122,15 @@ export default {
     sizeOf(bytes, si) {
       var thresh = si ? 1000 : 1024
       if (Math.abs(bytes) < thresh) {
-        return bytes + " B"
+        return bytes + ' B'
       }
-      var units = si
-        ? ["kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"]
-        : ["KiB", "MiB", "GiB", "TiB", "PiB", "EiB", "ZiB", "YiB"]
+      var units = si ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'] : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
       var u = -1
       do {
         bytes /= thresh
         ++u
       } while (Math.abs(bytes) > thresh && u < units.length - 1)
-      return bytes.toFixed(1) + " " + units[u]
+      return bytes.toFixed(1) + ' ' + units[u]
     },
     updateTimeframesApproximateContentSize() {
       const now = +new Date()
@@ -158,12 +139,9 @@ export default {
       if (socket._fetchedTime && socket._fetchedBytes) {
         for (let span in this.timeframes) {
           this.timeframes[span] =
-            "<span>~" +
-            this.sizeOf(
-              socket._fetchedBytes *
-                ((span * candleCount) / socket._fetchedTime)
-            ) +
-            "</span> " +
+            '<span>~' +
+            this.sizeOf(socket._fetchedBytes * ((span * candleCount) / socket._fetchedTime)) +
+            '</span> ' +
             this.$root.ago(now - span).trim()
         }
       }
@@ -173,7 +151,7 @@ export default {
 </script>
 
 <style lang="scss">
-@import "../assets/sass/variables";
+@import '../assets/sass/variables';
 
 header#header {
   background-color: lighten($dark, 10%);
@@ -312,7 +290,7 @@ header#header {
 
   &:after,
   &:before {
-    content: "";
+    content: '';
     position: absolute;
     top: 0;
     left: 0;
@@ -326,14 +304,12 @@ header#header {
 #app.loading header#header {
   &:before {
     background-color: lighten($dark, 28%);
-    animation: indeterminate-loading-bar-slow 2.1s
-      cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+    animation: indeterminate-loading-bar-slow 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
   }
 
   &:after {
     background-color: lighten($dark, 28%);
-    animation: indeterminate-loading-bar-fast 2.1s
-      cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
+    animation: indeterminate-loading-bar-fast 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
     animation-delay: 1.15s;
   }
 }

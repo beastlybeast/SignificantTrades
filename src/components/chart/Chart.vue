@@ -1,71 +1,15 @@
 <template>
-  <div id="chart">
+  <div id="chart" @mouseenter="showControls = true" @mouseleave="showControls = false">
+    <div class="chart__container" ref="chartContainer"></div>
+
     <div
-      class="chart__container"
-      ref="chartContainer"
-      :class="{ fetching: fetching }"
-      :style="{ height: chartHeight }"
-      @mouseenter="showControls = true"
-      @mouseleave="showControls = false"
-    >
-      <div
-        class="chart__notice"
-        v-if="isDirty"
-        v-tippy="{ placement: 'bottom' }"
-        :title="
-          `${pendingExchanges.join(
-            pendingExchanges.length === 2 ? ' and ' : ', '
-          )} did not send any trades since the beginning of the session.<br>Chart will be updated automaticaly once the data is received`
-        "
-      >
-        <i class="icon-warning"></i>
-        {{ pendingExchanges.length }} exchange{{
-        pendingExchanges.length > 1 ? 's are' : ' is'
-        }}
-        still silent
-      </div>
+      class="chart__height-handler"
+      ref="chartHeightHandler"
+      @mousedown="startResize"
+      @dblclick.stop.prevent="resetHeight"
+    ></div>
 
-      <div class="chart__controls chart-controls" v-if="showControls">
-        <div class="chart-controls__left"></div>
-        <div class="chart-controls__right">
-          <div
-            class="chart__scale-mode"
-            @click="$store.commit('toggleChartAutoScale', !chartAutoScale)"
-            v-tippy
-            :title="chartAutoScale ? 'Unlock price axis' : 'Lock price axis'"
-          >
-            <span class="min-768">{{ chartAutoScale ? 'AUTO' : 'FREE' }}</span>
-            <i
-              :class="{
-                'icon-locked': chartAutoScale,
-                'icon-unlocked': !chartAutoScale,
-              }"
-            ></i>
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="chart__scale-handler -y"
-        ref="chartScaleHandler"
-        @mousedown="startScale('y', $event)"
-        @dblclick.stop.prevent="resetScale('y')"
-      ></div>
-      <div
-        class="chart__scale-handler -x"
-        ref="chartScaleHandler"
-        @mousedown="startScale('x', $event)"
-        @dblclick.stop.prevent="resetScale('x')"
-      ></div>
-      <div
-        class="chart__height-handler"
-        ref="chartHeightHandler"
-        @mousedown="startResize"
-        @dblclick.stop.prevent="resetHeight"
-      ></div>
-
-      <div class="chart__canvas"></div>
-    </div>
+    <div class="chart__legend" v-if="legend" v-html="legend"></div>
   </div>
 </template>
 
@@ -73,35 +17,22 @@
 import { mapState } from 'vuex'
 
 import socket from '../../services/socket'
-import chartOptions from './options.json'
+import { chartOptions, seriesOptions, histogramOptions } from './options'
 
-import Highcharts from 'highcharts/highstock'
-import Indicators from 'highcharts/indicators/indicators'
-import EMA from 'highcharts/indicators/ema'
-// import ATR from 'highcharts/indicators/atr';
-// import BB from 'highcharts/indicators/bollinger-bands';
+import * as TV from 'lightweight-charts'
 
-import enablePanning from './pan.js'
-
-Indicators(Highcharts)
-EMA(Highcharts)
-// ATR(Highcharts);
-// BB(Highcharts); // is bugged on highchart 7 :-(
+/** @type {TV.IChartApi} */
+let chart
+const series = []
 
 export default {
   data() {
     return {
       panning: false,
       fetching: false,
-      showControls: false,
-      chart: null,
       tick: null,
-      cursor: null,
-      queuedTrades: [],
-      queuedTicks: [],
-      pendingExchanges: [],
-      isDirty: false,
-      isMini: false,
+      barTimestamp: null,
+      legend: null,
 
       _timeframe: null
     }
@@ -197,14 +128,11 @@ export default {
     })
 
     this._timeframe = parseInt(this.timeframe)
-    this._scaling = {}
   },
   mounted() {
     console.log(`[chart.mounted]`)
 
-    this.$refs.chartContainer.style.height = this.getChartSize().height + 'px'
-
-    window.setTimeout(() => this.createChart())
+    this.createChart()
 
     this._doResize = this.doResize.bind(this)
 
@@ -231,49 +159,78 @@ export default {
     window.removeEventListener('mousemove', this._doDrag)
     window.removeEventListener('mouseup', this._stopDrag)
 
-    // this.$el.removeEventListener('wheel', this.doZoom);
-
     this.onStoreMutation()
   },
   methods: {
     createChart() {
       this.destroyChart()
 
-      this.theme = JSON.parse(JSON.stringify(chartOptions)).theme
+      const options = Object.assign({}, chartOptions, this.getChartSize())
 
-      const options = this.getChartOptions()
+      chart = TV.createChart(this.$refs.chartContainer, options)
+      chart.subscribeCrosshairMove(this.onCrosshair)
+      chart.subscribeClick(this.onClick)
 
-      this.chart = Highcharts.stockChart(this.$el.querySelector('.chart__canvas'), options)
+      window.tvchart = chart
 
-      enablePanning(Highcharts, this.chart)
+      this.addSerie('price', 'candlestick', {
+        scaleGroup: 'price'
+      })
+      this.addSerie('volume_delta', 'histogram', {
+        scaleGroup: 'volume'
+      })
+      this.addSerie('volume', 'histogram', {
+        color: 'rgba(255, 255, 255, .15)',
+        scaleGroup: 'volume'
+      })
+      this.addSerie('liquidations', 'histogram', {
+        scaleGroup: 'volume',
+        color: '#9c27b0'
+      })
+      this.addSerie('volume_sell_ema', 'line', {
+        scaleGroup: 'volume_ema',
+        color: '#c14047',
+        lineWidth: 2,
+        overlay: true,
+        scaleMargins: {
+          top: 0.8,
+          bottom: 0
+        }
+      })
+      this.addSerie('volume_buy_ema', 'line', {
+        scaleGroup: 'volume_ema',
+        color: '#c9b087',
+        lineWidth: 2,
+        overlay: true,
+        scaleMargins: {
+          top: 0.8,
+          bottom: 0
+        }
+      })
+    },
+    addSerie(id, type, options = {}) {
+      options = Object.assign({}, seriesOptions[type] || {}, options)
 
-      this.updateChartHeight()
+      const apiMethodName = 'add' + (type.charAt(0).toUpperCase() + type.slice(1)) + 'Series'
 
-      this.isMini = false
-      this.updateMiniMode()
-
-      if (this.queuedTicks.length) {
-        this.tickHistoricals(this.queuedTicks.splice(0, this.queuedTicks.length))
-
-        this.chart.redraw()
+      const serie = {
+        id,
+        type,
+        api: chart[apiMethodName](options)
       }
 
-      if (this.queuedTrades.length) {
-        this.tickTrades(this.queuedTrades.splice(0, this.queuedTrades.length))
-
-        this.chart.redraw()
-      }
-
-      this.$refs.chartContainer.style.height = ''
+      series.push(serie)
     },
     destroyChart() {
-      if (!this.chart) {
+      if (!chart) {
         return
       }
 
-      this.chart.destroy()
+      chart.unsubscribeCrosshairMove(this.onCrosshair)
+      chart.unsubscribeClick(this.onClick)
+      chart.remove()
 
-      delete this.chart
+      chart = null
     },
     setTimeframe(timeframe, snap = false, clear = false) {
       clearTimeout(this._renderEndTimeout)
@@ -300,133 +257,88 @@ export default {
     redrawChart(range) {
       console.log(`[chart.redrawChart]`, range ? '(& setting range to ' + range + ')' : '')
 
-      let min
-      let max
-
-      if (range) {
-        this.setRange(range)
-      } else if (this.chart) {
-        min = this.chart.xAxis[0].min
-        max = this.chart.xAxis[0].max
-
-        this.chart.xAxis[0].setExtremes(min - (max - min), max, false)
-      }
-
-      if (this.chart) {
+      if (chart) {
         this.clearChart(+new Date() - this.chartRange / 2)
       }
 
       const tradesCount = socket.getTradesCount()
-      const barCount = socket.getBarCounts()
 
-      if (!tradesCount && !barCount) {
-        return
-      }
-
-      if (barCount) {
-        this.tickHistoricals(socket.getBars())
-      }
       if (tradesCount) {
         this.tickTrades(socket.getTrades())
       }
+    },
+    onClick(param) {
+      return
+      console.log(param)
 
-      if (range) {
-        this.setRange(range / 2)
-      } else if (this.chart) {
-        this.chart.xAxis[0].setExtremes(min, max, true)
+      if (!this.legend) {
+        return
+      }
+
+      navigator.clipboard.writeText(this.legend.replace(/<br>/g, '\n').replace(/\./g, ',')).then(
+        function() {
+          console.log('Async: Copying to clipboard was successful!')
+        },
+        function(err) {
+          console.error('Async: Could not copy text: ', err)
+        }
+      )
+    },
+    onCrosshair(param) {
+      if (
+        param === undefined ||
+        param.time === undefined ||
+        param.point.x < 0 ||
+        param.point.x > this.$refs.chartContainer.clientWidth ||
+        param.point.y < 0 ||
+        param.point.y > this.$refs.chartContainer.clientHeight
+      ) {
+        this.legend = null
+      } else {
+        let txt = new Date(param.time * 1000).toUTCString() + '<br>'
+
+        for (let serie of series) {
+          const data = param.seriesPrices.get(serie.api)
+
+          if (!data) {
+            continue
+          }
+
+          if (serie.type === 'candlestick') {
+            txt += `${serie.id}<br>-> open: ${data.open}, high: ${data.high}, low: ${data.low}, close: ${data.close}<br><br>`
+          } else {
+            txt += `${serie.id}<br>-> ${data}<br>`
+          }
+        }
+
+        txt = txt.trim()
+
+        if (txt.length) {
+          this.legend = txt
+        }
       }
     },
     onTrades(trades) {
-      this.tickTrades(trades, true)
-
-      this.updateChartedCount()
-    },
-    tickHistoricals(ticks) {
-      if (!this.chart) {
-        this.queuedTicks = this.queuedTicks.concat(ticks)
-
-        return
-      } else if (this.queuedTicks.length) {
-        ticks = ticks.concat(this.queuedTicks.splice(0, this.queuedTicks.length))
-      }
-
-      ticks = ticks.filter(
-        tick => this.actives.indexOf(tick.exchange) !== -1 && this.exchanges[tick.exchange] && this.exchanges[tick.exchange].ohlc !== false
-      )
-
-      if (!ticks.length) {
-        return
-      }
-
-      this.createTick(ticks[0].timestamp)
-
-      const formatedTicks = []
-
-      ticks.forEach((tick, index) => {
-        if (this.chartVolume) {
-          this.tickData.buys += tick.buys
-          this.tickData.sells += tick.sells
-        }
-
-        if (this.chartLiquidations) {
-          this.tickData.liquidations += tick.liquidations || 0
-        }
-
-        this.tickData.exchanges[tick.exchange] = {
-          open: tick.open,
-          high: tick.high,
-          low: tick.low,
-          close: tick.close
-        }
-
-        if (!ticks[index + 1] || this.tickData.timestamp !== ticks[index + 1].timestamp) {
-          const formatedTick = this.formatTickData(this.tickData)
-          this.addTickToSeries(formatedTick)
-
-          formatedTicks.push(formatedTick)
-
-          if (ticks[index + 1]) {
-            this.createTick(ticks[index + 1].timestamp)
-          }
-        }
-      })
-
-      this.tickData.added = true
-
-      this.chart.redraw()
-
-      this.updateChartedCount()
+      this.tickTrades(trades)
     },
     clearChart(timestamp = Infinity) {
       const now = socket.getCurrentTimestamp()
 
-      for (let serie of this.chart.series) {
-        serie.setData([], false)
+      for (let serie of series) {
+        console.log(`[serie.${serie.id}] /clear`)
+        serie.api.setData([])
       }
 
-      this.tickData = null
-      this.cursor = null
+      this.barData = null
+      this.barTimestamp = null
 
-      this.createTick(Math.floor(Math.min(timestamp, socket.getFirstTimestamp()) / this.timeframe) * this.timeframe)
-
-      this.chart.redraw()
+      this.createBar(Math.floor(Math.min(timestamp, socket.getFirstTimestamp()) / this.timeframe) * this.timeframe)
     },
-    tickTrades(trades, live = false) {
-      const ticks = []
+    tickTrades(trades) {
+      const bars = []
 
       if (!trades || !trades.length) {
-        trades = []
-      }
-
-      // chart doesn't allow edit on invisible ticks when it is panned
-      // we just process them when will get there
-      if (this.busy || this.panning || this.isPanned()) {
-        this.queuedTrades = this.queuedTrades.concat(trades)
-
         return
-      } else if (this.queuedTrades.length) {
-        // right here
-        trades = this.queuedTrades.splice(0, this.queuedTrades.length).concat(trades)
       }
 
       // first we trim trades
@@ -434,7 +346,7 @@ export default {
       // - only from actives exchanges (enabled, matched and visible exchange)
       trades = trades
         .filter(
-          a => a[1] >= this.cursor && this.actives.indexOf(a[0]) !== -1 // only process trades >= current tick time // only process trades from enabled exchanges (client side)
+          a => a[1] >= this.barTimestamp && this.actives.indexOf(a[0]) !== -1 // only process trades >= current tick time // only process trades from enabled exchanges (client side)
         )
         .sort((a, b) => a[1] - b[1])
 
@@ -446,132 +358,130 @@ export default {
       const from = Math.floor(trades[0][1] / this.timeframe) * this.timeframe
       const to = Math.ceil(trades[trades.length - 1][1] / this.timeframe) * this.timeframe
 
-      // loop through ticks in range
-      for (let t = from; t < to; t += this.timeframe) {
-        let i
+      // loop through bars in range
+      for (let i = 0; i <= trades.length; i++) {
+        const timestamp = trades[i] ? Math.floor(trades[i][1] / this.timeframe) * this.timeframe : Infinity
 
-        if (!this.tickData || this.cursor < t) {
-          this.createTick(t)
-        }
+        if (!this.barData || this.barTimestamp < timestamp) {
+          if (this.barData) {
+            bars.push(this.formatBar(this.barData))
+          }
 
-        for (i = 0; i < trades.length; i++) {
-          if (trades[i][1] >= t + this.timeframe) {
+          if (!trades[i]) {
             break
           }
 
-          if (trades[i][5]) {
-            switch (+trades[i][5]) {
-              case 1:
-                if (this.chartLiquidations) {
-                  this.tickData.liquidations += trades[i][3] * trades[i][2]
-                }
-                break
-            }
+          this.createBar(timestamp)
+        }
 
-            continue
-          }
-
-          if (this.exchanges[trades[i][0]].ohlc !== false) {
-            if (!this.tickData.exchanges[trades[i][0]]) {
-              this.tickData.exchanges[trades[i][0]] = {
-                open: +trades[i][2],
-                high: +trades[i][2],
-                low: +trades[i][2],
-                close: +trades[i][2],
-                size: 0
+        if (trades[i][5]) {
+          switch (+trades[i][5]) {
+            case 1:
+              if (this.chartLiquidations) {
+                this.barData.liquidations += trades[i][3] * trades[i][2]
               }
-            }
+              break
+          }
 
-            this.tickData.exchanges[trades[i][0]].count++
+          continue
+        }
 
-            this.tickData.exchanges[trades[i][0]].high = Math.max(this.tickData.exchanges[trades[i][0]].high, +trades[i][2])
-            this.tickData.exchanges[trades[i][0]].low = Math.min(this.tickData.exchanges[trades[i][0]].low, +trades[i][2])
-            this.tickData.exchanges[trades[i][0]].close = +trades[i][2]
-            this.tickData.exchanges[trades[i][0]].size += +trades[i][3]
-
-            if (this.chartVolume && (!this.chartVolumeThreshold || trades[i][3] * trades[i][2] > this.chartVolumeThreshold)) {
-              this.tickData[(trades[i][4] > 0 ? 'buys' : 'sells') + 'Count']++
-              this.tickData[trades[i][4] > 0 ? 'buys' : 'sells'] += trades[i][3] * trades[i][2]
+        if (this.exchanges[trades[i][0]].ohlc !== false) {
+          if (!this.barData.exchanges[trades[i][0]]) {
+            this.barData.exchanges[trades[i][0]] = {
+              open: +trades[i][2],
+              high: +trades[i][2],
+              low: +trades[i][2],
+              close: +trades[i][2],
+              size: 0
             }
           }
-        }
 
-        if (i) {
-          trades.splice(0, i)
-        }
+          this.barData.exchanges[trades[i][0]].count++
 
-        ticks.push(this.formatTickData(this.tickData))
+          this.barData.exchanges[trades[i][0]].high = Math.max(this.barData.exchanges[trades[i][0]].high, +trades[i][2])
+          this.barData.exchanges[trades[i][0]].low = Math.min(this.barData.exchanges[trades[i][0]].low, +trades[i][2])
+          this.barData.exchanges[trades[i][0]].close = +trades[i][2]
+          this.barData.exchanges[trades[i][0]].size += +trades[i][3]
+
+          if (this.chartVolume && (!this.chartVolumeThreshold || trades[i][3] * trades[i][2] > this.chartVolumeThreshold)) {
+            this.barData['c' + (trades[i][4] > 0 ? 'buy' : 'sell')]++
+            this.barData['v' + (trades[i][4] > 0 ? 'buy' : 'sell')] += trades[i][3] * trades[i][2]
+          }
+        }
       }
 
-      if (!this.chart.series[0].data.length) {
-        this.replaceEntireChart(ticks, live)
+      if (!chart.timeScale().getVisibleRange()) {
+        this.replaceData(bars)
       } else {
-        if (ticks.length && ticks[0].added) {
-          this.updateLatestPoints(ticks[0], live)
-
-          ticks.splice(0, 1)
-        }
-
-        for (let i = 0; i < ticks.length; i++) {
-          this.addTickToSeries(ticks[i], live, i === ticks.length - 1)
+        for (let i = 0; i < bars.length; i++) {
+          this.updateBar(bars[i])
         }
       }
-
-      if (ticks.length) {
-        this.chart.xAxis[0].setExtremes(this.chart.xAxis[0].min, this.chart.xAxis[0].max)
-      }
-
-      this.tickData.added = true
 
       window.chart = this.chart
     },
-    createTick(timestamp = null) {
+    createBar(timestamp = null) {
       if (timestamp) {
         if (isFinite(timestamp)) {
-          this.cursor = timestamp
+          this.barTimestamp = timestamp
         } else {
-          this.cursor = timestamp
+          this.barTimestamp = timestamp
         }
-      } else if (this.cursor) {
-        this.cursor += this.timeframe
+      } else if (this.barTimestamp) {
+        this.barTimestamp += this.timeframe
       } else {
-        this.cursor = Math.floor(socket.getCurrentTimestamp() / this.timeframe) * this.timeframe
+        this.barTimestamp = Math.floor(socket.getCurrentTimestamp() / this.timeframe) * this.timeframe
       }
 
-      if (this.tickData) {
-        this.tickData.timestamp = this.cursor
+      if (this.barData) {
+        // console.log(`[chart] new bar (using previous as reference)`, new Date(this.barTimestamp).toUTCString())
+        this.barData.timestamp = this.barTimestamp
 
-        for (let exchange in this.tickData.exchanges) {
-          this.tickData.exchanges[exchange].count = 0
-          this.tickData.exchanges[exchange].open = this.tickData.exchanges[exchange].close
-          this.tickData.exchanges[exchange].high = this.tickData.exchanges[exchange].close
-          this.tickData.exchanges[exchange].low = this.tickData.exchanges[exchange].close
+        for (let exchange in this.barData.exchanges) {
+          this.barData.exchanges[exchange].count = 0
+          this.barData.exchanges[exchange].open = this.barData.exchanges[exchange].close
+          this.barData.exchanges[exchange].high = this.barData.exchanges[exchange].close
+          this.barData.exchanges[exchange].low = this.barData.exchanges[exchange].close
         }
 
-        this.tickData.open = parseFloat(this.tickData.close)
-        this.tickData.high = null
-        this.tickData.low = null
-        this.tickData.close = 0
-        this.tickData.liquidations = 0
-        this.tickData.buys = 0
-        this.tickData.sells = 0
-        this.tickData.buysCount = 0
-        this.tickData.sellsCount = 0
-        this.tickData.added = false
+        this.barData.vbuy_emas.push(this.barData.vbuy_ema)
+
+        if (this.barData.vbuy_emas.length >= 14) {
+          this.barData.vbuy_emas.shift()
+        }
+
+        this.barData.vsell_emas.push(this.barData.vsell_ema)
+
+        if (this.barData.vsell_emas.length >= 14) {
+          this.barData.vsell_emas.shift()
+        }
+
+        this.barData.open = parseFloat(this.barData.close)
+        this.barData.high = 0
+        this.barData.low = 0
+        this.barData.close = 0
+        this.barData.vliq = 0
+        this.barData.vbuy = 0
+        this.barData.vsell = 0
+        this.barData.cbuy = 0
+        this.barData.csell = 0
       } else {
-        this.tickData = {
-          timestamp: this.cursor,
+        console.log(`[chart] new bar (empty)`, new Date(this.barTimestamp).toUTCString())
+        this.barData = {
+          timestamp: this.barTimestamp,
           exchanges: {},
           open: null,
           high: null,
           low: null,
           close: null,
-          liquidations: 0,
-          buys: 0,
-          sells: 0,
-          buysCount: 0,
-          sellsCount: 0,
-          added: false
+          vliq: 0,
+          vbuy: 0,
+          vsell: 0,
+          cbuy: 0,
+          csell: 0,
+          vbuy_emas: [],
+          vsell_emas: []
         }
 
         const closes = socket.getInitialPrices()
@@ -581,7 +491,7 @@ export default {
             continue
           }
 
-          this.tickData.exchanges[exchange] = {
+          this.barData.exchanges[exchange] = {
             size: 0,
             count: 0,
             open: closes[exchange],
@@ -592,102 +502,117 @@ export default {
         }
       }
     },
-    replaceEntireChart(ticks, live = false, snap = false) {
+    replaceData(bars, live = false, snap = false) {
       const seriesData = {}
 
-      for (let tick of ticks) {
-        for (let serieIndex of Object.keys(tick)) {
-          if (isNaN(serieIndex)) {
-            continue
+      for (let bar of bars) {
+        for (let id in bar) {
+          if (!seriesData[id]) {
+            seriesData[id] = []
           }
 
-          if (!seriesData[serieIndex]) {
-            seriesData[serieIndex] = []
-          }
-
-          if (tick[serieIndex]) {
-            seriesData[serieIndex].push(tick[serieIndex])
+          if (bar[id]) {
+            seriesData[id].push(bar[id])
           }
         }
       }
 
-      for (let serieIndex in seriesData) {
-        this.chart.series[serieIndex].setData(seriesData[serieIndex], false)
-      }
-    },
-    addTickToSeries(tick, live = false, snap = false) {
-      for (let serieIndex in tick) {
-        if (!isNaN(serieIndex) && tick[serieIndex]) {
-          this.chart.series[serieIndex].addPoint(tick[serieIndex], false)
+      for (let serie of series) {
+        if (seriesData[serie.id] && seriesData[serie.id].length) {
+          // console.log(`[serie.${serie.id}] /replace whole serie with ${seriesData[serie.id].length} points`)
+          serie.api.setData(seriesData[serie.id])
         }
       }
-
-      if (snap && this.isSnaped) {
-        this.snapRight(live)
-      }
     },
-    updateLatestPoints(tick, live = false) {
-      for (let serieIndex in tick) {
-        if (!isNaN(serieIndex) && tick[serieIndex]) {
-          const point = this.chart.series[serieIndex].points[this.chart.series[serieIndex].points.length - 1]
-
-          if (point.y !== tick[serieIndex][1]) {
-            point.update(tick[serieIndex], false)
-          }
+    updateBar(bar) {
+      for (let serie of series) {
+        if (bar[serie.id]) {
+          // console.log(`[serie.${serie.id}] update point ${new Date(bar[serie.id].time * 1000).toUTCString()}`, bar[serie.id])
+          serie.api.update(bar[serie.id])
         }
       }
-
-      this.chart.redraw()
     },
-    formatTickData(tickData) {
-      return {
-        0: this.getExchangesAveragedOHLC(tickData.exchanges, tickData),
-        1: this.chartVolume ? [tickData.timestamp, tickData.buys] : null,
-        2: this.chartVolume ? [tickData.timestamp, tickData.sells] : null,
-        3: this.chartLiquidations ? [tickData.timestamp, tickData.liquidations] : null,
-        added: tickData.added
-      }
-    },
-    getExchangesAveragedOHLC(exchanges, tickData) {
+    getExchangesAveragedOHLC(exchanges, barData) {
       let totalWeight = 0
       let setOpen = false
 
-      if (tickData.open === null) {
+      if (barData.open === null) {
         setOpen = true
-        tickData.open = 0
+        barData.open = 0
       }
 
       let high = 0
       let low = 0
 
-      tickData.close = 0
+      barData.high = 0
+      barData.low = 0
+      barData.close = 0
 
       for (let exchange in exchanges) {
-        let exchangeWeight = 1
-
         if (setOpen) {
-          tickData.open += exchanges[exchange].open * exchangeWeight
+          barData.open += exchanges[exchange].open
         }
 
-        high += exchanges[exchange].high * exchangeWeight
-        low += exchanges[exchange].low * exchangeWeight
-        tickData.close += ((exchanges[exchange].close + exchanges[exchange].high + exchanges[exchange].low) / 3) * exchangeWeight
+        barData.high += exchanges[exchange].high
+        barData.low += exchanges[exchange].low
+        barData.close += exchanges[exchange].close
 
-        totalWeight += exchangeWeight
+        totalWeight++
       }
 
       if (setOpen) {
-        tickData.open /= totalWeight
+        barData.open /= totalWeight
       }
 
-      high /= totalWeight
-      low /= totalWeight
-      tickData.close /= totalWeight
+      barData.high /= totalWeight
+      barData.low /= totalWeight
+      barData.close /= totalWeight
 
-      tickData.high = Math.max(tickData.high === null ? 0 : tickData.high, setOpen ? 0 : tickData.open, high)
-      tickData.low = Math.min(tickData.low === null ? Infinity : tickData.low, setOpen ? Infinity : tickData.open, low)
+      return { time: barData.timestamp / 1000, open: barData.open, high: barData.high, low: barData.low, close: barData.close }
+    },
+    formatBar(barData) {
+      const points = []
 
-      return [tickData.timestamp, tickData.open, tickData.high, tickData.low, tickData.close]
+      points.price = this.getExchangesAveragedOHLC(barData.exchanges, barData)
+
+      if (this.chartVolume) {
+        points.volume_delta = {
+          time: barData.timestamp / 1000,
+          value: Math.abs(barData.vbuy - barData.vsell),
+          color: barData.vbuy - barData.vsell > 0 ? seriesOptions.candlestick.upColor : seriesOptions.candlestick.downColor
+        }
+
+        points.volume = { time: barData.timestamp / 1000, value: barData.vbuy + barData.vsell }
+
+        barData.vbuy_ema = this.getEma(barData.vbuy, barData.vbuy_emas, 14, 1)
+        points.volume_buy_ema = { time: barData.timestamp / 1000, value: barData.vbuy_ema }
+
+        barData.vsell_ema = this.getEma(barData.vsell, barData.vsell_emas)
+        points.volume_sell_ema = { time: barData.timestamp / 1000, value: barData.vsell_ema }
+      }
+
+      if (this.chartLiquidations && barData.vliq) {
+        points.liquidations = { time: barData.timestamp / 1000, value: barData.vliq }
+      }
+
+      console.log(`${new Date(barData.timestamp).toUTCString()};${barData.vbuy};${barData.vbuy_ema}`)
+
+      return points
+    },
+    getEma(value, values = [], length = 14, yes = false) {
+      const k = 2 / (length + 1)
+
+      if (yes) {
+        console.log('calculate ema from value', value, values)
+      }
+
+      if (values.length > 0) {
+        yes && console.log(`do (${value} - ${values[values.length - 1]}) * ${k} + ${values[values.length - 1]}`)
+        return (value - values[values.length - 1]) * k + values[values.length - 1]
+      } else {
+        yes && console.log(`use value as it is ${value}`)
+        return value
+      }
     },
     startResize(event) {
       if (event.which === 3) {
@@ -705,99 +630,14 @@ export default {
       this.updateChartHeight()
     },
 
-    startScale(axis, event) {
-      if (event.which === 3) {
-        return
-      }
-
-      this._scaling[axis] = event['page' + axis.toUpperCase()]
-    },
-
     updateChartHeight(height = null) {
-      if (!this.chart) {
+      if (!chart) {
         return
       }
 
       const size = this.getChartSize()
 
-      if (window.innerWidth >= 768) {
-        height = this.$el.clientHeight
-      }
-
-      this.chart.setSize(size.width, height || size.height, false)
-    },
-
-    updateMiniMode() {
-      const isMini = window.innerWidth < 380
-
-      if (this.isMini !== isMini) {
-        this.chart.update(
-          {
-            chart: {
-              spacingBottom: isMini ? 0 : 5
-            }
-          },
-          false
-        )
-
-        this.chart.xAxis[0].update(
-          {
-            visible: !isMini
-          },
-          false
-        )
-
-        this.chart.yAxis[1].update(
-          {
-            top: isMini ? '40%' : '75%',
-            height: isMini ? '60%' : '25%'
-          },
-          false
-        )
-
-        this.chart.yAxis[2].update(
-          {
-            top: isMini ? '40%' : '75%',
-            height: isMini ? '60%' : '25%'
-          },
-          false
-        )
-
-        setTimeout(this.chart.redraw.bind(this.chart), 1000)
-      }
-
-      this.isMini = isMini
-    },
-
-    resetScale(axis) {
-      delete this._scaling[axis]
-
-      this.updateChartScale(axis, null)
-    },
-
-    updateChartScale(axis, scale) {
-      let min = this.chart[axis + 'Axis'][0].min
-      let max = this.chart[axis + 'Axis'][0].max
-
-      let range
-
-      if (scale === null) {
-        min = max = null
-      } else if (scale) {
-        range = (max - min) * (scale * (axis === 'x' ? -1 : 1))
-
-        min -= range
-        max += range
-      }
-
-      this.chart[axis + 'Axis'][0].setExtremes(min, max)
-
-      if (axis === 'x') {
-        range = this.chart.xAxis[0].max - this.chart.xAxis[0].min
-
-        this.$store.commit('setChartRange', range)
-        this.$store.commit('setChartCandleWidth', this.chart.chartWidth / (range / this.timeframe))
-      }
+      chart.resize(size.width, size.height)
     },
 
     getChartSize() {
@@ -806,7 +646,12 @@ export default {
 
       return {
         width: w,
-        height: this.chartHeight > 0 ? this.chartHeight : +Math.min(w / 2, Math.max(300, h / 3)).toFixed()
+        height:
+          window.innerWidth >= 768
+            ? this.$el.clientHeight
+            : this.chartHeight > 0
+            ? this.chartHeight
+            : +Math.min(w / 2, Math.max(300, h / 3)).toFixed()
       }
     },
 
@@ -814,216 +659,21 @@ export default {
       clearTimeout(this._resizeTimeout)
 
       this._resizeTimeout = setTimeout(() => {
-        this.updateMiniMode()
         this.updateChartHeight()
       }, 250)
     },
 
     doDrag(event) {
       if (!isNaN(this.resizing)) {
-        this.updateChartHeight(this.chart.chartHeight + (event.pageY - this.resizing))
-
-        this.resizing = event.pageY
-      } else if (typeof this._scaling['x'] !== 'undefined' && !isNaN(this._scaling['x'])) {
-        this.updateChartScale('x', (event.pageX - this._scaling['x']) / 100, true)
-
-        this._scaling['x'] = event.pageX
-      } else if (typeof this._scaling['y'] !== 'undefined' && !isNaN(this._scaling['y'])) {
-        this.updateChartScale('y', (event.pageY - this._scaling['y']) / 100, true)
-
-        this._scaling['y'] = event.pageY
+        this.updateChartHeight((this.chartHeight || chart.options().height) + (event.pageY - this.resizing))
       }
     },
 
     stopDrag(event) {
       if (this.resizing) {
-        this.$store.commit('setChartHeight', this.chart.chartHeight)
+        this.$store.commit('setChartHeight', this.$refs.chartContainer.clientHeight)
 
         delete this.resizing
-      }
-
-      for (let axis in this._scaling) {
-        delete this._scaling[axis]
-      }
-    },
-
-    snapRight(redraw = false) {
-      if (this.busy || this.panning) {
-        return
-      }
-
-      if (Object.keys(this._scaling).length) {
-        return
-      }
-
-      const margin = this.chartRange * this.chartPadding
-      const now = socket.getCurrentTimestamp()
-
-      let from
-      let to
-
-      from = now - this.chartRange + margin
-
-      to = now + margin
-
-      if (to < this.chart.xAxis[0].max) {
-        return
-      }
-
-      from = Math.ceil(from / this.timeframe) * this.timeframe
-      to = Math.ceil(to / this.timeframe) * this.timeframe
-
-      this.chart.xAxis[0].setExtremes(from, to, redraw)
-    },
-
-    updateChartedCount() {
-      let pendingExchanges = this.actives.filter(id => this.exchanges[id].ohlc !== false)
-
-      if (this.tickData) {
-        pendingExchanges = pendingExchanges.filter(id => Object.keys(this.tickData.exchanges).indexOf(id) === -1)
-      }
-
-      if (this.pendingExchanges.length !== pendingExchanges.length) {
-        this.redrawChart()
-      }
-
-      this.pendingExchanges = pendingExchanges.map(a => a.toUpperCase())
-
-      this.isDirty = this.pendingExchanges.length
-
-      return this.isDirty
-    },
-
-    isPanned() {
-      if (!this.chart || !this.chart.series.length) {
-        return true
-      }
-
-      return (
-        this.tickData &&
-        this.chart.series[0].points.length &&
-        this.chart.series[0].points[this.chart.series[0].points.length - 1].x < this.tickData.timestamp
-      )
-    },
-
-    setRange(range, setExtremes = true) {
-      this.$store.commit('setChartRange', range)
-
-      if (this.chart) {
-        const padding = this.chartRange * this.chartPadding
-        const now = socket.getCurrentTimestamp()
-        let from = now - this.chartRange
-        let to = now
-
-        if (setExtremes) {
-          this.chart.xAxis[0].setExtremes(from, to, true)
-        }
-      }
-    },
-    getChartOptions() {
-      const options = JSON.parse(JSON.stringify(chartOptions))
-
-      // time axis
-      options.xAxis.labels.color = this.theme.labels
-      options.xAxis.crosshair.color = this.theme.crosshair
-
-      // price axis
-      if (this.chartGridlines) {
-        options.yAxis[0].labels.color = this.theme.labels
-        options.yAxis[0].gridLineColor = this.theme.gridline
-        options.yAxis[0].crosshair.color = this.theme.crosshair
-        options.yAxis[0].tickPixelInterval = this.chartGridlinesGap || null
-      } else {
-        options.yAxis[0].visible = false
-      }
-
-      // candlesticks
-      options.series[0].upColor = this.theme.up
-      options.series[0].upLineColor = this.theme.up
-      options.series[0].color = this.theme.down
-      options.series[0].lineColor = this.theme.down
-      options.series[0].name = this.pair
-
-      // line
-      options.series[0].type = this.chartCandlestick ? 'candlestick' : 'spline'
-      options.series[0].lineColor = this.chartCandlestick ? options.series[0].down : 'white'
-      options.series[0].lineWidth = this.chartCandlestick ? 1 : 2
-
-      // buys
-      options.series[1].color = this.theme.buys
-
-      // sells
-      options.series[2].color = this.theme.sells
-
-      // liquidations bars
-      options.series[3].color = this.theme.liquidations
-
-      // sells EMA
-      options.series[4].lineColor = this.theme.sellsMA
-
-      // buys EMA
-      options.series[5].lineColor = this.theme.buysMA
-
-      // price MA
-      options.series[6].lineColor = this.theme.priceMA
-      options.series[7] && (options.series[7].lineColor = this.theme.priceMA)
-
-      // Tooltip value formatter
-      const formatPrice = this.$root.formatPrice
-      const formatAmount = this.$root.formatAmount
-
-      options.tooltip.backgroundColor = this.theme.tooltipBackground
-      options.tooltip.style.color = this.theme.tooltipColor
-
-      options.tooltip.pointFormatter = function() {
-        if (!this.y) return ''
-
-        const isPrice = this.series.options.id === 'price' || (this.series.linkedParent && this.series.linkedParent.options.id === 'price')
-
-        const formatter = isPrice ? formatPrice : formatAmount
-
-        return `<b>${this.series.name}</b> ${formatter(this.y)}`
-      }
-
-      options.chart.events = {
-        _panStart: () => (this.panning = true),
-        _panEnd: () => (this.panning = false),
-        _pan: () => {
-          const isPanned = this.chart.xAxis[0].max < this.chart.xAxis[0].dataMax
-
-          if (!isPanned !== this.isSnaped) {
-            this.$store.commit('toggleSnap', !isPanned)
-          }
-        },
-        load: () => {
-          setTimeout(this.applyChartStyles.bind(this), 200)
-        }
-      }
-
-      return options
-    },
-    applyChartStyles() {
-      if (this.chartVolumeOpacity < 1) {
-        this.chart.series[1].group.element.style.opacity = this.chartVolumeOpacity
-        this.chart.series[2].group.element.style.opacity = this.chartVolumeOpacity
-      }
-
-      if (!this.chartSma) {
-        this.chart.series[6].update({ visible: false })
-      } else if (this.chartSmaLength) {
-        this.chart.series[6].update({ params: { period: this.chartSmaLength } })
-      }
-
-      if (!this.chartVolumeAverage) {
-        this.chart.series[4].update({ visible: false })
-        this.chart.series[5].update({ visible: false })
-      } else if (this.chartVolumeAverageLength) {
-        this.chart.series[4].update({
-          params: { period: this.chartVolumeAverageLength }
-        })
-        this.chart.series[5].update({
-          params: { period: this.chartVolumeAverageLength }
-        })
       }
     },
     onClean(min) {
@@ -1036,21 +686,8 @@ export default {
 <style lang="scss">
 @import '../../assets/sass/variables';
 
-.chart__range {
-  display: flex;
-  justify-content: space-between;
-  position: absolute;
-  width: 100%;
-  height: 0px;
-  font-size: 14px;
-  opacity: 0.4;
-  font-family: monospace;
-  font-weight: 300;
-  letter-spacing: -0.5px;
-
-  > div {
-    padding: 10px;
-  }
+#chart {
+  position: relative;
 }
 
 .chart__container {
@@ -1064,25 +701,8 @@ export default {
   -ms-user-select: none;
   user-select: none;
 
-  .highcharts-container {
-    width: 100% !important;
-  }
-
-  .chart__selection {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    background-color: rgba(white, 0.1);
-    z-index: 1;
-    pointer-events: none;
-  }
-
-  &.fetching {
+  &.-fetching {
     opacity: 0.5;
-  }
-
-  .highcharts-credits {
-    visibility: hidden;
   }
 }
 
@@ -1091,23 +711,6 @@ export default {
   position: absolute;
   bottom: 0;
   z-index: 2;
-}
-
-.chart__scale-handler {
-  &.-y {
-    right: 0;
-    top: 0;
-    width: 2em;
-    cursor: ns-resize;
-  }
-
-  &.-x {
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 1.5em;
-    cursor: ew-resize;
-  }
 }
 
 .chart__height-handler {
@@ -1122,104 +725,11 @@ export default {
   }
 }
 
-.chart__scale-mode {
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  z-index: 3;
-  cursor: pointer;
-
-  i {
-    font-size: 14px;
-    margin-left: 5px;
-  }
-
-  &:hover {
-    opacity: 1;
-  }
-}
-
-.chart__dirty-notice {
-  background-color: rgba(black, 0.5);
+.chart__legend {
   position: absolute;
   top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-
-  z-index: 4;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  flex-direction: column;
-  text-align: center;
-
-  font-size: 1em;
-
-  > strong {
-    margin: 0 10%;
-    font-weight: 600;
-  }
-
-  > p:nth-child(2) {
-    margin: 1em 20%;
-  }
-
-  button {
-    font-size: 1.2em;
-  }
-}
-
-.chart__notice {
-  position: absolute;
-  z-index: 1;
-  max-width: 200px;
-  left: 50%;
-  transform: translateX(-50%);
-
-  text-align: center;
-  font-size: 0.75em;
-  margin-top: 1em;
-
-  color: lighten($red, 10%);
-}
-
-.chart-controls {
-  position: absolute;
-  left: 0;
-  right: 0;
-
-  > div > div {
-    position: relative;
-  }
-
-  &__left {
-    position: absolute;
-    top: 1em;
-    left: 1em;
-  }
-
-  &__right {
-    position: absolute;
-    top: 1em;
-    right: 1em;
-    text-align: right;
-  }
-}
-
-.highcharts-tooltip-box tspan {
-  font-weight: 400 !important;
-}
-
-.highcharts-yaxis-grid path:first-child {
-  display: none;
-}
-
-.highcharts-tooltip-container {
-  max-width: 100%;
-  overflow: hidden;
-  top: 0 !important;
+  z-index: 10000;
+  pointer-events: none;
+  font-size: 0.7em;
 }
 </style>

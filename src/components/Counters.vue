@@ -355,25 +355,7 @@ export default {
       this.$store.commit('setCounterStep', { index: index, value: null })
     },
     getTicksTrades() {
-      return socket
-        .getBars()
-        .reduce((prev, curr) => {
-          const ratio = {
-            buys: curr.buys / (curr.sells + curr.buys),
-            sells: curr.sells / (curr.sells + curr.buys)
-          }
-
-          if (curr.buys > 0) {
-            prev.push([curr.exchange, curr.timestamp, curr.close, ratio.buys * curr.volume, true, ratio.buys * curr.records])
-          }
-
-          if (curr.sells > 0) {
-            prev.push([curr.exchange, curr.timestamp, curr.close, ratio.sells * curr.volume, false, ratio.sells * curr.records])
-          }
-
-          return prev
-        }, [])
-        .concat(socket.getTrades())
+      return socket.getTrades()
     }
   }
 }
