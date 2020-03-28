@@ -60,8 +60,6 @@ export default {
         case 'setThresholdColor':
         case 'setThresholdAmount':
           this.retrieveColorSteps()
-
-          this.redrawList()
           break
       }
     })
@@ -92,8 +90,6 @@ export default {
         element.innerHTML = this.$root.ago(element.getAttribute('timestamp'))
       }
     }, 1000)
-
-    this.redrawList()
   },
   beforeDestroy() {
     socket.$off('pairing', this.onPairing)
@@ -154,7 +150,7 @@ export default {
 
       // group by [exchange name + buy=1/sell=0] (ex bitmex1)
       const tid = trade[0] + trade[4]
-      const now = socket.getCurrentTimestamp()
+      const now = +new Date()
 
       if (this.thresholds[0].amount) {
         if (this.ticks[tid]) {
@@ -235,6 +231,7 @@ export default {
           li.style.backgroundImage = `url('${
             this.gifs[this.thresholds[i].gif][Math.floor(Math.random() * (this.gifs[this.thresholds[i].gif].length - 1))]
           }`
+          li.className += ' -gif'
         }
 
         li.className += ' level-' + i
@@ -242,13 +239,15 @@ export default {
 
       amount = this.$root.formatAmount(trade[2] * trade[3])
 
-      if (trade[4] !== this.lastSide) {
-        const side = document.createElement('div')
-        side.className = 'trades__item__side icon-side'
-        li.appendChild(side)
-      }
+      if (!message) {
+        if (trade[4] !== this.lastSide) {
+          const side = document.createElement('div')
+          side.className = 'trades__item__side icon-side'
+          li.appendChild(side)
+        }
 
-      this.lastSide = trade[4]
+        this.lastSide = trade[4]
+      }
 
       const exchange = document.createElement('div')
       exchange.className = 'trades__item__exchange'
@@ -256,8 +255,6 @@ export default {
       li.appendChild(exchange)
 
       if (message) {
-        this.lastSide = null
-
         const message_div = document.createElement('div')
         message_div.className = 'trades__item__message'
         message_div.innerHTML = message
@@ -465,15 +462,6 @@ export default {
     clearList() {
       this.$refs.tradesContainer.innerHTML = ''
       this.tradesCount = 0
-    },
-    redrawList(limit = 1000) {
-      clearTimeout(this._refreshColorRenderList)
-
-      this._refreshColorRenderList = setTimeout(() => {
-        const count = socket.getTradesCount()
-
-        this.onTrades(socket.getTrades().slice(count - limit, count), true)
-      }, 500)
     }
   }
 }
@@ -590,16 +578,6 @@ export default {
     color: white;
   }
 
-  &.-liquidation {
-    background-color: $pink !important;
-    color: white !important;
-
-    .trades__item__exchange {
-      flex-grow: 0;
-      flex-basis: auto;
-    }
-  }
-
   &.-level-2 {
     padding: 0.5em 0.6em;
 
@@ -621,6 +599,23 @@ export default {
   &.-level-3 {
     box-shadow: 0 0 20px rgba(red, 0.5);
     z-index: 1;
+  }
+
+  &.-gif {
+    > div {
+      position: relative;
+    }
+
+    &:before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: black;
+      opacity: 0.2;
+    }
   }
 
   > div {
@@ -654,6 +649,17 @@ export default {
 
     &:first-child {
       margin-left: 1em;
+    }
+  }
+
+  &.-liquidation {
+    background-color: $pink !important;
+    color: white !important;
+
+    .trades__item__exchange {
+      flex-grow: 0;
+      flex-basis: auto;
+      margin-left: 0;
     }
   }
 

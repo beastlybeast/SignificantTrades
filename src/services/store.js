@@ -57,7 +57,7 @@ const DEFAULTS = {
   chartPadding: 0.075,
   chartGridlines: true,
   chartGridlinesGap: 80,
-  timeframe: 1000 * 10,
+  timeframe: 10,
   autoClearTrades: true,
   debug: false,
   useShades: true,
@@ -179,6 +179,9 @@ const store = new Vuex.Store({
     },
     toggleTradeSpray(state, value) {
       state.tradeSpray = value ? true : false
+    },
+    toggleDebug(state, value) {
+      state.debug = value ? true : false
     },
     toggleLogos(state, value) {
       state.showLogos = value ? true : false

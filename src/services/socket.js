@@ -20,8 +20,6 @@ import Ftx from '../exchanges/ftx'
 
 import store from '../services/store'
 
-let STORED_TRADES = []
-
 const emitter = new Vue({
   data() {
     return {
@@ -167,7 +165,7 @@ const emitter = new Vue({
 
       setTimeout(this.connectExchanges.bind(this))
 
-      setInterval(this.emitTradesAsync.bind(this), 1000)
+      setInterval(this.emitTradesAsync.bind(this), 50)
     },
     connectExchanges(pair = null) {
       this.disconnectExchanges()
@@ -186,7 +184,6 @@ const emitter = new Vue({
       }
 
       this.queue = []
-      STORED_TRADES.splice(0, STORED_TRADES.length)
       this.timestamps = {}
       this._fetchedMax = false
 
@@ -248,33 +245,6 @@ const emitter = new Vue({
 
       this.exchanges.forEach(exchange => exchange.disconnect())
     },
-    cleanOldData() {
-      if (this.isLoading) {
-        return
-      }
-
-      let requiredTimeframe = 0
-
-      if (this.showChart && this.chartRange) {
-        requiredTimeframe = Math.max(requiredTimeframe, this.chartRange * 2)
-      }
-
-      const minTimestamp = Math.ceil((+new Date() - requiredTimeframe) / this.timeframe) * this.timeframe
-
-      console.log(`[socket.clean] remove trades older than ${new Date(minTimestamp).toLocaleString()}`)
-
-      let i
-
-      for (i = 0; i < STORED_TRADES.length; i++) {
-        if (STORED_TRADES[i][1] > minTimestamp) {
-          break
-        }
-      }
-
-      STORED_TRADES.splice(0, i)
-
-      this.$emit('clean', minTimestamp)
-    },
     getExchangeById(id) {
       for (let exchange of this.exchanges) {
         if (exchange.id === id) {
@@ -309,10 +279,6 @@ const emitter = new Vue({
         return
       }
 
-      if (this.showChart) {
-        Array.prototype.push.apply(STORED_TRADES, this.queue)
-      }
-
       this.emitTrades(this.queue, 'trades.queued')
 
       this.queue = []
@@ -330,46 +296,6 @@ const emitter = new Vue({
       url = url.replace(/\{exchanges\}/, this.actives.join('+'))
 
       return url
-    },
-    fetchRange(range, clear = false) {
-      if (clear) {
-        this._fetchedMax = false
-      }
-
-      if (this.isLoading || !this.canFetch()) {
-        return Promise.resolve(null)
-      }
-
-      const now = +new Date()
-
-      const minData = STORED_TRADES.length ? STORED_TRADES[0][1] : now
-
-      let promise
-      let from = now - range
-      let to = minData
-
-      from = Math.ceil(from / this.timeframe) * this.timeframe
-      to = Math.ceil(to / this.timeframe) * this.timeframe
-
-      console.log(
-        `[socket.fetchRange] minData: ${new Date(minData).toLocaleString()}, from: ${new Date(from).toLocaleString()}, to: ${to}`,
-        this._fetchedMax ? '(FETCHED MAX)' : ''
-      )
-
-      if (!this._fetchedMax && to - from >= 60000 && from < minData) {
-        console.info(
-          `[socket.fetchRange]`,
-          `FETCH NEEDED\n\n\tcurrent time: ${new Date(now).toLocaleString()}\n\tfrom: ${new Date(from).toLocaleString()}\n\tto: ${new Date(
-            to
-          ).toLocaleString()} (${STORED_TRADES.length ? 'using first trade as base' : 'using now for reference'})`
-        )
-
-        promise = this.fetchHistoricalData(from, to)
-      } else {
-        promise = Promise.resolve()
-      }
-
-      return promise
     },
     fetchHistoricalData(from, to) {
       const url = this.getApiUrl(from, to)
@@ -401,44 +327,32 @@ const emitter = new Vue({
               return resolve()
             }
 
+            const format = response.data.format
             let data = response.data.results
 
-            data = data.map(a => {
-              a[1] = +a[1]
-              a[2] = +a[2]
-              a[3] = +a[3]
-              a[4] = +a[4]
+            switch (response.data.format) {
+              case 'downsampled':
+                break
+              default:
+                data = data.map(a => {
+                  a[1] = +a[1]
+                  a[2] = +a[2]
+                  a[3] = +a[3]
+                  a[4] = +a[4]
 
-              return a
-            })
+                  return a
+                })
 
-            if (!STORED_TRADES.length) {
-              console.log(`[socket.fetch] set socket.trades (${data.length} trades)`)
+                this.$emit('historical', data, from, to)
 
-              Array.prototype.push.apply(STORED_TRADES, data)
-            } else {
-              const prepend = data.filter(trade => trade[1] <= STORED_TRADES[0][1])
-              const append = data.filter(trade => trade[1] >= STORED_TRADES[STORED_TRADES.length - 1][1])
-
-              if (prepend.length) {
-                console.log(`[fetch] prepend ${prepend.length} ticks`)
-                STORED_TRADES = prepend.concat(STORED_TRADES)
-              }
-
-              if (append.length) {
-                console.log(`[fetch] append ${append.length} ticks`)
-                STORED_TRADES = STORED_TRADES.concat(append)
-              }
+                resolve({
+                  format: format,
+                  data: data,
+                  from: from,
+                  to: to
+                })
+                break
             }
-
-            this.$emit('historical', data, from, to)
-
-            resolve({
-              format: format,
-              data: data,
-              from: from,
-              to: to
-            })
           })
           .catch(err => {
             this._fetchedMax = true
@@ -462,63 +376,71 @@ const emitter = new Vue({
           })
       })
     },
-    getCurrentTimestamp() {
-      return +new Date()
-    },
-    getInitialPrices() {
-      if (!STORED_TRADES.length) {
-        return this._firstCloses
+    downsampleTrades(trades) {
+      const chunk = {
+        data: null,
+        from: Math.floor(trades[0][1] / this.timeframe) * this.timeframe,
+        to: Math.floor(trades[trades.length - 1][1] / this.timeframe) * this.timeframe
       }
 
-      const closesByExchanges = this.exchanges.reduce((obj, exchange) => {
-        obj[exchange.id] = null
-
-        return obj
-      }, {})
-
-      if (!Object.keys(closesByExchanges).length) {
-        return closesByExchanges
+      const bars = []
+      const bar = {
+        timestamp: null,
+        exchanges: {}
       }
 
-      let gotAllCloses = false
+      for (let i = 0; i <= trades.length; i++) {
+        const trade = trades[i]
+        const timestamp = trade && Math.floor(trade[1] / this.timeframe) * this.timeframe
 
-      for (let trade of STORED_TRADES) {
-        if (typeof closesByExchanges[trade[0]] === 'undefined' || closesByExchanges[trade[0]]) {
+        if (!timestamp || !bar.timestamp || timestamp > bar.timestamp) {
+          // first trade of chunk (!bar.timestamp)
+          // or is trade of next bar (timestamp > bar.timestamp)
+          // or all trades processed (!timestamp)
+          if (bar.timestamp) {
+            for (let name in bar.exchanges) {
+              bars.push(bar.exchanges[name])
+            }
+          }
+
+          bar.exchanges = {}
+        }
+
+        if (!bar.exchanges[trade[0]]) {
+          bar.exchanges[trade[0]] = {
+            timestamp,
+            open: trade[2],
+            high: trade[2],
+            low: trade[2],
+            close: trade[2],
+            vbuy: 0,
+            vsell: 0,
+            lbuy: 0,
+            lsell: 0,
+            cbuy: 0,
+            csell: 0
+          }
+        }
+
+        const sum = bar.exchanges[trade[0]]
+        const side = trade[4] == 1 ? 'buy' : 'sell'
+
+        if (trade[5] == 1) {
+          sum['l' + side] += trade[2] * trade[3]
           continue
         }
 
-        closesByExchanges[trade[0]] = trade[2]
+        sum['v' + side] += trade[2] * trade[3]
+        sum['c' + side]++
 
-        if (
-          gotAllCloses ||
-          !Object.keys(closesByExchanges)
-            .map(id => closesByExchanges[id])
-            .filter(close => close === null).length
-        ) {
-          gotAllCloses = true
-
-          break
-        }
+        sum.high = Math.max(sum.high, trade[2])
+        sum.low = Math.min(sum.low, trade[2])
+        sum.close = trade[2]
       }
 
-      for (let exchange in closesByExchanges) {
-        if (closesByExchanges[exchange] === null) {
-          delete closesByExchanges[exchange]
-        }
-      }
+      chunk.data = bars
 
-      this._firstCloses = closesByExchanges
-
-      return closesByExchanges
-    },
-    getTrades() {
-      return STORED_TRADES
-    },
-    getTradesCount() {
-      return STORED_TRADES.length
-    },
-    getFirstTimestamp() {
-      return STORED_TRADES[0] ? STORED_TRADES[0][1] : null
+      return chunk
     }
   }
 })

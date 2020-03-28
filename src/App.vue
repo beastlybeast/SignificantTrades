@@ -186,7 +186,13 @@ export default {
       return +price.toFixed(8 - price.toFixed().length)
     },
     ago(timestamp) {
-      const seconds = Math.floor((new Date() - timestamp) / 1000)
+      const duration = new Date() - timestamp
+
+      if (duration < 1000) {
+        return duration + 'ms'
+      }
+
+      const seconds = Math.floor(duration / 1000)
       let interval, output
 
       if ((interval = Math.floor(seconds / 31536000)) > 1) output = interval + 'y'

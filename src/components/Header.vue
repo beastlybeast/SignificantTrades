@@ -74,7 +74,7 @@ export default {
 
     const now = +new Date()
 
-    ;[1000 * 3, 1000 * 5, 1000 * 10, 1000 * 30, 1000 * 60, 1000 * 60 * 3].forEach(span => (this.timeframes[span] = this.$root.ago(now - span)))
+    ;[0.1, 1, 3, 5, 10, 15, 30, 60, 60 * 3].forEach(span => (this.timeframes[span] = this.$root.ago(now - span * 1000)))
 
     socket.$on('pairing', (pair, canFetch) => {
       this.canFetch = canFetch && this.showChart
@@ -110,7 +110,7 @@ export default {
       }, 50)
     },
     updateTimeframeLabel(timeframe) {
-      this.timeframeLabel = this.$root.ago(+new Date() - (timeframe || this.timeframe))
+      this.timeframeLabel = this.$root.ago(+new Date() - (timeframe || this.timeframe) * 1000)
     },
     togglePopup() {
       window.open(window.location.href, `sig${this.pair}`, 'toolbar=no,status=no,width=350,height=500')
@@ -303,12 +303,12 @@ header#header {
 
 #app.loading header#header {
   &:before {
-    background-color: lighten($dark, 28%);
+    background-color: lighten($dark, 15%);
     animation: indeterminate-loading-bar-slow 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
   }
 
   &:after {
-    background-color: lighten($dark, 28%);
+    background-color: lighten($dark, 15%);
     animation: indeterminate-loading-bar-fast 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
     animation-delay: 1.15s;
   }

@@ -46,7 +46,7 @@ export const chartOptions = {
     mode: 0,
     borderColor: 'rgba(255, 255, 255, .2)',
     scaleMargins: {
-      top: 0.1,
+      top: 0.25,
       bottom: 0.2
     }
   }

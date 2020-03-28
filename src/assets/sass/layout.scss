@@ -13,8 +13,7 @@
   &.loading {
     .app__layout {
       transition: opacity 5s $easeElastic;
-      opacity: 0.7;
-      pointer-events: none;
+      opacity: 0.9;
     }
   }
 }
