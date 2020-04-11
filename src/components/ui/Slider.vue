@@ -3,6 +3,8 @@
 </template>
 
 <script>
+import { TOUCH_SUPPORTED } from '../../utils/helpers'
+
 export default {
   props: ['min', 'max', 'step', 'value'],
 
@@ -10,7 +12,7 @@ export default {
     this._onMouseDownHandler = this.onMouseDown.bind(this)
 
     this.$el.addEventListener(
-      this.$root.isTouchSupported ? 'touchstart' : 'mousedown',
+      TOUCH_SUPPORTED ? 'touchstart' : 'mousedown',
       this._onMouseDownHandler,
       false
     )
@@ -18,7 +20,7 @@ export default {
 
   beforeDestroy() {
     this.$el.removeEventListener(
-      this.$root.isTouchSupported ? 'touchstart' : 'mousedown',
+      TOUCH_SUPPORTED ? 'touchstart' : 'mousedown',
       this._onMouseDownHandler
     )
   },
@@ -35,14 +37,14 @@ export default {
 
       this._onMouseMoveHandler = this.onMouseMove.bind(this)
       document.addEventListener(
-        this.$root.isTouchSupported ? 'touchmove' : 'mousemove',
+        TOUCH_SUPPORTED ? 'touchmove' : 'mousemove',
         this._onMouseMoveHandler,
         false
       )
 
       this._onMouseUpHandler = this.onMouseUp.bind(this)
       document.addEventListener(
-        this.$root.isTouchSupported ? 'touchend' : 'mouseup',
+        TOUCH_SUPPORTED ? 'touchend' : 'mouseup',
         this._onMouseUpHandler,
         false
       )
@@ -62,11 +64,11 @@ export default {
     },
     onMouseUp() {
       document.removeEventListener(
-        this.$root.isTouchSupported ? 'touchmove' : 'mousemove',
+        TOUCH_SUPPORTED ? 'touchmove' : 'mousemove',
         this._onMouseMoveHandler
       )
       document.removeEventListener(
-        this.$root.isTouchSupported ? 'touchend' : 'mouseup',
+        TOUCH_SUPPORTED ? 'touchend' : 'mouseup',
         this._onMouseUpHandler
       )
     },

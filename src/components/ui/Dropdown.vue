@@ -1,10 +1,6 @@
 <template>
   <div class="dropdown">
-    <div
-      class="dropdown__selected"
-      @click="toggle"
-      v-html="options[selected]"
-    ></div>
+    <div class="dropdown__selected" @click="toggle" v-html="options[selected]"></div>
     <div class="dropdown__options" v-show="isOpen">
       <div
         class="dropdown__option"
@@ -24,7 +20,7 @@ export default {
 
   data() {
     return {
-      isOpen: false,
+      isOpen: false
     }
   },
 
@@ -36,22 +32,51 @@ export default {
 
   methods: {
     toggle() {
-      this.isOpen = !this.isOpen
+      console.log('toggle!')
+      if (!this.isOpen) {
+        this.show()
+      } else {
+        this.hide()
+      }
     },
 
     show() {
       this.isOpen = true
+
+      this.bindClickOutside()
     },
 
     hide() {
       this.isOpen = false
+
+      this.unbindClickOutside()
+    },
+
+    bindClickOutside() {
+      if (!this._clickOutsideHandler) {
+        this._clickOutsideHandler = (event => {
+          if (!this.$el.contains(event.target)) {
+            console.log('click outside!')
+            this.hide()
+          }
+        }).bind(this)
+
+        document.addEventListener('mousedown', this._clickOutsideHandler)
+      }
+    },
+
+    unbindClickOutside() {
+      if (this._clickOutsideHandler) {
+        document.removeEventListener('mousedown', this._clickOutsideHandler)
+        delete this._clickOutsideHandler
+      }
     },
 
     set(index) {
       this.selected = index
       this.$emit('output', index)
       this.hide()
-    },
-  },
+    }
+  }
 }
 </script>

@@ -7,14 +7,14 @@ class Deribit extends Exchange {
     this.id = 'deribit'
 
     this.endpoints = {
-      PRODUCTS: 'https://www.deribit.com/api/v1/public/getinstruments',
+      PRODUCTS: 'https://www.deribit.com/api/v1/public/getinstruments'
     }
 
     this.options = Object.assign(
       {
         url: () => {
           return `wss://www.deribit.com/ws/api/v2`
-        },
+        }
       },
       this.options
     )
@@ -25,25 +25,24 @@ class Deribit extends Exchange {
 
     this.api = new WebSocket(this.getUrl())
 
-    this.api.onmessage = (event) =>
-      this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)))
+    this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
 
-    this.api.onopen = (event) => {
+    this.api.onopen = event => {
       this.skip = true
 
       this.api.send(
         JSON.stringify({
           method: 'public/subscribe',
           params: {
-            channels: ['trades.' + this.pair + '.raw'],
-          },
+            channels: ['trades.' + this.pair + '.raw']
+          }
         })
       )
 
       this.keepalive = setInterval(() => {
         this.api.send(
           JSON.stringify({
-            method: 'public/ping',
+            method: 'public/ping'
           })
         )
       }, 60000)
@@ -51,7 +50,7 @@ class Deribit extends Exchange {
       this.emitOpen(event)
     }
 
-    this.api.onclose = (event) => {
+    this.api.onclose = event => {
       this.emitClose(event)
 
       clearInterval(this.keepalive)
@@ -74,29 +73,25 @@ class Deribit extends Exchange {
     }
 
     return json.params.data.map(a => {
-      const trade = [
-        this.id,
-        +a.timestamp,
-        +a.price,
-        a.amount / a.price,
-        a.direction === 'buy' ? 1 : 0,
-      ]
-
-      if (a.liquidation) {
-        trade[5] = 1;
+      const trade = {
+        exchange: this.id,
+        timestamp: +a.timestamp,
+        price: +a.price,
+        size: a.amount / a.price,
+        side: a.direction
       }
 
-      return trade;
+      if (a.liquidation) {
+        trade.liquidation = true
+      }
+
+      return trade
     })
   }
 
   formatProducts(data) {
     return data.result.reduce((output, product) => {
-      output[
-        product.settlement === 'perpetual'
-          ? product.baseCurrency + product.currency
-          : product.instrumentName
-      ] = product.instrumentName
+      output[product.settlement === 'perpetual' ? product.baseCurrency + product.currency : product.instrumentName] = product.instrumentName
       return output
     }, {})
   }

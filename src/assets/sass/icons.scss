@@ -2,16 +2,15 @@ $iconpath: 'assets/fonts';
 
 @font-face {
   font-family: 'icon';
-  src:  url('#{$iconpath}/icon.eot?sdfqo5');
-  src:  url('#{$iconpath}/icon.eot?sdfqo5#iefix') format('embedded-opentype'),
-    url('#{$iconpath}/icon.ttf?sdfqo5') format('truetype'),
-    url('#{$iconpath}/icon.woff?sdfqo5') format('woff'),
-    url('#{$iconpath}/icon.svg?sdfqo5#icon') format('svg');
+  src: url('#{$iconpath}/icon.eot?sdfqo5');
+  src: url('#{$iconpath}/icon.eot?sdfqo5#iefix') format('embedded-opentype'), url('#{$iconpath}/icon.ttf?sdfqo5') format('truetype'),
+    url('#{$iconpath}/icon.woff?sdfqo5') format('woff'), url('#{$iconpath}/icon.svg?sdfqo5#icon') format('svg');
   font-weight: normal;
   font-style: normal;
 }
 
-[class^="icon-"], [class*=" icon-"] {
+[class^='icon-'],
+[class*=' icon-'] {
   /* use !important to prevent issues with browser extensions that change fonts */
   font-family: 'icon' !important;
   font-style: normal;
@@ -283,5 +282,25 @@ $iconpath: 'assets/fonts';
 .icon-eos {
   &:before {
     content: unicode($icon-eos);
+  }
+}
+.icon-slippery {
+  &:before {
+    content: unicode($icon-slippery);
+  }
+}
+.icon-bps {
+  &:before {
+    content: unicode($icon-bps);
+  }
+}
+.icon-ms {
+  &:before {
+    content: unicode($icon-ms);
+  }
+}
+.icon-stack {
+  &:before {
+    content: unicode($icon-stack);
   }
 }

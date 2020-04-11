@@ -3,7 +3,6 @@ import Axios from 'axios'
 
 import Kraken from '../exchanges/kraken'
 import Bitmex from '../exchanges/bitmex'
-import Coinex from '../exchanges/coinex'
 import Huobi from '../exchanges/huobi'
 import Binance from '../exchanges/binance'
 import BinanceFutures from '../exchanges/binance-futures'
@@ -13,7 +12,6 @@ import Gdax from '../exchanges/gdax'
 import Hitbtc from '../exchanges/hitbtc'
 import Okex from '../exchanges/okex'
 import Poloniex from '../exchanges/poloniex'
-import Liquid from '../exchanges/liquid'
 import Deribit from '../exchanges/deribit'
 import Bybit from '../exchanges/bybit'
 import Ftx from '../exchanges/ftx'
@@ -40,8 +38,6 @@ const emitter = new Vue({
         new Deribit(),
         new Huobi(),
         new Hitbtc(),
-        new Coinex(),
-        new Liquid(),
         new Bybit(),
         new Ftx()
       ],
@@ -74,12 +70,6 @@ const emitter = new Vue({
     chartRange() {
       return store.state.chartRange
     },
-    showCounters() {
-      return store.state.showCounters
-    },
-    countersSteps() {
-      return store.state.countersSteps
-    },
     isLoading() {
       return store.state.isLoading
     }
@@ -99,17 +89,25 @@ const emitter = new Vue({
       this.emitTrades([trade])
     }
 
+    window.formatTime = function(time) {
+      const date = new Date(time * 1000)
+
+      return date.getDate() + '/' + (date.getMonth() + 1) + ' ' + date.toTimeString().split(' ')[0]
+    }
+
+    window.getExchanges = () => {
+      return this.exchanges
+    }
+
     this.exchanges.forEach(exchange => {
-      exchange.on('live_trades', trades => {
+      exchange.on('trades', trades => {
         if (!trades || !trades.length) {
           return
         }
 
-        this.timestamps[exchange.id] = trades[0][1]
+        this.timestamps[exchange.id] = trades[trades.length - 1].timestamp
 
-        trades = trades.sort((a, b) => a[1] - b[1])
-
-        Array.prototype.push.apply(this.queue, trades)
+        // Array.prototype.push.apply(this.queue, trades)
         this.emitTrades(trades)
       })
 
@@ -145,6 +143,13 @@ const emitter = new Vue({
     })
   },
   methods: {
+    getBarTrades(ts) {
+      console.log('trades at bar', ts, ':')
+
+      console.log(TRADES[ts])
+
+      console.log('\n')
+    },
     initialize() {
       console.log(`[sockets] initializing ${this.exchanges.length} exchange(s)`)
 
@@ -165,7 +170,7 @@ const emitter = new Vue({
 
       setTimeout(this.connectExchanges.bind(this))
 
-      setInterval(this.emitTradesAsync.bind(this), 50)
+      // setInterval(this.emitTradesAsync.bind(this), 1000)
     },
     connectExchanges(pair = null) {
       this.disconnectExchanges()
@@ -255,26 +260,9 @@ const emitter = new Vue({
       return null
     },
     emitTrades(trades, event = 'trades.instant') {
-      let upVolume = 0
-      let downVolume = 0
-
-      const output = trades.filter(a => {
-        if (this.actives.indexOf(a[0]) === -1) {
-          return false
-        }
-
-        if (a[4] > 0) {
-          upVolume += a[3]
-        } else {
-          downVolume += a[3]
-        }
-
-        return true
-      })
-
-      this.$emit(event, output, upVolume, downVolume)
+      this.$emit(event, trades)
     },
-    emitTradesAsync() {
+    /* emitTradesAsync() {
       if (!this.queue.length) {
         return
       }
@@ -282,7 +270,7 @@ const emitter = new Vue({
       this.emitTrades(this.queue, 'trades.queued')
 
       this.queue = []
-    },
+    }, */
     canFetch() {
       return this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1)
     },
@@ -323,36 +311,33 @@ const emitter = new Vue({
           }
         })
           .then(response => {
-            if (!response.data || !response.data.results.length) {
+            if (!response.data || typeof response.data !== 'object') {
               return resolve()
             }
 
             const format = response.data.format
             let data = response.data.results
 
+            if (!data.length) {
+              return
+            }
+
             switch (response.data.format) {
-              case 'downsampled':
+              case 'point':
+                ;({ from, to, data } = this.normalisePoints(data))
                 break
               default:
-                data = data.map(a => {
-                  a[1] = +a[1]
-                  a[2] = +a[2]
-                  a[3] = +a[3]
-                  a[4] = +a[4]
-
-                  return a
-                })
-
-                this.$emit('historical', data, from, to)
-
-                resolve({
-                  format: format,
-                  data: data,
-                  from: from,
-                  to: to
-                })
                 break
             }
+
+            this.$emit('historical', data, from, to)
+
+            resolve({
+              format: format,
+              data: data,
+              from: from,
+              to: to
+            })
           })
           .catch(err => {
             this._fetchedMax = true
@@ -375,6 +360,68 @@ const emitter = new Vue({
             store.commit('toggleLoading', false)
           })
       })
+    },
+    normalisePoints(data) {
+      if (!data || !data.length) {
+        return data
+      }
+
+      const initialTs = +new Date(data[0].time) / 1000
+      const exchanges = []
+
+      let refs = {}
+
+      for (let i = data.length - 1; i >= 0; i--) {
+        refs[data[i].exchange] = data[i].open
+        data[i].vbuy = data[i].vol_buy
+        data[i].vsell = data[i].vol_sell
+        data[i].cbuy = data[i].count_buy
+        data[i].csell = data[i].count_sell
+        data[i].lbuy = data[i].liquidation_buy
+        data[i].lsell = data[i].liquidation_sell
+        data[i].timestamp = +new Date(data[i].time) / 1000
+
+        delete data[i].time
+        delete data[i].count
+        delete data[i].vol
+        delete data[i].vol_buy
+        delete data[i].vol_sell
+        delete data[i].count_buy
+        delete data[i].count_sell
+        delete data[i].liquidation_buy
+        delete data[i].liquidation_sell
+
+        if (data[i].time === initialTs) {
+          delete refs[data[i].exchange]
+          exchanges.push(data[i].exchange)
+        }
+      }
+
+      for (let exchange in refs) {
+        data.unshift({
+          timestamp: initialTs,
+          exchange: exchange,
+          open: refs[exchange],
+          high: refs[exchange],
+          low: refs[exchange],
+          close: refs[exchange],
+          vbuy: 0,
+          vsell: 0,
+          lbuy: 0,
+          lsell: 0,
+          cbuy: 0,
+          csell: 0
+        })
+
+        exchanges.push(exchange)
+      }
+
+      return {
+        data,
+        exchanges,
+        from: data[0].timestamp,
+        to: data[data.length - 1].timestamp
+      }
     },
     downsampleTrades(trades) {
       const chunk = {

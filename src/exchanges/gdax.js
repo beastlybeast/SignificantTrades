@@ -8,10 +8,10 @@ class Gdax extends Exchange {
 
     this.endpoints = {
       PRODUCTS: 'https://api.pro.coinbase.com/products',
-      TRADES: () => `https://api.pro.coinbase.com/products/${this.pair}/trades`,
+      TRADES: () => `https://api.pro.coinbase.com/products/${this.pair}/trades`
     }
 
-    this.matchPairName = (pair) => {
+    this.matchPairName = pair => {
       pair = pair.substr(0, 3) + '-' + pair.substr(3, pair.length)
 
       if (this.products.indexOf(pair) !== -1) {
@@ -23,7 +23,7 @@ class Gdax extends Exchange {
 
     this.options = Object.assign(
       {
-        url: 'wss://ws-feed.pro.coinbase.com',
+        url: 'wss://ws-feed.pro.coinbase.com'
       },
       this.options
     )
@@ -33,7 +33,7 @@ class Gdax extends Exchange {
     if (!super.connect()) return
 
     this.api = new WebSocket(this.getUrl())
-    this.api.onmessage = (event) => {
+    this.api.onmessage = event => {
       if (!event) {
         return
       }
@@ -41,23 +41,23 @@ class Gdax extends Exchange {
       let obj = JSON.parse(event.data)
 
       if (obj && obj.size > 0) {
-        this.emitTrades([
-          [
-            this.id,
-            +new Date(obj.time),
-            +obj.price,
-            +obj.size,
-            obj.side === 'buy' ? 0 : 1,
-          ],
+        this.queueTrades([
+          {
+            exchange: this.id,
+            timestamp: +new Date(obj.time),
+            price: +obj.price,
+            size: +obj.size,
+            side: obj.side
+          }
         ])
       }
     }
 
-    this.api.onopen = (event) => {
+    this.api.onopen = event => {
       this.api.send(
         JSON.stringify({
           type: 'subscribe',
-          channels: [{ name: 'matches', product_ids: [this.pair] }],
+          channels: [{ name: 'matches', product_ids: [this.pair] }]
         })
       )
 
@@ -77,7 +77,7 @@ class Gdax extends Exchange {
   }
 
   formatProducts(data) {
-    return data.map((a) => a.id)
+    return data.map(a => a.id)
   }
 
   /* formatRecentsTrades(response) {

@@ -3,9 +3,15 @@
     <div class="chart__container" ref="chartContainer"></div>
 
     <div
-      class="chart__height-handler"
+      class="chart__handler -width"
+      ref="chartWidthHandler"
+      @mousedown="startManualResize($event, 'width')"
+      @dblclick.stop.prevent="resetWidth"
+    ></div>
+    <div
+      class="chart__handler -height"
       ref="chartHeightHandler"
-      @mousedown="startResize"
+      @mousedown="startManualResize($event, 'height')"
       @dblclick.stop.prevent="resetHeight"
     ></div>
     <div class="chart__debug" v-if="debug">
@@ -19,13 +25,14 @@
       </div>
     </div>
     <div class="chart__debug -right" v-if="debug">
-      <div class="chart__debug-container">
-        <pre>visible range: {{ visibleRange }}</pre>
-        <pre>rendrered range: {{ renderedRange }}</pre>
-        <pre>cache range: {{ cacheRange }}</pre>
-        <pre>chunks:<br />{{ chunks }}</pre>
-      </div>
+      <pre>visible range: {{ visibleRange }}</pre>
+      <pre>rendrered range: {{ renderedRange }}</pre>
+      <pre>cache range: {{ cacheRange }}</pre>
+      <pre>{{ chunks }}</pre>
     </div>
+    <!--<div class="chart__debug -bottom -right" v-if="debug">
+      <pre v-for="(actvity, index) in activities">{{ actvity }}</pre>
+    </div>-->
   </div>
 </template>
 
@@ -34,6 +41,7 @@ import { mapState } from 'vuex'
 
 import socket from '../../services/socket'
 import { chartOptions, seriesOptions, histogramOptions } from './options'
+import { APPLICATION_START_TIME, formatPrice, formatAmount, getHms } from '../../utils/helpers'
 
 import * as TV from 'lightweight-charts'
 
@@ -46,7 +54,7 @@ let chart
 const series = []
 
 /**
- * @type Bar
+ * @type ActiveBar
  */
 let activeBar = null
 
@@ -60,18 +68,33 @@ let activeChunk = null
  */
 const cache = []
 
+/**
+ * @type Range
+ */
 const cacheRange = { from: null, to: null }
+
+/**
+ * @type Range
+ */
 const renderedRange = { from: null, to: null }
+
+/**
+ * @type Trade[]
+ */
+const queuedTrades = []
+
 let isCrosshairActive = false
 
 /**
- * @typedef {[
- *  string,
- *  number,
- *  number,
- *  number,
- *  number,
- * ]} Trade
+ * @typedef {{
+ *  exchange: string,
+ *  timestamp: number,
+ *  price: number,
+ *  size: number,
+ *  side: 'buy' | 'sell',
+ *  liquidation?: boolean,
+ *  slippage?: number,
+ * }} Trade
  */
 
 /**
@@ -79,21 +102,6 @@ let isCrosshairActive = false
  *  from: number,
  *  to: number
  * }} Range
- */
-
-/**
- * @typedef {{
- *  open: number,
- *  high: number,
- *  low: number,
- *  close: number,
- *  vbuy: number,
- *  vsell: number,
- *  cbuy: number,
- *  csell: number,
- *  lbuy: number,
- *  lsell: number,
- * }} ExchangeBar
  */
 
 /**
@@ -116,30 +124,37 @@ let isCrosshairActive = false
 /**
  * @typedef {{
  *  timestamp: number,
- *  exchanges: {[name: string]: ExchangeBar},
+ *  exchanges: {[name: string]: Bar},
  *  vbuy: number,
  *  vsell: number,
  *  cbuy: number,
  *  csell: number,
  *  lbuy: number,
  *  lsell: number,
+ * }} ActiveBar
+ */
+
+/**
+ * @typedef {{
+ *  exchange: number,
+ *  timestamp: number,
+ *  vbuy: number,
+ *  vsell: number,
+ *  cbuy: number,
+ *  csell: number,
+ *  lbuy: number,
+ *  lsell: number,
+ *  open: number,
+ *  high: number,
+ *  low: number,
+ *  close: number,
  * }} Bar
  */
 
-window.getRealTimeChunk = function() {
-  if (!cache.length || !cache[cache.length - 1].active) {
-    return null
-  }
-
-  return cache[cache.length - 1]
-}
-window.getCache = function() {
-  return cache
-}
 export default {
   data() {
     return {
-      panning: false,
+      resizing: {},
       fetching: false,
       legend: {},
       series: [],
@@ -147,7 +162,8 @@ export default {
       renderedRange: '',
       cacheRange: '',
       visibleRange: '',
-      chunks: ''
+      chunks: '',
+      activities: []
     }
   },
   computed: {
@@ -157,23 +173,11 @@ export default {
       'timeframe',
       'actives',
       'exchanges',
-      'isSnaped',
-      'chartAutoScale',
       'chartHeight',
-      'chartRange',
-      'chartCandleWidth',
+      'sidebarWidth',
+      'chartRefreshRate',
       'chartLiquidations',
-      'chartCandlestick',
-      'chartPadding',
-      'chartGridlines',
-      'chartGridlinesGap',
-      'chartSma',
-      'chartSmaLength',
-      'chartVolume',
-      'chartVolumeThreshold',
-      'chartVolumeOpacity',
-      'chartVolumeAverage',
-      'chartVolumeAverageLength'
+      'chartCVD'
     ])
   },
   created() {
@@ -184,7 +188,9 @@ export default {
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
         case 'reloadExchangeState':
-          this.renderVisibleChunks()
+          if (+new Date() - APPLICATION_START_TIME > 1000) {
+            this.renderVisibleChunks()
+          }
           break
         case 'setPair':
           this.clearChart()
@@ -195,25 +201,63 @@ export default {
           this.clearData()
           this.setTimeframe(mutation.payload)
           break
+        case 'setChartRefreshRate':
+          this.clearQueue()
+          this.setupQueue()
+          break
       }
     })
+
+    window.getCache = () => {
+      return cache
+    }
+    window.getActiveBar = () => {
+      return activeBar
+    }
+    window.getRanges = () => {
+      const visibleRange = this.getVisibleRange()
+
+      return {
+        cacheRange: {
+          from: this.formatTime(cacheRange.from),
+          to: this.formatTime(cacheRange.to)
+        },
+        renderedRange: {
+          from: this.formatTime(renderedRange.from),
+          to: this.formatTime(renderedRange.to)
+        },
+        visibleRange: {
+          from: this.formatTime(visibleRange.from),
+          to: this.formatTime(visibleRange.to)
+        }
+      }
+    }
+    window.getActiveBarPending = () => {
+      if (!activeBar) {
+        return null
+      }
+
+      var exchanges = Object.keys(activeBar.exchanges)
+        .filter(a => activeBar.exchanges[a].hasData)
+        .map(a => a)
+
+      return {
+        time: this.formatTime(activeBar.timestamp),
+        exchanges
+      }
+    }
+    window.getSeries = () => {
+      return series
+    }
   },
   mounted() {
     console.log(`[chart.mounted]`)
 
     this.createChart()
 
-    this._doResize = this.doResize.bind(this)
+    this._doWindowResize = this.doWindowResize.bind(this)
 
-    window.addEventListener('resize', this._doResize, false)
-
-    this._doDrag = this.doDrag.bind(this)
-
-    window.addEventListener('mousemove', this._doDrag, false)
-
-    this._stopDrag = this.stopDrag.bind(this)
-
-    window.addEventListener('mouseup', this._stopDrag, false)
+    window.addEventListener('resize', this._doWindowResize, false)
 
     this.setTimeframe(this.timeframe)
   },
@@ -224,11 +268,11 @@ export default {
 
     socket.$off('clean', this.onClean)
 
-    window.removeEventListener('resize', this._doResize)
-    window.removeEventListener('mousemove', this._doDrag)
-    window.removeEventListener('mouseup', this._stopDrag)
+    window.removeEventListener('resize', this._doWindowResize)
 
     this.onStoreMutation()
+
+    this.clearQueue()
   },
   methods: {
     /**
@@ -240,8 +284,8 @@ export default {
       const options = Object.assign({}, chartOptions, this.getChartSize())
 
       chart = TV.createChart(this.$refs.chartContainer, options)
-      chart.subscribeCrosshairMove(this.onCrosshair)
       chart.subscribeClick(this.onClick)
+      chart.subscribeCrosshairMove(this.onCrosshair)
       chart.subscribeVisibleTimeRangeChange(this.onPan)
 
       window.tvchart = chart
@@ -453,7 +497,7 @@ export default {
      * @return {number} timeframe
      */
     setTimeframe(timeframe) {
-      console.log(`[chart.setTimeframe]`, timeframe)
+      this.logActivity(`[timeframe] change "${timeframe}"`)
       this.fetch(true)
     },
 
@@ -466,7 +510,7 @@ export default {
       let to = +new Date() / 1000
       let from = Math.ceil(to / this.timeframe) * this.timeframe - optimalRange
 
-      return { from, to, median: from + (to - from) / 2 }
+      return { from, to, median: from + (to - from) / 2, incomplete: true }
     },
 
     /**
@@ -474,7 +518,7 @@ export default {
      * @return {number} range
      */
     getOptimalRangeLength() {
-      return (this.timeframe * Math.floor((this.$refs.chartContainer.offsetWidth - 20 * 0.1) / this.chartCandleWidth)) / 2
+      return Math.floor(((this.$refs.chartContainer.offsetWidth / 3) * this.timeframe) / this.timeframe) * this.timeframe
     },
 
     /**
@@ -486,7 +530,6 @@ export default {
 
       if (visibleRange) {
         const scrollPosition = chart.timeScale().scrollPosition()
-
         if (scrollPosition > 0) {
           visibleRange.to = Math.floor((visibleRange.to + scrollPosition * this.timeframe) / this.timeframe) * this.timeframe
         }
@@ -497,85 +540,94 @@ export default {
       }
     },
 
+    getActiveBarSize() {
+      return Math.max.apply(
+        null,
+        series.map(a => a.options.length || 0)
+      )
+    },
+
+    getActiveBarLength() {
+      var length = Math.min.apply(
+        null,
+        Object.keys(activeBar.series).map(a => (activeBar.series[a].average && activeBar.series[a].average.points.length) || Infinity)
+      )
+
+      if (isFinite(length)) {
+        return length
+      }
+
+      return 0
+    },
+
     /**
      * fetch whatever is missing based on visiblerange
      * @param {boolean} clear will clear the chart / initial fetch
      */
     fetch(clear) {
-      console.log(`[chart.fetch] ${clear ? 'CLEAR=TRUE' : ''}`)
-
       const visibleRange = this.getVisibleRange()
-
       let rangeToFetch
 
       if (clear) {
         rangeToFetch = this.getRealtimeRange()
-        console.log('get realtime range: from', this.formatTime(rangeToFetch.from), 'to', this.formatTime(rangeToFetch.to))
+        this.logActivity(`[fetch] from getRealtimeRange`, rangeToFetch)
       } else if (visibleRange.from === cacheRange.from) {
-        console.log('fetch left (prev)!')
         rangeToFetch = {
           from: visibleRange.from - this.getOptimalRangeLength(),
           to: visibleRange.from
         }
+        this.logActivity(`[fetch] left side`, { from: this.formatTime(rangeToFetch.from), to: this.formatTime(rangeToFetch.to) })
       } else if (false && visibleRange.to === cacheRange.to) {
-        console.log('fetch right (next)!')
         rangeToFetch = {
           from: visibleRange.to,
           to: visibleRange.to + this.getOptimalRangeLength()
         }
+        this.logActivity(`[fetch] right side`, { from: this.formatTime(rangeToFetch.from), to: this.formatTime(rangeToFetch.to) })
       }
 
       if (!rangeToFetch) {
-        console.log(`[chart.fetch] unable to get range to fetch`)
         return Promise.resolve(false)
       }
 
-      console.log('rangeToFetch', this.formatTime(rangeToFetch.from), this.formatTime(rangeToFetch.to))
-
       if (clear) {
-        console.log('<!> CLEAR <!>')
         this.clearData()
       }
 
-      return socket.fetchHistoricalData(parseInt(rangeToFetch.from * 1000), parseInt(rangeToFetch.to * 1000 - 1)).then(({ data, format }) => {
-        if (!data) {
-          console.log(`[chart.fetch] no data ..`)
-          return false
-        }
+      return socket
+        .fetchHistoricalData(parseInt(rangeToFetch.from * 1000), parseInt(rangeToFetch.to * 1000 - 1))
+        .then(({ data, from, to, format }) => {
+          if (!data) {
+            this.logActivity(`[fetch] no data`)
+            console.log(`[chart.fetch] no data ..`)
+            return false
+          }
 
-        if (format !== 'trade') {
-          console.log(`[chart.fetch] format "${format}" not supported, sorry`)
-          return false
-        }
+          let chunk
 
-        console.log(`[chart.fetch] done fetching (${data.length} new ${format}s)`)
+          switch (format) {
+            case 'point':
+              chunk = {
+                from,
+                to,
+                bars: data
+              }
+              break
+            default:
+              chunk = this.groupTradesIntoBars(data)
+              break
+          }
 
-        const chunk = this.groupTradesIntoBars(data)
-        this.saveChunk(chunk)
-        this.renderVisibleChunks()
-      })
+          if (chunk) {
+            this.saveChunk(chunk)
+          }
+
+          this.logActivity(`[fetch] success (${data.length} new ${format}s)`)
+          this.renderVisibleChunks()
+        })
     },
 
-    /**
-     * TV chart click event
-     * @param{TV.MouseEventParams} param tv mousemove param
-     */
     onClick(param) {
-      return
-      console.log(param)
-
-      if (!this.legend) {
-        return
-      }
-
-      navigator.clipboard.writeText(this.legend.replace(/<br>/g, '\n').replace(/\./g, ',')).then(
-        function() {
-          console.log('Async: Copying to clipboard was successful!')
-        },
-        function(err) {
-          console.error('Async: Could not copy text: ', err)
-        }
-      )
+      socket.getBarTrades(param.time)
     },
 
     /**
@@ -605,7 +657,7 @@ export default {
           if (serie.type === 'candlestick') {
             this.$set(this.legend, serie.id, `open: ${data.open}, high: ${data.high}, low: ${data.low}, close: ${data.close}`)
           } else {
-            this.$set(this.legend, serie.id, this.$root.formatAmount(data))
+            this.$set(this.legend, serie.id, formatAmount(data))
           }
         }
       }
@@ -615,6 +667,11 @@ export default {
      * @param{Trade[]} trades trades to process
      */
     onTrades(trades) {
+      if (this.chartRefreshRate) {
+        Array.prototype.push.apply(queuedTrades, trades)
+        return
+      }
+
       this.renderRealtimeTrades(trades)
     },
 
@@ -624,96 +681,46 @@ export default {
      * @param{Chunk} chunk Chunk to add
      */
     saveChunk(chunk) {
-      console.log(`[chart.saveChunk]`, chunk)
+      this.logActivity(
+        `[chart.saveChunk]`,
+        this.formatTime(chunk.from),
+        this.formatTime(chunk.to),
+        Math.ceil((chunk.to - chunk.from) / this.timeframe) + ' bars'
+      )
 
       let index
 
       if (!cache.length || cache[cache.length - 1].to <= chunk.from) {
-        if (cache.length && cache[cache.length - 1].to === chunk.from) {
-          console.log('shrink previous chunk by merging last bar of last cached chunk into first bar of new chunk')
-          console.log(
-            'last bar of last cached chunk (to be merged into new chunk and removed)',
-            cache[cache.length - 1].bars[cache[cache.length - 1].bars.length - 1]
-          )
-          console.log('first bar of new chunk', chunk.bars[0])
-          this.mergeBarIntoBar(cache[cache.length - 1].bars[cache[cache.length - 1].bars.length - 1], chunk.bars[0])
-          cache[cache.length - 1].bars.pop()
-          cache[cache.length - 1].to -= this.timeframe
-        }
         index = cache.push(chunk) - 1
       } else if (cache[0].from >= chunk.to) {
-        if (cache[0].from === chunk.to) {
-          console.log('shrink new chunk by merging last bar of new chunk into first cached first bar of first cached chunk')
-          console.log('last bar of new chunk (to be merged into first cached chunk and removed)', chunk.bars[chunk.bars.length - 1])
-          console.log('first bar of first cached chunk', cache[0].bars[0])
-          this.mergeBarIntoBar(chunk.bars[chunk.bars.length - 1], cache[0].bars[0])
-          chunk.to -= this.timeframe
-          chunk.bars.pop()
-        }
         cache.unshift(chunk)
         index = 0
       }
 
       if (index === 0) {
-        console.log(`[chart.saveChunk] inserted chunk LEFT (from: ${this.formatTime(chunk.from)} -> to: ${this.formatTime(chunk.to)})`)
         cacheRange.from = chunk.from
       }
 
       if (index === cache.length - 1) {
-        console.log(`[chart.saveChunk] inserted chunk RIGHT (from: ${this.formatTime(chunk.from)} -> to: ${this.formatTime(chunk.to)})`)
         cacheRange.to = chunk.to
       }
 
-      this.dump('cacheRange')
-      this.dump('chunks')
+      this.dumpVariable('cacheRange')
+      this.dumpVariable('chunks')
 
       if (typeof index !== 'undefined') {
-        console.log(
-          `[chart.saveChunk] saved chunk at index ${index}\n\tupdated cacheRange (from: ${this.formatTime(cacheRange.from)} -> to: ${this.formatTime(
-            cacheRange.to
-          )})`
-        )
+        this.logActivity(`[saveChunk] new cache range`, this.formatTime(cacheRange.from), ' -> ', this.formatTime(cacheRange.to))
       } else {
-        console.log(`[chart.saveChunk] saved nothing!`)
+        this.logActivity(
+          `[saveChunk] couldn't save chunk\n\t`,
+          '- cachedRange [from: ' + this.formatTime(cacheRange.from),
+          ' -> to: ',
+          this.formatTime(cacheRange.to) + ']\n\t',
+          '- chunk range [from: ' + this.formatTime(chunk.from),
+          ' -> to: ',
+          this.formatTime(chunk.to) + ']'
+        )
         debugger
-      }
-
-      if (chunk.active) {
-        if (activeChunk) {
-          debugger
-        }
-        activeChunk = chunk
-      }
-    },
-
-    /**
-     * @param{Bar} source overlaping bar
-     * @param{Bar} destination destination bar
-     */
-    mergeBarIntoBar(source, destination) {
-      console.log('merge', source, 'into', destination)
-      for (let exchange in source.exchanges) {
-        if (!destination.exchanges[exchange]) {
-          destination.exchanges[exchange] = source.exchanges[exchange]
-        } else {
-          destination.exchanges[exchange].open = source.exchanges[exchange].open
-          destination.exchanges[exchange].high = Math.max(destination.exchanges[exchange].high, source.exchanges[exchange].high)
-          destination.exchanges[exchange].low = Math.max(destination.exchanges[exchange].low, source.exchanges[exchange].low)
-          destination.exchanges[exchange].vbuy += source.exchanges[exchange].vbuy
-          destination.exchanges[exchange].vsell += source.exchanges[exchange].vsell
-          destination.exchanges[exchange].cbuy += source.exchanges[exchange].cbuy
-          destination.exchanges[exchange].csell += source.exchanges[exchange].csell
-          destination.exchanges[exchange].lbuy += source.exchanges[exchange].lbuy
-          destination.exchanges[exchange].lsell += source.exchanges[exchange].lsell
-        }
-      }
-
-      if (source.series) {
-        destination.series = source.series
-      }
-
-      if (source.sSide) {
-        destination.sSide = source.sSide
       }
     },
 
@@ -722,47 +729,32 @@ export default {
      */
     clearChart(referenceBar) {
       for (let serie of series) {
-        console.log(`[serie.${serie.id}] /clear`)
-
         this.clearSerie(serie)
       }
     },
-    setActiveBar(referenceBar) {
-      console.log('set active bar')
-      console.log(`\t current activebar timestamp: ${activeBar && new Date(activeBar.timestamp * 1000).toUTCString()}`)
-      console.log(`\t referenceBar timestamp: ${referenceBar && new Date(referenceBar.timestamp * 1000).toUTCString()}`)
-      if (!referenceBar) {
-        console.log(`\n\t use use current time and create new activeBar (empty)`)
-        const now = Math.floor(+new Date() / 1000 / this.timeframe) * this.timeframe
-        activeBar = this.newBar(now, null, 'realtime')
-      } else {
-        if (activeBar) {
-          //console.log('activebar before', JSON.stringify(activeBar))
-          console.log(`\n\t use both`)
-          this.mergeBarIntoBar(referenceBar, activeBar)
-          //console.log('activebar after', JSON.stringify(activeBar))
-        } else {
-          console.log(`\n\t use referenceBar as it is`)
-          activeBar = this.newBar(referenceBar.timestamp, referenceBar, 'realtime')
-        }
-      }
-    },
+
     clearData() {
+      this.logActivity(`[chart] clearData`)
+
       cache.splice(0, cache.length)
       cacheRange.from = cacheRange.to = renderedRange.from = renderedRange.to = null
-      activeChunk = null
-      activeBar = null
 
-      this.dump('chunks')
-      this.dump('renderedRange')
-      this.dump('cacheRange')
-      this.dump('visibleRange')
+      this.clearQueue()
+      this.setupQueue()
+
+      activeBar = this.newBar(Math.floor(+new Date() / 1000 / this.timeframe) * this.timeframe)
+
+      this.dumpVariable('chunks')
+      this.dumpVariable('renderedRange')
+      this.dumpVariable('cacheRange')
+      this.dumpVariable('visibleRange')
     },
 
     /**
      * @param {Serie} serie serie to clear
      */
     clearSerie(serie) {
+      // this.logActivity(`[chart] clearSerie ${serie.id}`)
       serie.api.setData([])
     },
 
@@ -777,63 +769,104 @@ export default {
         return
       }
 
-      const canRender = !activeChunk || renderedRange.to >= activeChunk.from
+      let canRender = !activeChunk || activeChunk.rendered
 
-      for (let i = 0; i <= trades.length; i++) {
-        const timestamp = trades[i] ? Math.floor(trades[i][1] / 1000 / this.timeframe) * this.timeframe : Infinity
+      for (let i = 0; i < trades.length; i++) {
+        const trade = trades[i]
+        const timestamp = Math.floor(trade.timestamp / 1000 / this.timeframe) * this.timeframe
 
         if (!activeBar || activeBar.timestamp < timestamp) {
-          if (canRender && activeBar) {
-            seriesData.push(this.formatBar(activeBar))
+          if (activeBar) {
+            if (!activeChunk) {
+              // first time storing bar from realtime trades
+              this.logActivity(`\t -> create active chunk from new bar`)
+              const visibleRange = this.getVisibleRange()
+
+              canRender = activeBar.timestamp >= visibleRange.from && activeBar.timestamp <= visibleRange.to
+
+              activeChunk = {
+                from: activeBar.timestamp,
+                to: activeBar.timestamp,
+                active: true,
+                rendered: canRender,
+                bars: []
+              }
+
+              this.saveChunk(activeChunk)
+            }
+
+            if (canRender && activeBar.hasData) {
+              seriesData.push(this.formatBar(activeBar, false))
+            }
+
+            // feed activeChunk with active bar exchange snapshot
+            var j = 0
+            for (let exchange in activeBar.exchanges) {
+              if (activeBar.exchanges[exchange].hasData) {
+                j++
+                activeChunk.bars.push(this.cloneBar(activeBar.exchanges[exchange], activeBar.timestamp))
+              }
+            }
+
+            activeChunk.to = cacheRange.to = activeBar.timestamp
+
+            if (canRender && renderedRange.to < activeBar.timestamp) {
+              renderedRange.to = activeBar.timestamp
+            }
+
+            this.dumpVariable('chunks')
           }
 
-          if (!trades[i]) {
-            break
-          }
-
-          activeBar = this.newBar(timestamp, activeBar, 'realtime')
+          activeBar = this.newBar(timestamp, activeBar)
         }
 
-        const exchange = trades[i][0]
-        const side = trades[i][4] > 0 ? 'buy' : 'sell'
-        const vol = trades[i][3] * trades[i][2]
+        const amount = trade.price * trade.size
 
-        if (!activeBar.exchanges[exchange]) {
-          activeBar.exchanges[exchange] = {
-            close: +trades[i][2]
+        if (!activeBar.exchanges[trade.exchange]) {
+          activeBar.exchanges[trade.exchange] = {
+            exchange: trade.exchange,
+            close: +trade.price
           }
 
-          this.resetBar(activeBar.exchanges[exchange])
+          this.resetBar(activeBar.exchanges[trade.exchange])
         }
 
-        if (trades[i][5] === 1) {
-          activeBar.exchanges[exchange]['l' + side] += vol
+        activeBar.exchanges[trade.exchange].hasData = true
+
+        activeBar.exchanges[trade.exchange].high = Math.max(activeBar.exchanges[trade.exchange].high, +trade.price)
+        activeBar.exchanges[trade.exchange].low = Math.min(activeBar.exchanges[trade.exchange].low, +trade.price)
+        activeBar.exchanges[trade.exchange].close = +trade.price
+
+        if (trade.liquidation) {
+          activeBar.exchanges[trade.exchange]['l' + trade.side] += amount
           continue
         }
 
-        activeBar.exchanges[exchange]['c' + side]++
-        activeBar.exchanges[exchange]['v' + side] += vol
-        activeBar.exchanges[exchange].high = Math.max(activeBar.exchanges[exchange].high, +trades[i][2])
-        activeBar.exchanges[exchange].low = Math.min(activeBar.exchanges[exchange].low, +trades[i][2])
-        activeBar.exchanges[exchange].close = +trades[i][2]
+        activeBar.exchanges[trade.exchange]['c' + trade.side]++
+        activeBar.exchanges[trade.exchange]['v' + trade.side] += amount
 
-        if (this.actives.indexOf(exchange) !== -1) {
-          activeBar['v' + side] += vol
-          activeBar['c' + side]++
+        if (this.actives.indexOf(trade.exchange) !== -1) {
+          activeBar['v' + trade.side] += amount
+          activeBar['c' + trade.side]++
+          activeBar.hasData = true
         }
       }
 
-      this.dump('activeBar')
+      this.dumpVariable('activeBar')
 
-      if (!activeChunk || renderedRange.to >= activeChunk.from) {
-        for (let i = 0; i < seriesData.length; i++) {
-          this.updateBar(seriesData[i])
+      if (canRender && activeBar.hasData) {
+        seriesData.push(this.formatBar(activeBar, false))
+
+        if (renderedRange.to < activeBar.timestamp) {
+          renderedRange.to = activeBar.timestamp
         }
-
-        renderedRange.to = activeBar.timestamp
       }
 
-      this.dump('renderedRange')
+      for (let i = 0; i < seriesData.length; i++) {
+        this.updateBar(seriesData[i])
+      }
+
+      this.dumpVariable('renderedRange')
     },
 
     /**
@@ -845,108 +878,207 @@ export default {
         return
       }
 
-      let bar = {}
+      let bar = {
+        timestamp: null,
+        exchanges: {}
+      }
+
       let exchangesCount = 0
-      const activeExchanges = this.actives
+      const enabledExchanges = Object.keys(this.exchanges).filter(a => !this.exchanges[a].disabled)
 
       for (let i = 0; i < trades.length; i++) {
-        if (!bar[trades[i][0]] && activeExchanges.indexOf(trades[i][0]) !== -1) {
+        if (!bar.exchanges[trades[i][0]] && enabledExchanges.indexOf(trades[i][0]) !== -1) {
           exchangesCount++
-          bar[trades[i][0]] = {
+          bar.exchanges[trades[i][0]] = {
+            exchange: trades[i][0],
             close: +trades[i][2]
           }
 
-          this.resetBar(bar[trades[i][0]])
-          console.log('reset bar', trades[i][0])
-          if (exchangesCount === activeExchanges.length) {
-            console.log('broke after', i, 'out of', trades.length)
+          this.resetBar(bar.exchanges[trades[i][0]])
+          if (exchangesCount === enabledExchanges.length) {
             break
           }
         }
       }
 
+      if (exchangesCount !== enabledExchanges.length) {
+        this.logActivity(`[groupTradesIntoBars] couldn't find all exchange's first price (${trades.length} processed)`)
+      }
+
       const bars = []
-      let barTimestamp = null
 
       // loop through bars in range
       for (let j = 0; j <= trades.length; j++) {
         const timestamp = trades[j] ? Math.floor(trades[j][1] / 1000 / this.timeframe) * this.timeframe : Infinity
 
-        if (barTimestamp < timestamp) {
-          if (barTimestamp) {
-            bars.push({
-              timestamp: barTimestamp,
-              exchanges: JSON.parse(JSON.stringify(bar))
-            })
-
-            if (!trades[j]) {
-              break
-            }
-
-            for (let exchange in bar) {
-              this.resetBar(bar[exchange])
+        if (bar.timestamp < timestamp) {
+          if (bar.timestamp && activeBar && bar.timestamp > activeBar.timestamp) {
+            debugger
+          }
+          for (let exchange in bar.exchanges) {
+            if (bar.timestamp && bar.exchanges[exchange].hasData) {
+              bars.push(this.cloneBar(bar.exchanges[exchange], bar.timestamp))
+              this.resetBar(bar.exchanges[exchange])
             }
           }
 
-          barTimestamp = timestamp
+          if (!trades[j]) {
+            break
+          }
+
+          bar.timestamp = timestamp
         }
 
         const exchange = trades[j][0]
 
-        if (!bar[exchange]) {
+        if (!bar.exchanges[exchange]) {
           continue
         }
 
         const side = trades[j][4] > 0 ? 'buy' : 'sell'
 
+        bar.exchanges[exchange].hasData = true
+
+        bar.exchanges[exchange].high = Math.max(bar.exchanges[exchange].high, +trades[j][2])
+        bar.exchanges[exchange].low = Math.min(bar.exchanges[exchange].low, +trades[j][2])
+        bar.exchanges[exchange].close = +trades[j][2]
+
         if (trades[j][5] === 1) {
-          bar[exchange]['l' + side] += trades[j][3] * trades[j][2]
+          bar.exchanges[exchange]['l' + side] += trades[j][3] * trades[j][2]
           continue
         }
 
-        bar[exchange]['c' + side]++
-        bar[exchange]['v' + side] += trades[j][3] * trades[j][2]
-        bar[exchange].high = Math.max(bar[exchange].high, +trades[j][2])
-        bar[exchange].low = Math.min(bar[exchange].low, +trades[j][2])
-        bar[exchange].close = +trades[j][2]
+        bar.exchanges[exchange]['c' + side]++
+        bar.exchanges[exchange]['v' + side] += trades[j][3] * trades[j][2]
       }
 
       const from = Math.floor(bars[0].timestamp / this.timeframe) * this.timeframe
       const to = Math.floor(bars[bars.length - 1].timestamp / this.timeframe) * this.timeframe
       const median = from + (to - from) / 2
 
-      return { from, to, median, bars }
+      const chunk = { from, to, median, bars }
+
+      const lastTimestamp = trades[trades.length - 1][1] / 1000
+
+      return { from, to, median, bars, lastTimestamp }
+    },
+
+    /**
+     * push bar content into active bar
+     * @param {Bar} bar bar to merge into activeBar
+     */
+    mergeIntoActiveBar(bar) {
+      if (!activeBar) {
+        activeBar = bar
+        return
+      }
+
+      console.log(
+        '[mergeIntoActiveBar] merge bar (',
+        this.formatTime(bar.timestamp),
+        Object.keys(bar.exchanges),
+        ') into activeBar (',
+        this.formatTime(activeBar.timestamp),
+        Object.keys(activeBar.exchanges),
+        ')'
+      )
+      if (bar.timestamp === activeBar.timestamp) {
+        console.log('[mergeIntoActiveBar] push bar into activebar (+= all properties...)')
+        for (let exchange in bar.exchanges) {
+          if (!activeBar.exchanges[exchange]) {
+            activeBar.exchanges[exchange] = bar.exchanges[exchange]
+            continue
+          }
+
+          activeBar.exchanges[exchange].cbuy += bar.exchanges[exchange].cbuy
+          activeBar.exchanges[exchange].csell += bar.exchanges[exchange].csell
+          activeBar.exchanges[exchange].vbuy += bar.exchanges[exchange].vbuy
+          activeBar.exchanges[exchange].vsell += bar.exchanges[exchange].vsell
+          activeBar.exchanges[exchange].lbuy += bar.exchanges[exchange].lbuy
+          activeBar.exchanges[exchange].lsell += bar.exchanges[exchange].lsell
+          activeBar.exchanges[exchange].open = bar.exchanges[exchange].open
+          activeBar.exchanges[exchange].high = Math.max(activeBar.exchanges[exchange].high, bar.exchanges[exchange].high)
+          activeBar.exchanges[exchange].low = Math.min(activeBar.exchanges[exchange].low, bar.exchanges[exchange].low)
+        }
+
+        activeBar.cbuy += bar.cbuy
+        activeBar.csell += bar.csell
+        activeBar.vbuy += bar.vbuy
+        activeBar.vsell += bar.vsell
+        activeBar.lbuy += bar.lbuy
+        activeBar.lsell += bar.lsell
+        activeBar.open = bar.open
+        activeBar.high = Math.max(activeBar.high, bar.high)
+        activeBar.low = Math.min(activeBar.low, bar.low)
+      } else if (bar.timestamp === activeBar.timestamp - this.timeframe) {
+        console.log('[mergeIntoActiveBar] update activeBar.open')
+        activeBar.open = bar.close
+      }
+
+      activeBar.series = bar.series
+    },
+
+    /**
+     * @param {Bar} bar do copy
+     */
+    cloneBar(bar, timestamp) {
+      return {
+        exchange: bar.exchange,
+        timestamp: timestamp || bar.timestamp,
+        open: bar.open,
+        high: bar.high,
+        low: bar.low,
+        close: bar.close,
+        vbuy: bar.vbuy,
+        vsell: bar.vsell,
+        cbuy: bar.cbuy,
+        csell: bar.csell,
+        lbuy: bar.lbuy,
+        lsell: bar.lsell
+      }
     },
 
     /**
      * @param {Bar[]} bars bars to render
      */
     renderBars(bars) {
+      if (!bars.length) {
+        return
+      }
+
       const seriesData = []
 
-      let activeBar
+      // temporary active bar!
+      let temporaryActiveBar
 
-      for (let bar of bars) {
-        activeBar = this.newBar(bar.timestamp, activeBar, 'chunk')
+      for (let i = 0; i <= bars.length; i++) {
+        const bar = bars[i]
 
-        for (let exchange in bar.exchanges) {
-          if (this.actives.indexOf(exchange) === -1 || this.exchanges[exchange].ohlc === false) {
-            continue
+        if (!bar || !temporaryActiveBar || bar.timestamp > temporaryActiveBar.timestamp) {
+          if (temporaryActiveBar && temporaryActiveBar.hasData) {
+            seriesData.push(this.formatBar(temporaryActiveBar))
           }
 
-          activeBar.vbuy += bar.exchanges[exchange].vbuy
-          activeBar.vsell += bar.exchanges[exchange].vsell
-          activeBar.cbuy += bar.exchanges[exchange].cbuy
-          activeBar.csell += bar.exchanges[exchange].csell
-          activeBar.lbuy += bar.exchanges[exchange].lbuy
-          activeBar.lsell += bar.exchanges[exchange].lsell
-
-          activeBar.exchanges[exchange] = {
-            ...bar.exchanges[exchange]
+          if (!bar) {
+            break
           }
+
+          temporaryActiveBar = this.newBar(bar.timestamp, temporaryActiveBar)
         }
 
-        seriesData.push(this.formatBar(activeBar))
+        if (this.actives.indexOf(bar.exchange) === -1) {
+          continue
+        }
+
+        temporaryActiveBar.hasData = true
+        temporaryActiveBar.vbuy += bar.vbuy
+        temporaryActiveBar.vsell += bar.vsell
+        temporaryActiveBar.cbuy += bar.cbuy
+        temporaryActiveBar.csell += bar.csell
+        temporaryActiveBar.lbuy += bar.lbuy
+        temporaryActiveBar.lsell += bar.lsell
+
+        temporaryActiveBar.exchanges[bar.exchange] = this.cloneBar(bar)
       }
 
       const rightEdgeTime = renderedRange.to || bars[bars.length - 1].timestamp
@@ -965,9 +1097,16 @@ export default {
       this.replaceData(seriesData)
       chart.timeScale().scrollToPosition(scrollPosition - edgeOffset)
 
-      this.setActiveBar(activeBar)
+      this.logActivity(
+        '[renderBars]',
+        `mergeIntoActiveBar`,
+        temporaryActiveBar ? this.formatTime(temporaryActiveBar.timestamp) : 'no temporary bar',
+        activeBar ? this.formatTime(activeBar.timestamp) : 'no active bar'
+      )
 
-      return activeBar
+      this.mergeIntoActiveBar(temporaryActiveBar)
+
+      return temporaryActiveBar
     },
 
     renderVisibleChunks() {
@@ -975,46 +1114,49 @@ export default {
 
       let bars = []
 
-      console.log(`[chart.renderVisibleChunks] from: ${this.formatTime(visibleRange.from)} -> to: ${this.formatTime(visibleRange.to)}`)
+      this.logActivity('[renderVisibleChunks]', `from: ${this.formatTime(visibleRange.from)} -> to: ${this.formatTime(visibleRange.to)}`)
 
       for (let chunk of cache) {
-        if (chunk) {
-          console.log('checking chunk', 'from', this.formatTime(visibleRange.from), 'to', this.formatTime(visibleRange.to))
-        }
         if (
           (chunk.from >= visibleRange.from && chunk.from <= visibleRange.to) ||
           (chunk.to >= visibleRange.from && chunk.to <= visibleRange.to) ||
           (chunk.from <= visibleRange.from && chunk.to <= visibleRange.to)
         ) {
+          let reasons = []
+
           if (chunk.from >= visibleRange.from && chunk.from <= visibleRange.to) {
-            console.log('chunk from is visible')
+            reasons.push('start of chunk visible')
           }
           if (chunk.to >= visibleRange.from && chunk.to <= visibleRange.to) {
-            console.log('chunk to is visible')
+            reasons.push('end of chunk visible')
           }
           if (chunk.from <= visibleRange.from && chunk.to <= visibleRange.to) {
-            console.log('chunk larger than view')
+            reasons.push('larger than (or equal to) view')
           }
-          console.log(
-            `\t-> select chunk ${chunk.active ? '(active chunk)' : ''} n°${cache.indexOf(chunk)} from: ${this.formatTime(
+          this.logActivity(
+            `[renderVisibleChunks] select chunk ${chunk.active ? '(active chunk)' : ''} n°${cache.indexOf(chunk)} from: ${this.formatTime(
               chunk.from
-            )} -> to: ${this.formatTime(chunk.to)}`
+            )} -> to: ${this.formatTime(chunk.to)}\n\t->${reasons}`
           )
           bars = bars.concat(chunk.bars)
           chunk.rendered = true
         } else {
           chunk.rendered = false
-          console.log(`\t-> ignore chunk n°${cache.indexOf(chunk)} from: ${this.formatTime(chunk.from)} -> to: ${this.formatTime(chunk.to * 1000)}`)
+          this.logActivity(
+            `[renderVisibleChunks] ignore chunk ${chunk.active ? '(active chunk)' : ''} n°${cache.indexOf(chunk)} from: ${this.formatTime(
+              chunk.from
+            )} -> to: ${this.formatTime(chunk.to)}`
+          )
         }
       }
 
-      this.dump('chunks')
+      this.dumpVariable('chunks')
 
       this.renderBars(bars)
     },
 
     /**
-     * @param {Bar | ExchangeBar} bar bar to clear for next timestamp
+     * @param {Bar | ActiveBar} bar bar to clear for next timestamp
      */
     resetBar(bar) {
       bar.open = bar.close
@@ -1027,6 +1169,7 @@ export default {
       bar.csell = 0
       bar.lbuy = 0
       bar.lsell = 0
+      bar.hasData = false
 
       if (bar.exchanges) {
         for (let exchange in bar.exchanges) {
@@ -1041,56 +1184,32 @@ export default {
      * @param {Bar?} referenceBar bar to use as reference
      * @param {string?} type type of the bar either 'realtime' or 'chunk'
      */
-    newBar(timestamp, referenceBar, type) {
-      if (referenceBar) {
-        referenceBar.type = type
 
+    newBar(timestamp, referenceBar) {
+      if (referenceBar) {
         if (referenceBar.timestamp < timestamp) {
-          if (type === 'realtime') {
-            console.log('newBar (realtime)')
-            if (!cache.length || !cache[cache.length - 1].active) {
-              this.saveChunk({
-                rendered: true,
-                from: referenceBar.timestamp,
-                to: referenceBar.timestamp,
-                active: true,
-                bars: [
-                  {
-                    timestamp: referenceBar.timestamp,
-                    exchanges: referenceBar.exchanges
-                  }
-                ]
-              })
-              referenceBar.exchanges = JSON.parse(JSON.stringify(referenceBar.exchanges))
-            } else {
-              cache[cache.length - 1].bars.push({
-                timestamp: referenceBar.timestamp,
-                exchanges: JSON.parse(JSON.stringify(referenceBar.exchanges))
-              })
-              cache[cache.length - 1].to = referenceBar.timestamp
+          if (referenceBar.hasData) {
+            for (let serie of series) {
+              const serieData = referenceBar.series[serie.id]
+
+              if (serieData.point) {
+                serieData.value = serieData.point.value || serieData.point.close
+              }
+
+              if (serieData && serieData.average) {
+                serieData.average.count = serieData.average.points.push(serieData.point.value)
+
+                if (serieData.average.count > serie.options.length) {
+                  serieData.average.sum -= serieData.average.points.shift()
+                  serieData.average.count--
+                }
+
+                serieData.average.sum += serieData.point.value
+              }
             }
           }
 
           referenceBar.timestamp = timestamp
-
-          for (let serie of series) {
-            const serieData = referenceBar.series[serie.id]
-
-            if (serieData.point) {
-              serieData.value = serieData.point.value || serieData.point.close
-            }
-
-            if (serieData && serieData.average) {
-              serieData.average.count = serieData.average.points.push(serieData.point.value)
-
-              if (serieData.average.count > serie.options.length) {
-                serieData.average.sum -= serieData.average.points.shift()
-                serieData.average.count--
-              }
-
-              serieData.average.sum += serieData.point.value
-            }
-          }
 
           this.resetBar(referenceBar)
         } else if (referenceBar.timestamp === timestamp) {
@@ -1103,7 +1222,6 @@ export default {
       } else {
         referenceBar = {
           timestamp: timestamp,
-          type,
           series: {},
           exchanges: {},
           open: null,
@@ -1147,13 +1265,10 @@ export default {
 
       for (let i = serie.markers.length - 1; i >= 0; i--) {
         if (serie.markers[i].time === marker.time) {
-          // console.log('remove marker at index', i)
           serie.markers.splice(i, 1)
           break
         }
       }
-
-      // console.log('set marker', new Date(marker.time * 1000).toUTCString(), marker)
 
       serie.markers.push(marker)
 
@@ -1204,7 +1319,6 @@ export default {
 
       for (let serie of series) {
         if (seriesData[serie.id] && seriesData[serie.id].length) {
-          console.log(`[serie.${serie.id}] /replace whole serie with ${seriesData[serie.id].length} points`)
           serie.api.setData(seriesData[serie.id])
         }
       }
@@ -1219,7 +1333,6 @@ export default {
 
       for (let serie of series) {
         if (bar[serie.id]) {
-          // console.log(`[serie.${serie.id}] update point ${new Date(bar[serie.id].time * 1000).toUTCString()}`, bar[serie.id])
           serie.api.update(bar[serie.id])
 
           if (!isCrosshairActive) {
@@ -1227,12 +1340,12 @@ export default {
               this.$set(
                 this.legend,
                 serie.id,
-                `open: ${this.$root.formatPrice(bar[serie.id].open)}, high: ${this.$root.formatPrice(
-                  bar[serie.id].high
-                )}, low: ${this.$root.formatPrice(bar[serie.id].low)}, close: ${this.$root.formatPrice(bar[serie.id].close)}`
+                `open: ${formatPrice(bar[serie.id].open)}, high: ${formatPrice(bar[serie.id].high)}, low: ${formatPrice(
+                  bar[serie.id].low
+                )}, close: ${formatPrice(bar[serie.id].close)}`
               )
             } else {
-              this.$set(this.legend, serie.id, this.$root.formatAmount(bar[serie.id].value))
+              this.$set(this.legend, serie.id, formatAmount(bar[serie.id].value))
             }
           }
         }
@@ -1261,7 +1374,7 @@ export default {
       bar.close = 0
 
       for (let exchange in bar.exchanges) {
-        if (bar.type === 'realtime' && this.actives.indexOf(exchange) === -1) {
+        if (this.actives.indexOf(exchange) === -1) {
           continue
         }
 
@@ -1291,7 +1404,7 @@ export default {
      * get valid TV series points from bar
      * @param {Bar} bar
      */
-    formatBar(bar) {
+    formatBar(bar, log = true) {
       const points = {}
 
       for (let serie of series) {
@@ -1345,12 +1458,78 @@ export default {
      * on click on height handler
      * @param {MouseEvent} event mousedown event
      */
-    startResize(event) {
+    startManualResize(event, side) {
       if (event.which === 3) {
         return
       }
 
-      this.resizing = event.pageY
+      if (!this._doManualResize) {
+        this._doManualResize = this.doManualResize.bind(this)
+
+        window.addEventListener('mousemove', this._doManualResize, false)
+      }
+
+      if (!this._stopManualResize) {
+        this._stopManualResize = this.stopManualResize.bind(this)
+
+        window.addEventListener('mouseup', this._stopManualResize, false)
+      }
+
+      if (side === 'height') {
+        this.resizing[side] = event.pageY
+      } else {
+        this.resizing[side] = event.pageX
+      }
+
+      this.panPrevented = true
+    },
+
+    /**
+     * on drag height handler
+     * @param {MouseEvent} event mousemove event
+     */
+    doManualResize(event) {
+      if (!isNaN(this.resizing.width)) {
+        let referenceWidth
+
+        if (this.sidebarWidth !== null) {
+          referenceWidth = window.innerWidth - this.sidebarWidth
+        } else {
+          referenceWidth = chart.options().width
+        }
+
+        this.refreshChartDimensions(referenceWidth + (event.pageX - this.resizing.width))
+      } else if (!isNaN(this.resizing.height)) {
+        this.refreshChartDimensions(null, (this.chartHeight || chart.options().height) + (event.pageY - this.resizing.height))
+      }
+    },
+
+    /**
+     * on end of drag height handler
+     * @param {MouseEvent} event mouseup event
+     */
+    stopManualResize(event) {
+      if (this.resizing.width) {
+        this.$store.commit('setSidebarWidth', window.innerWidth - this.$refs.chartContainer.clientWidth)
+
+        delete this.resizing.width
+      } else if (this.resizing.height) {
+        this.$store.commit('setChartHeight', this.$refs.chartContainer.clientHeight)
+
+        delete this.resizing.height
+      }
+
+      if (this._doManualResize) {
+        window.removeEventListener('mousemove', this._doManualResize)
+        delete this._doManualResize
+      }
+
+      if (this._stopManualResize) {
+        window.removeEventListener('mouseup', this._stopManualResize)
+        delete this._stopManualResize
+      }
+
+      this.panPrevented = false
     },
 
     /**
@@ -1358,35 +1537,47 @@ export default {
      * @param {MouseEvent} event dbl click event
      */
     resetHeight(event) {
-      delete this.resizing
+      delete this.resizing.height
 
       this.$store.commit('setChartHeight', null)
 
-      this.updateChartHeight()
+      this.refreshChartDimensions()
     },
 
     /**
-     * refresh chart height based on container dimensions
+     * on dblclick on width handler
+     * @param {MouseEvent} event dbl click event
      */
-    updateChartHeight() {
+    resetWidth(event) {
+      delete this.resizing.width
+
+      this.$store.commit('setSidebarWidth', null)
+
+      this.refreshChartDimensions()
+    },
+
+    /**
+     * refresh chart dimensions based on container dimensions
+     */
+    refreshChartDimensions(width, height) {
       if (!chart) {
         return
       }
 
       const size = this.getChartSize()
 
-      chart.resize(size.width, size.height)
+      chart.resize(width || size.width, height || size.height)
     },
 
     /**
      * get chart height based on container dimensions
      */
     getChartSize() {
-      const w = this.$refs.chartContainer.offsetWidth
+      const w = document.documentElement.clientWidth
       const h = document.documentElement.clientHeight
 
       return {
-        width: w,
+        width: window.innerWidth < 768 ? this.$el.clientWidth : this.sidebarWidth > 0 ? window.innerWidth - this.sidebarWidth : w * 0.75,
         height:
           window.innerWidth >= 768
             ? this.$el.clientHeight
@@ -1400,34 +1591,12 @@ export default {
      * on browser resize
      * @param {Event} event resize event
      */
-    doResize(event) {
+    doWindowResize(event) {
       clearTimeout(this._resizeTimeout)
 
       this._resizeTimeout = setTimeout(() => {
-        this.updateChartHeight()
+        this.refreshChartDimensions()
       }, 250)
-    },
-
-    /**
-     * on drag height handler
-     * @param {MouseEvent} event mousemove event
-     */
-    doDrag(event) {
-      if (!isNaN(this.resizing)) {
-        this.updateChartHeight((this.chartHeight || chart.options().height) + (event.pageY - this.resizing))
-      }
-    },
-
-    /**
-     * on end of drag height handler
-     * @param {MouseEvent} event mouseup event
-     */
-    stopDrag(event) {
-      if (this.resizing) {
-        this.$store.commit('setChartHeight', this.$refs.chartContainer.clientHeight)
-
-        delete this.resizing
-      }
     },
 
     /**
@@ -1438,7 +1607,7 @@ export default {
         return
       }
 
-      this.dump('visibleRange')
+      this.dumpVariable('visibleRange')
 
       if (this.panPrevented) {
         return
@@ -1457,6 +1626,7 @@ export default {
         const visibleRange = this.getVisibleRange()
 
         if (visibleRange.from <= cacheRange.from) {
+          this.logActivity('[pan] visibleRange.from <= cacheRange.from')
           this.panPrevented = true
           this.fetch().then(() => {
             this.panPrevented = false
@@ -1465,12 +1635,11 @@ export default {
           (visibleRange.from <= renderedRange.from && cacheRange.from <= renderedRange.from) ||
           (visibleRange.to >= renderedRange.to && cacheRange.to >= renderedRange.to)
         ) {
-          console.log('on pan into the limites')
           if (visibleRange.from <= renderedRange.from && cacheRange.from <= renderedRange.from) {
-            console.log('cache is available before renderedRange and visibleRange start befroe renderedRange')
+            this.logActivity('[pan] visibleRange.from <= renderedRange.from && cacheRange.from <= renderedRange.from')
           }
           if (visibleRange.to >= renderedRange.to && cacheRange.to >= renderedRange.to) {
-            console.log('cache is available after renderedRange and visibleRange end after renderedRange')
+            this.logActivity('[pan] visibleRange.to >= renderedRange.to && cacheRange.to >= renderedRange.to')
           }
           this.renderVisibleChunks()
         }
@@ -1480,10 +1649,22 @@ export default {
     formatTime(time) {
       const date = new Date(time * 1000)
 
-      return date.toTimeString().split(' ')[0]
+      return date.getDate() + '/' + (date.getMonth() + 1) + ' ' + date.toTimeString().split(' ')[0]
     },
 
-    dump(name) {
+    logActivity() {
+      const args = Array.prototype.slice.call(arguments)
+
+      this.activities.push(args.map(a => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' '))
+
+      console.log(this.activities[this.activities.length - 1])
+
+      if (this.activities.length === 20) {
+        this.activities.splice(0, 1)
+      }
+    },
+
+    dumpVariable(name) {
       if (!this.debug) {
         return
       }
@@ -1500,7 +1681,9 @@ export default {
           this.chunks = cache
             .map(
               (a, i) =>
-                `chunk#${i} (${a.rendered ? 'RENDERED' : 'IGNORED'})\n\t${this.formatTime(a.from)} -> ${this.formatTime(a.to)} (${a.to - a.from})`
+                `chunk#${i} (${a.rendered ? 'RENDERED' : 'IGNORED'}${a.active ? ', ACTIVE' : ''})\n\t${this.formatTime(a.from)} -> ${this.formatTime(
+                  a.to
+                )} (${getHms((a.to - a.from + this.timeframe) * 1000)})`
             )
             .join('\n')
           break
@@ -1525,6 +1708,35 @@ export default {
             }`
           }
           break
+      }
+    },
+
+    setupQueue() {
+      if (this._renderQueuedTradesInterval || !this.chartRefreshRate) {
+        return
+      }
+      console.info('setup queue', getHms(this.chartRefreshRate))
+
+      this._renderQueuedTradesInterval = setInterval(() => {
+        if (queuedTrades.length) {
+          this.renderRealtimeTrades(queuedTrades)
+          queuedTrades.splice(0, queuedTrades.length)
+        }
+      }, this.chartRefreshRate)
+    },
+
+    clearQueue() {
+      if (!this._renderQueuedTradesInterval) {
+        return
+      }
+      console.info('clearQueue')
+
+      clearInterval(this._renderQueuedTradesInterval)
+      delete this._renderQueuedTradesInterval
+
+      if (queuedTrades.length) {
+        this.renderRealtimeTrades(queuedTrades)
+        queuedTrades.splice(0, queuedTrades.length)
       }
     }
   }
@@ -1554,22 +1766,34 @@ export default {
   }
 }
 
-.chart__scale-handler,
-.chart__height-handler {
+.chart__handler {
   position: absolute;
   bottom: 0;
-  z-index: 2;
-}
-
-.chart__height-handler {
   left: 0;
   right: 0;
-  height: 8px;
-  margin-top: -4px;
-  cursor: row-resize;
+  z-index: 2;
 
-  @media screen and (min-width: 768px) {
+  &.-width {
+    top: 0;
+    left: auto;
+    width: 8px;
+    margin-right: -4px;
+    cursor: ew-resize;
     display: none;
+
+    @media screen and (min-width: 768px) {
+      display: block;
+    }
+  }
+
+  &.-height {
+    height: 8px;
+    margin-top: -4px;
+    cursor: row-resize;
+
+    @media screen and (min-width: 768px) {
+      display: none;
+    }
   }
 }
 
@@ -1602,9 +1826,16 @@ export default {
     }
 
     &.-right {
-      right: 6em;
+      right: 0;
       text-align: right;
       direction: ltr;
+      bottom: auto;
+      padding-right: 5em;
+    }
+
+    &.-bottom {
+      top: auto;
+      bottom: 0;
     }
 
     &:hover {

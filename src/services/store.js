@@ -38,47 +38,22 @@ const DEFAULTS = {
     coinex: { disabled: true }
   },
   maxRows: 30,
+  aggregateTrades: true,
   decimalPrecision: null,
-  aggregationLag: null,
-  tradeSpray: false,
+  showSlippage: false,
   showLogos: true,
-  liquidationsOnlyList: false,
-  showCounters: false,
-  counterPrecision: 1000 * 10,
-  countersSteps: [1000 * 60, 1000 * 60 * 5, 1000 * 60 * 15, 1000 * 60 * 30, 1000 * 60 * 60, 1000 * 60 * 60 * 2, 1000 * 60 * 60 * 4],
-  hideIncompleteCounter: true,
-  cumulativeCounters: true,
-  showStats: false,
-  showChart: false,
-  statsPeriod: 1000 * 60,
-  statsGraphs: false,
-  statsGraphsTimeframe: 3000,
-  statsGraphsLength: 100,
-  chartPadding: 0.075,
-  chartGridlines: true,
-  chartGridlinesGap: 80,
+  showChart: true,
+  chartRefreshRate: 50,
+  chartLiquidations: true,
+  chartCVD: true,
   timeframe: 10,
-  autoClearTrades: true,
   debug: false,
-  useShades: true,
   useAudio: false,
   audioIncludeInsignificants: true,
   audioVolume: 1.5,
-  settings: ['other', 'chart', 'counters', 'stats', 'audio'],
-  chartLiquidations: true,
+  settings: ['other', 'chart', 'audio'],
   chartHeight: null,
-  chartRange: 0,
-  chartCandleWidth: 5,
-  chartCandlestick: true,
-  chartVolume: true,
-  chartVolumeThreshold: 0,
-  chartVolumeOpacity: 0.75,
-  chartVolumeAverage: true,
-  chartVolumeAverageLength: 14,
-  chartSma: true,
-  chartSmaLength: 14,
-  chartAutoScale: true,
-  showExchangesBar: false,
+  sidebarWidth: null,
   showThresholdsAsTable: true,
 
   // runtime state
@@ -174,11 +149,15 @@ const store = new Vuex.Store({
     setDecimalPrecision(state, value) {
       state.decimalPrecision = value
     },
-    setAggregationLag(state, value) {
-      state.aggregationLag = value
+    toggleSlippage(state) {
+      const values = [false, 'bps', 'price']
+
+      let index = Math.max(0, values.indexOf(state.showSlippage))
+
+      state.showSlippage = values[(index + 1) % values.length]
     },
-    toggleTradeSpray(state, value) {
-      state.tradeSpray = value ? true : false
+    toggleAggregation(state, value) {
+      state.aggregateTrades = value ? true : false
     },
     toggleDebug(state, value) {
       state.debug = value ? true : false
@@ -186,62 +165,17 @@ const store = new Vuex.Store({
     toggleLogos(state, value) {
       state.showLogos = value ? true : false
     },
-    toggleLiquidationsOnlyList(state, value) {
-      state.liquidationsOnlyList = value ? true : false
-    },
-    setCounterPrecision(state, payload) {
-      state.counterPrecision = value
-    },
-    toggleCounters(state, value) {
-      state.showCounters = value ? true : false
-    },
     toggleChart(state, value) {
       state.showChart = value ? true : false
     },
-    toggleStats(state, value) {
-      state.showStats = value ? true : false
+    setChartRefreshRate(state, value) {
+      state.chartRefreshRate = +value || 0
     },
-    setStatsPeriod(state, value) {
-      let period
-
-      if (/[\d.]+s/.test(value)) {
-        period = parseFloat(value) * 1000
-      } else if (/[\d.]+h/.test(value)) {
-        period = parseFloat(value) * 1000 * 60 * 60
-      } else {
-        period = parseFloat(value) * 1000 * 60
-      }
-
-      state.statsPeriod = period
+    toggleChartLiquidations(state, value) {
+      state.chartLiquidations = value ? true : false
     },
-    toggleStatsGraphs(state, value) {
-      state.statsGraphs = value ? true : false
-    },
-    setStatsGraphsTimeframe(state, value) {
-      state.statsGraphsTimeframe = isNaN(+value) ? 1000 : value
-    },
-    setStatsGraphsLength(state, value) {
-      state.statsGraphsLength = isNaN(+value) ? 50 : value
-    },
-    toggleHideIncompleteCounter(state, value) {
-      state.hideIncompleteCounter = value ? true : false
-    },
-    toggleCumulativeCounters(state, value) {
-      state.cumulativeCounters = value ? true : false
-    },
-    setCounterStep(state, payload) {
-      const step = state.countersSteps[payload.index]
-
-      if (payload.value) {
-        Vue.set(state.countersSteps, payload.index, payload.value)
-      } else {
-        state.countersSteps.splice(payload.index, 1)
-      }
-
-      state.countersSteps = state.countersSteps.sort((a, b) => a - b)
-    },
-    replaceCounterSteps(state, counters) {
-      state.countersSteps = counters.sort((a, b) => a - b)
+    toggleChartCVD(state, value) {
+      state.chartCVD = value ? true : false
     },
     toggleTresholdsTable(state, value) {
       state.showThresholdsAsTable = value ? true : false
@@ -333,75 +267,20 @@ const store = new Vuex.Store({
     setTimeframe(state, value) {
       state.timeframe = value
     },
-    toggleLiquidations(state, value) {
-      state.chartLiquidations = value ? true : false
-    },
-    toggleCandlestick(state, value) {
-      state.chartCandlestick = value ? true : false
-    },
-    toggleVolume(state, value) {
-      state.chartVolume = value ? true : false
-    },
-    setVolumeThreshold(state, value) {
-      state.chartVolumeThreshold = parseFloat(value) || 0
-    },
-    setVolumeOpacity(state, value) {
-      value = parseFloat(value)
-      state.chartVolumeOpacity = isNaN(value) ? 1 : value
-    },
-    toggleVolumeAverage(state, value) {
-      state.chartVolumeAverage = value ? true : false
-    },
-    setVolumeAverageLength(state, value) {
-      state.chartVolumeAverageLength = parseInt(value) || 14
-    },
-    toggleSma(state, value) {
-      state.chartSma = value ? true : false
-    },
-    setSmaLength(state, value) {
-      state.chartSmaLength = parseInt(value) || 14
-    },
-    toggleAutoClearTrades(state, value) {
-      state.autoClearTrades = value ? true : false
-    },
     setExchangeThreshold(state, payload) {
       Vue.set(state.exchanges[payload.exchange], 'threshold', +payload.threshold)
     },
     setExchangeMatch(state, payload) {
       Vue.set(state.exchanges[payload.exchange], 'match', payload.match)
     },
-    toggleExchangeOHLC(state, exchange) {
-      Vue.set(state.exchanges[exchange], 'ohlc', state.exchanges[exchange].ohlc === false ? true : false)
-    },
     setChartHeight(state, value) {
       state.chartHeight = value || null
     },
-    setChartRange(state, value) {
-      state.chartRange = value
-    },
-    setChartCandleWidth(state, value) {
-      state.chartCandleWidth = value
-    },
-    setChartPadding(state, value) {
-      state.chartPadding = value
-    },
-    toggleChartGridlines(state, value) {
-      state.chartGridlines = value ? true : false
-    },
-    setChartGridlinesGap(state, value) {
-      state.chartGridlinesGap = parseInt(value) || 0
-    },
-    toggleChartAutoScale(state, value) {
-      state.chartAutoScale = value ? true : false
-    },
-    toggleExchangesBar(state, value) {
-      state.showExchangesBar = value ? true : false
+    setSidebarWidth(state, value) {
+      state.sidebarWidth = value || null
     },
 
     // runtime commit
-    toggleSnap(state, value) {
-      state.isSnaped = value ? true : false
-    },
     toggleLoading(state, value) {
       state.isLoading = value ? true : false
     },
@@ -441,7 +320,7 @@ store.subscribe((mutation, state) => {
     }
   }
 
-  if (['reloadExchangeState', 'setExchangeMatch', 'toggleSnap'].indexOf(mutation.type) === -1) {
+  if (['reloadExchangeState', 'setExchangeMatch'].indexOf(mutation.type) === -1) {
     localStorage.setItem('settings', JSON.stringify(copy))
   }
 
@@ -451,7 +330,6 @@ store.subscribe((mutation, state) => {
     case 'toggleExchangeVisibility':
     case 'enableExchange':
     case 'disableExchange':
-    case 'toggleExchangeOHLC':
     case 'setExchangeMatch':
       store._mutations.reloadExchangeState[0](mutation.payload)
 

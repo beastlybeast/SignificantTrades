@@ -8,15 +8,12 @@ class Hitbtc extends Exchange {
 
     this.endpoints = {
       PRODUCTS: 'https://api.hitbtc.com/api/2/public/symbol',
-      TRADES: () =>
-        `https://api.hitbtc.com/api/2/public/trades/${
-          this.pair
-        }?sort=DESC&limit=500`,
+      TRADES: () => `https://api.hitbtc.com/api/2/public/trades/${this.pair}?sort=DESC&limit=500`
     }
 
     this.options = Object.assign(
       {
-        url: 'wss://api.hitbtc.com/api/2/ws',
+        url: 'wss://api.hitbtc.com/api/2/ws'
       },
       this.options
     )
@@ -27,16 +24,15 @@ class Hitbtc extends Exchange {
 
     this.api = new WebSocket(this.getUrl())
 
-    this.api.onmessage = (event) =>
-      this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)))
+    this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
 
-    this.api.onopen = (event) => {
+    this.api.onopen = event => {
       this.api.send(
         JSON.stringify({
           method: 'subscribeTrades',
           params: {
-            symbol: this.pair,
-          },
+            symbol: this.pair
+          }
         })
       )
 
@@ -63,19 +59,14 @@ class Hitbtc extends Exchange {
       return
     }
 
-    if (
-      json.method === 'updateTrades' &&
-      json.params &&
-      json.params.data &&
-      json.params.data.length
-    ) {
-      return json.params.data.map((trade) => [
-        this.id,
-        +new Date(trade.timestamp),
-        +trade.price,
-        +trade.quantity,
-        trade.side === 'buy' ? 1 : 0,
-      ])
+    if (json.method === 'updateTrades' && json.params && json.params.data && json.params.data.length) {
+      return json.params.data.map(trade => ({
+        exchange: this.id,
+        timestamp: +new Date(trade.timestamp),
+        price: +trade.price,
+        size: +trade.quantity,
+        side: trade.side
+      }))
     }
   }
 
@@ -92,7 +83,7 @@ class Hitbtc extends Exchange {
   } */
 
   formatProducts(data) {
-    return data.map((a) => a.id)
+    return data.map(a => a.id)
   }
 }
 

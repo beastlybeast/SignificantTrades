@@ -50,7 +50,7 @@ class Ftx extends Exchange {
 
     this.api = new WebSocket(this.getUrl())
 
-    this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)))
+    this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
 
     this.api.onopen = event => {
       this.skip = true
@@ -93,16 +93,16 @@ class Ftx extends Exchange {
     }
 
     return json.data.map(trade => {
-      const output = [
-        this.id,
-        +new Date(trade.time),
-        +trade.price,
-        trade.size,
-        trade.side === 'buy' ? 1 : 0
-      ]
+      const output = {
+        exchange: this.id,
+        timestamp: +new Date(trade.time),
+        price: +trade.price,
+        size: trade.size,
+        side: trade.side
+      }
 
       if (trade.liquidation) {
-        output[5] = 1
+        output.liquidation = true
       }
 
       return output

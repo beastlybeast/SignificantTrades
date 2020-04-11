@@ -9,14 +9,13 @@ class Poloniex extends Exchange {
     this.endpoints = {
       PRODUCTS: 'https://poloniex.com/public?command=returnTicker',
       TRADES: () => () =>
-        `https://poloniex.com/public?command=returnTradeHistory&currencyPair=${
-          this.pair
-        }&start=${+new Date() / 1000 - 60 * 15}&end=${+new Date() / 1000}`,
+        `https://poloniex.com/public?command=returnTradeHistory&currencyPair=${this.pair}&start=${+new Date() / 1000 - 60 * 15}&end=${+new Date() /
+          1000}`
     }
 
     this.options = Object.assign(
       {
-        url: 'wss://api2.poloniex.com',
+        url: 'wss://api2.poloniex.com'
       },
       this.options
     )
@@ -27,14 +26,13 @@ class Poloniex extends Exchange {
 
     this.api = new WebSocket(this.getUrl())
 
-    this.api.onmessage = (event) =>
-      this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)))
+    this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
 
-    this.api.onopen = (event) => {
+    this.api.onopen = event => {
       this.api.send(
         JSON.stringify({
           command: 'subscribe',
-          channel: this.pair,
+          channel: this.pair
         })
       )
 
@@ -63,21 +61,21 @@ class Poloniex extends Exchange {
 
     if (json[2] && json[2].length) {
       return json[2]
-        .filter((result) => result[0] === 't')
-        .map((trade) => [
-          this.id,
-          +new Date(trade[5] * 1000),
-          +trade[3],
-          +trade[4],
-          trade[2],
-        ])
+        .filter(result => result[0] === 't')
+        .map(trade => ({
+          exchange: this.id,
+          timestamp: +new Date(trade[5] * 1000),
+          price: +trade[3],
+          size: +trade[4],
+          side: trade[2] ? 'buy' : 'sell'
+        }))
     }
   }
 
   formatProducts(data) {
     let output = {}
 
-    Object.keys(data).forEach((a) => {
+    Object.keys(data).forEach(a => {
       output[
         a
           .split('_')

@@ -16,7 +16,7 @@
         class="exchange__price"
         :class="{ '-hidden': exchanges[exchange.id].hidden }"
       >
-        <span v-html="$root.formatPrice(exchange.price)"></span> &nbsp;
+        <span v-html="formatPrice(exchange.price)"></span> &nbsp;
       </div>
     </div>
   </div>
@@ -26,6 +26,7 @@
 import { mapState } from 'vuex'
 
 import socket from '../services/socket'
+import { formatPrice } from '../utils/helpers'
 
 const storedPrices = {}
 
@@ -35,21 +36,18 @@ export default {
       hovering: false,
       exchangesAverage: {},
       exchangesDirection: {},
-      connectedExchanges: [],
+      connectedExchanges: []
     }
   },
   computed: {
-    ...mapState(['actives', 'exchanges']),
+    ...mapState(['actives', 'exchanges'])
   },
   created() {
     this.connectedExchanges = socket.exchanges
 
     socket.$on('trades.queued', this.onTrades)
 
-    this._priceComparisonInterval = setInterval(
-      this.updatePriceAction.bind(this),
-      2000
-    )
+    this._priceComparisonInterval = setInterval(this.updatePriceAction.bind(this), 2000)
   },
   beforeDestroy() {
     socket.$off('trades.queued', this.onTrades)
@@ -68,21 +66,12 @@ export default {
           storedPrices[exchange.id] = []
         }
 
-        if (
-          !storedPrices[exchange.id].length ||
-          storedPrices[exchange.id][storedPrices[exchange.id].length - 1] !==
-            exchange.price
-        ) {
+        if (!storedPrices[exchange.id].length || storedPrices[exchange.id][storedPrices[exchange.id].length - 1] !== exchange.price) {
           storedPrices[exchange.id].push(exchange.price)
-          storedPrices[exchange.id].splice(
-            0,
-            storedPrices[exchange.id].length - 5
-          )
+          storedPrices[exchange.id].splice(0, storedPrices[exchange.id].length - 5)
         }
 
-        socket.exchanges[index].avg =
-          storedPrices[exchange.id].reduce((a, b) => a + b) /
-          storedPrices[exchange.id].length
+        socket.exchanges[index].avg = storedPrices[exchange.id].reduce((a, b) => a + b) / storedPrices[exchange.id].length
         socket.exchanges[index].side = !exchange.price
           ? 'pending'
           : exchange.price > exchange.avg
@@ -96,11 +85,9 @@ export default {
         return
       }
 
-      this.connectedExchanges = socket.exchanges
-        .filter((a) => a.connected)
-        .sort((a, b) => a.price - b.price)
-    },
-  },
+      this.connectedExchanges = socket.exchanges.filter(a => a.connected).sort((a, b) => a.price - b.price)
+    }
+  }
 }
 </script>
 

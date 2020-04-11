@@ -14,10 +14,7 @@ class Huobi extends Exchange {
     }
 
     this.endpoints = {
-      PRODUCTS: [
-        'http://api.huobi.pro/v1/common/symbols',
-        'https://api.hbdm.com/api/v1/contract_contract_info'
-      ]
+      PRODUCTS: ['http://api.huobi.pro/v1/common/symbols', 'https://api.hbdm.com/api/v1/contract_contract_info']
     }
 
     // 2019-12-13
@@ -71,16 +68,13 @@ class Huobi extends Exchange {
 
     this.api.binaryType = 'arraybuffer'
 
-    this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(event.data))
+    this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(event.data))
 
     this.api.onopen = event => {
       for (let pair of this.pairs) {
         this.api.send(
           JSON.stringify({
-            sub:
-              'market.' +
-              (this.types[pair] === 'futures' ? pair.toUpperCase() : pair.toLowerCase()) +
-              '.trade.detail',
+            sub: 'market.' + (this.types[pair] === 'futures' ? pair.toUpperCase() : pair.toLowerCase()) + '.trade.detail',
             id: pair
           })
         )
@@ -122,7 +116,13 @@ class Huobi extends Exchange {
           amount = (amount * this.specs[pair]) / trade.price
         }
 
-        return [this.id, trade.ts, +trade.price, amount, trade.direction === 'buy' ? 1 : 0]
+        return {
+          exchange: this.id,
+          timestamp: trade.ts,
+          price: +trade.price,
+          size: amount,
+          side: trade.direction
+        }
       })
     }
   }

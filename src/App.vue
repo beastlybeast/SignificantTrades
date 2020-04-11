@@ -15,13 +15,8 @@
       <Alerts />
       <Header :price="price" @toggleSettings="showSettings = !showSettings" />
       <div class="app__layout">
-        <div class="app__left" v-if="showChart">
-          <Chart />
-          <Exchanges v-if="showExchangesBar" />
-        </div>
+        <Chart v-if="showChart" />
         <div class="app__right">
-          <Stats v-if="showStats" />
-          <Counters v-if="showCounters" />
           <TradeList />
         </div>
       </div>
@@ -31,6 +26,7 @@
 
 <script>
 import { mapState } from 'vuex'
+import { MASTER_DOMAIN, formatPrice, formatAmount } from './utils/helpers'
 
 import socket from './services/socket'
 import touchevent from './utils/touchevent'
@@ -40,9 +36,13 @@ import Header from './components/Header.vue'
 import Settings from './components/Settings.vue'
 import TradeList from './components/TradeList.vue'
 import Chart from './components/chart/Chart.vue'
-import Counters from './components/Counters.vue'
-import Stats from './components/Stats.vue'
 import Exchanges from './components/Exchanges.vue'
+
+const faviconDirection = {
+  direction: null,
+  prices: [],
+  sum: 0
+}
 
 export default {
   components: {
@@ -51,8 +51,6 @@ export default {
     Settings,
     TradeList,
     Chart,
-    Counters,
-    Stats,
     Exchanges
   },
   name: 'app',
@@ -68,27 +66,11 @@ export default {
     }
   },
   computed: {
-    ...mapState([
-      'pair',
-      'actives',
-      'showCounters',
-      'showStats',
-      'showChart',
-      'showExchangesBar',
-      'decimalPrecision',
-      'autoClearTrades',
-      'isLoading',
-      'preferQuoteCurrencySize'
-    ])
+    ...mapState(['pair', 'actives', 'showChart', 'showExchangesBar', 'decimalPrecision', 'autoClearTrades', 'isLoading', 'preferQuoteCurrencySize'])
   },
   created() {
-    this.$root.isAggrTrade = /aggr.trade$/.test(window.location.hostname)
-    this.$root.isTouchSupported = touchevent()
-    this.$root.applicationStartTime = +new Date()
-    this.$root.formatPrice = this.formatPrice.bind(this)
-    this.$root.formatAmount = this.formatAmount.bind(this)
-    this.$root.padNumber = this.padNumber.bind(this)
-    this.$root.ago = this.ago.bind(this)
+    this.$root.formatPrice = formatPrice
+    this.$root.formatAmount = formatAmount
 
     socket.$on('pairing', value => {
       this.updatePairCurrency(this.pair)
@@ -131,79 +113,6 @@ export default {
     this.onStoreMutation()
   },
   methods: {
-    padNumber(num, size) {
-      var s = '000000000' + num
-      return s.substr(s.length - size)
-    },
-    formatAmount(amount, decimals) {
-      const negative = amount < 0
-
-      if (negative) {
-        amount = Math.abs(amount)
-      }
-
-      if (amount >= 1000000) {
-        amount = +(amount / 1000000).toFixed(isNaN(decimals) ? 1 : decimals) + 'M'
-      } else if (amount >= 1000) {
-        amount = +(amount / 1000).toFixed(isNaN(decimals) ? 1 : decimals) + 'K'
-      } else {
-        amount = this.$root.formatPrice(amount, decimals, false)
-      }
-
-      if (negative) {
-        return '-' + amount
-      } else {
-        return amount
-      }
-    },
-    formatPrice(price, decimals, sats = true) {
-      price = +price
-
-      if (isNaN(price) || !price) {
-        return (0).toFixed(decimals)
-      }
-
-      if (!isNaN(decimals)) {
-        return +price.toFixed(decimals)
-      }
-
-      if (sats && ((price <= 0.001 && /BTC$/.test(this.pair)) || price <= 0.0001)) {
-        return (price * 100000000).toFixed() + ' <small class="condensed">sats</small>'
-      } else if (price >= 1000) {
-        return +price.toFixed(2)
-      }
-
-      if (this.decimalPrecision) {
-        return +price.toFixed(this.decimalPrecision)
-      }
-
-      const firstDigitIndex = price.toString().match(/[1-9]/)
-
-      if (firstDigitIndex) {
-        return +price.toFixed(Math.max(8 - price.toFixed().length, firstDigitIndex.index + 1))
-      }
-
-      return +price.toFixed(8 - price.toFixed().length)
-    },
-    ago(timestamp) {
-      const duration = new Date() - timestamp
-
-      if (duration < 1000) {
-        return duration + 'ms'
-      }
-
-      const seconds = Math.floor(duration / 1000)
-      let interval, output
-
-      if ((interval = Math.floor(seconds / 31536000)) > 1) output = interval + 'y'
-      else if ((interval = Math.floor(seconds / 2592000)) >= 1) output = interval + 'm'
-      else if ((interval = Math.floor(seconds / 86400)) >= 1) output = interval + 'd'
-      else if ((interval = Math.floor(seconds / 3600)) >= 1) output = interval + 'h'
-      else if ((interval = Math.floor(seconds / 60)) >= 1) output = interval + 'm'
-      else output = Math.ceil(seconds) + 's'
-
-      return output
-    },
     updatePairCurrency(pair) {
       const name = pair.replace(/\-[\w\d]*$/, '')
 
@@ -271,30 +180,36 @@ export default {
 
       price = price / total
 
-      this.price = this.$root.formatPrice(price)
+      if (price) {
+        this.updateFavicon(price)
+      }
+
+      this.price = formatPrice(price)
 
       window.document.title = this.pair + ' ' + this.price.toString().replace(/<\/?[^>]+(>|$)/g, '')
 
-      /* if (direction) {
-        let favicon = document.getElementById('favicon');
-
-        if (!favicon || favicon.getAttribute('direction') !== direction) {
-          if (favicon) {
-            document.head.removeChild(favicon);
-          }
-
-          favicon = document.createElement('link');
-          favicon.id = 'favicon';
-          favicon.rel = 'shortcut icon';
-          favicon.href = `static/${direction}.png`;
-
-          favicon.setAttribute('direction', direction);
-
-          document.head.appendChild(favicon);
-        }
-      } */
-
       this._updatePriceTimeout = setTimeout(this.updatePrice, 1000)
+    },
+    updateFavicon(price) {
+      faviconDirection.sum += faviconDirection.prices[faviconDirection.prices.push(price) - 1]
+
+      if (faviconDirection.prices.length > 7) {
+        faviconDirection.sum -= faviconDirection.prices.shift()
+      }
+
+      const direction = price > faviconDirection.sum / faviconDirection.prices.length ? 'up' : 'down'
+
+      if (direction !== faviconDirection.direction) {
+        if (!faviconDirection.element) {
+          faviconDirection.element = document.createElement('link')
+          faviconDirection.element.id = 'favicon'
+          faviconDirection.element.rel = 'shortcut icon'
+
+          document.head.appendChild(faviconDirection.element)
+        }
+
+        faviconDirection.element.href = `static/${direction}.png`
+      }
     }
   }
 }

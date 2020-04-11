@@ -34,7 +34,7 @@ class Bitstamp extends Exchange {
 
     this.api = new WebSocket(this.getUrl())
 
-    this.api.onmessage = event => this.emitTrades(this.formatLiveTrades(JSON.parse(event.data)))
+    this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
 
     this.api.onopen = event => {
       for (let pair of this.pairs) {
@@ -76,13 +76,13 @@ class Bitstamp extends Exchange {
     }
 
     return [
-      [
-        this.id,
-        +new Date(trade.microtimestamp / 1000),
-        trade.price,
-        trade.amount,
-        trade.type === 0 ? 1 : 0
-      ]
+      {
+        exchange: this.id,
+        timestamp: +new Date(trade.microtimestamp / 1000),
+        price: trade.price,
+        size: trade.amount,
+        side: trade.type === 0 ? 'buy' : 'sell'
+      }
     ]
   }
 

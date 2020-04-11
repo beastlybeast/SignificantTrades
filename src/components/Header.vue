@@ -23,19 +23,6 @@
       </button>
       <button
         type="button"
-        :class="{ active: isSnaped }"
-        @click="$store.commit('toggleSnap', !isSnaped)"
-        :title="
-          isSnaped
-            ? 'Disable auto snap'
-            : 'Auto snap chart to the latest candle'
-        "
-        v-tippy="{ placement: 'bottom' }"
-      >
-        <span class="icon-play"></span>
-      </button>
-      <button
-        type="button"
         :class="{ active: useAudio }"
         @click="$store.commit('toggleAudio', !useAudio)"
       >
@@ -50,6 +37,7 @@
 
 <script>
 import { mapState } from 'vuex'
+import { ago } from '../utils/helpers'
 
 import socket from '../services/socket'
 
@@ -74,7 +62,7 @@ export default {
 
     const now = +new Date()
 
-    ;[0.1, 1, 3, 5, 10, 15, 30, 60, 60 * 3].forEach(span => (this.timeframes[span] = this.$root.ago(now - span * 1000)))
+    ;[1, 3, 5, 10, 15, 30, 60, 60 * 3, 60 * 5, 60 * 15].forEach(span => (this.timeframes[span] = ago(now - span * 1000)))
 
     socket.$on('pairing', (pair, canFetch) => {
       this.canFetch = canFetch && this.showChart
@@ -110,7 +98,7 @@ export default {
       }, 50)
     },
     updateTimeframeLabel(timeframe) {
-      this.timeframeLabel = this.$root.ago(+new Date() - (timeframe || this.timeframe) * 1000)
+      this.timeframeLabel = ago(+new Date() - (timeframe || this.timeframe) * 1000)
     },
     togglePopup() {
       window.open(window.location.href, `sig${this.pair}`, 'toolbar=no,status=no,width=350,height=500')
@@ -139,10 +127,7 @@ export default {
       if (socket._fetchedTime && socket._fetchedBytes) {
         for (let span in this.timeframes) {
           this.timeframes[span] =
-            '<span>~' +
-            this.sizeOf(socket._fetchedBytes * ((span * candleCount) / socket._fetchedTime)) +
-            '</span> ' +
-            this.$root.ago(now - span).trim()
+            '<span>~' + this.sizeOf(socket._fetchedBytes * ((span * candleCount) / socket._fetchedTime)) + '</span> ' + ago(now - span).trim()
         }
       }
     }

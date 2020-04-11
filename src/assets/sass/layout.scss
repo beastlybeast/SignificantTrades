@@ -115,11 +115,6 @@
     display: none;
   }
 
-  .app__left {
-    display: flex;
-    flex-direction: column;
-  }
-
   .app__right {
     display: flex;
     flex-direction: column;
@@ -145,13 +140,8 @@
       }
     }
 
-    #exchanges {
-      display: flex;
-    }
-
-    .app__left {
+    #chart {
       overflow: hidden;
-      flex-basis: calc(100% - 290px);
       flex-grow: 0;
       max-height: 100%;
 
@@ -163,52 +153,8 @@
 
     .app__right {
       overflow: hidden;
-      flex-basis: 290px;
-
-      font-size: 0.8em;
       flex-grow: 1;
-
       font-size: 1.05em;
-
-      #stats .stats__items {
-        flex-wrap: wrap;
-
-        > li {
-          flex-basis: calc(50% - 1px);
-          max-width: calc(50% - 1px);
-          align-items: flex-start;
-          min-height: 12vh;
-
-          > div {
-            margin-left: 1em;
-
-            &.stats__label {
-              margin-top: 0.75rem;
-              margin-bottom: 0.25rem;
-            }
-
-            &.stats__value {
-              margin-bottom: 1rem;
-            }
-          }
-
-          &:nth-child(-n + 2) {
-            margin-right: 1px;
-          }
-
-          &:nth-child(n + 2):nth-child(-n + 3) {
-            margin-top: 1px;
-          }
-
-          &:nth-child(2) {
-            order: 1;
-          }
-
-          &:nth-child(3) {
-            order: 2;
-          }
-        }
-      }
 
       #trades {
         flex-grow: 1;
@@ -219,40 +165,14 @@
   }
 
   @media screen and (max-width: 379px) {
-    .highcharts-series-1,
-    .highcharts-series-2 {
-      visibility: hidden;
-    }
-
-    .highcharts-xaxis-labels {
-      transform: translateY(2px);
-    }
-
-    #trades,
-    #stats {
+    #trades {
       font-size: 0.8em;
-    }
-
-    #stats {
-      .stats__label {
-        display: none;
-      }
-
-      .stats__value {
-        font-weight: 400;
-        margin-top: 0.5rem;
-      }
     }
   }
 
   @media screen and (min-width: 1200px) {
-    .app__left {
-      flex-basis: 75%;
-    }
-
     .app__right {
       font-size: 1.1em;
-      flex-basis: 25%;
 
       #trades {
         font-size: 0.9em;

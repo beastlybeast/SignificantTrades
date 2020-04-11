@@ -173,6 +173,8 @@ import { mapState } from 'vuex'
 
 import { Chrome } from 'vue-color'
 
+import { TOUCH_SUPPORTED, formatPrice, formatAmount } from '../utils/helpers'
+
 export default {
   components: {
     'chrome-picker': Chrome
@@ -235,15 +237,15 @@ export default {
 
     this._startDrag = this.startDrag.bind(this)
 
-    this.$el.addEventListener(this.$root.isTouchSupported ? 'touchstart' : 'mousedown', this._startDrag, false)
+    this.$el.addEventListener(TOUCH_SUPPORTED ? 'touchstart' : 'mousedown', this._startDrag, false)
 
     this._doDrag = this.doDrag.bind(this)
 
-    window.addEventListener(this.$root.isTouchSupported ? 'touchmove' : 'mousemove', this._doDrag, false)
+    window.addEventListener(TOUCH_SUPPORTED ? 'touchmove' : 'mousemove', this._doDrag, false)
 
     this._endDrag = this.endDrag.bind(this)
 
-    window.addEventListener(this.$root.isTouchSupported ? 'touchend' : 'mouseup', this._endDrag, false)
+    window.addEventListener(TOUCH_SUPPORTED ? 'touchend' : 'mouseup', this._endDrag, false)
 
     this._doResize = this.refreshHandlers.bind(this)
 
@@ -251,8 +253,8 @@ export default {
   },
 
   beforeDestroy() {
-    window.removeEventListener(this.$root.isTouchSupported ? 'touchmove' : 'mousemove', this._doDrag)
-    window.removeEventListener(this.$root.isTouchSupported ? 'touchend' : 'mouseup', this._endDrag)
+    window.removeEventListener(TOUCH_SUPPORTED ? 'touchmove' : 'mousemove', this._doDrag)
+    window.removeEventListener(TOUCH_SUPPORTED ? 'touchend' : 'mouseup', this._endDrag)
     window.removeEventListener('resize', this._doResize)
 
     this.onStoreMutation()
@@ -323,7 +325,7 @@ export default {
 
       this.refreshCaretPosition()
 
-      this.thresholds[this.selectedIndex].amount = this.$root.formatPrice(amount)
+      this.thresholds[this.selectedIndex].amount = formatPrice(amount)
     },
 
     endDrag(event) {

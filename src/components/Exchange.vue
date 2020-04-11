@@ -15,16 +15,14 @@
       <span
         v-if="!isNaN(settings.threshold) && settings.threshold !== 1"
         class="settings-exchange__threshold"
-        >×{{ settings.threshold }}</span
-      >
+      >×{{ settings.threshold }}</span>
       <div class="settings-exchange__identity">
-        <div class="settings-exchange__name">
-          {{ exchange.id.replace('_', ' ') }}
-          <i v-if="settings.ohlc !== false" class="icon-line-chart"></i>
-        </div>
-        <small class="settings-exchange__error" v-if="exchange.error">{{
+        <div class="settings-exchange__name">{{ exchange.id.replace('_', ' ') }}</div>
+        <small class="settings-exchange__error" v-if="exchange.error">
+          {{
           exchange.error
-        }}</small>
+          }}
+        </small>
         <small
           class="settings-exchange__price"
           v-if="exchange.price"
@@ -42,22 +40,19 @@
         >
           <i class="icon-eye"></i>
         </button>
-        <button
-          class="settings-exchange__more"
-          @click.stop.prevent="expanded = !expanded"
-        >
+        <button class="settings-exchange__more" @click.stop.prevent="expanded = !expanded">
           <i class="icon-down"></i>
         </button>
       </div>
     </div>
     <div class="settings-exchange__detail" v-if="expanded">
       <div class="form-group">
-        <label
-          >Threshold
-          <span v-if="exchanges[exchange.id].threshold !== 1"
-            >x{{ exchanges[exchange.id].threshold }}</span
-          ></label
-        >
+        <label>
+          Threshold
+          <span
+            v-if="exchanges[exchange.id].threshold !== 1"
+          >x{{ exchanges[exchange.id].threshold }}</span>
+        </label>
         <slider
           :step="0.01"
           :min="0"
@@ -77,24 +72,12 @@
           "
         />
       </div>
-      <div class="form-group mt8">
-        <label
-          class="checkbox-control"
-          v-tippy
-          title="Include exchange in main candlestick chart"
-        >
-          <input
-            type="checkbox"
-            class="form-control"
-            :checked="settings.ohlc !== false"
-            @change="$store.commit('toggleExchangeOHLC', exchange.id)"
-          />
-          <div></div>
-          <span>Include in OHLC</span>
-        </label>
-      </div>
       <div v-if="exchange.indexedProducts.length" class="form-group mt8">
-        <button v-if="canRefreshProducts" class="btn -red -small" @click="refreshProducts">Refresh products ({{ exchange.indexedProducts.length }})</button>
+        <button
+          v-if="canRefreshProducts"
+          class="btn -red -small"
+          @click="refreshProducts"
+        >Refresh products ({{ exchange.indexedProducts.length }})</button>
       </div>
     </div>
   </div>
@@ -109,7 +92,7 @@ export default {
   data() {
     return {
       canRefreshProducts: true,
-      expanded: false,
+      expanded: false
     }
   },
   props: ['exchange'],
@@ -117,7 +100,7 @@ export default {
     ...mapState(['pair', 'exchanges']),
     settings() {
       return this.$store.state.exchanges[this.exchange.id]
-    },
+    }
   },
   methods: {
     toggleExchange() {
@@ -132,21 +115,21 @@ export default {
       }
     },
     refreshProducts(exchange) {
-      this.canRefreshProducts = false;
+      this.canRefreshProducts = false
 
       setTimeout(() => {
-        this.canRefreshProducts = true;
-      }, 3000);
+        this.canRefreshProducts = true
+      }, 3000)
 
       this.exchange.refreshProducts().then(() => {
         socket.$emit('alert', {
           type: 'info',
           title: `${this.exchange.id}'s products refreshed`,
-          message: `${this.exchange.indexedProducts.length} products was saved`,
+          message: `${this.exchange.indexedProducts.length} products was saved`
         })
       })
     }
-  },
+  }
 }
 </script>
 

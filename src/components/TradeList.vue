@@ -1,12 +1,14 @@
 <template>
-  <div id="trades" class="trades" :class="{ '-logos': this.showLogos }">
+  <div id="trades" :class="{ '-logos': this.showLogos }">
     <ul ref="tradesContainer"></ul>
-    <div v-if="!tradesCount" class="trades__item -empty">Nothing to show, yet.</div>
+    <div v-if="!tradesCount" class="trade -empty">Nothing to show, yet.</div>
   </div>
 </template>
 
 <script>
 import { mapState } from 'vuex'
+
+import { ago, formatPrice, formatAmount } from '../utils/helpers'
 
 import socket from '../services/socket'
 import Sfx from '../services/sfx'
@@ -16,7 +18,6 @@ let LAST_TRADE_TIMESTAMP
 export default {
   data() {
     return {
-      ticks: {},
       gifs: {},
       tradesCount: 0,
       lastSide: null
@@ -24,17 +25,15 @@ export default {
   },
   computed: {
     ...mapState([
+      'actives',
       'pair',
       'maxRows',
       'thresholds',
       'exchanges',
       'useAudio',
-      'liquidationsOnlyList',
       'audioIncludeInsignificants',
       'preferQuoteCurrencySize',
       'decimalPrecision',
-      'aggregationLag',
-      'tradeSpray',
       'showLogos'
     ])
   },
@@ -87,7 +86,7 @@ export default {
 
     this.timeAgoInterval = setInterval(() => {
       for (let element of this.$el.querySelectorAll('[timestamp]')) {
-        element.innerHTML = this.$root.ago(element.getAttribute('timestamp'))
+        element.innerHTML = ago(element.getAttribute('timestamp'))
       }
     }, 1000)
   },
@@ -106,80 +105,47 @@ export default {
       this.clearList()
     },
     onTrades(trades, silent = false) {
-      for (let trade of trades) {
-        this.processTrade(trade, Math.min(2000, trades[trades.length - 1][1] - trades[0][1]), silent)
-      }
-    },
-    processTrade(trade, silent = false) {
-      const size = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
+      for (let i = 0; i < trades.length; i++) {
+        const trade = trades[i]
+        const size = trade.size * (this.preferQuoteCurrencySize ? trade.price : 1)
 
-      const multiplier = typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1
+        const multiplier = typeof this.exchanges[trade.exchange].threshold !== 'undefined' ? +this.exchanges[trade.exchange].threshold : 1
 
-      if (trade[5] === 1) {
+        if (trade.liquidation) {
+          if (
+            !silent &&
+            this.useAudio &&
+            ((this.audioIncludeInsignificants && size > this.thresholds[1].amount * Math.max(0.1, multiplier) * 0.1) ||
+              size > this.thresholds[1].amount * Math.max(0.1, multiplier))
+          ) {
+            this.sfx.liquidation(size / this.thresholds[0].amount)
+          }
+
+          if (size >= this.thresholds[0].amount * multiplier) {
+            let liquidationMessage = `<i class="icon-currency"></i> <strong>${formatAmount(size, 1)}</strong>`
+
+            liquidationMessage += `&nbsp;liq<span class="min-280">uidate</span>d <strong>${
+              trade.side === 'sell' ? 'SHORT' : 'LONG'
+            }</strong> @ <i class="icon-currency"></i> ${formatPrice(trade.price)}`
+
+            this.appendRow(trade, '-liquidation', liquidationMessage)
+          }
+          return
+        }
+
         if (
           !silent &&
           this.useAudio &&
           ((this.audioIncludeInsignificants && size > this.thresholds[1].amount * Math.max(0.1, multiplier) * 0.1) ||
             size > this.thresholds[1].amount * Math.max(0.1, multiplier))
         ) {
-          this.sfx.liquidation(size / this.thresholds[0].amount)
+          this.sfx && this.sfx.tradeToSong(size / (this.thresholds[1].amount * Math.max(0.1, multiplier)), trade.side)
         }
 
         if (size >= this.thresholds[0].amount * multiplier) {
-          let liquidationMessage = `<i class="icon-currency"></i> <strong>${this.$root.formatAmount(size, 1)}</strong>`
-
-          liquidationMessage += `&nbsp;liq<span class="min-280">uidate</span>d <strong>${
-            trade[4] > 0 ? 'SHORT' : 'LONG'
-          }</strong> @ <i class="icon-currency"></i> ${this.$root.formatPrice(trade[2])}`
-
-          this.appendRow(trade, '-liquidation', liquidationMessage)
-        }
-        return
-      } else if (this.liquidationsOnlyList) {
-        return
-      }
-
-      if (
-        !silent &&
-        this.useAudio &&
-        ((this.audioIncludeInsignificants && size > this.thresholds[1].amount * Math.max(0.1, multiplier) * 0.1) ||
-          size > this.thresholds[1].amount * Math.max(0.1, multiplier))
-      ) {
-        this.sfx && this.sfx.tradeToSong(size / (this.thresholds[1].amount * Math.max(0.1, multiplier)), trade[4])
-      }
-
-      // group by [exchange name + buy=1/sell=0] (ex bitmex1)
-      const tid = trade[0] + trade[4]
-      const now = +new Date()
-
-      if (this.thresholds[0].amount) {
-        if (this.ticks[tid]) {
-          if (!this.aggregationLag || trade[1] - this.ticks[tid][1] > this.aggregationLag) {
-            delete this.ticks[tid]
-          } else {
-            // average group prices
-            this.ticks[tid][2] = (this.ticks[tid][2] * this.ticks[tid][3] + trade[2] * trade[3]) / 2 / ((this.ticks[tid][3] + trade[3]) / 2)
-
-            // sum volume
-            this.ticks[tid][3] += trade[3]
-
-            if (this.ticks[tid][2] * this.ticks[tid][3] >= this.thresholds[0].amount * multiplier) {
-              this.appendRow(this.ticks[tid])
-              delete this.ticks[tid]
-            }
-
-            return
-          }
-        }
-
-        if (!this.ticks[tid] && size < this.thresholds[0].amount * multiplier) {
-          this.ticks[tid] = trade
-          return
+          this.appendRow(trade, null, null)
         }
       }
-
-      this.appendRow(trade)
-      // }, delay)
     },
     appendRow(trade, classname = '', message = null) {
       if (!this.tradesCount) {
@@ -189,21 +155,19 @@ export default {
       this.tradesCount++
 
       const multiplier =
-        this.exchanges[trade[0]] && typeof this.exchanges[trade[0]].threshold !== 'undefined' ? +this.exchanges[trade[0]].threshold : 1
+        this.exchanges[trade.exchange] && typeof this.exchanges[trade.exchange].threshold !== 'undefined'
+          ? +this.exchanges[trade.exchange].threshold
+          : 1
 
-      let amount = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
+      let amount = trade.size * (this.preferQuoteCurrencySize ? trade.price : 1)
 
       const li = document.createElement('li')
-      li.className = ('trades__item ' + classname).trim()
-      li.className += ' -' + trade[0]
+      li.className = ('trade ' + classname).trim()
+      li.className += ' -' + trade.exchange
 
-      if (trade[4]) {
-        li.className += ' -buy'
-      } else {
-        li.className += ' -sell'
-      }
+      li.className += ' -' + trade.side
 
-      if (trade[0].length > 10) {
+      if (trade.exchange.length > 10) {
         li.className += ' -sm'
       }
 
@@ -237,48 +201,48 @@ export default {
         li.className += ' level-' + i
       }
 
-      amount = this.$root.formatAmount(trade[2] * trade[3])
+      amount = formatAmount(trade.price * trade.size)
 
       if (!message) {
-        if (trade[4] !== this.lastSide) {
+        if (trade.side !== this.lastSide) {
           const side = document.createElement('div')
-          side.className = 'trades__item__side icon-side'
+          side.className = 'trade__side icon-side'
           li.appendChild(side)
         }
 
-        this.lastSide = trade[4]
+        this.lastSide = trade.side
       }
 
       const exchange = document.createElement('div')
-      exchange.className = 'trades__item__exchange'
-      exchange.innerText = trade[0].replace('_', ' ')
+      exchange.className = 'trade__exchange'
+      exchange.innerText = trade.exchange.replace('_', ' ')
       li.appendChild(exchange)
 
       if (message) {
         const message_div = document.createElement('div')
-        message_div.className = 'trades__item__message'
+        message_div.className = 'trade__message'
         message_div.innerHTML = message
         li.appendChild(message_div)
       } else {
         const price = document.createElement('div')
-        price.className = 'trades__item__price'
-        price.innerHTML = `<span class="icon-quote"></span> <span>${this.$root.formatPrice(trade[2])}</span>`
+        price.className = 'trade__price'
+        price.innerHTML = `<span class="icon-quote"></span> <span>${formatPrice(trade.price)}</span>`
         li.appendChild(price)
 
-        if (this.tradeSpray && trade[6]) {
-          price.innerHTML += `<span class="trade__spray"> - ${trade[6]}</span>`
+        if (trade.slippage && (trade.slippage > 1 || trade.slippage < -1)) {
+          price.setAttribute('slippage', (trade.slippage > 0 ? '+' : '-') + app.getAttribute('data-symbol') + Math.abs(trade.slippage).toFixed(1))
         }
 
         const amount_div = document.createElement('div')
-        amount_div.className = 'trades__item__amount'
+        amount_div.className = 'trade__amount'
 
         const amount_quote = document.createElement('span')
-        amount_quote.className = 'trades__item__amount__quote'
+        amount_quote.className = 'trade__amount__quote'
         amount_quote.innerHTML = `<span class="icon-quote"></span> <span>${amount}</span>`
 
         const amount_base = document.createElement('span')
-        amount_base.className = 'trades__item__amount__base'
-        amount_base.innerHTML = `<span class="icon-base"></span> <span>${this.$root.formatAmount(trade[3])}</span>`
+        amount_base.className = 'trade__amount__base'
+        amount_base.innerHTML = `<span class="icon-base"></span> <span>${formatAmount(trade.size)}</span>`
 
         amount_div.appendChild(amount_quote)
         amount_div.appendChild(amount_base)
@@ -286,15 +250,15 @@ export default {
       }
 
       const date = document.createElement('div')
-      date.className = 'trades__item__date'
+      date.className = 'trade__date'
 
-      let timestamp = Math.floor(trade[1] / 1000) * 1000
+      let timestamp = Math.floor(trade.timestamp / 1000) * 1000
 
       if (timestamp !== LAST_TRADE_TIMESTAMP) {
         LAST_TRADE_TIMESTAMP = timestamp
 
-        date.setAttribute('timestamp', trade[1])
-        date.innerText = this.$root.ago(timestamp)
+        date.setAttribute('timestamp', trade.timestamp)
+        date.innerText = ago(timestamp)
       }
 
       li.appendChild(date)
@@ -412,9 +376,9 @@ export default {
       return 'rgb(' + (Math.round((t - R) * p) + R) + ',' + (Math.round((t - G) * p) + G) + ',' + (Math.round((t - B) * p) + B) + ')'
     },
     getTradeColor(trade, multiplier = 1) {
-      const amount = trade[3] * (this.preferQuoteCurrencySize ? trade[2] : 1)
+      const amount = trade.size * (this.preferQuoteCurrencySize ? trade.price : 1)
       const pct = amount / (this.thresholds[this.thresholds.length - 1].amount * multiplier)
-      const palette = this.colors[trade[4] > 0 ? 'buys' : 'sells']
+      const palette = this.colors[trade.side + 's']
 
       for (var i = 1; i < palette.length - 1; i++) {
         if (pct < palette[i].pct) {
@@ -480,7 +444,7 @@ export default {
   }
 }
 
-.trades {
+#trades {
   background-color: rgba(black, 0.2);
   line-height: 1;
 
@@ -492,7 +456,7 @@ export default {
   }
 
   &.-logos {
-    .trades__item__exchange {
+    .trade__exchange {
       text-indent: -9999px;
       flex-basis: 3em;
       flex-grow: 0;
@@ -500,14 +464,14 @@ export default {
     }
 
     @each $exchange in $exchanges {
-      .-#{$exchange} .trades__item__exchange {
+      .-#{$exchange} .trade__exchange {
         background-image: url('/static/exchanges/#{$exchange}.svg');
       }
     }
   }
 
-  &:not(.-logos) .trades__item.-sm {
-    .trades__item__exchange {
+  &:not(.-logos) .trade.-sm {
+    .trade__exchange {
       font-size: 0.75em;
       letter-spacing: -0.5px;
       margin-top: -5px;
@@ -516,13 +480,13 @@ export default {
       word-break: break-word;
     }
 
-    &.-liquidation .trades__item__exchange {
+    &.-liquidation .trade__exchange {
       max-width: 4em;
     }
   }
 }
 
-.trades__item {
+.trade {
   display: flex;
   flex-flow: row nowrap;
   padding: 0.4em 0.6em;
@@ -627,18 +591,18 @@ export default {
     white-space: nowrap;
   }
 
-  .trades__item__side {
+  .trade__side {
     flex-grow: 0;
     flex-basis: 1em;
     font-size: 1em;
     line-height: 1.06;
 
-    + .trades__item__message {
+    + .trade__message {
       margin-left: 0.5em;
     }
   }
 
-  .trades__item__exchange {
+  .trade__exchange {
     background-repeat: no-repeat;
     background-position: center center;
     flex-grow: 0.75;
@@ -656,14 +620,23 @@ export default {
     background-color: $pink !important;
     color: white !important;
 
-    .trades__item__exchange {
+    .trade__exchange {
       flex-grow: 0;
       flex-basis: auto;
       margin-left: 0;
     }
   }
 
-  .trades__item__amount {
+  .trade__price:after {
+    content: attr(slippage);
+    font-size: 80%;
+    position: relative;
+    top: -2px;
+    left: 2px;
+    opacity: 0.75;
+  }
+
+  .trade__amount {
     position: relative;
 
     > span {
@@ -673,60 +646,60 @@ export default {
       transition: all 0.1s ease-in-out;
       display: block;
 
-      &.trades__item__amount__quote {
+      &.trade__amount__quote {
         position: absolute;
       }
 
-      &.trades__item__amount__base {
+      &.trade__amount__base {
         transform: translateX(25%);
         opacity: 0;
       }
     }
 
     &:hover {
-      > span.trades__item__amount__base {
+      > span.trade__amount__base {
         transform: none;
         opacity: 1;
       }
 
-      > span.trades__item__amount__quote {
+      > span.trade__amount__quote {
         transform: translateX(-25%);
         opacity: 0;
       }
     }
   }
 
-  .trades__item__date {
+  .trade__date {
     text-align: right;
     flex-basis: 2.5em;
     flex-grow: 0;
   }
 
-  .trades__item__message {
+  .trade__message {
     flex-grow: 2;
     text-align: center;
     font-size: 90%;
   }
 }
 
-#app[data-prefer='base'] .trades__item .trades__item__amount {
-  .trades__item__amount__quote {
+#app[data-prefer='base'] .trade .trade__amount {
+  .trade__amount__quote {
     transform: translateX(-25%);
     opacity: 0;
   }
 
-  .trades__item__amount__base {
+  .trade__amount__base {
     transform: none;
     opacity: 1;
   }
 
   &:hover {
-    > span.trades__item__amount__base {
+    > span.trade__amount__base {
       transform: translateX(25%);
       opacity: 0;
     }
 
-    > span.trades__item__amount__quote {
+    > span.trade__amount__quote {
       transform: none;
       opacity: 1;
     }

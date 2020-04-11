@@ -49,7 +49,7 @@
               <span>
                 Prefer
                 <strong>{{ preferQuoteCurrencySize ? 'quote' : 'base'}}</strong> (
-                <i :class="preferQuoteCurrencySize ? 'icon-quote' : 'icon-base'"></i>) currency
+                <i :class="preferQuoteCurrencySize ? 'icon-quote' : 'icon-base'"></i>&nbsp;) currency
               </span>
             </label>
           </div>
@@ -98,6 +98,38 @@
                   @change="$store.commit('toggleLogos', $event.target.checked)"
                 />
                 <div></div>
+              </label>
+            </div>
+
+            <div class="form-group column__tight" title="Toggle aggregation" v-tippy>
+              <label>Aggr.</label>
+              <label
+                class="checkbox-control -aggr checkbox-control-input flex-right"
+                @change="$store.commit('toggleAggregation', $event.target.checked)"
+              >
+                <input type="checkbox" class="form-control" :checked="aggregateTrades" />
+                <div></div>
+              </label>
+            </div>
+
+            <div
+              class="form-group column__tight"
+              :title="showSlippage === 'price' ? 'Show slippage in $' : showSlippage === 'bps' ? 'Show slippage in basis point (bps)' : 'Slippage disabled'"
+              v-tippy
+            >
+              <label>Slipp.</label>
+              <label
+                class="checkbox-control -slippage checkbox-control-input flex-right"
+                @click.stop="$store.commit('toggleSlippage')"
+              >
+                <input type="checkbox" class="form-control" :checked="showSlippage" />
+                <div></div>
+                <span v-if="showSlippage === 'price'">
+                  <i class="icon-dollar"></i>
+                </span>
+                <span v-if="showSlippage === 'bps'">
+                  <i class="icon-bps" style="font-size:1.5em;"></i>
+                </span>
               </label>
             </div>
           </div>
@@ -194,123 +226,6 @@
         </div>
         <div
           class="settings__title"
-          @click="$store.commit('toggleSettingsPanel', 'stats')"
-          :class="{ closed: settings.indexOf('stats') > -1 }"
-        >
-          Stats
-          <i class="icon-up"></i>
-        </div>
-        <div class="settings-stats mb8 settings__activable" :class="{ active: showStats }">
-          <div class="column">
-            <div class="form-group column__tight">
-              <label
-                class="checkbox-control -on-off checkbox-control-input flex-right"
-                v-tippy="{ placement: 'bottom' }"
-                title="Enable stats"
-              >
-                <input
-                  type="checkbox"
-                  class="form-control"
-                  :checked="showStats"
-                  @change="$store.commit('toggleStats', $event.target.checked)"
-                />
-                <div></div>
-              </label>
-            </div>
-            <div class="form-group column__fill">
-              <input
-                v-tippy
-                title="Timeframe to watch (ie: 1m)"
-                type="string"
-                class="form-control"
-                :value="statsPeriodStringified"
-                @change="$store.commit('setStatsPeriod', $event.target.value)"
-                placeholder="Enter a timeframe (ie: 1m)"
-              />
-            </div>
-            <div class="form-group column__tight">
-              <label
-                class="checkbox-control -auto checkbox-control-input flex-right"
-                v-tippy="{ placement: 'bottom' }"
-                title="Enable graphs"
-              >
-                <input
-                  type="checkbox"
-                  class="form-control"
-                  :checked="statsGraphs"
-                  @change="$store.commit('toggleStatsGraphs', $event.target.checked)"
-                />
-                <div>
-                  <i class="icon-line-chart"></i>
-                </div>
-              </label>
-            </div>
-          </div>
-        </div>
-        <div
-          class="settings__title"
-          @click="$store.commit('toggleSettingsPanel', 'counters')"
-          :class="{ closed: settings.indexOf('counters') > -1 }"
-        >
-          Counter
-          <i class="icon-up"></i>
-        </div>
-        <div
-          class="settings-counters mb8 settings__activable column"
-          :class="{ active: showCounters }"
-        >
-          <div class="form-group column__tight">
-            <label
-              class="checkbox-control -on-off checkbox-control-input flex-right"
-              v-tippy="{ placement: 'bottom' }"
-              title="Enable counters"
-            >
-              <input
-                type="checkbox"
-                class="form-control"
-                :checked="showCounters"
-                @change="$store.commit('toggleCounters', $event.target.checked)"
-              />
-              <div></div>
-            </label>
-          </div>
-          <div class="form-group column__tight">
-            <label
-              class="checkbox-control -cml-abs checkbox-control-input flex-right"
-              v-tippy
-              :title="
-                cumulativeCounters ? 'Cumulative mode' : 'Absolute mode'
-              "
-            >
-              <input
-                type="checkbox"
-                class="form-control"
-                :checked="cumulativeCounters"
-                @change="
-                  $store.commit(
-                    'toggleCumulativeCounters',
-                    $event.target.checked
-                  )
-                "
-              />
-              <div></div>
-            </label>
-          </div>
-          <div class="form-group column__fill">
-            <input
-              v-tippy
-              title="Counters step separed by a comma (ie: 1m, 5m, 10m, 15m)"
-              type="string"
-              placeholder="Enter a set of timeframe (ie 1m, 15m)"
-              class="form-control"
-              :value="countersStepsStringified"
-              @change="replaceCounters($event.target.value)"
-            />
-            <small class="mt8">Volume sum by time</small>
-          </div>
-        </div>
-        <div
-          class="settings__title"
           @click="$store.commit('toggleSettingsPanel', 'chart')"
           :class="{ closed: settings.indexOf('chart') > -1 }"
         >
@@ -332,6 +247,49 @@
               />
               <div></div>
             </label>
+          </div>
+          <div class="column__fill">
+            <div class="form-group mb8">
+              <span>
+                Refresh chart every
+                <editable
+                  :content="chartRefreshRate"
+                  @output="$store.commit('setChartRefreshRate', $event)"
+                ></editable>&nbsp;ms
+              </span>
+            </div>
+            <div class="form-group mb8">
+              <label
+                class="checkbox-control flex-left"
+                v-tippy
+                title="Show liquidation volume bars"
+              >
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="chartLiquidations"
+                  @change="
+                    $store.commit('toggleChartLiquidations', $event.target.checked)
+                  "
+                />
+                <div></div>
+                <span>Liquidation bars</span>
+              </label>
+            </div>
+            <div class="form-group mb8">
+              <label class="checkbox-control flex-left" v-tippy title="Show CVD">
+                <input
+                  type="checkbox"
+                  class="form-control"
+                  :checked="chartCVD"
+                  @change="
+                    $store.commit('toggleChartCVD', $event.target.checked)
+                  "
+                />
+                <div></div>
+                <span>CVD</span>
+              </label>
+            </div>
           </div>
         </div>
         <div
@@ -372,53 +330,8 @@
                   placeholder="auto"
                   :content="decimalPrecision"
                   @output="$store.commit('setDecimalPrecision', $event)"
-                ></editable>decimal(s)
+                ></editable>&nbsp;decimal(s)
               </span>
-            </label>
-          </div>
-          <div class="form-group mb8">
-            <label class="checkbox-control">
-              <input
-                type="checkbox"
-                class="form-control"
-                :checked="!!aggregationLag"
-                @change="$store.commit('setAggregationLag', aggregationLag ? null : 1000)"
-              />
-              <div></div>
-              <span @click.stop.prevent="$event.currentTarget.children[0].focus()">
-                Stack trades to match threshold over
-                <editable
-                  placeholder="no lag"
-                  :content="aggregationLag"
-                  @output="$store.commit('setAggregationLag', $event)"
-                ></editable>ms
-              </span>
-            </label>
-          </div>
-          <div class="form-group mb8">
-            <label class="checkbox-control">
-              <input
-                type="checkbox"
-                class="form-control"
-                :checked="liquidationsOnlyList"
-                @change="$store.commit('toggleLiquidationsOnlyList', $event.target.checked)"
-              />
-              <div></div>
-              <span>
-                <strong>ONLY</strong> show liquidations
-              </span>
-            </label>
-          </div>
-          <div class="form-group mb8">
-            <label class="checkbox-control">
-              <input
-                type="checkbox"
-                class="form-control"
-                :checked="tradeSpray"
-                @change="$store.commit('toggleTradeSpray', $event.target.checked)"
-              />
-              <div></div>
-              <span>Show spray in basis points</span>
             </label>
           </div>
           <div class="form-group mb8">
@@ -472,6 +385,8 @@
 <script>
 import { mapState } from 'vuex'
 
+import { MASTER_DOMAIN, ago } from '../utils/helpers'
+
 import socket from '../services/socket'
 
 import Exchange from './Exchange.vue'
@@ -498,21 +413,9 @@ export default {
       'maxRows',
       'decimalPrecision',
       'showLogos',
-      'liquidationsOnlyList',
-      'aggregationLag',
-      'tradeSpray',
-      'showCounters',
-      'showStats',
-      'statsPeriod',
-      'statsGraphs',
-      'statsGraphsTimeframe',
-      'statsGraphsLength',
+      'showSlippage',
+      'aggregateTrades',
       'preferQuoteCurrencySize',
-      'counterPrecision',
-      'cumulativeCounters',
-      'hideIncompleteCounter',
-      'countersSteps',
-      'showChart',
       'actives',
       'thresholds',
       'showThresholdsAsTable',
@@ -520,27 +423,18 @@ export default {
       'audioIncludeInsignificants',
       'audioVolume',
       'timeframe',
+      'showChart',
+      'chartRefreshRate',
       'chartLiquidations',
-      'chartPadding',
-      'chartGridlines',
-      'chartGridlinesGap',
-      'chartCandlestick',
-      'chartSma',
-      'chartSmaLength',
-      'chartVolume',
-      'chartVolumeThreshold',
-      'chartVolumeOpacity',
-      'chartVolumeAverage',
-      'chartVolumeAverageLength',
-      'showExchangesBar',
-      'autoClearTrades',
-      'settings'
+      'chartCVD',
+      'settings',
+      'debug'
     ]),
     exchanges: () => {
       return socket.exchanges
     },
     showPairSubdomainHelp: state => {
-      if (!state.$root.isAggrTrade || !state.pair) {
+      if (!MASTER_DOMAIN || !state.pair) {
         return false
       }
 
@@ -549,54 +443,10 @@ export default {
       return !match || match.length < 2 || match[1].toLowerCase() !== state.pair.toLowerCase()
     }
   },
-  created() {
-    this.stringifyCounters()
-    this.stringifyStatsPeriod()
-  },
   beforeDestroy() {
     document.removeEventListener('click', this._closeTippinHandler)
   },
   methods: {
-    stringifyStatsPeriod() {
-      this.statsPeriodStringified = this.$root.ago(+new Date() - this.statsPeriod)
-    },
-    stringifyCounters() {
-      const now = +new Date()
-      this.countersStepsStringified = this.countersSteps.map(a => this.$root.ago(now - a)).join(', ')
-    },
-    replaceCounters(value) {
-      const counters = value
-        .split(',')
-        .map(a => {
-          a = a.trim()
-
-          if (/[\d.]+s/.test(a)) {
-            return parseFloat(a) * 1000
-          } else if (/[\d.]+h/.test(a)) {
-            return parseFloat(a) * 1000 * 60 * 60
-          } else {
-            return parseFloat(a) * 1000 * 60
-          }
-        })
-        .filter(function(item, pos, self) {
-          return self.indexOf(item) == pos
-        })
-
-      if (counters.filter(a => isNaN(a)).length) {
-        socket.$emit('alert', {
-          type: 'error',
-          title: `Invalid counter`,
-          message: `Your counters (${value}) contains invalid steps.`,
-          id: `counter_replace_error`
-        })
-        return
-      }
-
-      this.$store.commit('replaceCounterSteps', counters)
-
-      this.stringifyCounters()
-      this.stringifyStatsPeriod()
-    },
     reset() {
       window.localStorage && window.localStorage.clear()
 
@@ -645,6 +495,19 @@ export default {
 
   .stack__scroller {
     background-color: $dark;
+
+    @media screen and (min-width: 500px) {
+      animation: appear-from-right 0.3s $easeOutExpo;
+    }
+
+    @keyframes appear-from-right {
+      0% {
+        transform: translateX(100%);
+      }
+      100% {
+        transform: none;
+      }
+    }
   }
 
   @media screen and (min-width: 500px) {
@@ -654,12 +517,14 @@ export default {
     width: 100%;
 
     + .app__wrapper {
-      transform: translateX(320px);
+      transform: translateX(-320px);
     }
 
     .stack__scroller {
       width: 320px;
       height: 100%;
+      position: absolute;
+      right: 0;
     }
 
     .stack__wrapper {
@@ -922,6 +787,28 @@ export default {
         }
       }
 
+      &.-slippage input ~ div {
+        &:before,
+        &:after {
+          content: unicode($icon-slippery);
+        }
+
+        &:before {
+          font-size: 1.5em;
+        }
+      }
+
+      &.-aggr input ~ div {
+        &:before {
+          content: unicode($icon-ms);
+          font-size: 1.5em;
+        }
+
+        &:after {
+          content: unicode($icon-cross);
+        }
+      }
+
       &.-auto input {
         ~ div {
           width: auto;
@@ -1143,16 +1030,12 @@ export default {
   }
 
   .settings__activable {
-    .form-group {
+    .column__fill .form-group {
       opacity: 0.2;
-
-      &:first-child {
-        opacity: 1;
-      }
     }
 
     &.active {
-      .form-group {
+      .column__fill .form-group {
         opacity: 1;
       }
     }

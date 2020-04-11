@@ -13,7 +13,7 @@ class Exchange extends EventEmitter {
     this.price = null
     this.error = null
     this.shouldBeConnected = false
-    this.reconnectionDelay = 5000
+    this.reconnectionDelay = 1000
 
     this._pair = []
 
@@ -131,79 +131,78 @@ class Exchange extends EventEmitter {
     this.connected = true
     this.error = false
 
-    this.reconnectionDelay = 5000
+    this.reconnectionDelay = 1000
 
     this.emit('open', event)
   }
 
-  emitTrades(trades) {
+  queueTrades(trades) {
     if (!trades || !trades.length) {
       return
     }
 
-    const output = this.groupTrades(trades)
+    if (!store.state.aggregateTrades || this.preventAggregation) {
+      for (let i = 0; i < trades.length; i++) {
+        trades[i].slippage = trades[i].price - this.price
 
-    let isFirstTrade = !this.price
+        this.price = trades[i].price
+      }
 
-    this.price = output[output.length - 1][2]
+      return this.emit('trades', trades)
+    }
 
-    this.emit('live_trades', output, isFirstTrade)
-  }
-
-  /**
-   * Larges trades are often sent in the form on multiples trades
-   * For example a $1000000 trade on BitMEX can be received as 20 "small" trades, registered on the same timestamp (and side)
-   * groupTrades makes sure the output is a single $1000000
-   * and not 20 multiple trades which would show as multiple 100k$ in the TradeList
-   *
-   * @param {*} trades -[0]id -[1]date -[2]price -[3]size -[4]side
-   * @returns
-   * @memberof Exchange
-   */
-  groupTrades(trades) {
-    const group = {}
-    const sums = {}
-    const mins = {}
-    const maxs = {}
     const output = []
 
-    for (let trade of trades) {
-      const id = parseInt(trade[1]).toFixed() + '_' + trade[4] // timestamp + side
+    for (let i = 0; i < trades.length; i++) {
+      const trade = trades[i]
 
-      trade[2] = +trade[2]
-      trade[3] = +trade[3]
+      trade.slippage = trade.price - this.price
 
-      if (trade[5]) {
+      this.price = trade.price
+
+      if (trade.liquidation) {
+        if (this.queueTrades) {
+          output.push(this.queuedTrade)
+          delete this.queuedTrade
+          clearTimeout(this.queuedTradeTimeout)
+          delete this.queuedTradeTimeout
+        }
         output.push(trade)
-      } else if (group[id]) {
-        group[id][2] += +trade[2]
-        group[id][3] += +trade[3]
-        sums[id] += trade[2] * trade[3]
+        continue
+      }
 
-        if (store.state.tradeSpray) {
-          mins[id] = Math.min(mins[id] || Infinity, trade[2])
-          maxs[id] = Math.max(mins[id] || 0, trade[2])
+      if (this.queuedTrade) {
+        if (trade.timestamp > this.queuedTrade.timestamp || trade.side !== this.queuedTrade.side) {
+          output.push(this.queuedTrade)
+          this.queuedTrade = trade
+          clearTimeout(this.queuedTradeTimeout)
+          delete this.queuedTradeTimeout
+        } else if (trade.timestamp <= this.queuedTrade.timestamp && trade.side === this.queuedTrade.side) {
+          this.queuedTrade.size += +trade.size
+          this.queuedTrade.price = trade.price
+          this.queuedTrade.slippage = Math.max(this.queuedTrade.slippage, trade.slippage)
+
+          this.queuedTrade.aggr = true
+        } else {
+          debugger
         }
       } else {
-        group[id] = trade
-
-        sums[id] = trade[2] * trade[3]
+        // console.log(this.id, name, 'override queued trade')
+        this.queuedTrade = trade
       }
     }
 
-    const ids = Object.keys(group)
-
-    for (let i = 0; i < ids.length; i++) {
-      group[ids[i]][2] = sums[ids[i]] / group[ids[i]][3]
-
-      if (mins[ids[i]]) {
-        group[ids[i]][6] = Math.round(((maxs[ids[i]] - mins[ids[i]]) / mins[ids[i]]) * 10000)
-      }
-
-      output.push(group[ids[i]])
+    if (this.queuedTrade && !this.queuedTradeTimeout) {
+      this.queuedTradeTimeout = window.setTimeout(() => {
+        this.emit('trades', [this.queuedTrade])
+        delete this.queuedTrade
+        delete this.queuedTradeTimeout
+      }, 50)
     }
 
-    return output
+    if (output.length) {
+      this.emit('trades', output)
+    }
   }
 
   toFixed(number, precision) {
