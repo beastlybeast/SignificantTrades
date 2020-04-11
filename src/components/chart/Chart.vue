@@ -1738,8 +1738,8 @@ export default {
   &.-width {
     top: 0;
     left: auto;
-    width: 8px;
-    margin-right: -4px;
+    width: 16px;
+    margin-right: -8px;
     cursor: ew-resize;
     display: none;
 
