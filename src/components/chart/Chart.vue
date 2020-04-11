@@ -181,7 +181,7 @@ export default {
     ])
   },
   created() {
-    socket.$on('trades.instant', this.onTrades)
+    socket.$on('trades', this.onTrades)
 
     socket.$on('clean', this.onClean)
 
@@ -264,7 +264,7 @@ export default {
   beforeDestroy() {
     this.destroyChart()
 
-    socket.$off('trades.instant', this.onTrades)
+    socket.$off('trades', this.onTrades)
 
     socket.$off('clean', this.onClean)
 
@@ -565,6 +565,10 @@ export default {
      * @param {boolean} clear will clear the chart / initial fetch
      */
     fetch(clear) {
+      if (!socket.canFetch()) {
+        return Promise.reject('Fetch is disabled')
+      }
+
       const visibleRange = this.getVisibleRange()
       let rangeToFetch
 
@@ -586,22 +590,17 @@ export default {
       }
 
       if (!rangeToFetch) {
-        return Promise.resolve(false)
+        return Promise.reject('Nothing to fetch')
       }
 
       if (clear) {
+        this.preventImmediateRender = true
         this.clearData()
       }
 
       return socket
         .fetchHistoricalData(parseInt(rangeToFetch.from * 1000), parseInt(rangeToFetch.to * 1000 - 1))
         .then(({ data, from, to, format }) => {
-          if (!data) {
-            this.logActivity(`[fetch] no data`)
-            console.log(`[chart.fetch] no data ..`)
-            return false
-          }
-
           let chunk
 
           switch (format) {
@@ -623,6 +622,13 @@ export default {
 
           this.logActivity(`[fetch] success (${data.length} new ${format}s)`)
           this.renderVisibleChunks()
+        })
+        .catch(err => {
+          this.logActivity(`[fetch] ${err || 'unknown error'}`)
+        })
+        .then(() => {
+          this.preventImmediateRender = false
+          this.renderQueuedTrades()
         })
     },
 
@@ -667,7 +673,7 @@ export default {
      * @param{Trade[]} trades trades to process
      */
     onTrades(trades) {
-      if (this.chartRefreshRate) {
+      if (this.preventImmediateRender || this.chartRefreshRate) {
         Array.prototype.push.apply(queuedTrades, trades)
         return
       }
@@ -800,10 +806,8 @@ export default {
             }
 
             // feed activeChunk with active bar exchange snapshot
-            var j = 0
             for (let exchange in activeBar.exchanges) {
               if (activeBar.exchanges[exchange].hasData) {
-                j++
                 activeChunk.bars.push(this.cloneBar(activeBar.exchanges[exchange], activeBar.timestamp))
               }
             }
@@ -968,54 +972,7 @@ export default {
      * @param {Bar} bar bar to merge into activeBar
      */
     mergeIntoActiveBar(bar) {
-      if (!activeBar) {
-        activeBar = bar
-        return
-      }
-
-      console.log(
-        '[mergeIntoActiveBar] merge bar (',
-        this.formatTime(bar.timestamp),
-        Object.keys(bar.exchanges),
-        ') into activeBar (',
-        this.formatTime(activeBar.timestamp),
-        Object.keys(activeBar.exchanges),
-        ')'
-      )
-      if (bar.timestamp === activeBar.timestamp) {
-        console.log('[mergeIntoActiveBar] push bar into activebar (+= all properties...)')
-        for (let exchange in bar.exchanges) {
-          if (!activeBar.exchanges[exchange]) {
-            activeBar.exchanges[exchange] = bar.exchanges[exchange]
-            continue
-          }
-
-          activeBar.exchanges[exchange].cbuy += bar.exchanges[exchange].cbuy
-          activeBar.exchanges[exchange].csell += bar.exchanges[exchange].csell
-          activeBar.exchanges[exchange].vbuy += bar.exchanges[exchange].vbuy
-          activeBar.exchanges[exchange].vsell += bar.exchanges[exchange].vsell
-          activeBar.exchanges[exchange].lbuy += bar.exchanges[exchange].lbuy
-          activeBar.exchanges[exchange].lsell += bar.exchanges[exchange].lsell
-          activeBar.exchanges[exchange].open = bar.exchanges[exchange].open
-          activeBar.exchanges[exchange].high = Math.max(activeBar.exchanges[exchange].high, bar.exchanges[exchange].high)
-          activeBar.exchanges[exchange].low = Math.min(activeBar.exchanges[exchange].low, bar.exchanges[exchange].low)
-        }
-
-        activeBar.cbuy += bar.cbuy
-        activeBar.csell += bar.csell
-        activeBar.vbuy += bar.vbuy
-        activeBar.vsell += bar.vsell
-        activeBar.lbuy += bar.lbuy
-        activeBar.lsell += bar.lsell
-        activeBar.open = bar.open
-        activeBar.high = Math.max(activeBar.high, bar.high)
-        activeBar.low = Math.min(activeBar.low, bar.low)
-      } else if (bar.timestamp === activeBar.timestamp - this.timeframe) {
-        console.log('[mergeIntoActiveBar] update activeBar.open')
-        activeBar.open = bar.close
-      }
-
-      activeBar.series = bar.series
+      activeBar = bar
     },
 
     /**
@@ -1718,9 +1675,8 @@ export default {
       console.info('setup queue', getHms(this.chartRefreshRate))
 
       this._renderQueuedTradesInterval = setInterval(() => {
-        if (queuedTrades.length) {
-          this.renderRealtimeTrades(queuedTrades)
-          queuedTrades.splice(0, queuedTrades.length)
+        if (!this.preventImmediateRender) {
+          this.renderQueuedTrades()
         }
       }, this.chartRefreshRate)
     },
@@ -1734,10 +1690,16 @@ export default {
       clearInterval(this._renderQueuedTradesInterval)
       delete this._renderQueuedTradesInterval
 
-      if (queuedTrades.length) {
-        this.renderRealtimeTrades(queuedTrades)
-        queuedTrades.splice(0, queuedTrades.length)
+      this.renderQueuedTrades()
+    },
+
+    renderQueuedTrades() {
+      if (!queuedTrades.length) {
+        return
       }
+
+      this.renderRealtimeTrades(queuedTrades)
+      queuedTrades.splice(0, queuedTrades)
     }
   }
 }

@@ -141,14 +141,25 @@ class Exchange extends EventEmitter {
       return
     }
 
-    if (!store.state.aggregateTrades || this.preventAggregation) {
-      for (let i = 0; i < trades.length; i++) {
-        trades[i].slippage = trades[i].price - this.price
+    if (!store.state.showSlippage) {
+      this.price = trades[trades.length - 1].price
+    }
 
-        this.price = trades[i].price
+    if (!store.state.aggregateTrades || this.preventAggregation) {
+      if (store.state.showSlippage) {
+        for (let i = 0; i < trades.length; i++) {
+          trades[i].slippage = trades[i].price - this.price
+
+          this.price = trades[i].price
+        }
       }
 
-      return this.emit('trades', trades)
+      this.emit('trades', trades)
+      this.emit('trades.aggr', trades)
+
+      return
+    } else {
+      this.emit('trades', trades)
     }
 
     const output = []
@@ -156,9 +167,11 @@ class Exchange extends EventEmitter {
     for (let i = 0; i < trades.length; i++) {
       const trade = trades[i]
 
-      trade.slippage = trade.price - this.price
+      if (store.state.showSlippage) {
+        trade.slippage = trade.price - this.price
 
-      this.price = trade.price
+        this.price = trade.price
+      }
 
       if (trade.liquidation) {
         if (this.queueTrades) {
@@ -180,11 +193,11 @@ class Exchange extends EventEmitter {
         } else if (trade.timestamp <= this.queuedTrade.timestamp && trade.side === this.queuedTrade.side) {
           this.queuedTrade.size += +trade.size
           this.queuedTrade.price = trade.price
-          this.queuedTrade.slippage = Math.max(this.queuedTrade.slippage, trade.slippage)
 
-          this.queuedTrade.aggr = true
-        } else {
-          debugger
+          if (store.state.showSlippage) {
+            this.queuedTrade.slippage = Math.max(this.queuedTrade.slippage, trade.slippage)
+            this.queuedTrade.aggr = true
+          }
         }
       } else {
         // console.log(this.id, name, 'override queued trade')
@@ -194,7 +207,7 @@ class Exchange extends EventEmitter {
 
     if (this.queuedTrade && !this.queuedTradeTimeout) {
       this.queuedTradeTimeout = window.setTimeout(() => {
-        this.emit('trades', [this.queuedTrade])
+        this.emit('trades.aggr', [this.queuedTrade])
         delete this.queuedTrade
         delete this.queuedTradeTimeout
       }, 50)

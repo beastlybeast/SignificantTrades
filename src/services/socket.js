@@ -86,7 +86,8 @@ const emitter = new Vue({
 
       this.queue = this.queue.concat([trade])
 
-      this.emitTrades([trade])
+      this.$emit('trades', [trade])
+      this.$emit('trades.aggr', [trade])
     }
 
     window.formatTime = function(time) {
@@ -107,8 +108,15 @@ const emitter = new Vue({
 
         this.timestamps[exchange.id] = trades[trades.length - 1].timestamp
 
-        // Array.prototype.push.apply(this.queue, trades)
-        this.emitTrades(trades)
+        this.$emit('trades', trades)
+      })
+
+      exchange.on('trades.aggr', trades => {
+        if (!trades || !trades.length) {
+          return
+        }
+
+        this.$emit('trades.aggr', trades)
       })
 
       exchange.on('open', event => {
@@ -259,9 +267,6 @@ const emitter = new Vue({
 
       return null
     },
-    emitTrades(trades, event = 'trades.instant') {
-      this.$emit(event, trades)
-    },
     /* emitTradesAsync() {
       if (!this.queue.length) {
         return
@@ -289,7 +294,7 @@ const emitter = new Vue({
       const url = this.getApiUrl(from, to)
 
       if (this.lastFetchUrl === url) {
-        return Promise.resolve()
+        return Promise.reject()
       }
 
       this.lastFetchUrl = url
@@ -312,14 +317,14 @@ const emitter = new Vue({
         })
           .then(response => {
             if (!response.data || typeof response.data !== 'object') {
-              return resolve()
+              return reject()
             }
 
             const format = response.data.format
             let data = response.data.results
 
             if (!data.length) {
-              return
+              return reject()
             }
 
             switch (response.data.format) {
@@ -329,8 +334,6 @@ const emitter = new Vue({
               default:
                 break
             }
-
-            this.$emit('historical', data, from, to)
 
             resolve({
               format: format,

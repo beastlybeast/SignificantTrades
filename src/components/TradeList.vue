@@ -42,7 +42,7 @@ export default {
     this.retrieveColorSteps()
 
     socket.$on('pairing', this.onPairing)
-    socket.$on('trades.instant', this.onTrades)
+    socket.$on('trades.aggr', this.onTrades)
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
@@ -92,7 +92,7 @@ export default {
   },
   beforeDestroy() {
     socket.$off('pairing', this.onPairing)
-    socket.$off('trades.instant', this.onTrades)
+    socket.$off('trades.aggr', this.onTrades)
 
     this.onStoreMutation()
 

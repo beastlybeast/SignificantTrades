@@ -47,7 +47,6 @@ export default {
     return {
       fetchLabel: 'Fetch timeframe',
       isPopupMode: window.opener !== null,
-      canFetch: false,
       showTimeframeDropdown: false,
       timeframeLabel: '15m',
       timeframes: {}
@@ -58,15 +57,10 @@ export default {
   },
   created() {
     this._fetchLabel = this.fetchLabel.substr()
-    this.canFetch = socket.canFetch()
 
     const now = +new Date()
 
     ;[1, 3, 5, 10, 15, 30, 60, 60 * 3, 60 * 5, 60 * 15].forEach(span => (this.timeframes[span] = ago(now - span * 1000)))
-
-    socket.$on('pairing', (pair, canFetch) => {
-      this.canFetch = canFetch && this.showChart
-    })
 
     socket.$on('fetchStart', () => {
       //
