@@ -777,7 +777,9 @@ export default {
 
       let canRender = !activeChunk || activeChunk.rendered
 
-      for (let i = 0; i < trades.length; i++) {
+      let i = 0
+
+      for (i; i < trades.length; i++) {
         const trade = trades[i]
         const timestamp = Math.floor(trade.timestamp / 1000 / this.timeframe) * this.timeframe
 
