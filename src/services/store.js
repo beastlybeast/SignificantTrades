@@ -125,6 +125,10 @@ if (STORED && STORED.thresholds && STORED.thresholds.length) {
   }
 }
 
+if (STORED && STORED.timeframe > 1000) {
+  STORED.timeframe /= 1000
+}
+
 // </migrations>
 
 /**
