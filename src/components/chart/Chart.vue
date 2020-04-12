@@ -1701,7 +1701,7 @@ export default {
       }
 
       this.renderRealtimeTrades(queuedTrades)
-      queuedTrades.splice(0, queuedTrades)
+      queuedTrades.splice(0, queuedTrades.length)
     }
   }
 }
