@@ -284,7 +284,7 @@ const emitter = new Vue({
 
       url = url.replace(/\{from\}/, from)
       url = url.replace(/\{to\}/, to)
-      url = url.replace(/\{timeframe\}/, this.timeframe)
+      url = url.replace(/\{timeframe\}/, this.timeframe * 1000)
       url = url.replace(/\{pair\}/, this.pair.toLowerCase())
       url = url.replace(/\{exchanges\}/, this.actives.join('+'))
 
