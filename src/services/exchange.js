@@ -148,6 +148,8 @@ class Exchange extends EventEmitter {
       return
     }
 
+    this.price = trades[trades.length - 1].price
+
     this.emit('trades', trades)
     return
 
