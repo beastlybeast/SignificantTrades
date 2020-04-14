@@ -112,6 +112,17 @@
               </label>
             </div>
 
+            <div class="form-group column__tight" title="ONLY show liquidation" v-tippy>
+              <label class="condensed"><small>Rip only</small></label>
+              <label
+                class="checkbox-control -rip checkbox-control-input flex-right"
+                @change="$store.commit('toggleLiquidationsOnly', $event.target.checked)"
+              >
+                <input type="checkbox" class="form-control" :checked="liquidationsOnly" />
+                <div></div>
+              </label>
+            </div>
+
             <div
               class="form-group column__tight"
               :title="showSlippage === 'price' ? 'Show slippage in $' : showSlippage === 'bps' ? 'Show slippage in basis point (bps)' : 'Slippage disabled'"
@@ -252,15 +263,15 @@
           </div>
           <div class="form-group column__tight">
             <label
-              class="checkbox-control -megaphone checkbox-control-input flex-right"
+              class="checkbox-control -count-or-volume checkbox-control-input flex-right"
               v-tippy="{ placement: 'bottom' }"
-              title="Show little badge with trade price above counter as they come"
+              title="Sum amount of trades instead of volume"
             >
               <input
                 type="checkbox"
                 class="form-control"
-                :checked="counterHighlights"
-                @change="$store.commit('toggleCounterHighlights', $event.target.checked)"
+                :checked="countersCount"
+                @change="$store.commit('toggleCountersCount', $event.target.checked)"
               />
               <div></div>
             </label>
@@ -467,6 +478,7 @@ export default {
       'decimalPrecision',
       'showLogos',
       'showSlippage',
+      'liquidationsOnly',
       'aggregateTrades',
       'preferQuoteCurrencySize',
       'actives',
@@ -474,8 +486,7 @@ export default {
       'showThresholdsAsTable',
       'showCounters',
       'countersSteps',
-      'cumulativeCounters',
-      'hideIncompleteCounter',
+      'countersCount',
       'useAudio',
       'audioIncludeInsignificants',
       'audioVolume',
@@ -902,14 +913,14 @@ export default {
         }
       }
 
-      &.-megaphone input ~ div {
-        &:before,
-        &:after {
-          content: unicode($icon-megaphone);
+      &.-count-or-volume input ~ div {
+        &:before {
+          content: unicode($icon-countdown);
+          font-size: 1.5em;
         }
 
-        &:before {
-          font-size: 1.5em;
+        &:after {
+          content: unicode($icon-balance);
         }
       }
 
@@ -921,6 +932,17 @@ export default {
 
         &:after {
           content: unicode($icon-cross);
+        }
+      }
+
+      &.-rip input ~ div {
+        &:before,
+        &:after {
+          content: unicode($icon-skull);
+        }
+
+        &:before {
+          font-size: 1.5em;
         }
       }
 
@@ -1145,12 +1167,12 @@ export default {
   }
 
   .settings__activable {
-    .column__fill .form-group {
+    .form-group {
       opacity: 0.2;
     }
 
     &.active {
-      .column__fill .form-group {
+      .form-group {
         opacity: 1;
       }
     }

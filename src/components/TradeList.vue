@@ -31,6 +31,8 @@ export default {
       'thresholds',
       'exchanges',
       'useAudio',
+      'showSlippage',
+      'liquidationsOnly',
       'audioIncludeInsignificants',
       'preferQuoteCurrencySize',
       'decimalPrecision',
@@ -126,10 +128,12 @@ export default {
 
             liquidationMessage += `&nbsp;liq<span class="min-280">uidate</span>d <strong>${
               trade.side === 'sell' ? 'SHORT' : 'LONG'
-            }</strong> @ <i class="icon-currency"></i> ${formatPrice(trade.price)}`
+            }</strong> @ <i class="icon-quote"></i> ${formatPrice(trade.price)}`
 
             this.appendRow(trade, '-liquidation', liquidationMessage)
           }
+          return
+        } else if (this.liquidationsOnly) {
           return
         }
 
@@ -229,8 +233,10 @@ export default {
         price.innerHTML = `<span class="icon-quote"></span> <span>${formatPrice(trade.price)}</span>`
         li.appendChild(price)
 
-        if (trade.slippage) {
+        if (this.showSlippage === 'price' && trade.slippage / trade.price > 0.0001) {
           price.setAttribute('slippage', (trade.slippage > 0 ? '+' : '-') + app.getAttribute('data-symbol') + Math.abs(trade.slippage).toFixed(1))
+        } else if (this.showSlippage === 'bps' && trade.slippage) {
+          price.setAttribute('slippage', (trade.slippage > 0 ? '+' : '-') + trade.slippage)
         }
 
         const amount_div = document.createElement('div')

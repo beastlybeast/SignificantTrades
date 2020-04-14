@@ -41,6 +41,7 @@ const DEFAULTS = {
   aggregateTrades: true,
   decimalPrecision: null,
   showSlippage: false,
+  liquidationsOnly: false,
   showLogos: true,
   showChart: true,
   chartRefreshRate: 50,
@@ -57,9 +58,8 @@ const DEFAULTS = {
   showThresholdsAsTable: true,
   showCounters: false,
   countersPrecision: 10000,
-  counterHighlights: false,
   countersSteps: [1000 * 30, 1000 * 60, 1000 * 60 * 15, 1000 * 60 * 30],
-  hideIncompleteCounter: true,
+  countersCount: true,
 
   // runtime state
   isSnaped: true,
@@ -164,6 +164,9 @@ const store = new Vuex.Store({
       let index = Math.max(0, values.indexOf(state.showSlippage))
 
       state.showSlippage = values[(index + 1) % values.length]
+    },
+    toggleLiquidationsOnly(state, value) {
+      state.liquidationsOnly = value ? true : false
     },
     toggleAggregation(state, value) {
       state.aggregateTrades = value ? true : false
@@ -291,14 +294,8 @@ const store = new Vuex.Store({
     toggleCounters(state, value) {
       state.showCounters = value ? true : false
     },
-    toggleCounterHighlights(state, value) {
-      state.counterHighlights = value ? true : false
-    },
     setCounterPrecision(state, payload) {
       state.counterPrecision = value
-    },
-    toggleHideIncompleteCounter(state, value) {
-      state.hideIncompleteCounter = value ? true : false
     },
     toggleCumulativeCounters(state, value) {
       state.cumulativeCounters = value ? true : false
@@ -316,6 +313,9 @@ const store = new Vuex.Store({
     },
     replaceCounterSteps(state, counters) {
       state.countersSteps = counters.sort((a, b) => a - b)
+    },
+    toggleCountersCount(state, value) {
+      state.countersCount = value ? true : false
     },
 
     // runtime commit

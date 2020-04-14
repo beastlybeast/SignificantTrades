@@ -17,8 +17,9 @@ import Bybit from '../exchanges/bybit'
 import Ftx from '../exchanges/ftx'
 
 import store from '../services/store'
+import { formatAmount } from '../utils/helpers'
 
-// const TRADES={};
+// const TRADES=[];
 
 const QUEUE = {};
 const REFS = {}
@@ -98,6 +99,10 @@ const emitter = new Vue({
         side: side ? 'buy' : 'sell'
       }
 
+      if (type === 1) {
+        trade.liquidation = true;
+      }
+
       this.$emit('trades', [trade])
       this.$emit('trades.aggr', [trade])
     }
@@ -116,6 +121,21 @@ const emitter = new Vue({
       return QUEUE
     }
 
+    /*window.getTrades = () => {
+      const trades = JSON.parse(JSON.stringify(TRADES))
+
+      
+      var myjson = JSON.stringify(trades.map(trade => {
+        trade.amount = formatAmount(trade.price * trade.size)
+        return trade;
+      }), null, 2);
+      console.log(myjson);
+      var x = window.open();
+      x.document.open();
+      x.document.write('<html><body><pre>' + myjson + '</pre></body></html>');
+      x.document.close();
+    }*/
+
     this.exchanges.forEach(exchange => {
       exchange.on('trades', trades => {
         if (!trades || !trades.length) {
@@ -133,6 +153,8 @@ const emitter = new Vue({
 
           trade.ref = REFS[exchange.id] || trade.price;
 
+          // TRADES.push(trade);
+
           REFS[exchange.id] = trade.price;
 
           if (QUEUE[exchange.id]) {
@@ -141,13 +163,13 @@ const emitter = new Vue({
             if (queuedTrade.timestamp === trade.timestamp && queuedTrade.side === trade.side) {
               queuedTrade.size += trade.size
               queuedTrade.price += trade.price * trade.size
-              queuedTrade.prices.push(trade.price)
+              // queuedTrade.prices.push(trade.price)
               queuedTrade.high = Math.max(queuedTrade.high || queuedTrade.price / queuedTrade.size, trade.price)
               queuedTrade.low = Math.min(queuedTrade.low || queuedTrade.price / queuedTrade.size, trade.price)
               continue;
             } else {
               queuedTrade.price /= queuedTrade.size
-              queuedTrade.slippage = this.getTradeSlippage(trade)
+              this.calculateSlippage(queuedTrade)
               aggrTrades.unshift(queuedTrade)
             }
           }
@@ -155,7 +177,7 @@ const emitter = new Vue({
           QUEUE[exchange.id] = Object.assign({}, trade);
           QUEUE[exchange.id].high = Math.max(trade.ref, trade.price)
           QUEUE[exchange.id].low = Math.min(trade.ref, trade.price)
-          QUEUE[exchange.id].prices = [QUEUE[exchange.id].price]
+          // QUEUE[exchange.id].prices = [QUEUE[exchange.id].price]
           QUEUE[exchange.id].price *= QUEUE[exchange.id].size
           
         }
@@ -163,8 +185,12 @@ const emitter = new Vue({
         this.$emit('trades', trades)
 
         if (aggrTrades.length) {
-          this.$emit('trades.aggr', trades)
+          this.$emit('trades.aggr', aggrTrades)
         }
+
+        /* if (TRADES.length > 1000) {
+          TRADES.splice(0, TRADES.length - 1000)
+        } */
       })
 
       exchange.on('open', event => {
@@ -320,7 +346,7 @@ const emitter = new Vue({
         const trade = QUEUE[inQueue[i]];
         if (now - trade.timestamp > 50) {
           trade.price /= trade.size
-          trade.slippage = this.getTradeSlippage(trade);
+          this.calculateSlippage(trade)
           output.push(trade)
 
           delete QUEUE[inQueue[i]]
@@ -331,16 +357,16 @@ const emitter = new Vue({
         this.$emit('trades.aggr', output);
       }
     },
-    getTradeSlippage(trade) {
+    calculateSlippage(trade) {
       const type = this.showSlippage;
       if (type === 'price') {
         trade.slippage = trade.ref - trade.price;
-        if (trade.side === 'sell') {
-          trade.slippage *= -1
-        }
+        trade.slippage *= -1
       } else if (type === 'bps') {
         trade.slippage = Math.round((trade.high - trade.low) / trade.low * 10000)
       }
+
+      return trade.slippage
     },
     canFetch() {
       return this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1)

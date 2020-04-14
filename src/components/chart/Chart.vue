@@ -435,7 +435,7 @@ export default {
         }
       )
 
-      /*this.addSerie(
+      this.addSerie(
         'liquidations',
         'histogram',
         bar => {
@@ -445,7 +445,7 @@ export default {
           scaleGroup: 'volume',
           color: '#9c27b0'
         }
-      )*/
+      )
     },
 
     /**
@@ -682,7 +682,8 @@ export default {
           const data = param.seriesPrices.get(serie.api)
 
           if (!data) {
-            continue
+            this.$set(this.legend, serie.id, 'n/a')
+            continue;
           }
 
           if (serie.type === 'candlestick') {
@@ -867,8 +868,16 @@ export default {
 
         activeBar.exchanges[trade.exchange].hasData = true
 
+        const isActive = this.actives.indexOf(trade.exchange) !== -1;
+
         if (trade.liquidation) {
           activeBar.exchanges[trade.exchange]['l' + trade.side] += amount
+
+          if (isActive) {
+            activeBar['l' + trade.side] += amount
+            activeBar.hasData = true
+          }
+
           continue
         }
 
@@ -879,7 +888,7 @@ export default {
         activeBar.exchanges[trade.exchange]['c' + trade.side]++
         activeBar.exchanges[trade.exchange]['v' + trade.side] += amount
 
-        if (this.actives.indexOf(trade.exchange) !== -1) {
+        if (isActive) {
           activeBar['v' + trade.side] += amount
           activeBar['c' + trade.side]++
           activeBar.hasData = true

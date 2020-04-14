@@ -34,7 +34,7 @@ export default {
     }
   },
   computed: {
-    ...mapState(['actives', 'thresholds', 'countersSteps', 'countersPrecision', 'counterHighlights']),
+    ...mapState(['actives', 'preferQuoteCurrencySize', 'thresholds', 'liquidationsOnly', 'countersSteps', 'countersCount', 'countersPrecision']),
   },
   created() {
     socket.$on('pairing', this.onPairing)
@@ -45,6 +45,7 @@ export default {
         case 'setCounterStep':
         case 'replaceCounterSteps':
         case 'reloadExchangeState':
+        case 'liquidationsOnly':
           this.createCounters()
         break;
       }
@@ -69,6 +70,7 @@ export default {
     },
     onTrades(trades) {
       const hasData = false;
+      const liquidatonsOnly = this.liquidationsOnly;
 
       const volume = {
         buy: 0,
@@ -76,11 +78,25 @@ export default {
       }
 
       for (let i = 0; i < trades.length; i++) {
-        if (this.actives.indexOf(trades[i].exchange) === -1 || trades[i].liquidation) {
+        if (this.actives.indexOf(trades[i].exchange) === -1 || (!liquidatonsOnly && trades[i].liquidation)) {
           continue;
         }
 
-        volume[trades[i].side] += trades[i].price * trades[i].size
+        if (liquidatonsOnly && !trades[i].liquidation) {
+          continue
+        } else {
+          let side = trades[i].side;
+          
+          if (trades[i].liquidation) {
+            side = side === 'buy' ? 'sell' : 'buy'
+          }
+
+          if (this.countersCount) {
+            volume[side]++
+          } else {
+            volume[side] += (this.preferQuoteCurrencySize ? trades[i].price : 1) * trades[i].size
+          }
+        }
 
         if (!CHUNK.timestamp) {
           CHUNK.timestamp = trades[i].timestamp;
@@ -91,42 +107,11 @@ export default {
         CHUNK.buy += volume.buy
         CHUNK.sell += volume.sell
 
-        if (this.counterHighlights) {
-          if (volume.buy) {
-            this.highlightTrade(volume.buy, 'buy');
-          }
-
-          if (volume.sell) {
-            this.highlightTrade(volume.sell, 'sell');
-          }
-        }
-
         for (let i = 0; i < this.steps.length; i++) {
           this.steps[i].buy += volume.buy
           this.steps[i].sell += volume.sell
         }
       }
-    },
-    highlightTrade(amount, side) {
-      if (amount < this.thresholds[0].amount * .1) {
-        return;
-      }
-
-      var highlightElement = document.createElement('span');
-
-      var duration = Math.log(amount + 1) / this.thresholds[1].amount * 66666
-
-      highlightElement.innerText = formatAmount(amount);
-      highlightElement.className = 'highlight';
-      highlightElement.style.animationDuration = duration / 10 + 's'
-      highlightElement.style.fontSize = duration / 10 + 'em'
-      
-      this.topElement[side].appendChild(highlightElement);
-      var deleteAfter = Math.min(16, duration / 4)
-      
-      setTimeout(() => {
-        highlightElement.remove();
-      }, deleteAfter * 1000)
     },
     clearCounters() {
       COUNTERS.splice(0, COUNTERS.length);
@@ -331,11 +316,11 @@ $num: 0;
 
 @while $num < 10 {
     .counter:nth-child(#{$num}) .counter__side.-buy {
-      background-color: darken(desaturate(lighten($green, if($num % 2 == 0, 0, 2)), $num * 2), if($num % 2 == 0, 4, 0));
+      background-color: desaturate(darken($green, if($num % 2 == 0, 1 * $num, .5 * $num)), $num);
     }
     
     .counter:nth-child(#{$num}) .counter__side.-sell {
-      background-color: darken(desaturate(lighten($red, if($num % 2 == 0, 0, 2)), $num * 2), if($num % 2 == 0, 4, 0));
+      background-color: desaturate(darken($red, if($num % 2 == 0, 1 * $num, .5 * $num)), $num);
     }
 
     $num: $num + 1;
