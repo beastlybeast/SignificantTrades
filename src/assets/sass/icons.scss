@@ -304,3 +304,8 @@ $iconpath: 'assets/fonts';
     content: unicode($icon-stack);
   }
 }
+.icon-megaphone {
+  &:before {
+    content: unicode($icon-megaphone);
+  }
+}

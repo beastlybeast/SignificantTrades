@@ -18,6 +18,11 @@ import Ftx from '../exchanges/ftx'
 
 import store from '../services/store'
 
+// const TRADES={};
+
+const QUEUE = {};
+const REFS = {}
+
 const emitter = new Vue({
   data() {
     return {
@@ -67,6 +72,9 @@ const emitter = new Vue({
     showChart() {
       return store.state.showChart
     },
+    showSlippage() {
+      return store.state.showSlippage
+    },
     chartRange() {
       return store.state.chartRange
     },
@@ -82,9 +90,13 @@ const emitter = new Vue({
         price = this.getExchangeById(exchange).price
       }
 
-      let trade = [exchange, +new Date(), price, amount, side ? 1 : 0, type]
-
-      this.queue = this.queue.concat([trade])
+      let trade = {
+        exchange: exchange,
+        timestamp: +new Date(),
+        price: price,
+        size: amount, 
+        side: side ? 'buy' : 'sell'
+      }
 
       this.$emit('trades', [trade])
       this.$emit('trades.aggr', [trade])
@@ -100,6 +112,10 @@ const emitter = new Vue({
       return this.exchanges
     }
 
+    window.getQueue = () => {
+      return QUEUE
+    }
+
     this.exchanges.forEach(exchange => {
       exchange.on('trades', trades => {
         if (!trades || !trades.length) {
@@ -108,15 +124,47 @@ const emitter = new Vue({
 
         this.timestamps[exchange.id] = trades[trades.length - 1].timestamp
 
-        this.$emit('trades', trades)
-      })
+        const l = trades.length;
 
-      exchange.on('trades.aggr', trades => {
-        if (!trades || !trades.length) {
-          return
+        const aggrTrades = []
+
+        for (let i = 0; i < l; i++) {
+          const trade = trades[i];
+
+          trade.ref = REFS[exchange.id] || trade.price;
+
+          REFS[exchange.id] = trade.price;
+
+          if (QUEUE[exchange.id]) {
+            const queuedTrade = QUEUE[exchange.id]
+
+            if (queuedTrade.timestamp === trade.timestamp && queuedTrade.side === trade.side) {
+              queuedTrade.size += trade.size
+              queuedTrade.price += trade.price * trade.size
+              queuedTrade.prices.push(trade.price)
+              queuedTrade.high = Math.max(queuedTrade.high || queuedTrade.price / queuedTrade.size, trade.price)
+              queuedTrade.low = Math.min(queuedTrade.low || queuedTrade.price / queuedTrade.size, trade.price)
+              continue;
+            } else {
+              queuedTrade.price /= queuedTrade.size
+              queuedTrade.slippage = this.getTradeSlippage(trade)
+              aggrTrades.unshift(queuedTrade)
+            }
+          }
+          
+          QUEUE[exchange.id] = Object.assign({}, trade);
+          QUEUE[exchange.id].high = Math.max(trade.ref, trade.price)
+          QUEUE[exchange.id].low = Math.min(trade.ref, trade.price)
+          QUEUE[exchange.id].prices = [QUEUE[exchange.id].price]
+          QUEUE[exchange.id].price *= QUEUE[exchange.id].size
+          
         }
+        
+        this.$emit('trades', trades)
 
-        this.$emit('trades.aggr', trades)
+        if (aggrTrades.length) {
+          this.$emit('trades.aggr', trades)
+        }
       })
 
       exchange.on('open', event => {
@@ -152,11 +200,7 @@ const emitter = new Vue({
   },
   methods: {
     getBarTrades(ts) {
-      console.log('trades at bar', ts, ':')
-
-      console.log(TRADES[ts])
-
-      console.log('\n')
+      return TRADES[ts];
     },
     initialize() {
       console.log(`[sockets] initializing ${this.exchanges.length} exchange(s)`)
@@ -178,7 +222,7 @@ const emitter = new Vue({
 
       setTimeout(this.connectExchanges.bind(this))
 
-      // setInterval(this.emitTradesAsync.bind(this), 1000)
+      setInterval(this.emitTradesAsync.bind(this), 50)
     },
     connectExchanges(pair = null) {
       this.disconnectExchanges()
@@ -196,7 +240,6 @@ const emitter = new Vue({
         this.pair = pair.toUpperCase()
       }
 
-      this.queue = []
       this.timestamps = {}
       this._fetchedMax = false
 
@@ -267,15 +310,38 @@ const emitter = new Vue({
 
       return null
     },
-    /* emitTradesAsync() {
-      if (!this.queue.length) {
-        return
+    emitTradesAsync() {
+      const now = +new Date();
+      const inQueue = Object.keys(QUEUE);
+
+      const output = [];
+
+      for (let i = 0; i < inQueue.length; i++) {
+        const trade = QUEUE[inQueue[i]];
+        if (now - trade.timestamp > 50) {
+          trade.price /= trade.size
+          trade.slippage = this.getTradeSlippage(trade);
+          output.push(trade)
+
+          delete QUEUE[inQueue[i]]
+        }
       }
 
-      this.emitTrades(this.queue, 'trades.queued')
-
-      this.queue = []
-    }, */
+      if (output.length) {
+        this.$emit('trades.aggr', output);
+      }
+    },
+    getTradeSlippage(trade) {
+      const type = this.showSlippage;
+      if (type === 'price') {
+        trade.slippage = trade.ref - trade.price;
+        if (trade.side === 'sell') {
+          trade.slippage *= -1
+        }
+      } else if (type === 'bps') {
+        trade.slippage = Math.round((trade.high - trade.low) / trade.low * 10000)
+      }
+    },
     canFetch() {
       return this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1)
     },
@@ -335,12 +401,16 @@ const emitter = new Vue({
                 break
             }
 
-            resolve({
+            const output = {
               format: format,
               data: data,
               from: from,
               to: to
-            })
+            }
+
+            this.$emit('historical', output)
+
+            resolve(output)
           })
           .catch(err => {
             this._fetchedMax = true

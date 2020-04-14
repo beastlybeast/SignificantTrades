@@ -1,5 +1,6 @@
 import EventEmitter from 'eventemitter3'
 import store from '../services/store'
+import { parseQueryString, formatAmount } from '../utils/helpers'
 
 class Exchange extends EventEmitter {
   constructor(options) {
@@ -86,6 +87,12 @@ class Exchange extends EventEmitter {
   }
 
   connect(reconnection = false) {
+    const qs = parseQueryString();
+
+    if (qs.noop) {
+      return false;
+    }
+
     if (this.connected) {
       this.disconnect()
     }
@@ -141,6 +148,9 @@ class Exchange extends EventEmitter {
       return
     }
 
+    this.emit('trades', trades)
+    return
+
     if (!store.state.showSlippage) {
       this.price = trades[trades.length - 1].price
     }
@@ -168,14 +178,15 @@ class Exchange extends EventEmitter {
       const trade = trades[i]
 
       if (store.state.showSlippage) {
+        // trade.size > 1 && console.log(trade.exchange, trade.side, trade.price, trade.size, 'previous price', this.price, 'slippage', trade.price - this.price)
         trade.slippage = trade.price - this.price
 
         this.price = trade.price
       }
 
       if (trade.liquidation) {
-        if (this.queueTrades) {
-          output.push(this.queuedTrade)
+        if (this.queuedTrade) {
+          output.push(this.getQueuedTrade())
           delete this.queuedTrade
           clearTimeout(this.queuedTradeTimeout)
           delete this.queuedTradeTimeout
@@ -186,28 +197,33 @@ class Exchange extends EventEmitter {
 
       if (this.queuedTrade) {
         if (trade.timestamp > this.queuedTrade.timestamp || trade.side !== this.queuedTrade.side) {
-          output.push(this.queuedTrade)
-          this.queuedTrade = trade
+          output.push(this.getQueuedTrade())
+          this.queuedTrade = Object.assign({}, trade);
+          this.queuedTrade.price *= this.queuedTrade.size
           clearTimeout(this.queuedTradeTimeout)
           delete this.queuedTradeTimeout
         } else if (trade.timestamp <= this.queuedTrade.timestamp && trade.side === this.queuedTrade.side) {
-          this.queuedTrade.size += +trade.size
-          this.queuedTrade.price = trade.price
-
-          if (store.state.showSlippage) {
-            this.queuedTrade.slippage = Math.max(this.queuedTrade.slippage, trade.slippage)
-            this.queuedTrade.aggr = true
+          if (!this.queuedTrade.prices) {
+            this.queuedTrade.prices = [this.queuedTrade.price / this.queuedTrade.size]
           }
+
+          this.queuedTrade.prices.push(trade.price);
+          this.queuedTrade.high = Math.max(this.queuedTrade.high || this.queuedTrade.price / this.queuedTrade.size, trade.price)
+          this.queuedTrade.low = Math.min(this.queuedTrade.low || this.queuedTrade.price / this.queuedTrade.size, trade.price)
+
+          this.queuedTrade.size += +trade.size
+          this.queuedTrade.price += trade.price * trade.size
         }
       } else {
         // console.log(this.id, name, 'override queued trade')
-        this.queuedTrade = trade
+        this.queuedTrade = Object.assign({}, trade);
+        this.queuedTrade.price *= this.queuedTrade.size
       }
     }
 
     if (this.queuedTrade && !this.queuedTradeTimeout) {
       this.queuedTradeTimeout = window.setTimeout(() => {
-        this.emit('trades.aggr', [this.queuedTrade])
+        this.emit('trades.aggr', [this.getQueuedTrade()])
         delete this.queuedTrade
         delete this.queuedTradeTimeout
       }, 50)
@@ -216,6 +232,40 @@ class Exchange extends EventEmitter {
     if (output.length) {
       this.emit('trades', output)
     }
+  }
+
+  getQueuedTrade() {
+    this.queuedTrade.price /= this.queuedTrade.size
+
+    if (store.state.showSlippage === 'price') {
+      this.queuedTrade.slippage = this.queuedTrade.high - this.queuedTrade.low
+      if (this.queuedTrade.side === 'sell' && this.queuedTrade.slippage > 0) {
+        this.queuedTrade.slippage *= -1
+      }
+      if (this.queuedTrade.side === 'buy' && this.queuedTrade.slippage < 0) {
+        this.queuedTrade.slippage *= -1
+      }
+      if (this.queuedTrade.side === 'sell' && this.queuedTrade.slippage > 0) {
+        debugger;
+      }
+      if (this.queuedTrade.side === 'buy' && this.queuedTrade.slippage < 0) {
+        debugger;
+      }
+      if (this.queuedTrade.prices) {
+
+        const min = Math.min.apply(null, this.queuedTrade.prices)
+        const max = Math.max.apply(null, this.queuedTrade.prices)
+        const calcSlip = min - max;
+        if (Math.abs(calcSlip) !== Math.abs(this.queuedTrade.slippage)) {
+          console.log(Math.abs(calcSlip), ' !== ', Math.abs(this.queuedTrade.slippage))
+          debugger;
+        }
+      }
+    } else if (store.state.showSlippage === 'bps') {
+      this.queuedTrade.slippage = (this.queuedTrade.high - this.queuedTrade.low) / this.queuedTrade.low * 1000
+    }
+
+    return this.queuedTrade
   }
 
   toFixed(number, precision) {

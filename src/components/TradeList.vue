@@ -229,7 +229,7 @@ export default {
         price.innerHTML = `<span class="icon-quote"></span> <span>${formatPrice(trade.price)}</span>`
         li.appendChild(price)
 
-        if (trade.slippage && (trade.slippage > 1 || trade.slippage < -1)) {
+        if (trade.slippage) {
           price.setAttribute('slippage', (trade.slippage > 0 ? '+' : '-') + app.getAttribute('data-symbol') + Math.abs(trade.slippage).toFixed(1))
         }
 
@@ -262,6 +262,10 @@ export default {
       }
 
       li.appendChild(date)
+      li.setAttribute('data-trade', JSON.stringify(trade));
+      li.addEventListener('click', (event) => {
+        console.log(JSON.parse(event.currentTarget.getAttribute('data-trade')));
+      })
 
       this.$refs.tradesContainer.appendChild(li)
 
@@ -637,6 +641,7 @@ export default {
   }
 
   .trade__amount {
+    flex-grow: .66;
     position: relative;
 
     > span {

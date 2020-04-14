@@ -1,9 +1,14 @@
+body {
+  background-color: $dark;
+}
+
 #app {
   width: 100%;
   overflow: hidden;
   position: relative;
   min-height: 100%;
   background-color: $dark;
+  transition: transform 0.3s $easeOutExpo;
   color: white;
 
   @media screen and (min-width: 768px) {
@@ -20,7 +25,6 @@
 
 .app__wrapper {
   height: 100%;
-  transition: transform 0.3s $easeOutExpo;
 }
 
 .stack__container {
@@ -128,7 +132,6 @@
 
   @media screen and (min-width: 768px) {
     flex-direction: row;
-    flex-wrap: wrap;
 
     #trades {
       position: relative;
@@ -150,7 +153,6 @@
     }
 
     .app__right {
-      overflow: hidden;
       flex-grow: 1;
       font-size: 1.05em;
 

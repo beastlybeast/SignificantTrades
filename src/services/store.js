@@ -55,6 +55,11 @@ const DEFAULTS = {
   chartHeight: null,
   sidebarWidth: null,
   showThresholdsAsTable: true,
+  showCounters: false,
+  countersPrecision: 10000,
+  counterHighlights: false,
+  countersSteps: [1000 * 30, 1000 * 60, 1000 * 60 * 15, 1000 * 60 * 30],
+  hideIncompleteCounter: true,
 
   // runtime state
   isSnaped: true,
@@ -282,6 +287,35 @@ const store = new Vuex.Store({
     },
     setSidebarWidth(state, value) {
       state.sidebarWidth = value || null
+    },
+    toggleCounters(state, value) {
+      state.showCounters = value ? true : false
+    },
+    toggleCounterHighlights(state, value) {
+      state.counterHighlights = value ? true : false
+    },
+    setCounterPrecision(state, payload) {
+      state.counterPrecision = value
+    },
+    toggleHideIncompleteCounter(state, value) {
+      state.hideIncompleteCounter = value ? true : false
+    },
+    toggleCumulativeCounters(state, value) {
+      state.cumulativeCounters = value ? true : false
+    },
+    setCounterStep(state, payload) {
+      const step = state.countersSteps[payload.index]
+
+      if (payload.value) {
+        Vue.set(state.countersSteps, payload.index, payload.value)
+      } else {
+        state.countersSteps.splice(payload.index, 1)
+      }
+
+      state.countersSteps = state.countersSteps.sort((a, b) => a - b)
+    },
+    replaceCounterSteps(state, counters) {
+      state.countersSteps = counters.sort((a, b) => a - b)
     },
 
     // runtime commit

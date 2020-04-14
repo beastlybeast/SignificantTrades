@@ -37,9 +37,9 @@
 
 <script>
 import { mapState } from 'vuex'
-import { ago } from '../utils/helpers'
+import { ago } from '../../utils/helpers'
 
-import socket from '../services/socket'
+import socket from '../../services/socket'
 
 export default {
   props: ['price'],
@@ -130,7 +130,7 @@ export default {
 </script>
 
 <style lang="scss">
-@import '../assets/sass/variables';
+@import '../../assets/sass/variables';
 
 header#header {
   background-color: lighten($dark, 10%);

@@ -14,13 +14,16 @@
       @mousedown="startManualResize($event, 'height')"
       @dblclick.stop.prevent="resetHeight"
     ></div>
+
+    <div class="chart__legend">
+      <div
+        v-for="(serie, index) in series"
+        :key="index"
+        class="chart-serie"
+      >{{ serie }} {{ legend[serie] }}</div>
+    </div>
     <div class="chart__debug" v-if="debug">
       <div class="chart__debug-container">
-        <div
-          v-for="(serie, index) in series"
-          :key="index"
-          class="chart-serie"
-        >{{ serie }} {{ legend[serie] }}</div>
         <pre>{{ candledump }}</pre>
       </div>
     </div>
@@ -291,6 +294,17 @@ export default {
       window.tvchart = chart
 
       this.addSerie(
+        'price',
+        'candlestick',
+        bar => {
+          return this.getExchangesAveragedOHLC(bar)
+        },
+        {
+          scaleGroup: 'price'
+        }
+      )
+
+      this.addSerie(
         'volume_sell_ema',
         'line',
         bar => {
@@ -327,17 +341,6 @@ export default {
             top: 0.8,
             bottom: 0
           }
-        }
-      )
-
-      this.addSerie(
-        'price',
-        'candlestick',
-        bar => {
-          return this.getExchangesAveragedOHLC(bar)
-        },
-        {
-          scaleGroup: 'price'
         }
       )
 
@@ -633,7 +636,29 @@ export default {
     },
 
     onClick(param) {
-      socket.getBarTrades(param.time)
+      const time = param.time;
+      let trades = socket.getBarTrades(time)
+
+      if (!trades) {
+        trades = [];
+
+        for (let i = 0; i < cache.length; i++) {
+          if (time >= cache[i].from && time <= cache[i].to) {
+            for (let j = 0; j < cache[i].bars.length; j++) {
+              if (cache[i].bars[j].timestamp == time) {
+                trades.push(cache[i].bars[j]);
+              }
+            }
+          }
+        }
+      }
+
+      
+      console.log('trades at bar', time, ':')
+
+      console.log(trades)
+
+      console.log('\n')
     },
 
     /**
@@ -674,6 +699,9 @@ export default {
      */
     onTrades(trades) {
       if (this.preventImmediateRender || this.chartRefreshRate) {
+        if (trades.filter(a => !a).length) {
+          debugger;
+        }
         Array.prototype.push.apply(queuedTrades, trades)
         return
       }
@@ -839,14 +867,14 @@ export default {
 
         activeBar.exchanges[trade.exchange].hasData = true
 
-        activeBar.exchanges[trade.exchange].high = Math.max(activeBar.exchanges[trade.exchange].high, +trade.price)
-        activeBar.exchanges[trade.exchange].low = Math.min(activeBar.exchanges[trade.exchange].low, +trade.price)
-        activeBar.exchanges[trade.exchange].close = +trade.price
-
         if (trade.liquidation) {
           activeBar.exchanges[trade.exchange]['l' + trade.side] += amount
           continue
         }
+
+        activeBar.exchanges[trade.exchange].high = Math.max(activeBar.exchanges[trade.exchange].high, +trade.price)
+        activeBar.exchanges[trade.exchange].low = Math.min(activeBar.exchanges[trade.exchange].low, +trade.price)
+        activeBar.exchanges[trade.exchange].close = +trade.price
 
         activeBar.exchanges[trade.exchange]['c' + trade.side]++
         activeBar.exchanges[trade.exchange]['v' + trade.side] += amount
@@ -865,6 +893,8 @@ export default {
 
         if (renderedRange.to < activeBar.timestamp) {
           renderedRange.to = activeBar.timestamp
+          
+          this.preventPan()
         }
       }
 
@@ -1252,7 +1282,7 @@ export default {
 
       this._releasePanTimeout = window.setTimeout(() => {
         this.panPrevented = false
-      })
+      }, 100)
     },
 
     /**
@@ -1288,8 +1318,6 @@ export default {
      * @param {Bar} bar
      */
     updateBar(bar) {
-      this.preventPan()
-
       for (let serie of series) {
         if (bar[serie.id]) {
           serie.api.update(bar[serie.id])
@@ -1762,6 +1790,13 @@ export default {
 }
 
 .chart {
+  &__legend {
+    position: absolute;
+    top: 1em;
+    left: 1em;
+    font-family: monospace;
+  }
+
   &__debug {
     direction: rtl;
     position: absolute;

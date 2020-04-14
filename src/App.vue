@@ -17,6 +17,7 @@
       <div class="app__layout">
         <Chart v-if="showChart" />
         <div class="app__right">
+          <Counters v-if="showCounters" />
           <TradeList />
         </div>
       </div>
@@ -31,12 +32,12 @@ import { MASTER_DOMAIN, formatPrice, formatAmount } from './utils/helpers'
 import socket from './services/socket'
 import touchevent from './utils/touchevent'
 
-import Alerts from './components/Alerts.vue'
-import Header from './components/Header.vue'
+import Alerts from './components/ui/Alerts.vue'
+import Header from './components/ui/Header.vue'
 import Settings from './components/Settings.vue'
 import TradeList from './components/TradeList.vue'
 import Chart from './components/chart/Chart.vue'
-import Exchanges from './components/Exchanges.vue'
+import Counters from './components/Counters.vue'
 
 const faviconDirection = {
   direction: null,
@@ -51,7 +52,7 @@ export default {
     Settings,
     TradeList,
     Chart,
-    Exchanges
+    Counters
   },
   name: 'app',
   data() {
@@ -66,7 +67,7 @@ export default {
     }
   },
   computed: {
-    ...mapState(['pair', 'actives', 'showChart', 'showExchangesBar', 'decimalPrecision', 'autoClearTrades', 'isLoading', 'preferQuoteCurrencySize'])
+    ...mapState(['pair', 'actives', 'showChart', 'showCounters', 'decimalPrecision', 'isLoading', 'preferQuoteCurrencySize'])
   },
   created() {
     this.$root.formatPrice = formatPrice
@@ -90,7 +91,7 @@ export default {
     this.toggleAutoClearTrades(this.autoClearTrades)
 
     // Is request blocked by browser ?
-    // If true notice user that most of the exchanges may be unavailable
+    // If true notice user that some of the exchanges may be unavailable
     fetch('showads.js')
       .then(() => {})
       .catch((response, a) => {

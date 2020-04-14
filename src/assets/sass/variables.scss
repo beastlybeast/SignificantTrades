@@ -7,6 +7,8 @@ $pink: #e91e63;
 $purple: #3e2161;
 
 $easeOutExpo: cubic-bezier(0.005, 1, 0.22, 1);
+$easeInExpo: cubic-bezier(0.7, 0, 0.84, 0);
+$easeInOutExpo: cubic-bezier(0.87, 0, 0.13, 1);
 $easeElastic: cubic-bezier(0, 1.4, 1, 1);
 
 $icon-bitcoin: \e900;
@@ -65,6 +67,7 @@ $icon-slippery: \e934;
 $icon-bps: \e935;
 $icon-ms: \e936;
 $icon-stack: \e937;
+$icon-megaphone: \e938;
 
 $exchanges: bitmex binance binance_futures bitfinex okex huobi bitstamp gdax hitbtc poloniex liquid coinex kraken deribit bybit ftx;
 

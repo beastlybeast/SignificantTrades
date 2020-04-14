@@ -226,6 +226,59 @@
         </div>
         <div
           class="settings__title"
+          @click="$store.commit('toggleSettingsPanel', 'counters')"
+          :class="{ closed: settings.indexOf('counters') > -1 }"
+        >
+          Counter <i class="icon-up"></i>
+        </div>
+        <div
+          class="settings-counters mb8 settings__activable column"
+          :class="{ active: showCounters }"
+        >
+          <div class="form-group column__tight">
+            <label
+              class="checkbox-control -on-off checkbox-control-input flex-right"
+              v-tippy="{ placement: 'bottom' }"
+              title="Enable counters"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="showCounters"
+                @change="$store.commit('toggleCounters', $event.target.checked)"
+              />
+              <div></div>
+            </label>
+          </div>
+          <div class="form-group column__tight">
+            <label
+              class="checkbox-control -megaphone checkbox-control-input flex-right"
+              v-tippy="{ placement: 'bottom' }"
+              title="Show little badge with trade price above counter as they come"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="counterHighlights"
+                @change="$store.commit('toggleCounterHighlights', $event.target.checked)"
+              />
+              <div></div>
+            </label>
+          </div>
+          <div class="form-group column__fill">
+            <input
+              v-tippy
+              title="Counters step separed by a comma (ie: 1m, 5m, 10m, 15m)"
+              type="string"
+              placeholder="Enter a set of timeframe (ie 1m, 15m)"
+              class="form-control"
+              :value="countersStepsStringified"
+              @change="replaceCounters($event.target.value)"
+            />
+          </div>
+        </div>
+        <div
+          class="settings__title"
           @click="$store.commit('toggleSettingsPanel', 'chart')"
           :class="{ closed: settings.indexOf('chart') > -1 }"
         >
@@ -419,6 +472,10 @@ export default {
       'actives',
       'thresholds',
       'showThresholdsAsTable',
+      'showCounters',
+      'countersSteps',
+      'cumulativeCounters',
+      'hideIncompleteCounter',
       'useAudio',
       'audioIncludeInsignificants',
       'audioVolume',
@@ -443,14 +500,57 @@ export default {
       return !match || match.length < 2 || match[1].toLowerCase() !== state.pair.toLowerCase()
     }
   },
+  created() {
+    this.stringifyCounters()
+
+    document.body.classList.add('-translate');
+  },
   beforeDestroy() {
     document.removeEventListener('click', this._closeTippinHandler)
+    document.body.classList.remove('-translate');
   },
   methods: {
     reset() {
       window.localStorage && window.localStorage.clear()
 
       window.location.reload(true)
+    },
+    stringifyCounters() {
+      const now = +new Date()
+      this.countersStepsStringified = this.countersSteps.map(a => ago(now - a)).join(', ')
+    },
+    replaceCounters(value) {
+      const counters = value
+        .split(',')
+        .map(a => {
+          a = a.trim()
+
+          if (/[\d.]+s/.test(a)) {
+            return parseFloat(a) * 1000
+          } else if (/[\d.]+h/.test(a)) {
+            return parseFloat(a) * 1000 * 60 * 60
+          } else {
+            return parseFloat(a) * 1000 * 60
+          }
+        })
+        .filter(function(item, pos, self) {
+          return self.indexOf(item) == pos
+        })
+
+      if (counters.filter(a => isNaN(a)).length) {
+        socket.$emit('alert', {
+          type: 'error',
+          title: `Invalid counter`,
+          message: `Your counters (${value}) contains invalid steps.`,
+          id: `counter_replace_error`
+        })
+        return
+      }
+
+      this.$store.commit('replaceCounterSteps', counters)
+
+      this.stringifyCounters()
+      this.stringifyStatsPeriod()
     },
     openTippin(e) {
       e.preventDefault()
@@ -483,6 +583,27 @@ export default {
 <style lang="scss">
 @import '../assets/sass/variables';
 
+
+@media screen and (min-width: 500px) {
+  body {
+    overflow: hidden;
+  }
+
+  body.-translate {
+    .stack__container, #app {
+      overflow: visible;
+    }
+
+    #app {
+      transform: translateX(-320px);
+
+      .stack__scroller {
+        transform: translateX(100%);
+      }
+    }
+  }
+}
+
 .settings__report {
   display: block;
   padding: 7px 6px 6px;
@@ -495,19 +616,6 @@ export default {
 
   .stack__scroller {
     background-color: $dark;
-
-    @media screen and (min-width: 500px) {
-      animation: appear-from-right 0.3s $easeOutExpo;
-    }
-
-    @keyframes appear-from-right {
-      0% {
-        transform: translateX(100%);
-      }
-      100% {
-        transform: none;
-      }
-    }
   }
 
   @media screen and (min-width: 500px) {
@@ -515,10 +623,6 @@ export default {
     position: fixed;
     height: 100%;
     width: 100%;
-
-    + .app__wrapper {
-      transform: translateX(-320px);
-    }
 
     .stack__scroller {
       width: 320px;
@@ -791,6 +895,17 @@ export default {
         &:before,
         &:after {
           content: unicode($icon-slippery);
+        }
+
+        &:before {
+          font-size: 1.5em;
+        }
+      }
+
+      &.-megaphone input ~ div {
+        &:before,
+        &:after {
+          content: unicode($icon-megaphone);
         }
 
         &:before {

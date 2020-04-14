@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import socket from '../services/socket'
+import socket from '../../services/socket'
 
 export default {
   data() {
@@ -85,7 +85,7 @@ export default {
 </script>
 
 <style lang="scss">
-@import '../assets/sass/variables';
+@import '../../assets/sass/variables';
 
 .alerts {
   position: fixed;
