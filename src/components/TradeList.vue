@@ -86,9 +86,28 @@ export default {
       }
     }
 
-    this.timeAgoInterval = setInterval(() => {
-      for (let element of this.$el.querySelectorAll('[timestamp]')) {
-        element.innerHTML = ago(element.getAttribute('timestamp'))
+    this._timeAgoInterval = setInterval(() => {
+      const elements = this.$el.getElementsByClassName('-timestamp');
+
+      if (!elements.length) {
+        return;
+      }
+
+      let ref;
+
+      for (let i = 0; i < elements.length; i++) {
+        const txt = ago(elements[i].getAttribute('timestamp'))
+
+        if (typeof ref !== 'undefined' && ref === txt) {
+          elements[i].innerText = ''
+          elements[i].className = 'trade__date';
+          i++
+        } else {
+          elements[i].innerText = txt;
+          ref = elements[i];
+
+          ref = txt
+        }
       }
     }, 1000)
   },
@@ -98,7 +117,7 @@ export default {
 
     this.onStoreMutation()
 
-    clearInterval(this.timeAgoInterval)
+    clearInterval(this._timeAgoInterval)
 
     this.sfx && this.sfx.disconnect()
   },
@@ -127,7 +146,7 @@ export default {
             let liquidationMessage = `<i class="icon-currency"></i> <strong>${formatAmount(size, 1)}</strong>`
 
             liquidationMessage += `&nbsp;liq<span class="min-280">uidate</span>d <strong>${
-              trade.side === 'sell' ? 'SHORT' : 'LONG'
+              trade.side === 'buy' ? 'SHORT' : 'LONG'
             }</strong> @ <i class="icon-quote"></i> ${formatPrice(trade.price)}`
 
             this.appendRow(trade, '-liquidation', liquidationMessage)
@@ -265,6 +284,8 @@ export default {
 
         date.setAttribute('timestamp', trade.timestamp)
         date.innerText = ago(timestamp)
+
+        date.className += ' -timestamp'
       }
 
       li.appendChild(date)
