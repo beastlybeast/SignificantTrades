@@ -4,7 +4,8 @@
 	border: 0;
 	border-radius: 2px;
 	color: white;
-	cursor: pointer;
+  cursor: pointer;
+  font-family: 'Roboto Condensed';
 
 	background-color: $green;
 
@@ -13,7 +14,12 @@
 	}
 
 	&.-small {
-		font-size: 1em;
+		font-size: .75rem;
+	}
+
+	&.-condensed {
+    padding: .2rem .3rem;
+		font-size: .75rem;
 	}
 
 	&.-red {
@@ -25,10 +31,10 @@
 	}
 
 	&.-dark {
-		background-color: $dark;
+		background-color: lighten($dark, 5%);
 	
 		&:hover {
-			background-color: lighten($dark, 10%);
+			background-color: $dark;
 		}
 	}
 }

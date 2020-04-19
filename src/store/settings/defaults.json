@@ -1,0 +1,73 @@
+{
+  "pair": "BTCUSD",
+  "preferQuoteCurrencySize": true,
+  "thresholds": [
+    { "amount": 100000, "buyColor": "rgba(76,175,80,.33)", "sellColor": "rgba(229,115,115,.33)" },
+    { "amount": 100000, "buyColor": "rgb(91,130,48)", "sellColor": "rgb(224,91,82)" },
+    { "amount": 1000000, "gif": "cash", "buyColor": "rgb(156,204,101)", "sellColor": "rgb(244,67,54)" },
+    { "amount": 10000000, "gif": "explosion", "buyColor": "rgb(255,160,0)", "sellColor": "rgb(233,30,99)" }
+  ],
+  "exchanges": {
+    "huobi": { "disabled": true },
+    "liquid": { "disabled": true },
+    "bithumb": { "disabled": true },
+    "hitbtc": { "disabled": true },
+    "coinex": { "disabled": true }
+  },
+  "series": {
+    "cvd": {
+      "enabled": false
+    },
+    "price_cma": {
+      "enabled": false
+    },
+    "price": {
+      "scaleMargins": {
+        "top": 0.1,
+        "bottom": 0.2
+      }
+    }
+  },
+  "maxRows": 100,
+  "aggregateTrades": true,
+  "decimalPrecision": null,
+  "showSlippage": false,
+  "liquidationsOnly": false,
+  "showLogos": true,
+  "showChart": true,
+  "chartRefreshRate": 50,
+  "timeframe": 1,
+  "debug": false,
+  "useAudio": false,
+  "audioIncludeInsignificants": true,
+  "audioVolume": 1.5,
+  "settings": ["other", "chart", "audio"],
+  "chartHeight": null,
+  "sidebarWidth": null,
+  "showThresholdsAsTable": true,
+  "showCounters": false,
+  "countersPrecision": 5000,
+  "countersSteps": [30000, 60000, 900000, 1800000],
+  "countersCount": false,
+  "showStats": false,
+  "statsGranularity": 5000,
+  "statsPeriod": 180000,
+  "statsChart": false,
+  "statsCounters": [
+    { "name": "TRADES", "output": "stats.buyCount + stats.sellCount", "enabled": true, "color": "#ffeeff", "precision": 0, "smoothing": 14 },
+    { "name": "VOLUME Δ", "output": "stats.buyAmount - stats.sellAmount", "enabled": true, "color": "#eeffee", "precision": 0, "smoothing": 14 },
+    { "name": "TRADES Δ", "output": "stats.buyCount - stats.sellCount", "enabled": false, "color": "#eeeeff", "precision": 0, "smoothing": 14 },
+    {
+      "name": "1H LIQUIDATIONS",
+      "output": "var output = [0, 0];\nfor (var i=0; i<trades.length; i++) {\n\tif (trades[i].liquidation)\n\t\toutput[trades[i].side === 'buy' ? 1 : 0] += trades[i].price * trades[i].size\n}\noutput;",
+      "enabled": false,
+      "period": 3600000
+    },
+    {
+      "name": "1H 100K+",
+      "output": "var output = 0;\nfor (var i=0; i<trades.length; i++) {\n\tif (trades[i].price * trades[i].size >= 100000)\n\t\toutput++\n}\noutput;",
+      "enabled": false,
+      "period": 3600000
+    }
+  ]
+}

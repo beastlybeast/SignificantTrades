@@ -2,12 +2,11 @@
   <div
     id="settings"
     class="settings__container stack__container"
-    @click="$event.target === $el && $emit('close')"
+    @mousedown="$event.target === $el && $emit('close')"
   >
     <div ref="tippin" v-if="tippin" class="tippin-me">
       <iframe src="https://tippin.me/buttons/send-lite.php?u=Tucsky" frameborder="0" scrolling="no"></iframe>
     </div>
-    <div class="stack__backdrop"></div>
     <div class="stack__scroller">
       <!-- <a href="https://github.com/Tucsky/SignificantTrades/issues" target="_blank" class="settings__report"><i class="icon-warning"></i> Found a bug or feedback ? Let me know on Github !</a> -->
       <div class="stack__wrapper">
@@ -22,7 +21,7 @@
             placeholder="BTCUSD"
             class="form-control"
             :value="pair"
-            @change="$store.commit('setPair', $event.target.value)"
+            @change="$store.commit('settings/SET_PAIR', $event.target.value)"
           />
           <small class="help-text mt8" v-if="showPairSubdomainHelp">
             <i class="icon-info-circle"></i> Consider using
@@ -42,7 +41,7 @@
                 class="form-control"
                 :checked="preferQuoteCurrencySize"
                 @change="
-                  $store.commit('toggleBaseCurrencySize', $event.target.checked)
+                  $store.commit('settings/SET_QUOTE_AS_PREFERED_CURRENCY', $event.target.checked)
                 "
               />
               <div on="quote" off="base"></div>
@@ -56,7 +55,7 @@
         </div>
         <div
           class="settings__title"
-          @click="$store.commit('toggleSettingsPanel', 'list')"
+          @click="$store.commit('settings/TOGGLE_SETTINGS_PANEL', 'list')"
           :class="{ closed: settings.indexOf('list') > -1 }"
         >
           Trades list
@@ -80,7 +79,7 @@
                 step="1"
                 class="form-control"
                 :value="maxRows"
-                @change="$store.commit('setMaxRows', $event.target.value)"
+                @change="$store.commit('settings/SET_MAX_ROWS', $event.target.value)"
               />
             </div>
 
@@ -95,7 +94,7 @@
                   type="checkbox"
                   class="form-control"
                   :checked="showLogos"
-                  @change="$store.commit('toggleLogos', $event.target.checked)"
+                  @change="$store.commit('settings/TOGGLE_LOGOS', $event.target.checked)"
                 />
                 <div></div>
               </label>
@@ -105,7 +104,7 @@
               <label>Aggr.</label>
               <label
                 class="checkbox-control -aggr checkbox-control-input flex-right"
-                @change="$store.commit('toggleAggregation', $event.target.checked)"
+                @change="$store.commit('settings/TOGGLE_AGGREGATION', $event.target.checked)"
               >
                 <input type="checkbox" class="form-control" :checked="aggregateTrades" />
                 <div></div>
@@ -116,7 +115,7 @@
               <label class="condensed"><small>Rip only</small></label>
               <label
                 class="checkbox-control -rip checkbox-control-input flex-right"
-                @change="$store.commit('toggleLiquidationsOnly', $event.target.checked)"
+                @change="$store.commit('settings/TOGGLE_LIQUIDATIONS_ONLY', $event.target.checked)"
               >
                 <input type="checkbox" class="form-control" :checked="liquidationsOnly" />
                 <div></div>
@@ -131,7 +130,7 @@
               <label>Slipp.</label>
               <label
                 class="checkbox-control -slippage checkbox-control-input flex-right"
-                @click.stop="$store.commit('toggleSlippage')"
+                @click.stop="$store.commit('settings/TOGGLE_SLIPPAGE')"
               >
                 <input type="checkbox" class="form-control" :checked="showSlippage" />
                 <div></div>
@@ -147,7 +146,7 @@
         </div>
         <div
           class="settings__title"
-          @click="$store.commit('toggleSettingsPanel', 'thresholds')"
+          @click="$store.commit('settings/TOGGLE_SETTINGS_PANEL', 'thresholds')"
           :class="{ closed: settings.indexOf('thresholds') > -1 }"
         >
           Thresholds ({{ thresholds.length }})
@@ -161,7 +160,7 @@
               v-tippy
               title="Switch thresholds display"
               @click="
-                $store.commit('toggleTresholdsTable', !showThresholdsAsTable)
+                $store.commit('settings/TOGGLE_THRESHOLDS_TABLE', !showThresholdsAsTable)
               "
             >{{ showThresholdsAsTable ? 'slider' : 'table' }}</a>
             |
@@ -171,7 +170,7 @@
               v-tippy
               title="Add threshold"
               @click="
-                $store.commit('addThreshold')
+                $store.commit('settings/ADD_THRESHOLD')
               "
             >
               Add
@@ -182,7 +181,7 @@
         </div>
         <div
           class="settings__title"
-          @click="$store.commit('toggleSettingsPanel', 'audio')"
+          @click="$store.commit('settings/TOGGLE_SETTINGS_PANEL', 'audio')"
           :class="{ closed: settings.indexOf('audio') > -1 }"
         >
           Audio
@@ -199,7 +198,7 @@
                 type="checkbox"
                 class="form-control"
                 :checked="useAudio"
-                @change="$store.commit('toggleAudio', $event.target.checked)"
+                @change="$store.commit('settings/TOGGLE_AUDIO', $event.target.checked)"
               />
               <div></div>
             </label>
@@ -216,7 +215,7 @@
                 :checked="audioIncludeInsignificants"
                 @change="
                   $store.commit(
-                    'toggleAudioIncludeInsignificants',
+                    'settings/TOGGLE_AUDIO_TEN_PERCENT',
                     $event.target.checked
                   )
                 "
@@ -231,13 +230,13 @@
               max="10"
               step=".1"
               :value="audioVolume"
-              @change="$store.commit('setAudioVolume', $event.target.value)"
+              @change="$store.commit('settings/SET_AUDIO_VOLUME', $event.target.value)"
             />
           </div>
         </div>
         <div
           class="settings__title"
-          @click="$store.commit('toggleSettingsPanel', 'counters')"
+          @click="$store.commit('settings/TOGGLE_SETTINGS_PANEL', 'counters')"
           :class="{ closed: settings.indexOf('counters') > -1 }"
         >
           Counter <i class="icon-up"></i>
@@ -256,7 +255,7 @@
                 type="checkbox"
                 class="form-control"
                 :checked="showCounters"
-                @change="$store.commit('toggleCounters', $event.target.checked)"
+                @change="$store.commit('settings/TOGGLE_COUNTERS', $event.target.checked)"
               />
               <div></div>
             </label>
@@ -271,7 +270,7 @@
                 type="checkbox"
                 class="form-control"
                 :checked="countersCount"
-                @change="$store.commit('toggleCountersCount', $event.target.checked)"
+                @change="$store.commit('settings/TOGGLE_COUNTERS_COUNT', $event.target.checked)"
               />
               <div></div>
             </label>
@@ -290,7 +289,7 @@
         </div>
         <div
           class="settings__title"
-          @click="$store.commit('toggleSettingsPanel', 'chart')"
+          @click="$store.commit('settings/TOGGLE_SETTINGS_PANEL', 'chart')"
           :class="{ closed: settings.indexOf('chart') > -1 }"
         >
           Chart
@@ -307,7 +306,7 @@
                 type="checkbox"
                 class="form-control"
                 :checked="showChart"
-                @change="$store.commit('toggleChart', $event.target.checked)"
+                @change="$store.commit('settings/TOGGLE_CHART', $event.target.checked)"
               />
               <div></div>
             </label>
@@ -318,47 +317,15 @@
                 Refresh chart every
                 <editable
                   :content="chartRefreshRate"
-                  @output="$store.commit('setChartRefreshRate', $event)"
+                  @output="$store.commit('settings/SET_CHART_REFRESH_RATE', $event)"
                 ></editable>&nbsp;ms
               </span>
-            </div>
-            <div class="form-group mb8">
-              <label
-                class="checkbox-control flex-left"
-                v-tippy
-                title="Show liquidation volume bars"
-              >
-                <input
-                  type="checkbox"
-                  class="form-control"
-                  :checked="chartLiquidations"
-                  @change="
-                    $store.commit('toggleChartLiquidations', $event.target.checked)
-                  "
-                />
-                <div></div>
-                <span>Liquidation bars</span>
-              </label>
-            </div>
-            <div class="form-group mb8">
-              <label class="checkbox-control flex-left" v-tippy title="Show CVD">
-                <input
-                  type="checkbox"
-                  class="form-control"
-                  :checked="chartCVD"
-                  @change="
-                    $store.commit('toggleChartCVD', $event.target.checked)
-                  "
-                />
-                <div></div>
-                <span>CVD</span>
-              </label>
             </div>
           </div>
         </div>
         <div
           class="settings__title"
-          @click="$store.commit('toggleSettingsPanel', 'exchanges')"
+          @click="$store.commit('settings/TOGGLE_SETTINGS_PANEL', 'exchanges')"
           :class="{ closed: settings.indexOf('exchanges') > -1 }"
         >
           Exchanges
@@ -372,7 +339,7 @@
         </div>
         <div
           class="settings__title"
-          @click="$store.commit('toggleSettingsPanel', 'other')"
+          @click="$store.commit('settings/TOGGLE_SETTINGS_PANEL', 'other')"
           :class="{ closed: settings.indexOf('other') > -1 }"
         >
           Other
@@ -385,7 +352,7 @@
                 type="checkbox"
                 class="form-control"
                 :checked="!!decimalPrecision"
-                @change="$store.commit('setDecimalPrecision', decimalPrecision ? null : 2)"
+                @change="$store.commit('settings/SET_DECIMAL_PRECISION', decimalPrecision ? null : 2)"
               />
               <div></div>
               <span @click.stop.prevent="$event.currentTarget.children[0].focus()">
@@ -393,7 +360,7 @@
                 <editable
                   placeholder="auto"
                   :content="decimalPrecision"
-                  @output="$store.commit('setDecimalPrecision', $event)"
+                  @output="$store.commit('settings/SET_DECIMAL_PRECISION', $event)"
                 ></editable>&nbsp;decimal(s)
               </span>
             </label>
@@ -472,8 +439,11 @@ export default {
     }
   },
   computed: {
-    ...mapState([
+    ...mapState('app', [
       'pair',
+      'actives',
+    ]),
+    ...mapState('settings', [
       'maxRows',
       'decimalPrecision',
       'showLogos',
@@ -481,7 +451,6 @@ export default {
       'liquidationsOnly',
       'aggregateTrades',
       'preferQuoteCurrencySize',
-      'actives',
       'thresholds',
       'showThresholdsAsTable',
       'showCounters',
@@ -493,8 +462,6 @@ export default {
       'timeframe',
       'showChart',
       'chartRefreshRate',
-      'chartLiquidations',
-      'chartCVD',
       'settings',
       'debug'
     ]),
@@ -549,19 +516,16 @@ export default {
         })
 
       if (counters.filter(a => isNaN(a)).length) {
-        socket.$emit('alert', {
+        this.$store.dispatch('app/showNotice', {
           type: 'error',
-          title: `Invalid counter`,
-          message: `Your counters (${value}) contains invalid steps.`,
-          id: `counter_replace_error`
-        })
+          title: `Counters (${value}) contains invalid steps.`
+        });
         return
       }
 
       this.$store.commit('replaceCounterSteps', counters)
 
       this.stringifyCounters()
-      this.stringifyStatsPeriod()
     },
     openTippin(e) {
       e.preventDefault()
@@ -621,8 +585,44 @@ export default {
   background-color: $red;
 }
 
+.settings__title {
+  display: flex;
+  align-items: center;
+  padding: 0.5em 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.5;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+
+  &:hover {
+    opacity: 1;
+    cursor: pointer;
+  }
+
+  .icon-up {
+    transition: transform 0.2s $easeElastic;
+    margin-left: 0.5em;
+  }
+
+  &.closed {
+    .icon-up {
+      transform: rotateZ(180deg);
+    }
+
+    + div {
+      display: none;
+    }
+  }
+}
+
 .settings__container {
-  background: none !important;
+  background-color: rgba($dark, .5);
+  z-index: 10;
   color: white;
 
   .stack__scroller {
@@ -630,7 +630,6 @@ export default {
   }
 
   @media screen and (min-width: 500px) {
-    z-index: 2;
     position: fixed;
     height: 100%;
     width: 100%;
@@ -715,163 +714,7 @@ export default {
   }
 
   .form-group {
-    display: flex;
-    flex-direction: column;
-
-    .help-text {
-      color: rgba(white, 0.6);
-
-      a {
-        text-decoration: underline;
-      }
-    }
-
-    label + .help-text {
-      margin: -0.5em 0 0.5em;
-    }
-
-    .form-control {
-      padding: 8px 8px;
-      background-color: white;
-      border-radius: 2px;
-      border: 0;
-      width: calc(100% - 16px);
-      letter-spacing: -0.5px;
-      min-width: 0;
-      font-size: 1em;
-      margin: 0;
-    }
-
-    .input-group {
-      display: flex;
-
-      > .form-control {
-        border-top-right-radius: 0;
-        border-bottom-right-radius: 0;
-      }
-
-      > .checkbox-control {
-        align-items: stretch;
-
-        > div {
-          height: 100%;
-          padding: 0 1.25em;
-          width: auto;
-          border-top-left-radius: 0;
-          border-bottom-left-radius: 0;
-        }
-      }
-    }
-
     .checkbox-control {
-      display: flex;
-      align-items: center;
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      -khtml-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-      cursor: pointer;
-      margin-right: auto;
-
-      + .settings-chart__sub-settings {
-        position: relative;
-
-        &:before {
-          content: '';
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          left: -1.5em;
-          width: 2px;
-          background-color: rgba(white, 0.2);
-        }
-      }
-
-      input {
-        display: none;
-
-        &:checked {
-          ~ div {
-            background-color: $green;
-
-            &:before,
-            &:after {
-              transition: all 0.5s $easeOutExpo;
-            }
-
-            &:before {
-              opacity: 1;
-              transform: none;
-            }
-
-            &:after {
-              opacity: 0;
-              transform: translateY(50%) skewY(20deg);
-            }
-          }
-        }
-      }
-
-      > div {
-        padding: 0.5em;
-        width: 1em;
-        height: 1em;
-        border-radius: 2px;
-        background-color: rgba(white, 0.2);
-        transition: all 0.2s $easeOutExpo;
-        position: relative;
-        flex-shrink: 0;
-
-        &:before,
-        &:after {
-          font-family: 'icon';
-          font-size: 1em;
-          position: absolute;
-          left: 0;
-          top: 0;
-          right: 0;
-          bottom: 0;
-          transform: translateY(-50%) skewY(-20deg);
-          opacity: 0;
-          transition: all 0.2s $easeOutExpo;
-          color: white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          line-height: 0;
-          pointer-events: none;
-        }
-
-        &:not([class^='icon-']):before {
-          content: unicode($icon-check);
-        }
-
-        &:after {
-          transform: none;
-          opacity: 1;
-        }
-      }
-
-      > span {
-        line-height: 1;
-      }
-
-      div + span {
-        margin-left: 5px;
-      }
-
-      span + div {
-        margin-left: 5px;
-      }
-
-      &.checkbox-control-input {
-        > div {
-          padding: 0.8em;
-        }
-      }
-
       &.-luminosity {
         input {
           ~ div {
@@ -889,16 +732,6 @@ export default {
           &:checked ~ div {
             background-color: $green;
           }
-        }
-      }
-
-      &.-on-off input ~ div {
-        &:before {
-          content: unicode($icon-power-on);
-        }
-
-        &:after {
-          content: unicode($icon-power-off);
         }
       }
 
@@ -1005,95 +838,6 @@ export default {
           background-color: $blue;
         }
       }
-    }
-
-    > label {
-      margin-bottom: 5px;
-      line-height: 1.3;
-
-      .icon-info-circle {
-        margin-left: 2px;
-        line-height: 0;
-        top: 1px;
-        position: relative;
-        opacity: 0.3;
-        transition: opacity 0.2s $easeOutExpo;
-        cursor: help;
-
-        &:hover {
-          opacity: 1;
-        }
-      }
-
-      &:last-child {
-        margin-bottom: 0;
-      }
-    }
-  }
-
-  input[type='range'] {
-    -webkit-appearance: none; /* Override default CSS styles */
-    appearance: none;
-    height: 2.5em; /* Specified height */
-    background: rgba(black, 0.5); /* Grey background */
-    outline: none; /* Remove outline */
-    opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
-    -webkit-transition: 0.2s; /* 0.2 seconds transition on hover */
-    transition: opacity 0.2s;
-    cursor: ew-resize;
-    margin: 0;
-    width: auto;
-
-    &::-webkit-slider-thumb {
-      -webkit-appearance: none; /* Override default look */
-      appearance: none;
-      width: 0.5em; /* Set a specific slider handle width */
-      height: 2em; /* Slider handle height */
-      background: lighten($green, 20%); /* Green background */
-      cursor: ew-resize;
-    }
-
-    &::-moz-range-thumb {
-      width: 0.5em; /* Set a specific slider handle width */
-      height: 2em; /* Slider handle height */
-      background: lighten($green, 20%); /* Green background */
-      cursor: ew-resize;
-    }
-
-    &:hover,
-    &:active {
-      opacity: 1; /* Fully shown on mouse-over */
-
-      &::-webkit-slider-thumb {
-        transform: scale(1.1);
-        background: white;
-        box-shadow: 0 0 2px rgba(white, 0.2), 0 0 20px rgba(white, 0.5);
-      }
-
-      &::-moz-slider-thumb {
-        transform: scale(1.1);
-        background: white;
-        box-shadow: 0 0 2px rgba(white, 0.2), 0 0 20px rgba(white, 0.5);
-      }
-    }
-  }
-
-  [contenteditable] {
-    display: inline-block;
-    cursor: text;
-    font-family: monospace;
-    color: $green;
-
-    -webkit-touch-callout: auto;
-    -webkit-user-select: auto;
-    -khtml-user-select: auto;
-    -moz-user-select: auto;
-    -ms-user-select: auto;
-    user-select: auto;
-
-    &:empty:before {
-      content: attr(placeholder);
-      opacity: 0.5;
     }
   }
 

@@ -23,38 +23,45 @@ class Bybit extends Exchange {
   }
 
   connect() {
-    if (!super.connect()) return
+    if (!super.connect()) return Promise.reject();
 
-    this.api = new WebSocket(this.getUrl())
+    return new Promise((resolve, reject) => {
 
-    this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
+      this.api = new WebSocket(this.getUrl())
 
-    this.api.onopen = event => {
-      this.skip = true
+      this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
 
-      this.api.send(
-        JSON.stringify({
-          op: 'subscribe',
-          args: ['trade']
-        })
-      )
+      this.api.onopen = (e) => {
+        this.skip = true
 
-      /* this.keepalive = setInterval(() => {
-                this.api.send(JSON.stringify({
-                    op: 'ping',
-                }));
-            }, 60000); */
+        this.api.send(
+          JSON.stringify({
+            op: 'subscribe',
+            args: ['trade']
+          })
+        )
 
-      this.emitOpen(event)
-    }
+        /* this.keepalive = setInterval(() => {
+                  this.api.send(JSON.stringify({
+                      op: 'ping',
+                  }));
+              }, 60000); */
 
-    this.api.onclose = event => {
-      this.emitClose(event)
+        this.emitOpen(event)
 
-      clearInterval(this.keepalive)
-    }
+        resolve();
+      }
 
-    this.api.onerror = this.emitError.bind(this, { message: 'Websocket error' })
+      this.api.onclose = event => {
+        this.emitClose(event)
+      }
+
+      this.api.onerror = () => {
+        this.emitError({ message: `${this.id} disconnected` })
+
+        reject();
+      }
+    });
   }
 
   disconnect() {

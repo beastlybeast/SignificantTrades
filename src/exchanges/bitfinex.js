@@ -28,27 +28,32 @@ class Bitfinex extends Exchange {
   }
 
   connect() {
-    if (!super.connect()) return
+    if (!super.connect()) return Promise.reject();
 
-    this.api = new WebSocket(this.getUrl())
+    return new Promise((resolve, reject) => {
+      this.api = new WebSocket(this.getUrl())
 
-    this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
+      this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
+      this.api.onopen = (e) => {
+        this.api.send(
+          JSON.stringify({
+            event: 'subscribe',
+            channel: 'trades',
+            symbol: 't' + this.pair
+          })
+        )
 
-    this.api.onopen = event => {
-      this.api.send(
-        JSON.stringify({
-          event: 'subscribe',
-          channel: 'trades',
-          symbol: 't' + this.pair
-        })
-      )
+        this.emitOpen(e)
 
-      this.emitOpen(event)
-    }
+        resolve();
+      }
+      this.api.onclose = this.emitClose.bind(this)
+      this.api.onerror = () => {
+        this.emitError({ message: `${this.id} disconnected` })
 
-    this.api.onclose = this.emitClose.bind(this)
-
-    this.api.onerror = this.emitError.bind(this, { message: 'Websocket error' })
+        reject();
+      }
+    });
   }
 
   disconnect() {

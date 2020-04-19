@@ -61,36 +61,46 @@ class Okex extends Exchange {
   }
 
   connect() {
-    if (!super.connect()) return
+    if (!super.connect()) return Promise.reject();
 
-    this.api = new WebSocket(this.getUrl())
+    return new Promise((resolve, reject) => {
 
-    this.api.binaryType = 'arraybuffer'
+      this.api = new WebSocket(this.getUrl())
 
-    this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(event.data))
+      this.api.binaryType = 'arraybuffer'
 
-    this.api.onopen = event => {
-      this.api.send(
-        JSON.stringify({
-          op: 'subscribe',
-          args: this.pairs.map(pair => `${this.types[pair]}/trade:${pair}`)
-        })
-      )
+      this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(event.data))
 
-      this.keepalive = setInterval(() => {
-        this.api.send('ping')
-      }, 30000)
+      this.api.onopen = (e) => {
+        this.api.send(
+          JSON.stringify({
+            op: 'subscribe',
+            args: this.pairs.map(pair => `${this.types[pair]}/trade:${pair}`)
+          })
+        )
 
-      this.emitOpen(event)
-    }
+        this.keepalive = setInterval(() => {
+          this.api.send('ping')
+        }, 30000)
 
-    this.api.onclose = event => {
-      this.emitClose(event)
+        this.emitOpen(e)
 
-      clearInterval(this.keepalive)
-    }
+        resolve();
+      }
 
-    this.api.onerror = this.emitError.bind(this, { message: 'Websocket error' })
+
+      this.api.onclose = event => {
+        this.emitClose(event)
+
+        clearInterval(this.keepalive)
+      }
+
+      this.api.onerror = () => {
+        this.emitError({ message: `${this.id} disconnected` })
+
+        reject();
+      }
+    });
   }
 
   disconnect() {

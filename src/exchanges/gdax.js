@@ -30,42 +30,34 @@ class Gdax extends Exchange {
   }
 
   connect() {
-    if (!super.connect()) return
+    if (!super.connect()) return Promise.reject();
 
-    this.api = new WebSocket(this.getUrl())
-    this.api.onmessage = event => {
-      if (!event) {
-        return
+    return new Promise((resolve, reject) => {
+
+      this.api = new WebSocket(this.getUrl())
+
+      this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
+
+      this.api.onopen = (e) => {
+        this.api.send(
+          JSON.stringify({
+            type: 'subscribe',
+            channels: [{ name: 'matches', product_ids: [this.pair] }]
+          })
+        )
+
+        this.emitOpen(e)
+
+        resolve();
       }
 
-      let obj = JSON.parse(event.data)
+      this.api.onclose = this.emitClose.bind(this)
+      this.api.onerror = () => {
+        this.emitError({ message: `${this.id} disconnected` })
 
-      if (obj && obj.size > 0) {
-        this.queueTrades([
-          {
-            exchange: this.id,
-            timestamp: +new Date(obj.time),
-            price: +obj.price,
-            size: +obj.size,
-            side: obj.side
-          }
-        ])
+        reject();
       }
-    }
-
-    this.api.onopen = event => {
-      this.api.send(
-        JSON.stringify({
-          type: 'subscribe',
-          channels: [{ name: 'matches', product_ids: [this.pair] }]
-        })
-      )
-
-      this.emitOpen(event)
-    }
-
-    this.api.onclose = this.emitClose.bind(this)
-    this.api.onerror = this.emitError.bind(this, { message: 'Websocket error' })
+    });
   }
 
   disconnect() {
@@ -73,6 +65,20 @@ class Gdax extends Exchange {
 
     if (this.api && this.api.readyState < 2) {
       this.api.close()
+    }
+  }
+
+  formatLiveTrades(json) {
+    if (json && json.size > 0) {
+      this.queueTrades([
+        {
+          exchange: this.id,
+          timestamp: +new Date(json.time),
+          price: +json.price,
+          size: +json.size,
+          side: json.side
+        }
+      ])
     }
   }
 

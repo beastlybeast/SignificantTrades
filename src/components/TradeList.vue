@@ -24,8 +24,7 @@ export default {
     }
   },
   computed: {
-    ...mapState([
-      'actives',
+    ...mapState('settings', [
       'pair',
       'maxRows',
       'thresholds',
@@ -37,6 +36,9 @@ export default {
       'preferQuoteCurrencySize',
       'decimalPrecision',
       'showLogos'
+    ]),
+    ...mapState('app', [
+      'actives',
     ])
   },
   created() {
@@ -48,7 +50,7 @@ export default {
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
-        case 'toggleAudio':
+        case 'settings/TOGGLE_AUDIO':
           if (mutation.payload) {
             this.sfx = new Sfx()
           } else {
@@ -59,7 +61,7 @@ export default {
           this.fetchGifByKeyword(mutation.payload.value, mutation.payload.isDeleted)
           break
         case 'setThresholdColor':
-        case 'setThresholdAmount':
+        case 'settings/SET_THRESHOLD_AMOUNT':
           this.retrieveColorSteps()
           break
       }
@@ -489,7 +491,7 @@ export default {
   &.-logos {
     .trade__exchange {
       text-indent: -9999px;
-      flex-basis: 3em;
+      flex-basis: 14%;
       flex-grow: 0;
       min-width: 1em;
     }

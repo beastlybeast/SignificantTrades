@@ -1,8 +1,13 @@
 import Vue from 'vue'
 import App from './App.vue'
 import VueTippy from 'vue-tippy'
+import * as ModalDialogs from 'vue-modal-dialogs'
+import Verte from 'verte';
+import 'verte/dist/verte.css';
 
-import store from './services/store'
+import store from './store'
+
+Vue.use(ModalDialogs)
 
 Vue.use(VueTippy, {
   maxWidth: '200px',
@@ -12,8 +17,10 @@ Vue.use(VueTippy, {
   size: 'small',
   delay: 0,
   animateFill: false,
-  theme: 'blue',
+  theme: 'blue'
 })
+
+Vue.component('verte', Verte);
 
 import Editable from './components/ui/Editable'
 import Dropdown from './components/ui/Dropdown'
@@ -26,6 +33,6 @@ Vue.component('slider', Slider)
 new Vue({
   el: '#app',
   store,
-  render: (h) => h(App),
-  props: ['initialized'],
+  render: h => h(App),
+  props: ['initialized']
 })

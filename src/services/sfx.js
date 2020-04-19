@@ -1,6 +1,6 @@
 import Tuna from 'tunajs'
 
-import store from '../services/store'
+import store from '../store'
 
 class Sfx {
   constructor() {
@@ -62,7 +62,7 @@ class Sfx {
       if (side === 'buy') {
         if (factor >= 10) {
           ;[659.26, 830.6, 987.76, 1318.52].forEach((f, i, a) =>
-            setTimeout(() => this.play(f, 0.05 + Math.sqrt(factor) / 15, 0.1 + factor * 0.1), i * 80)
+            setTimeout(() => this.play(f, 0.05 + Math.sqrt(factor) / 25, 0.1 + factor * 0.1), i * 80)
           )
         } else if (factor >= 1) {
           ;[659.26, 830.6].forEach((f, i) => setTimeout(() => this.play(f, 0.05 + Math.sqrt(factor) / 10, 0.1 + factor * 0.1), i * 80))
@@ -105,7 +105,7 @@ class Sfx {
     oscillator.connect(gain)
     length *= 1.3
 
-    var volume = Math.max(0.02, Math.min(1, value)) * store.state.audioVolume
+    var volume = Math.max(0.02, Math.min(1, value)) * store.state.settings.audioVolume
 
     gain.gain.value = volume
 

@@ -1,0 +1,105 @@
+.dialog-mask {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.33);
+  z-index: 2;
+}
+
+.dialog-content {
+  margin: 0 1em;
+  padding: 1em;
+  border: 1px solid lighten($dark, 20%);
+  border-radius: 2px;
+  background-color: lighten($dark, 10%);
+  box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+  color: white;
+
+  .dialog-body {
+    font-size: 12px;
+  }
+
+  header {
+    margin-bottom: 1em;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  p, .el-button {
+    font-size: inherit;
+  }
+
+  p {
+    white-space: pre-wrap;
+  }
+
+  .el-button {
+    flex: 1;
+    border: 0;
+    color: #409EFF;
+    appearance: none;
+  }
+
+  footer {
+    display: flex;
+    margin-top: 24px;
+    justify-content: flex-end;
+
+    .btn {
+      margin-left: .4rem;
+    }
+  }
+}
+
+.serie-dialog .dialog-content {
+  min-width: 240px;
+  max-width: 410px;
+  font-size: 16px;
+
+  .dialog-body {
+    display: flex;
+    flex-wrap: wrap;
+    justify-items: center;
+
+    margin: -.5em;
+    
+    > div {
+      flex-grow: 1;
+      flex-basis: auto;
+      display: flex;
+      justify-content: center;
+      padding: .5em;
+
+      &.-tight {
+        flex-grow: 0;
+      }
+    }
+  }
+
+  .title {
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: .5em;
+    letter-spacing: 1px;
+  }
+
+  [contenteditable] {
+    margin: 0;
+    color: white;
+    border: 1px solid lighten($dark, 20%);
+    background: rgba(0, 0, 0, .1);
+    border-radius: 2px;
+    padding: (1em/3);
+    box-sizing: border-box;
+    font-family: monospace;
+  }
+
+  .form-group {
+    margin-bottom: .5em;
+  }
+}

@@ -10,7 +10,8 @@
         v-if="showChart"
         :options="timeframes"
         :selected="timeframe"
-        @output="setTimeframe(+$event)"
+        placeholder="tf."
+        @output="$store.commit('settings/SET_TIMEFRAME', +$event)"
       ></dropdown>
       <button
         type="button"
@@ -24,7 +25,7 @@
       <button
         type="button"
         :class="{ active: useAudio }"
-        @click="$store.commit('toggleAudio', !useAudio)"
+        @click="$store.commit('settings/TOGGLE_AUDIO', !useAudio)"
       >
         <span class="icon-volume-muted"></span>
       </button>
@@ -53,7 +54,7 @@ export default {
     }
   },
   computed: {
-    ...mapState(['pair', 'useAudio', 'showChart', 'isSnaped', 'timeframe', 'chartRange'])
+    ...mapState('settings', ['pair', 'useAudio', 'showChart', 'timeframe'])
   },
   created() {
     this._fetchLabel = this.fetchLabel.substr()
@@ -62,24 +63,7 @@ export default {
 
     ;[1, 3, 5, 10, 15, 30, 60, 60 * 3, 60 * 5, 60 * 15].forEach(span => (this.timeframes[span] = ago(now - span * 1000)))
 
-    socket.$on('fetchStart', () => {
-      //
-    })
-
-    socket.$on('fetchEnd', () => {
-      this.updateTimeframesApproximateContentSize()
-    })
-
-    socket.$on('loadingProgress', event => {
-      if (!event || isNaN(event.progress)) {
-        return
-      }
-
-      this.fetchLabel = !Math.floor(this.dashoffset) ? this._fetchLabel : this.sizeOf(event.loaded)
-    })
-
     this.updateTimeframeLabel()
-    this.updateTimeframesApproximateContentSize()
   },
   methods: {
     setTimeframe(timeframe) {
@@ -88,7 +72,7 @@ export default {
       this.updateTimeframeLabel(timeframe)
 
       setTimeout(() => {
-        this.$store.commit('setTimeframe', timeframe)
+        this.$store.commit('settings/SET_TIMEFRAME', timeframe)
       }, 50)
     },
     updateTimeframeLabel(timeframe) {
@@ -101,30 +85,6 @@ export default {
         window.close()
       }, 500)
     },
-    sizeOf(bytes, si) {
-      var thresh = si ? 1000 : 1024
-      if (Math.abs(bytes) < thresh) {
-        return bytes + ' B'
-      }
-      var units = si ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'] : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB']
-      var u = -1
-      do {
-        bytes /= thresh
-        ++u
-      } while (Math.abs(bytes) > thresh && u < units.length - 1)
-      return bytes.toFixed(1) + ' ' + units[u]
-    },
-    updateTimeframesApproximateContentSize() {
-      const now = +new Date()
-      const candleCount = this.chartRange / this.timeframe
-
-      if (socket._fetchedTime && socket._fetchedBytes) {
-        for (let span in this.timeframes) {
-          this.timeframes[span] =
-            '<span>~' + this.sizeOf(socket._fetchedBytes * ((span * candleCount) / socket._fetchedTime)) + '</span> ' + ago(now - span).trim()
-        }
-      }
-    }
   }
 }
 </script>
@@ -155,8 +115,6 @@ header#header {
     }
 
     .dropdown__option {
-      text-align: left;
-
       span {
         margin-right: 1em;
       }

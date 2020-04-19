@@ -30,34 +30,42 @@ class Bitstamp extends Exchange {
   }
 
   connect() {
-    if (!super.connect()) return
+    if (!super.connect()) return Promise.reject();
 
-    this.api = new WebSocket(this.getUrl())
+    return new Promise((resolve, reject) => {
+      this.api = new WebSocket(this.getUrl())
 
-    this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
+      this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
 
-    this.api.onopen = event => {
-      for (let pair of this.pairs) {
-        this.api.send(
-          JSON.stringify({
-            event: 'bts:subscribe',
-            data: {
-              channel: 'live_trades_' + pair
-            }
-          })
-        )
+      this.api.onopen = (e) => {
+        for (let pair of this.pairs) {
+          this.api.send(
+            JSON.stringify({
+              event: 'bts:subscribe',
+              data: {
+                channel: 'live_trades_' + pair
+              }
+            })
+          )
+        }
+        
+        this.emitOpen(e)
+
+        resolve();
       }
 
-      this.emitOpen(event)
-    }
+      this.api.onclose = event => {
+        this.emitClose(event)
 
-    this.api.onclose = event => {
-      this.emitClose(event)
+        clearInterval(this.keepalive)
+      }
 
-      clearInterval(this.keepalive)
-    }
+      this.api.onerror = () => {
+        this.emitError({ message: `${this.id} disconnected` })
 
-    this.api.onerror = this.emitError.bind(this, { message: 'Websocket error' })
+        reject();
+      }
+    });
   }
 
   disconnect() {

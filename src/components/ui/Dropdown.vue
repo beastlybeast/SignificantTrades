@@ -1,6 +1,6 @@
 <template>
   <div class="dropdown">
-    <div class="dropdown__selected" @click="toggle" v-html="options[selected]"></div>
+    <div class="dropdown__selected" @click="toggle" v-html="options[selected] || placeholder || 'Selection'"></div>
     <div class="dropdown__options" v-show="isOpen">
       <div
         class="dropdown__option"
@@ -16,7 +16,7 @@
 
 <script>
 export default {
-  props: ['options', 'selected'],
+  props: ['options', 'selected', 'placeholder'],
 
   data() {
     return {
@@ -24,15 +24,8 @@ export default {
     }
   },
 
-  created() {
-    if (!this.selected) {
-      this.selected = Object.keys(this.options)[0]
-    }
-  },
-
   methods: {
     toggle() {
-      console.log('toggle!')
       if (!this.isOpen) {
         this.show()
       } else {
@@ -56,7 +49,6 @@ export default {
       if (!this._clickOutsideHandler) {
         this._clickOutsideHandler = (event => {
           if (!this.$el.contains(event.target)) {
-            console.log('click outside!')
             this.hide()
           }
         }).bind(this)

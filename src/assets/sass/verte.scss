@@ -1,0 +1,91 @@
+.verte {
+  .verte__draggable {
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0) 2px, transparent 1%) center, linear-gradient(rgba(0, 0, 0, 0.27) 2px, transparent 1%) center, rgba(112, 128, 144, 0.2);
+    background-size: 4px 4px;
+    height: 32px;
+  }
+  
+  .verte__menu {
+    background-color: lighten($dark, 10%);
+    color: white;
+  }
+  
+  .verte__model,
+  .verte__submit {
+    font-style: italic;
+    font-family: Roboto;
+    margin-right: 1em;
+    color: white;
+    fill: white;
+
+    &:hover {
+      fill: white;
+      stroke: white;
+      color: white;
+      text-decoration: underline;
+
+      svg {
+        stroke: white;
+        stroke-width: 3px;
+      }
+    }
+  }
+  
+  .verte__model {
+    margin-right: .5em;
+  }
+  
+  .verte__submit {
+    margin-left: .5em;
+    margin-right: 0;
+  }
+  
+  .verte__input {
+    color: white;
+    background-color: $dark;
+    border: 0;
+  }
+
+  .slider__handle {
+    transition: box-shadow .2s $easeOutExpo;
+    cursor: grab;
+    
+    &:active,
+    &:hover {
+      box-shadow: 0 0 0 .5em rgba(white, .2)
+    }
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
+  
+  .verte-picker {
+    margin-bottom: 0;
+  }
+
+  .verte__close {
+    background-color: $red;
+    fill: white;
+    transition: transform .2s $easeOutExpo;
+    right: -.25em;
+    top: -.25em;
+    transform: none;
+
+    svg {
+      stroke-width: 2px;
+      stroke: white;
+      transition: stroke-width .2s $easeOutExpo;
+    }
+
+    &:hover {
+      transform: scale(1.2);
+      stroke-width: 3px;
+
+      svg {
+        stroke-width: 4px;
+        stroke: white;
+      }
+    }
+  }
+}

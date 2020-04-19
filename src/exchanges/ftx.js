@@ -46,37 +46,45 @@ class Ftx extends Exchange {
   }
 
   connect() {
-    if (!super.connect()) return
+    if (!super.connect()) return Promise.reject();
 
-    this.api = new WebSocket(this.getUrl())
+    return new Promise((resolve, reject) => {
 
-    this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
+      this.api = new WebSocket(this.getUrl())
 
-    this.api.onopen = event => {
-      this.skip = true
+      this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
 
-      for (let pair of this.pairs) {
-        this.api.send(JSON.stringify({ op: 'subscribe', channel: 'trades', market: pair }))
+      this.api.onopen = (e) => {
+        this.skip = true
+
+        for (let pair of this.pairs) {
+          this.api.send(JSON.stringify({ op: 'subscribe', channel: 'trades', market: pair }))
+        }
+
+        this.keepalive = setInterval(() => {
+          this.api.send(
+            JSON.stringify({
+              op: 'ping'
+            })
+          )
+        }, 15000)
+
+        this.emitOpen(e)
+
+        resolve();
       }
 
-      this.keepalive = setInterval(() => {
-        this.api.send(
-          JSON.stringify({
-            op: 'ping'
-          })
-        )
-      }, 15000)
+      this.api.onclose = event => {
+        this.emitClose(event)
 
-      this.emitOpen(event)
-    }
+        clearInterval(this.keepalive)
+      }
+      this.api.onerror = () => {
+        this.emitError({ message: `${this.id} disconnected` })
 
-    this.api.onclose = event => {
-      this.emitClose(event)
-
-      clearInterval(this.keepalive)
-    }
-
-    this.api.onerror = this.emitError.bind(this, { message: 'Websocket error' })
+        reject();
+      }
+    });
   }
 
   disconnect() {

@@ -10,9 +10,11 @@
       loading: isLoading,
     }"
   >
+    <div class="notices">
+      <Notice v-for="(notice, index) in notices" :key="index" :notice="notice" />
+    </div>
     <Settings v-if="showSettings" @close="showSettings = false" />
     <div class="app__wrapper">
-      <Alerts />
       <Header :price="price" @toggleSettings="showSettings = !showSettings" />
       <div class="app__layout">
         <Chart v-if="showChart" />
@@ -22,37 +24,40 @@
         </div>
       </div>
     </div>
+    <dialogs-wrapper></dialogs-wrapper>
   </div>
 </template>
 
 <script>
 import { mapState } from 'vuex'
-import { MASTER_DOMAIN, formatPrice, formatAmount } from './utils/helpers'
+import { MASTER_DOMAIN, formatPrice, formatAmount, movingAverage, countDecimals } from './utils/helpers'
 
 import socket from './services/socket'
 import touchevent from './utils/touchevent'
 
-import Alerts from './components/ui/Alerts.vue'
+import Notice from './components/ui/Notice.vue'
 import Header from './components/ui/Header.vue'
 import Settings from './components/Settings.vue'
 import TradeList from './components/TradeList.vue'
 import Chart from './components/chart/Chart.vue'
 import Counters from './components/Counters.vue'
+import upFavicon from '../static/up.png'
+import downFavicon from '../static/down.png'
 
 const faviconDirection = {
   direction: null,
-  prices: [],
-  sum: 0
+  index: 0,
+  avg: 0
 }
 
 export default {
   components: {
-    Alerts,
     Header,
     Settings,
     TradeList,
     Chart,
-    Counters
+    Counters,
+    Notice
   },
   name: 'app',
   data() {
@@ -61,13 +66,16 @@ export default {
       baseCurrency: 'bitcoin',
       quoteCurrency: 'dollar',
       symbol: '$',
+      
 
       showSettings: false,
-      showStatistics: false
+      showStatistics: false,
+      calculateOptimalPrice: true
     }
   },
   computed: {
-    ...mapState(['pair', 'actives', 'showChart', 'showCounters', 'decimalPrecision', 'isLoading', 'preferQuoteCurrencySize'])
+    ...mapState('app', ['actives', 'notices']),
+    ...mapState('settings', ['pair', 'showChart', 'showCounters', 'showStats', 'decimalPrecision', 'isLoading', 'preferQuoteCurrencySize'])
   },
   created() {
     this.$root.formatPrice = formatPrice
@@ -79,20 +87,16 @@ export default {
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
-        case 'toggleAutoClearTrades':
-          this.toggleAutoClearTrades(mutation.payload)
-          break
         case 'setPair':
           socket.connectExchanges(mutation.payload)
+          this.calculateOptimalPrice = true
           break
       }
     })
 
-    this.toggleAutoClearTrades(this.autoClearTrades)
-
     // Is request blocked by browser ?
     // If true notice user that some of the exchanges may be unavailable
-    fetch('showads.js')
+    /*fetch('showads.js')
       .then(() => {})
       .catch((response, a) => {
         socket.$emit('alert', {
@@ -101,7 +105,7 @@ export default {
           message: `Some adblockers may block access to exchanges api.\nMake sure to turn it off, you wont find any ads here ever :-)`,
           id: `adblock_error`
         })
-      })
+      })*/
 
     socket.initialize()
 
@@ -154,24 +158,27 @@ export default {
         this.symbol = symbols.BTC[1]
       }
     },
-    toggleAutoClearTrades(isAutoWipeCacheEnabled) {
-      clearInterval(this._autoWipeCacheInterval)
-
-      if (!isAutoWipeCacheEnabled) {
-        return
-      }
-
-      /* this._autoWipeCacheInterval = setInterval(
-        socket.cleanOldData.bind(socket),
-        1000 * 60 * 5
-      ) */
-    },
     updatePrice() {
       let price = 0
       let total = 0
+      let decimals = null;
+
+      const activesExchangesLength = this.actives.length;
+
+      if (this.calculateOptimalPrice) {
+        decimals = [];
+      }
 
       for (let exchange of socket.exchanges) {
-        if (exchange.price === null || this.actives.indexOf(exchange.id) === -1) {
+        if (exchange.price === null) {
+          continue
+        }
+        
+        if (this.calculateOptimalPrice) {
+          decimals.push(countDecimals(exchange.price))
+        }
+
+        if (this.actives.indexOf(exchange.id) === -1) {
           continue
         }
 
@@ -179,7 +186,16 @@ export default {
         price += exchange.price
       }
 
-      price = price / total
+      if (total) {
+        price = price / total
+
+        if (this.calculateOptimalPrice && total >= activesExchangesLength / 2) {
+          const optimalDecimal = Math.round(decimals.reduce((a, b) => a + b, 0) / decimals.length);
+          this.$store.commit('app/SET_OPTIMAL_DECIMAL', optimalDecimal)
+
+          delete this.calculateOptimalPrice;
+        }
+      }
 
       if (price) {
         this.updateFavicon(price)
@@ -192,13 +208,14 @@ export default {
       this._updatePriceTimeout = setTimeout(this.updatePrice, 1000)
     },
     updateFavicon(price) {
-      faviconDirection.sum += faviconDirection.prices[faviconDirection.prices.push(price) - 1]
-
-      if (faviconDirection.prices.length > 7) {
-        faviconDirection.sum -= faviconDirection.prices.shift()
+      if (faviconDirection.index) {
+        faviconDirection.avg = movingAverage(faviconDirection.avg, price, 1/(faviconDirection.index+1))
+      } else {
+        faviconDirection.avg = price
       }
+      faviconDirection.index++;
 
-      const direction = price > faviconDirection.sum / faviconDirection.prices.length ? 'up' : 'down'
+      const direction = price > faviconDirection.avg ? 'up' : 'down'
 
       if (direction !== faviconDirection.direction) {
         if (!faviconDirection.element) {
@@ -209,7 +226,11 @@ export default {
           document.head.appendChild(faviconDirection.element)
         }
 
-        faviconDirection.element.href = `static/${direction}.png`
+        if (direction === 'up') {
+          faviconDirection.element.href = upFavicon
+        } else {
+          faviconDirection.element.href = downFavicon
+        }
       }
     }
   }
@@ -225,4 +246,8 @@ export default {
 @import './assets/sass/tooltip';
 @import './assets/sass/dropdown';
 @import './assets/sass/button';
+@import './assets/sass/dialog';
+@import './assets/sass/form';
+@import './assets/sass/verte';
+@import './assets/sass/notice';
 </style>

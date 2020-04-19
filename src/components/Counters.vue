@@ -2,10 +2,12 @@
   <ul class="counters">
     <li v-for="(step, index) in steps" :key="index" v-bind:duration="step.duration" v-if="step.hasData" class="counter">
       <div class="counter__side -buy" v-bind:style="{ width: (step.buy / (step.buy + step.sell) * 100) + '%' }">
-        <span>{{ $root.formatAmount(step.buy) }}</span>
+        <span v-if="!countersCount">{{ $root.formatAmount(step.buy) }}</span>
+        <span v-else>{{ step.buy }}</span>
       </div>
       <div class="counter__side -sell" v-bind:style="{ width: (step.sell / (step.buy + step.sell) * 100) + '%' }">
-        <span>{{ $root.formatAmount(step.sell) }}</span>
+        <span v-if="!countersCount">{{ $root.formatAmount(step.sell) }}</span>
+        <span v-else>{{ step.sell }}</span>
       </div>
     </li>
   </ul>
@@ -34,7 +36,8 @@ export default {
     }
   },
   computed: {
-    ...mapState(['actives', 'preferQuoteCurrencySize', 'thresholds', 'liquidationsOnly', 'countersSteps', 'countersCount', 'countersPrecision']),
+    ...mapState('app', ['actives']),
+    ...mapState('settings', ['preferQuoteCurrencySize', 'thresholds', 'liquidationsOnly', 'countersSteps', 'countersCount', 'countersPrecision']),
   },
   created() {
     socket.$on('pairing', this.onPairing)
@@ -42,10 +45,10 @@ export default {
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
-        case 'setCounterStep':
-        case 'replaceCounterSteps':
+        case 'settings/REPLACE_COUNTERS':
         case 'reloadExchangeState':
         case 'liquidationsOnly':
+        case 'settings/TOGGLE_COUNTERS_COUNT':
           this.createCounters()
         break;
       }
@@ -108,6 +111,8 @@ export default {
         CHUNK.sell += volume.sell
 
         for (let i = 0; i < this.steps.length; i++) {
+          if (isNaN(this.steps[i].buy + volume.buy) || isNaN(this.steps[i].sell + volume.sell))
+          debugger;
           this.steps[i].buy += volume.buy
           this.steps[i].sell += volume.sell
         }
@@ -162,13 +167,13 @@ export default {
         CHUNK.sell = 0
       }
 
-      let chunksToDowngrade = [];
+      let chunksToDecrease = [];
       let downgradeBuy;
       let downgradeSell;
 
       for (let i = 0; i < COUNTERS.length; i++) {
-        if (chunksToDowngrade.length) {
-          Array.prototype.push.apply(COUNTERS[i].chunks, chunksToDowngrade.splice(0, chunksToDowngrade.length))
+        if (chunksToDecrease.length) {
+          Array.prototype.push.apply(COUNTERS[i].chunks, chunksToDecrease.splice(0, chunksToDecrease.length))
 
           if (!this.steps[i].hasData) {
             this.steps[i].hasData = true;
@@ -190,7 +195,9 @@ export default {
         }
 
         if (to) {
-          chunksToDowngrade = COUNTERS[i].chunks.splice(0, to + 1);
+          chunksToDecrease = COUNTERS[i].chunks.splice(0, to + 1);
+          if (isNaN(this.steps[i].buy - downgradeBuy) || isNaN(this.steps[i].sell - downgradeSell))
+          debugger;
           this.steps[i].buy -= downgradeBuy
           this.steps[i].sell -= downgradeSell
         }

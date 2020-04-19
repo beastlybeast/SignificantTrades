@@ -35,7 +35,7 @@
           v-tippy
           :title="exchange.hidden ? 'Show' : 'Hide (from everything)'"
           @click.stop.prevent="
-            $store.commit('toggleExchangeVisibility', exchange.id)
+            $store.commit('settings/TOGGLE_EXCHANGE_VISIBILITY', exchange.id)
           "
         >
           <i class="icon-eye"></i>
@@ -59,13 +59,13 @@
           :max="2"
           :value="exchanges[exchange.id].threshold"
           @reset="
-            $store.commit('setExchangeThreshold', {
+            $store.commit('settings/SET_EXCHANGE_THRESHOLD', {
               exchange: exchange.id,
               threshold: 1,
             })
           "
           @output="
-            $store.commit('setExchangeThreshold', {
+            $store.commit('settings/SET_EXCHANGE_THRESHOLD', {
               exchange: exchange.id,
               threshold: $event,
             })
@@ -97,9 +97,9 @@ export default {
   },
   props: ['exchange'],
   computed: {
-    ...mapState(['pair', 'exchanges']),
+    ...mapState('settings', ['pair', 'exchanges']),
     settings() {
-      return this.$store.state.exchanges[this.exchange.id]
+      return this.$store.state.settings.exchanges[this.exchange.id]
     }
   },
   methods: {
@@ -107,11 +107,11 @@ export default {
       if (!this.settings.disabled) {
         this.exchange.disconnect()
 
-        this.$store.commit('disableExchange', this.exchange.id)
+        this.$store.commit('settings/DISABLE_EXCHANGE', this.exchange.id)
       } else {
         this.exchange.connect(this.pair)
 
-        this.$store.commit('enableExchange', this.exchange.id)
+        this.$store.commit('settings/ENABLE_EXCHANGE', this.exchange.id)
       }
     },
     refreshProducts(exchange) {
@@ -122,11 +122,10 @@ export default {
       }, 3000)
 
       this.exchange.refreshProducts().then(() => {
-        socket.$emit('alert', {
-          type: 'info',
-          title: `${this.exchange.id}'s products refreshed`,
-          message: `${this.exchange.indexedProducts.length} products was saved`
-        })
+        this.$store.dispatch('app/showNotice', {
+          type: 'success',
+          title: `${this.exchange.id}'s products refreshed`
+        });
       })
     }
   }

@@ -18,7 +18,19 @@
 	-khtml-user-select: none;
 	-moz-user-select: none;
 	-ms-user-select: none;
-	user-select: none;
+  user-select: none;
+  
+  &.-left {
+    .dropdown__options {
+      right: auto;
+      left: 0;
+
+      .dropdown__option {
+        justify-content: flex-start;
+        padding: .6em 2em .6em 1.6em;
+      }
+    }
+  }
 
 	.dropdown__selected {
 		cursor: pointer;
@@ -31,7 +43,7 @@
 	.dropdown__options {
 		position: absolute;
 		top: 1.75em;
-		right: 0em;
+		right: 0;
 		overflow: hidden;
 		border-radius: 2px;
 		text-align: right;
@@ -48,11 +60,11 @@
 
 	.dropdown__option {
 		background-color: lighten($dark, 15%);
-		padding: .6em .6em .6em 1em;
+		padding: .6em 1.6em .6em 2em;
 		transition: background-color .2s $easeOutExpo;
 		font-size: .9em;
 		display: flex;
-		justify-content: space-between;
+		justify-content: flex-end;
 
 		span {
 			opacity: .33;

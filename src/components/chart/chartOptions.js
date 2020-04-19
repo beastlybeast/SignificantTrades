@@ -1,4 +1,4 @@
-export const chartOptions = {
+export const defaultChartOptions = {
   crosshair: {
     vertLine: {
       color: 'rgba(255, 255, 255, .75)',
@@ -44,21 +44,17 @@ export const chartOptions = {
   priceScale: {
     position: 'right',
     mode: 0,
-    borderColor: 'rgba(255, 255, 255, .2)',
-    scaleMargins: {
-      top: 0.25,
-      bottom: 0.2
-    }
+    borderColor: 'rgba(255, 255, 255, .2)'
   }
 }
 
-export const lineOptions = {
+export const defaultLineOptions = {
   crosshairMarkerVisible: false,
   lastValueVisible: false,
   priceLineVisible: false
 }
 
-export const candlestickOptions = {
+export const defaultCandlestickOptions = {
   baseLineStyle: false,
   lastValueVisible: true,
   priceLineVisible: true,
@@ -70,10 +66,6 @@ export const candlestickOptions = {
     precision: 2
   },
   overlay: false,
-  scaleMargins: {
-    top: 0,
-    bottom: 0
-  },
   borderVisible: false,
   upColor: '#c3a87a',
   downColor: '#e53935',
@@ -81,7 +73,7 @@ export const candlestickOptions = {
   wickDownColor: 'rgba(224, 91, 95, .8)'
 }
 
-export const histogramOptions = {
+export const defaultHistogramOptions = {
   color: '#c3a87a',
   lastValueVisible: false,
   priceLineVisible: false,
@@ -92,8 +84,8 @@ export const histogramOptions = {
   }
 }
 
-export const seriesOptions = {
-  line: lineOptions,
-  candlestick: candlestickOptions,
-  histogram: histogramOptions
+export const defaultPlotsOptions = {
+  line: defaultLineOptions,
+  candlestick: defaultCandlestickOptions,
+  histogram: defaultHistogramOptions
 }

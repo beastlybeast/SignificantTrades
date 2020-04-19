@@ -1,12 +1,7 @@
 <template>
   <div class="thresholds" :class="{ '-dragging': dragging, '-rendering': rendering }">
-    <chrome-picker
-      v-if="picking !== null"
-      ref="picker"
-      :value="thresholds[picking.index][picking.side]"
-      @input="updateColor"
-    ></chrome-picker>
-
+    <verte 
+      v-if="picking !== null" :style="{opacity: 0, position:'absolute'}" display="widget" :draggable="true" ref="picker" picker="square" model="rgb" :value="thresholds[picking.index][picking.side]" @input="updateColor"></verte>
     <table class="thresholds-table" v-if="showThresholdsAsTable">
       <tr v-for="(threshold, index) in thresholds" :key="`threshold-${index}`">
         <td class="thresholds-table__input">
@@ -15,7 +10,7 @@
             placeholder="Amount*"
             :value="thresholds[index].amount"
             @change="
-              $store.commit('setThresholdAmount', {
+              $store.commit('settings/SET_THRESHOLD_AMOUNT', {
                 index: index,
                 value: $event.target.value,
               })
@@ -29,7 +24,7 @@
             placeholder="Giphy"
             :value="thresholds[index].gif"
             @change="
-              $store.commit('setThresholdGif', {
+              $store.commit('settings/SET_THRESHOLD_GIF', {
                 index: index,
                 value: $event.target.value,
               })
@@ -81,6 +76,7 @@
           transform: 'translateX(' + this.panelOffsetPosition + 'px)',
         }"
       >
+      
         <div
           class="threshold-panel__caret"
           :style="{
@@ -97,7 +93,7 @@
           <editable
             :content="thresholds[selectedIndex].amount"
             @output="
-              $store.commit('setThresholdAmount', {
+              $store.commit('settings/SET_THRESHOLD_AMOUNT', {
                 index: selectedIndex,
                 value: $event,
               })
@@ -116,7 +112,7 @@
             class="form-control"
             :value="thresholds[selectedIndex].gif"
             @change="
-              $store.commit('setThresholdGif', {
+              $store.commit('settings/SET_THRESHOLD_GIF', {
                 index: selectedIndex,
                 value: $event.target.value,
               })
@@ -134,7 +130,7 @@
                 :value="thresholds[selectedIndex].buyColor"
                 :style="{ backgroundColor: thresholds[selectedIndex].buyColor }"
                 @change="
-                  $store.commit('setThresholdColor', {
+                  $store.commit('settings/SET_THRESHOLD_COLOR', {
                     index: selectedIndex,
                     side: 'buyColor',
                     value: $event.target.value,
@@ -152,7 +148,7 @@
                   backgroundColor: thresholds[selectedIndex].sellColor,
                 }"
                 @change="
-                  $store.commit('setThresholdColor', {
+                  $store.commit('settings/SET_THRESHOLD_COLOR', {
                     index: selectedIndex,
                     side: 'sellColor',
                     value: $event.target.value,
@@ -171,15 +167,9 @@
 <script>
 import { mapState } from 'vuex'
 
-import { Chrome } from 'vue-color'
-
 import { TOUCH_SUPPORTED, formatPrice, formatAmount } from '../utils/helpers'
 
 export default {
-  components: {
-    'chrome-picker': Chrome
-  },
-
   data() {
     return {
       rendering: true,
@@ -194,21 +184,21 @@ export default {
   },
 
   computed: {
-    ...mapState(['thresholds', 'showThresholdsAsTable', 'preferQuoteCurrencySize'])
+    ...mapState('settings', ['thresholds', 'showThresholdsAsTable', 'preferQuoteCurrencySize'])
   },
 
   created() {
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
-        case 'toggleSettingsPanel':
-        case 'toggleTresholdsTable':
+        case 'settings/TOGGLE_SETTINGS_PANEL':
+        case 'settings/TOGGLE_THRESHOLDS_TABLE':
           if (this.picking) {
             this.closePicker(event)
           }
 
           if (
-            (mutation.type === 'toggleSettingsPanel' && mutation.payload === 'thresholds') ||
-            (mutation.type === 'toggleTresholdsTable' && mutation.payload === false)
+            (mutation.type === 'settings/TOGGLE_SETTINGS_PANEL' && mutation.payload === 'thresholds') ||
+            (mutation.type === 'settings/TOGGLE_THRESHOLDS_TABLE' && mutation.payload === false)
           ) {
             this.rendering = true
 
@@ -218,12 +208,15 @@ export default {
             }, 100)
           }
           break
-        case 'setThresholdAmount':
+        case 'settings/SET_THRESHOLD_AMOUNT':
           this.reorderThresholds()
           this.refreshHandlers()
           break
-        case 'setThresholdColor':
+        case 'settings/SET_THRESHOLD_COLOR':
           this.refreshGradients()
+          break
+        case 'settings/ADD_THRESHOLD':
+          this.refreshHandlers()
           break
       }
     })
@@ -325,13 +318,13 @@ export default {
 
       this.refreshCaretPosition()
 
-      this.thresholds[this.selectedIndex].amount = formatPrice(amount)
+      this.thresholds[this.selectedIndex].amount = +formatPrice(amount)
     },
 
     endDrag(event) {
       if (this.selectedElement) {
         if (this.dragging) {
-          this.$store.commit('setThresholdAmount', {
+          this.$store.commit('settings/SET_THRESHOLD_AMOUNT', {
             index: this.selectedIndex,
             value: this.thresholds[this.selectedIndex].amount
           })
@@ -444,7 +437,7 @@ export default {
         return
       }
 
-      this.$store.commit('deleteThreshold', index)
+      this.$store.commit('settings/DELETE_THRESHOLD', index)
     },
 
     openPicker(side, index, event) {
@@ -453,7 +446,7 @@ export default {
       }
 
       if (!this.thresholds[index][side]) {
-        this.$store.commit('setThresholdColor', {
+        this.$store.commit('settings/SET_THRESHOLD_COLOR', {
           index: index,
           side: side,
           value: '#ffffff'
@@ -480,10 +473,12 @@ export default {
           )
         )
         let top = targetBounds.top - containerBounds.top + event.target.clientHeight * 1.3
-
+        
         this.$refs.picker.$el.style.top = top + 'px'
         this.$refs.picker.$el.style.left = left + 'px'
+        this.$refs.picker.$el.style.position = 'absolute'
         this.$refs.picker.$el.style.opacity = 1
+        this.$refs.picker.$el.style.zIndex = 10
 
         this.$refs.picker.fieldsIndex = 1
       }, 100)
@@ -504,14 +499,14 @@ export default {
     },
 
     updateColor(color) {
-      if (!this.picking) {
+      if (!this.picking || this.thresholds[this.picking.index][`${this.picking.side}Color`] === color) {
         return
       }
-
-      this.$store.commit('setThresholdColor', {
+  console.log(this.thresholds[this.picking.index][`${this.picking.side}Color`]);
+      this.$store.commit('settings/SET_THRESHOLD_COLOR', {
         index: this.picking.index,
         side: this.picking.side,
-        value: `rgba(${color.rgba.r}, ${color.rgba.g}, ${color.rgba.b}, ${color.rgba.a})`
+        value: color
       })
     }
   }

@@ -16,10 +16,8 @@ import Deribit from '../exchanges/deribit'
 import Bybit from '../exchanges/bybit'
 import Ftx from '../exchanges/ftx'
 
-import store from '../services/store'
-import { formatAmount } from '../utils/helpers'
-
-// const TRADES=[];
+import store from '../store'
+import { MASTER_DOMAIN } from '../utils/helpers'
 
 const QUEUE = {};
 const REFS = {}
@@ -48,94 +46,40 @@ const emitter = new Vue({
         new Ftx()
       ],
       timestamps: {},
-      queue: [],
 
       _pair: null,
-      _fetchedMax: false,
-      _fetchedTime: 0,
-      _fetchedBytes: 0,
-      _firstCloses: {}
     }
   },
   computed: {
     pair() {
-      return store.state.pair
+      return store.state.settings.pair
     },
     timeframe() {
-      return store.state.timeframe
+      return store.state.settings.timeframe
     },
     exchangesSettings() {
-      return store.state.exchanges
-    },
-    actives() {
-      return store.state.actives
+      return store.state.settings.exchanges
     },
     showChart() {
-      return store.state.showChart
+      return store.state.settings.showChart
     },
     showSlippage() {
-      return store.state.showSlippage
+      return store.state.settings.showSlippage
     },
     chartRange() {
-      return store.state.chartRange
+      return store.state.settings.chartRange
+    },
+    aggregateTrades() {
+      return store.state.settings.aggregateTrades
+    },
+    actives() {
+      return store.state.app.actives
     },
     isLoading() {
-      return store.state.isLoading
+      return store.state.app.isLoading
     }
   },
   created() {
-    window.emitTrade = (exchange, price, amount = 1, side = 1, type = null) => {
-      exchange = exchange || 'bitmex'
-
-      if (price === null) {
-        price = this.getExchangeById(exchange).price
-      }
-
-      let trade = {
-        exchange: exchange,
-        timestamp: +new Date(),
-        price: price,
-        size: amount, 
-        side: side ? 'buy' : 'sell'
-      }
-
-      if (type === 1) {
-        trade.liquidation = true;
-      }
-
-      this.$emit('trades', [trade])
-      this.$emit('trades.aggr', [trade])
-    }
-
-    window.formatTime = function(time) {
-      const date = new Date(time * 1000)
-
-      return date.getDate() + '/' + (date.getMonth() + 1) + ' ' + date.toTimeString().split(' ')[0]
-    }
-
-    window.getExchanges = () => {
-      return this.exchanges
-    }
-
-    window.getQueue = () => {
-      return QUEUE
-    }
-
-    /*window.getTrades = () => {
-      const trades = JSON.parse(JSON.stringify(TRADES))
-
-      
-      var myjson = JSON.stringify(trades.map(trade => {
-        trade.amount = formatAmount(trade.price * trade.size)
-        return trade;
-      }), null, 2);
-      console.log(myjson);
-      var x = window.open();
-      x.document.open();
-      x.document.write('<html><body><pre>' + myjson + '</pre></body></html>');
-      x.document.close();
-    }*/
-
     this.exchanges.forEach(exchange => {
       exchange.on('trades', trades => {
         if (!trades || !trades.length) {
@@ -143,17 +87,18 @@ const emitter = new Vue({
         }
 
         this.timestamps[exchange.id] = trades[trades.length - 1].timestamp
+        
+        const length = trades.length;
+        
+        const sums = {
 
-        const l = trades.length;
-
+        }
         const aggrTrades = []
 
-        for (let i = 0; i < l; i++) {
+        for (let i = 0; i < length; i++) {
           const trade = trades[i];
 
           trade.ref = REFS[exchange.id] || trade.price;
-
-          // TRADES.push(trade);
 
           REFS[exchange.id] = trade.price;
 
@@ -177,7 +122,6 @@ const emitter = new Vue({
           QUEUE[exchange.id] = Object.assign({}, trade);
           QUEUE[exchange.id].high = Math.max(trade.ref, trade.price)
           QUEUE[exchange.id].low = Math.min(trade.ref, trade.price)
-          // QUEUE[exchange.id].prices = [QUEUE[exchange.id].price]
           QUEUE[exchange.id].price *= QUEUE[exchange.id].size
           
         }
@@ -187,10 +131,6 @@ const emitter = new Vue({
         if (aggrTrades.length) {
           this.$emit('trades.aggr', aggrTrades)
         }
-
-        /* if (TRADES.length > 1000) {
-          TRADES.splice(0, TRADES.length - 1000)
-        } */
       })
 
       exchange.on('open', event => {
@@ -211,7 +151,7 @@ const emitter = new Vue({
 
       exchange.on('match', pair => {
         console.log(`[socket.exchange.on.match] ${exchange.id} matched ${pair}`)
-        store.commit('setExchangeMatch', {
+        store.commit('settings/SET_EXCHANGE_MATCH', {
           exchange: exchange.id,
           match: pair
         })
@@ -221,45 +161,43 @@ const emitter = new Vue({
         console.log(`[socket.exchange.on.error] ${exchange.id} reported an error`)
       })
 
-      store.commit('reloadExchangeState', exchange.id)
+      store.dispatch('app/refreshExchange', exchange.id)
     })
   },
   methods: {
     getBarTrades(ts) {
-      return TRADES[ts];
+      return TRADES && TRADES[ts];
     },
     initialize() {
       console.log(`[sockets] initializing ${this.exchanges.length} exchange(s)`)
 
       if (process.env.API_URL) {
         this.API_URL = process.env.API_URL
-        console.info(`[sockets] API_URL = ${this.API_URL}`)
+        !MASTER_DOMAIN && console.info(`[sockets] API_URL = ${this.API_URL}`)
 
         if (process.env.API_SUPPORTED_PAIRS) {
           this.API_SUPPORTED_PAIRS = process.env.API_SUPPORTED_PAIRS.map(a => a.toUpperCase())
-          console.info(`[sockets] API_SUPPORTED_PAIRS = ${this.API_SUPPORTED_PAIRS}`)
+          !MASTER_DOMAIN && console.info(`[sockets] API_SUPPORTED_PAIRS = ${this.API_SUPPORTED_PAIRS}`)
         }
       }
 
       if (process.env.PROXY_URL) {
         this.PROXY_URL = process.env.PROXY_URL
-        console.info(`[sockets] PROXY_URL = ${this.PROXY_URL}`)
+        !MASTER_DOMAIN && console.info(`[sockets] PROXY_URL = ${this.PROXY_URL}`)
       }
 
       setTimeout(this.connectExchanges.bind(this))
 
-      setInterval(this.emitTradesAsync.bind(this), 50)
+      setInterval(this.processQueue.bind(this), 50)
     },
     connectExchanges(pair = null) {
       this.disconnectExchanges()
 
       if (!pair && !this.pair) {
-        return this.$emit('alert', {
-          id: `server_status`,
+        store.dispatch('app/showNotice', {
           type: 'error',
-          title: `No pair`,
-          message: `Type the name of the pair you want to watch in the pair section of the settings panel`
-        })
+          title: `No pair.`
+        });
       }
 
       if (pair) {
@@ -271,33 +209,22 @@ const emitter = new Vue({
 
       console.log(`[socket.connect] connecting to ${this.pair}`)
 
-      this.$emit('alert', {
-        id: `server_status`,
+      store.dispatch('app/showNotice', {
         type: 'info',
-        title: `Loading`,
-        message: `Fetching products...`
-      })
+        title: 'Fetching the latest products, please wait.'
+      });
 
       Promise.all(this.exchanges.map(exchange => exchange.validatePair(this.pair))).then(() => {
         let validExchanges = this.exchanges.filter(exchange => exchange.valid)
 
         if (!validExchanges.length) {
-          this.$emit('alert', {
-            id: `server_status`,
+          store.dispatch('app/showNotice', {
             type: 'error',
-            title: `No match`,
-            message: `"${pair}" did not matched with any active pairs`
-          })
+            title: `Cannot find ${this.pair}, sorry`
+          });
 
           return
         }
-
-        this.$emit('alert', {
-          id: `server_status`,
-          type: 'info',
-          title: `Loading`,
-          message: `${validExchanges.length} exchange(s) matched ${pair}`
-        })
 
         if (this._pair !== this.pair) {
           this.$emit('pairing', this.pair, this.canFetch())
@@ -305,21 +232,25 @@ const emitter = new Vue({
           this._pair = this.pair
         }
 
-        console.log(`[socket.connect] ${validExchanges.length} successfully matched with ${this.pair}`)
+        const successfullMatches = validExchanges.length;
+
+        console.log(`[socket.connect] ${successfullMatches} successfully matched with ${this.pair}`)
 
         validExchanges = validExchanges.filter(exchange => !this.exchangesSettings[exchange.id].disabled)
 
-        this.$emit('alert', {
-          id: `server_status`,
+        store.dispatch('app/showNotice', {
           type: 'info',
-          title: `Loading`,
-          message: `Subscribing to ${this.pair} on ${validExchanges.length} exchange(s)`,
-          delay: 1000 * 5
-        })
+          title: `Connecting to ${validExchanges.length} exchange${validExchanges.length > 1 ? 's' : ''}`
+        });
 
         console.log(`[socket.connect] batch connect to ${validExchanges.map(a => a.id).join(' / ')}`)
 
-        validExchanges.forEach(exchange => exchange.connect())
+        Promise.all(validExchanges.map(exchange => exchange.connect())).then(() => {
+          store.dispatch('app/showNotice', {
+            type: 'success',
+            title: `Subscribed to ${this.pair} on ${validExchanges.length} exchange${validExchanges.length > 1 ? 's' : ''}` + (validExchanges.length < successfullMatches ? ` (${successfullMatches - validExchanges.length} hidden)` : '')
+          });
+        })
       })
     },
     disconnectExchanges() {
@@ -336,7 +267,7 @@ const emitter = new Vue({
 
       return null
     },
-    emitTradesAsync() {
+    processQueue() {
       const now = +new Date();
       const inQueue = Object.keys(QUEUE);
 
@@ -360,10 +291,9 @@ const emitter = new Vue({
     calculateSlippage(trade) {
       const type = this.showSlippage;
       if (type === 'price') {
-        trade.slippage = trade.ref - trade.price;
-        trade.slippage *= -1
+        trade.slippage = (trade.ref - trade.price) * -1;
       } else if (type === 'bps') {
-        trade.slippage = Math.round((trade.high - trade.low) / trade.low * 10000)
+        trade.slippage = Math.floor((trade.high - trade.low) / trade.low * 10000)
       }
 
       return trade.slippage
@@ -391,7 +321,7 @@ const emitter = new Vue({
 
       this.lastFetchUrl = url
 
-      store.commit('toggleLoading', true)
+      store.commit('app/TOGGLE_LOADING', true)
 
       this.$emit('fetchStart', to - from)
 
@@ -439,15 +369,11 @@ const emitter = new Vue({
             resolve(output)
           })
           .catch(err => {
-            this._fetchedMax = true
-
             err &&
-              this.$emit('alert', {
-                type: 'error',
-                title: `Unable to retrieve history`,
-                message: err.response && err.response.data && err.response.data.error ? err.response.data.error : err.message,
-                id: `fetch_error`
-              })
+            store.dispatch('app/showNotice', {
+              type: 'error',
+              message: `API error (${err.response && err.response.data && err.response.data.error ? err.response.data.error : err.message || 'unknown error'})`
+            });
 
             reject()
           })
@@ -456,7 +382,7 @@ const emitter = new Vue({
 
             this.$emit('fetchEnd', to - from)
 
-            store.commit('toggleLoading', false)
+            store.commit('app/TOGGLE_LOADING', false)
           })
       })
     },

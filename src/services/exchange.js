@@ -1,6 +1,4 @@
 import EventEmitter from 'eventemitter3'
-import store from '../services/store'
-import { parseQueryString, formatAmount } from '../utils/helpers'
 
 class Exchange extends EventEmitter {
   constructor(options) {
@@ -29,8 +27,6 @@ class Exchange extends EventEmitter {
       const storage = JSON.parse(localStorage.getItem(this.id))
 
       if (storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7 && (this.id !== 'okex' || storage.timestamp > 1560235687982)) {
-        console.info(`[${this.id}] reading stored products`)
-
         if (storage.data && typeof storage.data === 'object' && storage.data.hasOwnProperty('products')) {
           for (let key in storage.data) {
             this[key] = storage.data[key]
@@ -87,12 +83,6 @@ class Exchange extends EventEmitter {
   }
 
   connect(reconnection = false) {
-    const qs = parseQueryString();
-
-    if (qs.noop) {
-      return false;
-    }
-
     if (this.connected) {
       this.disconnect()
     }
@@ -151,8 +141,7 @@ class Exchange extends EventEmitter {
     this.price = trades[trades.length - 1].price
 
     this.emit('trades', trades)
-    return
-
+/*
     if (!store.state.showSlippage) {
       this.price = trades[trades.length - 1].price
     }
@@ -180,7 +169,6 @@ class Exchange extends EventEmitter {
       const trade = trades[i]
 
       if (store.state.showSlippage) {
-        // trade.size > 1 && console.log(trade.exchange, trade.side, trade.price, trade.size, 'previous price', this.price, 'slippage', trade.price - this.price)
         trade.slippage = trade.price - this.price
 
         this.price = trade.price
@@ -217,7 +205,6 @@ class Exchange extends EventEmitter {
           this.queuedTrade.price += trade.price * trade.size
         }
       } else {
-        // console.log(this.id, name, 'override queued trade')
         this.queuedTrade = Object.assign({}, trade);
         this.queuedTrade.price *= this.queuedTrade.size
       }
@@ -233,33 +220,25 @@ class Exchange extends EventEmitter {
 
     if (output.length) {
       this.emit('trades', output)
-    }
+    }*/
   }
 
-  getQueuedTrade() {
+  /*getQueuedTrade() {
     this.queuedTrade.price /= this.queuedTrade.size
 
     if (store.state.showSlippage === 'price') {
       this.queuedTrade.slippage = this.queuedTrade.high - this.queuedTrade.low
       if (this.queuedTrade.side === 'sell' && this.queuedTrade.slippage > 0) {
         this.queuedTrade.slippage *= -1
-      }
-      if (this.queuedTrade.side === 'buy' && this.queuedTrade.slippage < 0) {
+      } else if (this.queuedTrade.side === 'buy' && this.queuedTrade.slippage < 0) {
         this.queuedTrade.slippage *= -1
       }
-      if (this.queuedTrade.side === 'sell' && this.queuedTrade.slippage > 0) {
-        debugger;
-      }
-      if (this.queuedTrade.side === 'buy' && this.queuedTrade.slippage < 0) {
-        debugger;
-      }
-      if (this.queuedTrade.prices) {
 
+      if (this.queuedTrade.prices) {
         const min = Math.min.apply(null, this.queuedTrade.prices)
         const max = Math.max.apply(null, this.queuedTrade.prices)
         const calcSlip = min - max;
         if (Math.abs(calcSlip) !== Math.abs(this.queuedTrade.slippage)) {
-          console.log(Math.abs(calcSlip), ' !== ', Math.abs(this.queuedTrade.slippage))
           debugger;
         }
       }
@@ -268,7 +247,7 @@ class Exchange extends EventEmitter {
     }
 
     return this.queuedTrade
-  }
+  }*/
 
   toFixed(number, precision) {
     var factor = Math.pow(10, precision)
