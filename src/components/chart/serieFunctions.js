@@ -57,10 +57,12 @@ export function ema(memory, value, length) {
 
   if (memory.count) {
     const last = memory.points[memory.points.length - 1];
-    return (memory.output = (value - last) * k + last)
+    memory.output = (value - last) * k + last
   } else {
-    return (memory.output = value)
+    memory.output = value
   }
+
+  return memory.output
 }
 
 /**
@@ -80,5 +82,6 @@ export function sma(memory, value) {
  * @param {number} value
  */
 export function cma(memory, value) {
-  return (memory.output = (memory.sum + value) / (memory.count + 1))
+  memory.output = (memory.sum + value) / (memory.count + 1)
+  return memory.output
 }
