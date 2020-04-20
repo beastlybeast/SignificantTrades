@@ -46,7 +46,7 @@
   "showLogos": true,
   "showChart": true,
   "chartRefreshRate": 50,
-  "timeframe": 1,
+  "timeframe": 10,
   "debug": false,
   "useAudio": false,
   "audioIncludeInsignificants": true,
