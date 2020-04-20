@@ -87,7 +87,7 @@ export default {
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
-        case 'setPair':
+        case 'app/SET_PAIR':
           socket.connectExchanges(mutation.payload)
           this.calculateOptimalPrice = true
           break
