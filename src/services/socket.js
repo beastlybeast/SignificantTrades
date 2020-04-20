@@ -220,6 +220,7 @@ const emitter = new Vue({
         if (!validExchanges.length) {
           store.dispatch('app/showNotice', {
             type: 'error',
+            delay: false,
             title: `Cannot find ${this.pair}, sorry`
           });
 

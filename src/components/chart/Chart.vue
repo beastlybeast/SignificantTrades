@@ -125,12 +125,12 @@ export default {
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
-        case 'reloadExchangeState':
+        case 'app/TOGGLE_EXCHANGE':
           if (+new Date() - APPLICATION_START_TIME > 1000) {
             chart.renderVisibleChunks()
           }
           break
-        case 'setPair':
+        case 'settings/SET_PAIR':
           chart.clear()
           break
         case 'settings/SET_TIMEFRAME':

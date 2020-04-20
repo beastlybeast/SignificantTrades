@@ -440,10 +440,10 @@ export default {
   },
   computed: {
     ...mapState('app', [
-      'pair',
       'actives',
     ]),
     ...mapState('settings', [
+      'pair',
       'maxRows',
       'decimalPrecision',
       'showLogos',

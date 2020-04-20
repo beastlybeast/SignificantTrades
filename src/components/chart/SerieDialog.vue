@@ -60,9 +60,9 @@
                   type="range"
                   min="0"
                   max="1"
-                  step=".01"
+                  step=".1"
                   :value="option.value.top"
-                  @change="setScale('top', $event.target.value)"
+                  @input="setScale('top', $event.target.value)"
                 />
               </div>
               <div class="column__fill">
@@ -76,9 +76,9 @@
                   type="range"
                   min="0"
                   max="1"
-                  step=".01"
+                  step=".1"
                   :value="option.value.bottom"
-                  @change="setScale('bottom', $event.target.value)"
+                  @input="setScale('bottom', $event.target.value)"
                 />
               </div>
             </div>

@@ -462,7 +462,7 @@ export default class ChartController {
 
     // update store (runtime prop)
     store.state.app.activeSeries.splice(store.state.app.activeSeries.indexOf(serie.id), 1)
-    store.state.app.activeSeries = store.state.app.activeSeries.slice(0, store.state.app.activeSeries.length - 1);
+    store.state.app.activeSeries = store.state.app.activeSeries.slice(0, store.state.app.activeSeries.length);
 
     // recursive remove of dependent series
     for (let dependentId of this.getSeriesDependendingOn(serie)) {
