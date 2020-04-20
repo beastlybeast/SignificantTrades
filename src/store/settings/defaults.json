@@ -15,17 +15,27 @@
     "coinex": { "disabled": true }
   },
   "series": {
-    "cvd": {
-      "enabled": false
-    },
-    "price_cma": {
-      "enabled": false
-    },
     "price": {
       "scaleMargins": {
         "top": 0.1,
         "bottom": 0.2
       }
+    },
+    "cvd": {
+      "enabled": true,
+      "scaleMargins": {
+        "top": 0.1,
+        "bottom": 0.2
+      }
+    },
+    "price_cma": {
+      "enabled": true,
+      "color": "rgba(44,247,121,0.38)",
+      "length": 7
+    },
+    "price_sma": {
+      "length": 25,
+      "enabled": false
     }
   },
   "maxRows": 100,
