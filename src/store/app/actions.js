@@ -14,7 +14,7 @@ export default {
   showNotice({ commit, dispatch }, notice) {
     dispatch('hideNotice', notice.id)
 
-    if (notice.delay) {
+    if (notice.delay !== false) {
       notice.hideTimeout = setTimeout(() => {
         dispatch('hideNotice', notice.id)
       }, notice.delay || 2000)
