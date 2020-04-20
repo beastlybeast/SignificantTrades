@@ -181,6 +181,14 @@ export default class ChartController {
   }
 
   /**
+   * Redraw
+   * @param
+   */
+  redraw(silent) {
+    this.renderVisibleChunks(silent)
+  }
+
+  /**
    * Return a list of available function that can be used in series inputs
    * @returns {string[]} names of available functions
    */
@@ -904,7 +912,7 @@ export default class ChartController {
    * @param {Bar[]} bars bars to render
    * @param {string[]} [series] render only theses series
    */
-  renderBars(bars, series) {
+  renderBars(bars, series, silent=false) {
     console.log(`[chart/controller] render bars`, '(', series ? 'specific serie(s): ' + series.join(',') : 'all series', ')', bars.length, 'bar(s)')
 
     if (!bars.length) {
@@ -991,12 +999,14 @@ export default class ChartController {
       this.chartInstance.timeScale().scrollToPosition(setSP)
     }
 
-    if (!this.activeChunk || this.activeChunk.rendered) {
-      if (!series || !this.activeRenderer) {
-        this.activeRenderer = temporaryRenderer
-      } else if (series) {
-        for (let id of series) {
-          this.activeRenderer.series[id] = temporaryRenderer.series[id]
+    if (!silent) {
+      if (!this.activeChunk || this.activeChunk.rendered) {
+        if (!series || !this.activeRenderer) {
+          this.activeRenderer = temporaryRenderer
+        } else if (series) {
+          for (let id of series) {
+            this.activeRenderer.series[id] = temporaryRenderer.series[id]
+          }
         }
       }
     }
@@ -1005,7 +1015,7 @@ export default class ChartController {
   /**
    * Renders chunks that collides with visible range
    */
-  renderVisibleChunks() {
+  renderVisibleChunks(silent) {
     const visibleRange = this.getVisibleRange()
 
     let bars = []
@@ -1046,7 +1056,7 @@ export default class ChartController {
       }
     }
 
-    this.renderBars(bars)
+    this.renderBars(bars, null, silent)
   }
 
   /**

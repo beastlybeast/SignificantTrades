@@ -166,6 +166,7 @@ export default {
 
     chart.createChart(this.$refs.chartContainer, this.getChartDimensions())
     chart.setupQueue()
+    this.keepAlive()
 
     this.refreshSeriesLayout();
     
@@ -182,6 +183,8 @@ export default {
     this.onStoreMutation()
 
     chart.destroy();
+
+    clearTimeout(this._keepAliveTimeout);
 
     socket.$off('trades', this.onTrades)
   },
@@ -553,6 +556,14 @@ export default {
 
     unbindBrowserResize() {
       window.removeEventListener('resize', this._doWindowResize)
+    },
+
+    keepAlive() {
+      if (this._keepAliveTimeout) {
+        chart.redraw(true)
+      }
+
+      this._keepAliveTimeout = setTimeout(this.keepAlive.bind(this), 1000 * 60 * 10)
     }
   }
 }
