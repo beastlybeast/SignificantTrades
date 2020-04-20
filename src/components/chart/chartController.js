@@ -12,7 +12,7 @@ import * as TV from 'lightweight-charts'
 
 const availableSerieFunctions = Object.keys(serieFunctions).reduce((obj, name) => {
   obj[name] = {
-    needsMemory: serieFunctions[name].toString().indexOf('memory') !== -1
+    needsMemory: ['cma', 'sma', 'ema'].indexOf(name) !== -1
   }
 
   return obj;
