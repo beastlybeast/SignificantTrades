@@ -36,6 +36,12 @@
     "price_sma": {
       "length": 25,
       "enabled": false
+    },
+    "volume_buy_ema": {
+      "enabled": false
+    },
+    "volume_sell_ema": {
+      "enabled": false
     }
   },
   "maxRows": 100,
