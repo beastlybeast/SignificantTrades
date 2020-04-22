@@ -70,9 +70,9 @@
   "statsPeriod": 180000,
   "statsChart": false,
   "statsCounters": [
-    { "name": "TRADES", "output": "stats.cbuy + stats.csell", "enabled": true, "color": "#ffeeff", "precision": 0 },
-    { "name": "VOLUME Δ", "output": "stats.vbuy - stats.vsell", "enabled": true, "color": "#eeffee" },
-    { "name": "TRADES Δ", "output": "stats.cbuy - stats.csell", "enabled": false, "color": "#eeeeff", "precision": 0 },
-    { "name": "1H LIQUIDATIONS", "output": "stats.lbuy", "enabled": false, "color": "#eeeeff" }
+    { "name": "TRADES", "output": "cbuy + csell", "enabled": true, "color": "#ffeeff", "precision": 0 },
+    { "name": "VOLUME Δ", "output": "vbuy - vsell", "enabled": true, "color": "#eeffee" },
+    { "name": "TRADES Δ", "output": "cbuy - csell", "enabled": false, "color": "#eeeeff", "precision": 0 },
+    { "name": "1H LIQUIDATIONS", "output": "lbuy + lsell", "enabled": false, "color": "#eeeeff" }
   ]
 }
