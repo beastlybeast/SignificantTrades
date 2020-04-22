@@ -37,15 +37,13 @@ store.subscribe((mutation, state) => {
     case 'settings/ENABLE_EXCHANGE':
     case 'settings/DISABLE_EXCHANGE':
     case 'settings/TOGGLE_EXCHANGE_CHART':
-    case 'settings/SET_EXCHANGE_MATCH':
-
       let name
       if (typeof mutation.payload.exchange === 'string') {
         name = mutation.payload.exchange
       } else {
         name = mutation.payload
       }
-
+      console.log('dispatch refreshExchange because', mutation.type)
       store.dispatch('app/refreshExchange', name)
       break
   }

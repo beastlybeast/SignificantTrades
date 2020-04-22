@@ -690,7 +690,7 @@ export default class ChartController {
 
       if (!this.activeRenderer || this.activeRenderer.timestamp < timestamp) {
         if (this.activeRenderer) {
-          if (!this.activeChunk) {
+          if (!this.activeChunk || (this.activeChunk.to < this.activeRenderer.timestamp && this.activeChunk.bars.length > 1000)) {
             // first time storing bar from realtime trades
             const visibleRange = this.getVisibleRange()
 
@@ -1090,7 +1090,7 @@ export default class ChartController {
       return
     }
 
-    const delay = 0
+    const delay = 1000
 
     // console.info(`[chart/controller] prevent pan for next ${getHms(delay)}`)
 

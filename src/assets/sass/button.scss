@@ -1,11 +1,14 @@
 .btn {
-	font-size: 1.1em;
+  display: flex;
+  align-items: center;
+  font-size: .9rem;
+  text-transform: uppercase;
+  font-family: 'roboto condensed';
 	padding: .4em .6em;
 	border: 0;
 	border-radius: 2px;
 	color: white;
-  cursor: pointer;
-  font-family: 'Roboto Condensed';
+	cursor: pointer;
 
 	background-color: $green;
 

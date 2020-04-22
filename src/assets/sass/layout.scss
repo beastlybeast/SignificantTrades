@@ -57,7 +57,7 @@ body {
     top: 0;
     font-size: 18px;
     opacity: 0.2;
-    padding: 8px;
+    padding: .5em;
     z-index: 1;
     color: white;
 
@@ -67,7 +67,7 @@ body {
   }
 
   .stack__wrapper {
-    padding: 8px 10px;
+    padding: .5em;
     position: relative;
 
     p {
@@ -218,7 +218,7 @@ body {
   display: flex;
   flex-direction: row;
 
-  > .column__tight {
+  > .-tight {
     flex-basis: auto;
     flex-grow: 0;
 
@@ -227,16 +227,23 @@ body {
     }
   }
 
-  > .column__fill {
+  > .-fill {
     flex-basis: 100%;
     max-width: 100%;
   }
 
+  > .-center {
+    align-self: center;
+  }
+
   > div {
-    margin-right: 8px;
+    margin-right: .5em;
     flex-grow: 1;
-    flex-basis: 50%;
-    max-width: 50%;
+
+    > .btn {
+      height: 100%;
+      white-space: nowrap;
+    }
 
     &:last-child {
       margin-right: 0;
@@ -246,16 +253,32 @@ body {
   &:last-child .form-group {
     margin-bottom: 0;
   }
+}
 
-  .-activable {
-    .form-group {
-      opacity: 0.2;
+.grid {
+  margin: -.5em;
+
+  > div {
+    flex-grow: 1;
+    flex-basis: auto;
+    display: flex;
+    justify-content: center;
+    padding: .5em;
+
+    &.-tight {
+      flex-grow: 0;
     }
-  
-    &.active {
-      .form-group {
-        opacity: 1;
-      }
+  }
+}
+
+.-activable {
+  > .form-group {
+    opacity: 0.2;
+  }
+
+  &.active {
+    .form-group {
+      opacity: 1;
     }
   }
 }

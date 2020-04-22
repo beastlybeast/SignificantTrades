@@ -63,7 +63,7 @@
         </div>
         <div class="mb8">
           <div class="column">
-            <div class="form-group column__fill">
+            <div class="form-group -fill">
               <label>
                 Max rows
                 <span
@@ -84,7 +84,7 @@
             </div>
 
             <div
-              class="form-group column__tight"
+              class="form-group -tight"
               title="Show exchange's logo when available"
               v-tippy
             >
@@ -100,7 +100,7 @@
               </label>
             </div>
 
-            <div class="form-group column__tight" title="Toggle aggregation" v-tippy>
+            <div class="form-group -tight" title="Toggle aggregation" v-tippy>
               <label>Aggr.</label>
               <label
                 class="checkbox-control -aggr checkbox-control-input flex-right"
@@ -111,7 +111,7 @@
               </label>
             </div>
 
-            <div class="form-group column__tight" title="ONLY show liquidation" v-tippy>
+            <div class="form-group -tight" title="ONLY show liquidation" v-tippy>
               <label class="condensed"><small>Rip only</small></label>
               <label
                 class="checkbox-control -rip checkbox-control-input flex-right"
@@ -123,7 +123,7 @@
             </div>
 
             <div
-              class="form-group column__tight"
+              class="form-group -tight"
               :title="showSlippage === 'price' ? 'Show slippage in $' : showSlippage === 'bps' ? 'Show slippage in basis point (bps)' : 'Slippage disabled'"
               v-tippy
             >
@@ -187,8 +187,8 @@
           Audio
           <i class="icon-up"></i>
         </div>
-        <div class="settings-audio mb8 settings__activable column" :class="{ active: useAudio }">
-          <div class="form-group column__tight">
+        <div class="settings-audio mb8 -activable column" :class="{ active: useAudio }">
+          <div class="form-group -tight">
             <label
               class="checkbox-control -on-off checkbox-control-input flex-right"
               v-tippy="{ placement: 'bottom' }"
@@ -203,7 +203,7 @@
               <div></div>
             </label>
           </div>
-          <div class="form-group column__tight">
+          <div class="form-group -tight">
             <label
               class="checkbox-control checkbox-control-input flex-right"
               v-tippy
@@ -223,7 +223,7 @@
               <div class="icon-expand"></div>
             </label>
           </div>
-          <div class="form-group column__fill">
+          <div class="form-group -fill">
             <input
               type="range"
               min="0"
@@ -236,16 +236,93 @@
         </div>
         <div
           class="settings__title"
+          @click="$store.commit('settings/TOGGLE_SETTINGS_PANEL', 'stats')"
+          :class="{ closed: settings.indexOf('stats') > -1 }"
+        >
+          Stats <i class="icon-up"></i>
+        </div>
+        <div
+          class="settings-stats mb8 -activable column mb8"
+          :class="{ active: showStats }"
+        >
+          <div class="form-group -tight">
+            <label
+              class="checkbox-control -on-off checkbox-control-input flex-right"
+              v-tippy="{ placement: 'bottom' }"
+              title="Enable stats"
+            >
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="showStats"
+                @change="$store.commit('settings/TOGGLE_STATS', $event.target.checked)"
+              />
+              <div></div>
+            </label>
+          </div>
+          <div class="form-group -fill">
+            <div class="column">
+              <div class="form-group -fill">
+                <input type="text" class="form-control" :value="statsPeriodStringified" placeholder="Period (minutes)" @change="$store.commit('settings/SET_STATS_PERIOD', $event.target.value)">
+              </div>
+              <div class="form-group -tight">
+                <label
+                  class="checkbox-control checkbox-control-input flex-right"
+                  v-tippy="{ placement: 'bottom' }"
+                  title="Enable graph"
+                >
+                  <input
+                    type="checkbox"
+                    class="form-control"
+                    :checked="statsChart"
+                    @change="$store.commit('settings/TOGGLE_STATS_CHART', $event.target.checked)"
+                  />
+                  <div></div>
+                </label>
+              </div>
+              <div class="form-group -tight">
+                <button class="btn -blue" @click="$store.commit('settings/CREATE_STAT'), openStat(statsCounters.length - 1)">
+                  <i class="icon-add mr4"></i> add
+                </button>
+              </div>
+            </div>
+            <div v-for="(counter, index) in statsCounters" :key="index" class="column mt8">
+              <div class="form-group -tight">
+                <label
+                  class="checkbox-control -on-off checkbox-control-input flex-right"
+                  v-tippy="{ placement: 'bottom' }"
+                  title="Enable counter"
+                >
+                  <input
+                    type="checkbox"
+                    class="form-control"
+                    :checked="counter.enabled"
+                    @change="$store.dispatch('settings/updateStat', { index: index, prop: 'enabled', value: $event.target.checked })"
+                  />
+                  <div></div>
+                </label>
+              </div>
+              <div class="form-group -fill -center">
+                {{ counter.name }}
+              </div>
+              <div class="form-group -tight">
+                <button class="btn -green" @click="openStat(index)"><i class="icon-edit"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="settings__title"
           @click="$store.commit('settings/TOGGLE_SETTINGS_PANEL', 'counters')"
           :class="{ closed: settings.indexOf('counters') > -1 }"
         >
           Counter <i class="icon-up"></i>
         </div>
         <div
-          class="settings-counters mb8 settings__activable column"
+          class="settings-counters mb8 -activable column"
           :class="{ active: showCounters }"
         >
-          <div class="form-group column__tight">
+          <div class="form-group -tight">
             <label
               class="checkbox-control -on-off checkbox-control-input flex-right"
               v-tippy="{ placement: 'bottom' }"
@@ -260,7 +337,7 @@
               <div></div>
             </label>
           </div>
-          <div class="form-group column__tight">
+          <div class="form-group -tight">
             <label
               class="checkbox-control -count-or-volume checkbox-control-input flex-right"
               v-tippy="{ placement: 'bottom' }"
@@ -275,7 +352,7 @@
               <div></div>
             </label>
           </div>
-          <div class="form-group column__fill">
+          <div class="form-group -fill">
             <input
               v-tippy
               title="Counters step separed by a comma (ie: 1m, 5m, 10m, 15m)"
@@ -295,8 +372,8 @@
           Chart
           <i class="icon-up"></i>
         </div>
-        <div class="settings-chart mb8 settings__activable column" :class="{ active: showChart }">
-          <div class="form-group column__tight">
+        <div class="settings-chart mb8 -activable column" :class="{ active: showChart }">
+          <div class="form-group -tight">
             <label
               class="checkbox-control -on-off checkbox-control-input flex-right"
               v-tippy="{ placement: 'bottom' }"
@@ -311,7 +388,7 @@
               <div></div>
             </label>
           </div>
-          <div class="column__fill">
+          <div class="-fill">
             <div class="form-group mb8">
               <span>
                 Refresh chart every
@@ -365,7 +442,7 @@
               </span>
             </label>
           </div>
-          <div class="form-group mb8">
+          <!--<div class="form-group mb8">
             <label class="checkbox-control">
               <input
                 type="checkbox"
@@ -376,7 +453,7 @@
               <div></div>
               <span>Debug</span>
             </label>
-          </div>
+          </div>-->
         </div>
         <div class="mt15 settings__footer flex-middle">
           <div class="form-group">
@@ -423,6 +500,9 @@ import socket from '../services/socket'
 import Exchange from './Exchange.vue'
 import Thresholds from './Thresholds.vue'
 
+import StatDialog from './StatDialog'
+import { create } from 'vue-modal-dialogs'
+
 export default {
   components: {
     Exchange,
@@ -454,6 +534,10 @@ export default {
       'thresholds',
       'showThresholdsAsTable',
       'showCounters',
+      'showStats',
+      'statsPeriod',
+      'statsChart',
+      'statsCounters',
       'countersSteps',
       'countersCount',
       'useAudio',
@@ -480,6 +564,7 @@ export default {
   },
   created() {
     this.stringifyCounters()
+    this.stringifyStatsPeriod()
 
     document.body.classList.add('-translate');
   },
@@ -492,6 +577,11 @@ export default {
       window.localStorage && window.localStorage.clear()
 
       window.location.reload(true)
+    },
+    stringifyStatsPeriod() {
+      this.statsPeriodStringified = ago(
+        +new Date() - this.statsPeriod
+      )
     },
     stringifyCounters() {
       const now = +new Date()
@@ -526,6 +616,10 @@ export default {
       this.$store.commit('replaceCounterSteps', counters)
 
       this.stringifyCounters()
+    },
+    openStat(id) {
+      const dialog = create(StatDialog, 'id')
+      dialog(id)
     },
     openTippin(e) {
       e.preventDefault()
@@ -841,40 +935,6 @@ export default {
     }
   }
 
-  .column {
-    display: flex;
-    flex-direction: row;
-
-    > .column__tight {
-      flex-basis: auto;
-      flex-grow: 0;
-
-      label {
-        white-space: nowrap;
-      }
-    }
-
-    > .column__fill {
-      flex-basis: 100%;
-      max-width: 100%;
-    }
-
-    > div {
-      margin-right: 8px;
-      flex-grow: 1;
-      flex-basis: 50%;
-      max-width: 50%;
-
-      &:last-child {
-        margin-right: 0;
-      }
-    }
-
-    &:last-child .form-group {
-      margin-bottom: 0;
-    }
-  }
-
   .settings__title {
     display: flex;
     align-items: center;
@@ -906,18 +966,6 @@ export default {
 
       + div {
         display: none;
-      }
-    }
-  }
-
-  .settings__activable {
-    .form-group {
-      opacity: 0.2;
-    }
-
-    &.active {
-      .form-group {
-        opacity: 1;
       }
     }
   }

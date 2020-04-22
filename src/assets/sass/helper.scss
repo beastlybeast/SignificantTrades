@@ -32,6 +32,22 @@ a {
 	margin-bottom: 8px;
 }
 
+.mr8 {
+  margin-right: 8px;
+}
+
+.ml8 {
+  margin-right: 8px;
+}
+
+.mr4 {
+  margin-right: 4px;
+}
+
+.ml4 {
+  margin-right: 4px;
+}
+
 .flex-right {
 	justify-content: flex-end;
 }
@@ -70,4 +86,23 @@ a {
 
 .condensed {
 	font-family: 'Roboto Condensed';
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: rgba(white, .5);
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: white;
 }

@@ -21,6 +21,17 @@ import { MASTER_DOMAIN } from '../utils/helpers'
 
 const QUEUE = {};
 const REFS = {}
+const SUMS = {
+  vbuy: 0,
+  vsell: 0,
+  lbuy: 0,
+  lsell: 0,
+  cbuy: 0,
+  csell: 0
+}
+
+let sumsInterval = null;
+let activeExchanges = [];
 
 const emitter = new Vue({
   data() {
@@ -77,9 +88,36 @@ const emitter = new Vue({
     },
     isLoading() {
       return store.state.app.isLoading
+    },
+    preferQuoteCurrencySize() {
+      return store.state.settings.preferQuoteCurrencySize
+    },
+    showStats() {
+      return store.state.settings.showStats
+    },
+    showCounters() {
+      return store.state.settings.showCounters
     }
   },
   created() {
+    store.subscribe((mutation) => {
+      switch (mutation.type) {
+        case 'app/EXCHANGE_UPDATED':
+          activeExchanges = this.actives.slice(0, this.actives.length)
+        break;
+        case 'settings/TOGGLE_STATS':
+        case 'settings/TOGGLE_COUNTERS':
+          if (!this.showStats && !this.showCounters && sumsInterval) {
+            this.clearSumsInterval();
+            clearInterval(sumsInterval)
+            sumsInterval = null;
+          } else if (this.showStats ||this.showCounters && !sumsInterval) {
+            this.setupSumsInterval();
+          }
+        break;
+      }
+    });
+
     this.exchanges.forEach(exchange => {
       exchange.on('trades', trades => {
         if (!trades || !trades.length) {
@@ -89,47 +127,88 @@ const emitter = new Vue({
         this.timestamps[exchange.id] = trades[trades.length - 1].timestamp
         
         const length = trades.length;
+
+        const doAggr = this.aggregateTrades;
+        const doSlip = this.showSlippage;
         
-        const sums = {
+        if (!doAggr) {
+          for (let i = 0; i < length; i++) {
+            const trade = trades[i];
 
-        }
-        const aggrTrades = []
+            if (sumsInterval !== null && activeExchanges.indexOf(trade.exchange) !== -1) {
+              const size = (this.preferQuoteCurrencySize ? trade.price : 1) * trade.size;
 
-        for (let i = 0; i < length; i++) {
-          const trade = trades[i];
-
-          trade.ref = REFS[exchange.id] || trade.price;
-
-          REFS[exchange.id] = trade.price;
-
-          if (QUEUE[exchange.id]) {
-            const queuedTrade = QUEUE[exchange.id]
-
-            if (queuedTrade.timestamp === trade.timestamp && queuedTrade.side === trade.side) {
-              queuedTrade.size += trade.size
-              queuedTrade.price += trade.price * trade.size
-              // queuedTrade.prices.push(trade.price)
-              queuedTrade.high = Math.max(queuedTrade.high || queuedTrade.price / queuedTrade.size, trade.price)
-              queuedTrade.low = Math.min(queuedTrade.low || queuedTrade.price / queuedTrade.size, trade.price)
-              continue;
-            } else {
-              queuedTrade.price /= queuedTrade.size
-              this.calculateSlippage(queuedTrade)
-              aggrTrades.unshift(queuedTrade)
+              if (!SUMS.timestamp) {
+                SUMS.timestamp = trade.timestamp;
+              }
+              
+              if (trade.liquidation) {
+                SUMS['l' + trade.side] += size
+                continue;
+              }
+  
+              SUMS['c' + trade.side]++
+              SUMS['v' + trade.side] += size
             }
+
+            doSlip && this.calculateSlippage(trades[i])
+          }
+
+          this.$emit('trades', trades)
+          this.$emit('trades.aggr', trades)
+        } else {
+          const aggrTrades = []
+
+          for (let i = 0; i < length; i++) {
+            const trade = trades[i];
+
+            if (sumsInterval !== null && activeExchanges.indexOf(trade.exchange) !== -1) {
+              const size = (this.preferQuoteCurrencySize ? trade.price : 1) * trade.size;
+
+              if (!SUMS.timestamp) {
+                SUMS.timestamp = trade.timestamp;
+              }
+              
+              if (trade.liquidation) {
+                SUMS['l' + trade.side] += size
+              } else {
+                SUMS['c' + trade.side]++
+                SUMS['v' + trade.side] += size
+              }
+            }
+
+            trade.ref = REFS[exchange.id] || trade.price;
+
+            REFS[exchange.id] = trade.price;
+
+            if (QUEUE[exchange.id]) {
+              const queuedTrade = QUEUE[exchange.id]
+
+              if (queuedTrade.timestamp === trade.timestamp && queuedTrade.side === trade.side) {
+                queuedTrade.size += trade.size
+                queuedTrade.price += trade.price * trade.size
+                queuedTrade.high = Math.max(queuedTrade.high || queuedTrade.price / queuedTrade.size, trade.price)
+                queuedTrade.low = Math.min(queuedTrade.low || queuedTrade.price / queuedTrade.size, trade.price)
+                continue;
+              } else {
+                queuedTrade.price /= queuedTrade.size
+                doSlip && this.calculateSlippage(queuedTrade)
+                aggrTrades.unshift(queuedTrade)
+              }
+            }
+            
+            QUEUE[exchange.id] = Object.assign({}, trade);
+            QUEUE[exchange.id].high = Math.max(trade.ref, trade.price)
+            QUEUE[exchange.id].low = Math.min(trade.ref, trade.price)
+            QUEUE[exchange.id].price *= QUEUE[exchange.id].size
+          
           }
           
-          QUEUE[exchange.id] = Object.assign({}, trade);
-          QUEUE[exchange.id].high = Math.max(trade.ref, trade.price)
-          QUEUE[exchange.id].low = Math.min(trade.ref, trade.price)
-          QUEUE[exchange.id].price *= QUEUE[exchange.id].size
-          
-        }
-        
-        this.$emit('trades', trades)
+          this.$emit('trades', trades)
 
-        if (aggrTrades.length) {
-          this.$emit('trades.aggr', aggrTrades)
+          if (aggrTrades.length) {
+            this.$emit('trades.aggr', aggrTrades)
+          }
         }
       })
 
@@ -187,8 +266,12 @@ const emitter = new Vue({
       }
 
       setTimeout(this.connectExchanges.bind(this))
+      setInterval(this.emitQueue.bind(this), 50)
 
-      setInterval(this.processQueue.bind(this), 50)
+      this.clearSumsInterval();
+      if (store.state.settings.showCounters || store.state.settings.showStats) {
+        this.setupSumsInterval();
+      }
     },
     connectExchanges(pair = null) {
       this.disconnectExchanges()
@@ -268,7 +351,7 @@ const emitter = new Vue({
 
       return null
     },
-    processQueue() {
+    emitQueue() {
       const now = +new Date();
       const inQueue = Object.keys(QUEUE);
 
@@ -291,6 +374,7 @@ const emitter = new Vue({
     },
     calculateSlippage(trade) {
       const type = this.showSlippage;
+      
       if (type === 'price') {
         trade.slippage = (trade.ref - trade.price) * -1;
       } else if (type === 'bps') {
@@ -298,6 +382,32 @@ const emitter = new Vue({
       }
 
       return trade.slippage
+    },
+    setupSumsInterval() {
+      console.log(`[socket] setup sums interval`)
+
+      sumsInterval = setInterval(this.emitSums.bind(this), 1000);
+    },
+    clearSumsInterval() {
+      if (sumsInterval) {
+        console.log(`[socket] clear sums interval`)
+
+        clearInterval(sumsInterval)
+        sumsInterval = null;
+      }
+    },
+    emitSums() {
+      if (SUMS.timestamp) {
+        this.$emit('sums', SUMS);
+
+        SUMS.timestamp = null
+        SUMS.vbuy = 0
+        SUMS.vsell = 0
+        SUMS.cbuy = 0
+        SUMS.csell = 0
+        SUMS.lbuy = 0
+        SUMS.lsell = 0
+      }
     },
     canFetch() {
       return this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1)
@@ -449,72 +559,6 @@ const emitter = new Vue({
         to: data[data.length - 1].timestamp
       }
     },
-    downsampleTrades(trades) {
-      const chunk = {
-        data: null,
-        from: Math.floor(trades[0][1] / this.timeframe) * this.timeframe,
-        to: Math.floor(trades[trades.length - 1][1] / this.timeframe) * this.timeframe
-      }
-
-      const bars = []
-      const bar = {
-        timestamp: null,
-        exchanges: {}
-      }
-
-      for (let i = 0; i <= trades.length; i++) {
-        const trade = trades[i]
-        const timestamp = trade && Math.floor(trade[1] / this.timeframe) * this.timeframe
-
-        if (!timestamp || !bar.timestamp || timestamp > bar.timestamp) {
-          // first trade of chunk (!bar.timestamp)
-          // or is trade of next bar (timestamp > bar.timestamp)
-          // or all trades processed (!timestamp)
-          if (bar.timestamp) {
-            for (let name in bar.exchanges) {
-              bars.push(bar.exchanges[name])
-            }
-          }
-
-          bar.exchanges = {}
-        }
-
-        if (!bar.exchanges[trade[0]]) {
-          bar.exchanges[trade[0]] = {
-            timestamp,
-            open: trade[2],
-            high: trade[2],
-            low: trade[2],
-            close: trade[2],
-            vbuy: 0,
-            vsell: 0,
-            lbuy: 0,
-            lsell: 0,
-            cbuy: 0,
-            csell: 0
-          }
-        }
-
-        const sum = bar.exchanges[trade[0]]
-        const side = trade[4] == 1 ? 'buy' : 'sell'
-
-        if (trade[5] == 1) {
-          sum['l' + side] += trade[2] * trade[3]
-          continue
-        }
-
-        sum['v' + side] += trade[2] * trade[3]
-        sum['c' + side]++
-
-        sum.high = Math.max(sum.high, trade[2])
-        sum.low = Math.min(sum.low, trade[2])
-        sum.close = trade[2]
-      }
-
-      chunk.data = bars
-
-      return chunk
-    }
   }
 })
 

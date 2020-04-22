@@ -1,7 +1,7 @@
 import Vue from 'vue'
 
 export default {
-  TOGGLE_EXCHANGE(state, { exchange, active }) {
+  EXCHANGE_UPDATED(state, { exchange, active }) {
     if (!this.state.settings.exchanges[exchange]) {
       Vue.set(this.state.settings.exchanges, exchange, {})
     }

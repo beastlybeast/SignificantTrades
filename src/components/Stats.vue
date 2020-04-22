@@ -19,8 +19,6 @@ import { getColor } from '../utils/colors'
 import MultiCounter from '../utils/multiCounter'
 import { defaultChartOptions, defaultLineOptions, } from './chart/chartOptions'
 
-import options from './chart/options.json'
-
 const chartOptions = JSON.parse(JSON.stringify(defaultChartOptions))
 chartOptions.priceScale.position = 'none'
 chartOptions.timeScale.rightOffset = 0
@@ -36,6 +34,9 @@ lineOptions.scaleMargins = {
   bottom: 0.05,
 }
 
+import StatDialog from './StatDialog'
+import { create } from 'vue-modal-dialogs'
+
 import { formatAmount } from '../utils/helpers'
 /** @type {Counter[]} */
 const counters = []
@@ -45,7 +46,6 @@ let colors = []
 export default {
   data() {
     return {
-      isCrosshairing: false,
       data: {},
     }
   },
@@ -54,7 +54,6 @@ export default {
       'statsPeriod',
       'statsChart',
       'statsCounters',
-      'preferQuoteCurrencySize',
     ]),
     ...mapState('app', ['actives']),
     colors() {
@@ -77,6 +76,7 @@ export default {
         case 'settings/SET_STAT_PERIOD':
         case 'settings/SET_STAT_OUTPUT':
         case 'settings/SET_STAT_SMOOTHING':
+        case 'settings/SET_STAT_PRECISION':
           this.refreshCounter(this.statsCounters[mutation.payload.index].name)
           break
         case 'settings/SET_STAT_NAME':
@@ -106,13 +106,15 @@ export default {
       this.createChart()
     }
     this.prepareCounters()
-    socket.$on('trades', this.onTrades)
+    socket.$on('sums', this.onSums)
   },
   beforeDestroy() {
-    socket.$off('trades', this.onTrades)
+    socket.$off('sums', this.onSums)
     this.clearCounters()
     this.removeChart()
     this.onStoreMutation()
+
+    clearInterval(this._statsRefreshInterval);
   },
   methods: {
     createChart() {
@@ -130,7 +132,7 @@ export default {
       }
       counter.serie = chart.addLineSeries(
         Object.assign({}, lineOptions, {
-          color: counter.options.color
+          color: counter.color
         })
       )
     },
@@ -153,9 +155,9 @@ export default {
         this.createCounter(this.statsCounters[i])
       }
     },
-    onTrades(trades) {
+    onSums(sums) {
+      const now = +new Date();
       
-
       for (let i = 0; i < counters.length; i++) {
         if (counters[i].stacks.length) {
           let value = counters[i].getValue()
@@ -172,15 +174,18 @@ export default {
                 value,
               })
             }
-            if (!isNaN(counters[i].options.precision)) {
+            
+            if (typeof counters[i].precision === 'number') {
               value = value.toFixed(counters[i].precision)
+            } else {
+              value = formatAmount(value)
             }
-            if (!this.isCrosshairing) {
-              this.$set(this.data, counters[i].name, formatAmount(value))
-            }
+
+            this.$set(this.data, counters[i].name, value)
           }
         }
-        counters[i].onTrades(trades, stats)
+
+        counters[i].onStats(now, sums)
       }
     },
     clearCounters() {
@@ -245,8 +250,8 @@ export default {
         typeof this.data[counterOptions.name] === 'undefined'
       ) {
         console.log(`create counter ${counterOptions.name}`, counterOptions)
-        const outputType = this.getOutputType(counterOptions.output)
-        const outputFn = (stats, trades) => eval(counterOptions.output)
+        const outputFunction = this.getCounterFunction(counterOptions.output)
+        const outputType = this.getOutputType(outputFunction)
         let counter
         if (typeof outputType === 'number') {
           console.log(
@@ -254,13 +259,13 @@ export default {
             new Array(outputType).fill(0),
             counterOptions.output
           )
-          counter = new MultiCounter(outputFn, {
+          counter = new MultiCounter(outputFunction, {
             options: counterOptions,
             model: new Array(outputType).fill(0),
           })
         } else {
           console.log('instanciate single counter', counterOptions.output)
-          counter = new Counter(outputFn, {
+          counter = new Counter(outputFunction, {
             options: counterOptions
           })
           if (chart) {
@@ -304,7 +309,7 @@ export default {
         return counters[name]
       }
       let counter
-      console.log('getCounterByName', name)
+      
       for (let i = 0; i < counters.length; i++) {
         if (counters[i].name === name) {
           counter = counters[i]
@@ -324,10 +329,13 @@ export default {
       if (typeof index !== 'number') {
         return
       }
-      this.$store.dispatch('app/openModal', {
-        name: 'stat',
-        id: index,
-      })
+
+      const dialog = create(StatDialog, 'id')
+      dialog(index)
+    },
+    getCounterFunction(str) {
+      const litteral = str.replace(/([^\.]|^)(vbuy|vsell|cbuy|csell|lbuy|lsell)/g, '$1stats.$2')
+      return new Function('stats', `'use strict'; return ${litteral};`)
     },
     getOutputType(fn) {
       var trades = [
@@ -346,8 +354,18 @@ export default {
           side: 'buy',
         },
       ]
-      var stats = socket.getStatsByTrades(trades)
-      const output = eval(fn)
+
+      var stats = {
+        vbuy: 2000,
+        vsell: 2000,
+        cbuy: 10,
+        csell: 10,
+        lbuy: 10,
+        lsell: 2
+      }
+
+      const output = fn(stats);
+
       if (Array.isArray(output)) {
         return output.length
       } else {

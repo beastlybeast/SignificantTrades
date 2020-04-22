@@ -1,15 +1,17 @@
 import store from '../store'
 
-const GRANULARITY = store.state.settings.statsGranularity // 5s
-const PERIOD = store.state.settings.statsPeriod // 3m
+const GRANULARITY = store.state.settings.statsGranularity
+const PERIOD = store.state.settings.statsPeriod
 
 export default class Counter {
-  constructor(callback, { options, model } = {}) {
-    this.callback = callback;
-    this.options = options;
-    this.period = !isNaN(this.options.period) ? +this.options.period : PERIOD;
-    this.smoothing = !isNaN(this.options.smoothing) ? +this.options.smoothing : false;
+  constructor(outputFunction, { options, model } = {}) {
+    this.outputFunction = outputFunction;
+    this.period = !isNaN(options.period) ? +options.period : PERIOD;
+    this.smoothing = !isNaN(options.smoothing) ? +options.smoothing : false;
+    this.precision = options.precision;
+    this.color = options.color;
     this.granularity = Math.max(GRANULARITY, this.period / 50)
+
     this.timeouts = [];
 
     if (typeof model !== 'undefined') {
@@ -17,7 +19,7 @@ export default class Counter {
     }
 
     console.log('[counter.js] create', {
-      callback: this.callback,
+      outputFunction: this.outputFunction,
       period: this.period,
       granularity: this.granularity,
     })
@@ -48,11 +50,11 @@ export default class Counter {
     this.clear()
   }
 
-  onTrades(trades, stats) {
-    const data = this.callback(stats, trades)
+  onStats(timestamp, stats) {
+    const data = this.outputFunction(stats)
 
-    if (!this.stacks.length || trades[0].timestamp > this.timestamp + this.granularity) {
-      this.appendStack(trades[0].timestamp)
+    if (!this.stacks.length || timestamp > this.timestamp + this.granularity) {
+      this.appendStack(timestamp)
     }
 
     this.addData(data)

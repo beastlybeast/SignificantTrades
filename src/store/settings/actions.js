@@ -1,5 +1,9 @@
 export default {
-  updateStat({ commit }, { index, prop, value }) {
+  updateStat({ commit, state }, { index, prop, value }) {
+    if (state.statsCounters[index][prop] === value) {
+      return;
+    }
+
     let mutation = ''
 
     if (typeof value === 'boolean') {

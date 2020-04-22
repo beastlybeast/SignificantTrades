@@ -12,6 +12,9 @@
 }
 
 .dialog-content {
+  min-width: 240px;
+  max-width: 410px;
+  font-size: 16px;
   margin: 0 1em;
   padding: 1em;
   border: 1px solid lighten($dark, 20%);
@@ -28,6 +31,13 @@
     margin-bottom: 1em;
     display: flex;
     justify-content: space-between;
+  }
+
+  .title {
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: .5em;
+    letter-spacing: 1px;
   }
 
   p, .el-button {
@@ -56,39 +66,12 @@
   }
 }
 
-.serie-dialog .dialog-content {
-  min-width: 240px;
-  max-width: 410px;
-  font-size: 16px;
+.dialog-body {
+  display: flex;
+  flex-wrap: wrap;
+  justify-items: center;
 
-  .dialog-body {
-    display: flex;
-    flex-wrap: wrap;
-    justify-items: center;
-
-    margin: -.5em;
-    
-    > div {
-      flex-grow: 1;
-      flex-basis: auto;
-      display: flex;
-      justify-content: center;
-      padding: .5em;
-
-      &.-tight {
-        flex-grow: 0;
-      }
-    }
-  }
-
-  .title {
-    text-transform: uppercase;
-    font-weight: 600;
-    margin-bottom: .5em;
-    letter-spacing: 1px;
-  }
-
-  [contenteditable] {
+  .form-control {
     margin: 0;
     color: white;
     border: 1px solid lighten($dark, 20%);
@@ -97,6 +80,8 @@
     padding: (1em/3);
     box-sizing: border-box;
     font-family: monospace;
+    width: 100%;
+    letter-spacing: 0;
   }
 
   .form-group {

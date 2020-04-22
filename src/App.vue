@@ -20,6 +20,7 @@
         <Chart v-if="showChart" />
         <div class="app__right">
           <Counters v-if="showCounters" />
+          <Stats v-if="showStats" />
           <TradeList />
         </div>
       </div>
@@ -41,6 +42,7 @@ import Settings from './components/Settings.vue'
 import TradeList from './components/TradeList.vue'
 import Chart from './components/chart/Chart.vue'
 import Counters from './components/Counters.vue'
+import Stats from './components/Stats.vue'
 import upFavicon from '../static/up.png'
 import downFavicon from '../static/down.png'
 
@@ -57,7 +59,8 @@ export default {
     TradeList,
     Chart,
     Counters,
-    Notice
+    Notice,
+    Stats
   },
   name: 'app',
   data() {
@@ -74,8 +77,8 @@ export default {
     }
   },
   computed: {
-    ...mapState('app', ['actives', 'notices']),
-    ...mapState('settings', ['pair', 'showChart', 'showCounters', 'showStats', 'decimalPrecision', 'isLoading', 'preferQuoteCurrencySize'])
+    ...mapState('app', ['isLoading', 'actives', 'notices']),
+    ...mapState('settings', ['pair', 'showChart', 'showCounters', 'showStats', 'decimalPrecision', 'preferQuoteCurrencySize'])
   },
   created() {
     this.$root.formatPrice = formatPrice
@@ -241,13 +244,13 @@ export default {
 @import './assets/sass/variables';
 @import './assets/sass/helper';
 @import './assets/sass/layout';
+@import './assets/sass/form';
 @import './assets/sass/icons';
 @import './assets/sass/currency';
 @import './assets/sass/tooltip';
 @import './assets/sass/dropdown';
 @import './assets/sass/button';
 @import './assets/sass/dialog';
-@import './assets/sass/form';
 @import './assets/sass/verte';
 @import './assets/sass/notice';
 </style>

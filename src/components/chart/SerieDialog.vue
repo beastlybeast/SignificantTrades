@@ -21,12 +21,13 @@
           </label>
         </div>
       </header>
-      <div class="dialog-body">
+      <div class="dialog-body grid">
         <div v-for="(option, index) in model" :key="index" class="form-group" :class="{ 'w-100': option.type === 'string' || option.type === 'position', '-tight': option.type === 'color' || option.type === 'boolean' }">
           <label v-if="option.label !== false">{{ option.label }}</label>
 
           <template v-if="option.type === 'string' || option.type === 'number'">
             <editable
+              class="form-control"
               :content="option.value"
               @output="validate(option, $event)"
             ></editable>
@@ -49,7 +50,7 @@
           </template>
           <template v-if="option.type === 'position'">
             <div class="column">
-              <div class="column__fill">
+              <div class="-fill">
                 <div class="text-center">Start</div>
                 <div class="column help-text">
                   <div class="text-left">Start at top</div>
@@ -65,7 +66,7 @@
                   @input="setScale('top', $event.target.value)"
                 />
               </div>
-              <div class="column__fill">
+              <div class="-fill">
                 <div class="text-center">End</div>
                 <div class="column help-text">
                   <div class="text-left">End at top</div>

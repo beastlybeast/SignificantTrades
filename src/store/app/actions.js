@@ -6,7 +6,7 @@ export default {
         !this.state.settings.exchanges[exchange].disabled &&
         !this.state.settings.exchanges[exchange].hidden)
 
-    commit('TOGGLE_EXCHANGE', {
+    commit('EXCHANGE_UPDATED', {
       exchange,
       active,
     })

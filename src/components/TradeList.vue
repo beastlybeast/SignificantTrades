@@ -15,6 +15,8 @@ import Sfx from '../services/sfx'
 
 let LAST_TRADE_TIMESTAMP
 
+let activeExchanges = [];
+
 export default {
   data() {
     return {
@@ -42,14 +44,22 @@ export default {
     ])
   },
   created() {
+    // cache list of active exchange
+    activeExchanges = this.$store.state.app.actives.slice(0, this.$store.state.app.actives.length)
+
     this.retrieveStoredGifs()
     this.retrieveColorSteps()
 
-    socket.$on('pairing', this.onPairing)
     socket.$on('trades.aggr', this.onTrades)
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
+        case 'app/EXCHANGE_UPDATED':
+          activeExchanges = state.app.actives.slice(0, state.app.actives.length)
+          break;
+        case 'settings/SET_PAIR':
+          this.clearList()
+        break;
         case 'settings/TOGGLE_AUDIO':
           if (mutation.payload) {
             this.sfx = new Sfx()
@@ -57,10 +67,10 @@ export default {
             this.sfx && this.sfx.disconnect() && delete this.sfx
           }
           break
-        case 'setThresholdGif':
+        case 'settings/SET_THRESHOLD_GIF':
           this.fetchGifByKeyword(mutation.payload.value, mutation.payload.isDeleted)
           break
-        case 'setThresholdColor':
+        case 'settings/SET_THRESHOLD_COLOR':
         case 'settings/SET_THRESHOLD_AMOUNT':
           this.retrieveColorSteps()
           break
@@ -114,7 +124,6 @@ export default {
     }, 1000)
   },
   beforeDestroy() {
-    socket.$off('pairing', this.onPairing)
     socket.$off('trades.aggr', this.onTrades)
 
     this.onStoreMutation()
@@ -124,11 +133,12 @@ export default {
     this.sfx && this.sfx.disconnect()
   },
   methods: {
-    onPairing() {
-      this.clearList()
-    },
     onTrades(trades, silent = false) {
       for (let i = 0; i < trades.length; i++) {
+        if (activeExchanges.indexOf(trades[i].exchange) === -1) {
+          continue;
+        }
+        
         const trade = trades[i]
         const size = trade.size * (this.preferQuoteCurrencySize ? trade.price : 1)
 

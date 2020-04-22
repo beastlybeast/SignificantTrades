@@ -8,7 +8,7 @@
     { "amount": 10000000, "gif": "explosion", "buyColor": "rgb(255,160,0)", "sellColor": "rgb(233,30,99)" }
   ],
   "exchanges": {
-    "huobi": { "disabled": true },
+    "ftx": { "disabled": true },
     "liquid": { "disabled": true },
     "bithumb": { "disabled": true },
     "hitbtc": { "disabled": true },
@@ -51,18 +51,18 @@
   "liquidationsOnly": false,
   "showLogos": true,
   "showChart": true,
-  "chartRefreshRate": 50,
+  "chartRefreshRate": 500,
   "timeframe": 10,
   "debug": false,
   "useAudio": false,
   "audioIncludeInsignificants": true,
   "audioVolume": 1.5,
-  "settings": ["other", "chart", "audio"],
+  "settings": ["other", "chart", "stats", "counters", "audio"],
   "chartHeight": null,
   "sidebarWidth": null,
   "showThresholdsAsTable": true,
   "showCounters": false,
-  "countersPrecision": 5000,
+  "countersGranularity": 5000,
   "countersSteps": [30000, 60000, 900000, 1800000],
   "countersCount": false,
   "showStats": false,
@@ -70,20 +70,9 @@
   "statsPeriod": 180000,
   "statsChart": false,
   "statsCounters": [
-    { "name": "TRADES", "output": "stats.buyCount + stats.sellCount", "enabled": true, "color": "#ffeeff", "precision": 0, "smoothing": 14 },
-    { "name": "VOLUME Δ", "output": "stats.buyAmount - stats.sellAmount", "enabled": true, "color": "#eeffee", "precision": 0, "smoothing": 14 },
-    { "name": "TRADES Δ", "output": "stats.buyCount - stats.sellCount", "enabled": false, "color": "#eeeeff", "precision": 0, "smoothing": 14 },
-    {
-      "name": "1H LIQUIDATIONS",
-      "output": "var output = [0, 0];\nfor (var i=0; i<trades.length; i++) {\n\tif (trades[i].liquidation)\n\t\toutput[trades[i].side === 'buy' ? 1 : 0] += trades[i].price * trades[i].size\n}\noutput;",
-      "enabled": false,
-      "period": 3600000
-    },
-    {
-      "name": "1H 100K+",
-      "output": "var output = 0;\nfor (var i=0; i<trades.length; i++) {\n\tif (trades[i].price * trades[i].size >= 100000)\n\t\toutput++\n}\noutput;",
-      "enabled": false,
-      "period": 3600000
-    }
+    { "name": "TRADES", "output": "stats.cbuy + stats.csell", "enabled": true, "color": "#ffeeff", "precision": 0 },
+    { "name": "VOLUME Δ", "output": "stats.vbuy - stats.vsell", "enabled": true, "color": "#eeffee" },
+    { "name": "TRADES Δ", "output": "stats.cbuy - stats.csell", "enabled": false, "color": "#eeeeff", "precision": 0 },
+    { "name": "1H LIQUIDATIONS", "output": "stats.lbuy", "enabled": false, "color": "#eeeeff" }
   ]
 }

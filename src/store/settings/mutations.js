@@ -99,7 +99,9 @@ export default {
   SET_STAT_PRECISION(state, { index, value }) {
     const stat = state.statsCounters[index]
 
-    stat.precision = !isNaN(value) ? +value : false
+    value = parseInt(value);
+
+    stat.precision = !isNaN(value) ? value : null
 
     Vue.set(state.statsCounters, index, stat)
   },

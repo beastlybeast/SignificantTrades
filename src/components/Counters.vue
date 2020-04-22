@@ -37,17 +37,18 @@ export default {
   },
   computed: {
     ...mapState('app', ['actives']),
-    ...mapState('settings', ['preferQuoteCurrencySize', 'thresholds', 'liquidationsOnly', 'countersSteps', 'countersCount', 'countersPrecision']),
+    ...mapState('settings', ['preferQuoteCurrencySize', 'thresholds', 'liquidationsOnly', 'countersSteps', 'countersCount', 'countersGranularity']),
   },
   created() {
-    socket.$on('pairing', this.onPairing)
-    socket.$on('trades.aggr', this.onTrades)
+    socket.$on('sums', this.onSums)
 
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
+        case 'settings/SET_PAIR':
+          this.createCounters()
+        break;
         case 'settings/REPLACE_COUNTERS':
-        case 'reloadExchangeState':
-        case 'liquidationsOnly':
+        case 'settings/TOGGLE_LIQUIDATIONS_ONLY':
         case 'settings/TOGGLE_COUNTERS_COUNT':
           this.createCounters()
         break;
@@ -56,63 +57,40 @@ export default {
 
     this.createCounters()
 
-    this._populateCountersInterval = setInterval(this.populateCounters.bind(this), this.countersPrecision)
+    this._populateCountersInterval = setInterval(this.populateCounters.bind(this), this.countersGranularity)
   },
   mounted() {},
   beforeDestroy() {
-    socket.$off('pairing', this.onPairing)
-    socket.$off('trades.aggr', this.onTrades)
+    socket.$off('sums', this.onSums)
 
     this.onStoreMutation()
 
     clearInterval(this._populateCountersInterval);
   },
   methods: {
-    onPairing() {
-      this.createCounters()
-    },
-    onTrades(trades) {
-      const hasData = false;
-      const liquidatonsOnly = this.liquidationsOnly;
-
+    onSums(sums) {
       const volume = {
-        buy: 0,
-        sell: 0
+        buy: sums.vbuy,
+        sell: sums.vsell
       }
 
-      for (let i = 0; i < trades.length; i++) {
-        if (this.actives.indexOf(trades[i].exchange) === -1 || (!liquidatonsOnly && trades[i].liquidation)) {
-          continue;
-        }
-
-        if (liquidatonsOnly && !trades[i].liquidation) {
-          continue
-        } else {
-          let side = trades[i].side;
-          
-          if (trades[i].liquidation) {
-            side = side === 'buy' ? 'sell' : 'buy'
-          }
-
-          if (this.countersCount) {
-            volume[side]++
-          } else {
-            volume[side] += (this.preferQuoteCurrencySize ? trades[i].price : 1) * trades[i].size
-          }
-        }
-
-        if (!CHUNK.timestamp) {
-          CHUNK.timestamp = trades[i].timestamp;
-        }
+      if (this.liquidationsOnly) {
+        volume.buy = sums.lbuy;
+        volume.sell = sums.lsell;
+      } else if (this.countersCount) {
+        volume.buy = sums.cbuy;
+        volume.sell = sums.csell;
       }
 
       if (volume.buy || volume.sell) {
+        if (!CHUNK.timestamp) {
+          CHUNK.timestamp = sums.timestamp;
+        }
+
         CHUNK.buy += volume.buy
         CHUNK.sell += volume.sell
 
         for (let i = 0; i < this.steps.length; i++) {
-          if (isNaN(this.steps[i].buy + volume.buy) || isNaN(this.steps[i].sell + volume.sell))
-          debugger;
           this.steps[i].buy += volume.buy
           this.steps[i].sell += volume.sell
         }
