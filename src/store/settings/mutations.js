@@ -108,8 +108,7 @@ export default {
   CREATE_STAT(state) {
     state.statsCounters.push({
       name: uniqueName('COUNTER', state.statsCounters.map(a => a.name)),
-      period: state.statsPeriod,
-      output: 'stats.buyCount + stats.sellCount',
+      output: 'vbuy + vsell',
       enabled: false
     })
   },

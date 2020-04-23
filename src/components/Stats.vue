@@ -83,6 +83,7 @@ export default {
           this.renameCounter(mutation.payload.value)
           break
         case 'settings/SET_PAIR':
+        case 'settings/SET_STATS_PERIOD':
           this.prepareCounters()
           break
         case 'settings/SET_STAT_COLOR':

@@ -152,8 +152,8 @@
           Thresholds ({{ thresholds.length }})
           <i class="icon-up"></i>
         </div>
-        <div class="settings-thresholds mb8">
-          <div class="settings-thresholds__controls">
+        <div class="settings-thresholds settings-section mb8">
+          <div class="settings-section__controls">
             <a
               href="javascript:void(0);"
               class="settings-thresholds__display-toggle"
@@ -166,7 +166,7 @@
             |
             <a
               href="javascript:void(0);"
-              class="settings-thresholds__add"
+              class="settings-section__add"
               v-tippy
               title="Add threshold"
               @click="
@@ -242,9 +242,23 @@
           Stats <i class="icon-up"></i>
         </div>
         <div
-          class="settings-stats mb8 -activable column mb8"
+          class="settings-stats settings-section mb8 -activable column mb8"
           :class="{ active: showStats }"
         >
+          <div class="settings-section__controls">
+            <a
+              href="javascript:void(0);"
+              class="settings-controls__add"
+              v-tippy
+              title="Add a stat"
+              @click="
+                $store.commit('settings/CREATE_STAT'), openStat(statsCounters.length - 1)
+              "
+            >
+              Add
+              <i class="icon-add"></i>
+            </a>
+          </div>
           <div class="form-group -tight">
             <label
               class="checkbox-control -on-off checkbox-control-input flex-right"
@@ -279,11 +293,6 @@
                   />
                   <div></div>
                 </label>
-              </div>
-              <div class="form-group -tight">
-                <button class="btn -blue" @click="$store.commit('settings/CREATE_STAT'), openStat(statsCounters.length - 1)">
-                  <i class="icon-add mr4"></i> add
-                </button>
               </div>
             </div>
             <div v-for="(counter, index) in statsCounters" :key="index" class="column mt8">
@@ -983,7 +992,7 @@ export default {
     }
   }
 
-  .settings-thresholds {
+  .settings-section {
     position: relative;
 
     &__controls {
