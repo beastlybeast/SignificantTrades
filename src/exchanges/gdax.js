@@ -76,7 +76,7 @@ class Gdax extends Exchange {
           timestamp: +new Date(json.time),
           price: +json.price,
           size: +json.size,
-          side: json.side
+          side: json.side === 'buy' ? 'sell' : 'buy'
         }
       ])
     }
