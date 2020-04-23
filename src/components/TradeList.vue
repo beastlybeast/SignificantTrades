@@ -301,10 +301,6 @@ export default {
       }
 
       li.appendChild(date)
-      li.setAttribute('data-trade', JSON.stringify(trade));
-      li.addEventListener('click', (event) => {
-        console.log(JSON.parse(event.currentTarget.getAttribute('data-trade')));
-      })
 
       this.$refs.tradesContainer.appendChild(li)
 
