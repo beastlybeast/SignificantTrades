@@ -31,6 +31,7 @@ const SUMS = {
 }
 
 let sumsInterval = null;
+let queueInterval = null;
 let activeExchanges = [];
 
 const emitter = new Vue({
@@ -56,7 +57,6 @@ const emitter = new Vue({
         new Bybit(),
         new Ftx()
       ],
-      timestamps: {},
 
       _pair: null,
     }
@@ -105,12 +105,17 @@ const emitter = new Vue({
         case 'app/EXCHANGE_UPDATED':
           activeExchanges = this.actives.slice(0, this.actives.length)
         break;
+        case 'settings/TOGGLE_AGGREGATION':
+          if (!this.toggleAggregation && queueInterval) {
+            this.clearQueueInterval();
+          } else if (this.toggleAggregation && !queueInterval) {
+            this.setupQueueInterval();
+          }
+        break;
         case 'settings/TOGGLE_STATS':
         case 'settings/TOGGLE_COUNTERS':
           if (!this.showStats && !this.showCounters && sumsInterval) {
             this.clearSumsInterval();
-            clearInterval(sumsInterval)
-            sumsInterval = null;
           } else if (this.showStats ||this.showCounters && !sumsInterval) {
             this.setupSumsInterval();
           }
@@ -123,8 +128,6 @@ const emitter = new Vue({
         if (!trades || !trades.length) {
           return
         }
-
-        this.timestamps[exchange.id] = trades[trades.length - 1].timestamp
         
         const length = trades.length;
 
@@ -266,7 +269,11 @@ const emitter = new Vue({
       }
 
       setTimeout(this.connectExchanges.bind(this))
-      setInterval(this.emitQueue.bind(this), 50)
+
+      this.clearQueueInterval();
+      if (store.state.settings.aggregateTrades) {
+        this.setupQueueInterval();
+      }
 
       this.clearSumsInterval();
       if (store.state.settings.showCounters || store.state.settings.showStats) {
@@ -286,9 +293,6 @@ const emitter = new Vue({
       if (pair) {
         this.pair = pair.toUpperCase()
       }
-
-      this.timestamps = {}
-      this._fetchedMax = false
 
       console.log(`[socket.connect] connecting to ${this.pair}`)
 
@@ -351,6 +355,45 @@ const emitter = new Vue({
 
       return null
     },
+    setupSumsInterval() {
+      console.log(`[socket] setup sums interval`)
+
+      sumsInterval = setInterval(this.emitSums.bind(this), 1000);
+    },
+    clearSumsInterval() {
+      if (sumsInterval) {
+        console.log(`[socket] clear sums interval`)
+
+        clearInterval(sumsInterval)
+        sumsInterval = null;
+      }
+    },
+    emitSums() {
+      if (SUMS.timestamp) {
+        this.$emit('sums', SUMS);
+
+        SUMS.timestamp = null
+        SUMS.vbuy = 0
+        SUMS.vsell = 0
+        SUMS.cbuy = 0
+        SUMS.csell = 0
+        SUMS.lbuy = 0
+        SUMS.lsell = 0
+      }
+    },
+    setupQueueInterval() {
+      console.log(`[socket] setup queue interval`)
+
+      queueInterval = setInterval(this.emitQueue.bind(this), 50);
+    },
+    clearQueueInterval() {
+      if (queueInterval) {
+        console.log(`[socket] clear queue interval`)
+
+        clearInterval(queueInterval)
+        queueInterval = null;
+      }
+    },
     emitQueue() {
       const now = +new Date();
       const inQueue = Object.keys(QUEUE);
@@ -382,32 +425,6 @@ const emitter = new Vue({
       }
 
       return trade.slippage
-    },
-    setupSumsInterval() {
-      console.log(`[socket] setup sums interval`)
-
-      sumsInterval = setInterval(this.emitSums.bind(this), 1000);
-    },
-    clearSumsInterval() {
-      if (sumsInterval) {
-        console.log(`[socket] clear sums interval`)
-
-        clearInterval(sumsInterval)
-        sumsInterval = null;
-      }
-    },
-    emitSums() {
-      if (SUMS.timestamp) {
-        this.$emit('sums', SUMS);
-
-        SUMS.timestamp = null
-        SUMS.vbuy = 0
-        SUMS.vsell = 0
-        SUMS.cbuy = 0
-        SUMS.csell = 0
-        SUMS.lbuy = 0
-        SUMS.lsell = 0
-      }
     },
     canFetch() {
       return this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1)

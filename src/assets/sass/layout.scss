@@ -114,10 +114,6 @@ body {
   display: flex;
   flex-direction: column;
 
-  #exchanges {
-    display: none;
-  }
-
   .app__right {
     display: flex;
     flex-direction: column;
@@ -142,12 +138,22 @@ body {
       }
     }
 
-    #chart {
+    .app__left {
       flex-grow: 0;
       max-height: 100%;
+      display: flex;
+      flex-direction: column;
 
       #chart {
         flex-grow: 1;
+
+        &:not(:last-child) {
+          max-height: calc(100% - 24px);
+        }
+      }
+
+      #exchanges {
+        flex-shrink: 0;
       }
     }
 

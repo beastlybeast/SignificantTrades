@@ -1,4 +1,5 @@
 import store from '../store'
+import * as TV from 'lightweight-charts'
 
 const GRANULARITY = store.state.settings.statsGranularity
 const PERIOD = store.state.settings.statsPeriod
@@ -11,6 +12,11 @@ export default class Counter {
     this.precision = options.precision;
     this.color = options.color;
     this.granularity = Math.max(GRANULARITY, this.period / 50)
+
+    /**
+     * @type {TV.ISeriesApi<Line>}
+     */
+    this.serie = null;
 
     this.timeouts = [];
 
@@ -53,9 +59,7 @@ export default class Counter {
   onStats(timestamp, stats) {
     const data = this.outputFunction(stats)
 
-    if (!this.stacks.length || timestamp > this.timestamp + this.granularity) {
-      this.appendStack(timestamp)
-    }
+    this.appendStack(timestamp)
 
     this.addData(data)
   }

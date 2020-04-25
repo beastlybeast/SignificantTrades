@@ -22,7 +22,7 @@ import { defaultChartOptions, defaultLineOptions, } from './chart/chartOptions'
 const chartOptions = JSON.parse(JSON.stringify(defaultChartOptions))
 chartOptions.priceScale.position = 'none'
 chartOptions.timeScale.rightOffset = 0
-chartOptions.timeScale.secondsVisible = false
+chartOptions.timeScale.secondsVisible = true
 chartOptions.priceScale.mode = 0
 
 const lineOptions = JSON.parse(JSON.stringify(defaultLineOptions))
@@ -92,6 +92,10 @@ export default {
             mutation.payload.value
           )
           break
+        case 'settings/TOGGLE_CHART':
+        case 'settings/SET_SIDEBAR_WIDTH':
+          this.refreshChartDimensions(mutation.payload);
+        break;
         case 'settings/TOGGLE_STATS_CHART':
           if (mutation.payload) {
             this.createChart()
@@ -103,6 +107,7 @@ export default {
     })
   },
   mounted() {
+    window.ka = this.keepAlive.bind(this);
     if (this.statsChart) {
       this.createChart()
     }
@@ -116,16 +121,19 @@ export default {
     this.onStoreMutation()
 
     clearInterval(this._statsRefreshInterval);
+
+    chart = null
   },
   methods: {
     createChart() {
-      clearTimeout(this._createChartTimeout)
-      this._createChartTimeout = setTimeout(() => {
+      setTimeout(() => {
         chart = TV.createChart(this.$refs.chart, chartOptions)
         for (let i = 0; i < counters.length; i++) {
           this.createCounterSerie(counters[i]);
         }
-      }, 100)
+      })
+
+      this.keepAlive()
     },
     createCounterSerie(counter) {
       if (counter.serie) {
@@ -141,13 +149,80 @@ export default {
       if (!chart) {
         return
       }
+
+      if (this._keepAliveTimeout) {
+        clearTimeout(this._keepAliveTimeout)
+        delete this._keepAliveTimeout;
+      }
+
       for (let i = 0; i < counters.length; i++) {
         if (counters[i].serie) {
           chart.removeSeries(counters[i].serie);
           delete counters[i].serie
         }
       }
+
       chart.remove()
+    },
+    keepAlive() {
+      if (this._keepAliveTimeout) {
+        const countersSeries = counters.filter(a => a.serie).map(a => a.serie._series)
+        const data = counters.map(a => [])
+
+        const points = Array.from(chart.Me.oe);
+
+        for (let i = Math.max(0, points.length - 200); i < points.length; i++) {
+          const series = Array.from(points[i][1].mapping);
+
+          for (let j = 0; j < series.length; j++) {
+            const index = countersSeries.indexOf(series[j][0]);
+
+            if (index === -1 || !data[index]) {
+              debugger;
+              continue;
+            }
+
+            data[index].push(series[j][1])
+          }
+        }
+
+        const scrollPosition = chart.timeScale().scrollPosition();
+        const visibleRange = chart.timeScale().getVisibleRange();
+
+        this.removeChart();
+        this.createChart();
+        
+        setTimeout(() => {
+          for (let k = 0; k < counters.length; k++) {
+            if (counters[k].serie) {
+              console.log(`[stats.keepalive] set data to serie #${k} (${data[k].length} points)`);
+              counters[k].serie.setData(data[k])
+            }
+          }
+
+          if (visibleRange) {
+            chart.timeScale().scrollToPosition(scrollPosition);
+            chart.timeScale().setVisibleRange(visibleRange)
+          }
+        })
+      }
+
+      this._keepAliveTimeout = setTimeout(this.keepAlive.bind(this), 1000 * 60);
+    },
+    refreshChartDimensions(w) {
+      if (!this.statsChart) {
+        return
+      }
+
+      clearTimeout(this._refreshChartDimensionsTimeout);
+
+      this._refreshChartDimensionsTimeout = setTimeout(() => {
+        if (!w) {
+          w = this.$el.clientWidth
+        }
+        
+        chart && chart.resize(w, 180)
+      }, 500);
     },
     prepareCounters() {
       console.log(`[stats.prepareCounters]`)
@@ -199,6 +274,7 @@ export default {
       }
     },
     removeCounter(index) {
+      console.log('remove counter at index', index);
       const counter = this.getCounter(index)
       if (!counter) {
         console.log(`[removeCounter] couldnt find counter ${index}`)
@@ -246,6 +322,7 @@ export default {
       })
     },
     createCounter(counterOptions) {
+      console.log('create counter with options', counterOptions);
       if (
         counterOptions.enabled &&
         typeof this.data[counterOptions.name] === 'undefined'

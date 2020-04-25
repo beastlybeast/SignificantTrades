@@ -285,5 +285,8 @@ export default {
       scaleMargins: value
     }
   },
+  TOGGLE_EXCHANGES_BAR(state, value) {
+    state.showExchangesBar = value ? true : false;
+  }
 
 }

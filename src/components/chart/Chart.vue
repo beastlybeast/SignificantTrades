@@ -148,6 +148,9 @@ export default {
         case 'settings/SET_CHART_PRICE_MARGINS':
           chart.setPriceMargins(mutation.payload)
         break;
+        case 'settings/TOGGLE_EXCHANGES_BAR':
+          setTimeout(this.refreshChartDimensions.bind(this));
+        break;
         case 'app/SET_OPTIMAL_DECIMAL':
           chart.setSerieOption({
             id: 'price',
@@ -504,8 +507,6 @@ export default {
       }
 
       const visibleRange = chart.getVisibleRange()
-      
-      console.log('[pan.instant] current scrollPosition', getHms(chart.chartInstance.timeScale().scrollPosition() * 1000))
 
       if (this._onPanTimeout) {
         clearTimeout(this._onPanTimeout)

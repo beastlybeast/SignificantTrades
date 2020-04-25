@@ -451,6 +451,18 @@
               </span>
             </label>
           </div>
+          <div class="form-group mb8">
+            <label class="checkbox-control">
+              <input
+                type="checkbox"
+                class="form-control"
+                :checked="showExchangesBar"
+                @change="$store.commit('settings/TOGGLE_EXCHANGES_BAR', $event.target.checked)"
+              />
+              <div></div>
+              <span>Show exchanges bar</span>
+            </label>
+          </div>
           <!--<div class="form-group mb8">
             <label class="checkbox-control">
               <input
@@ -555,6 +567,7 @@ export default {
       'timeframe',
       'showChart',
       'chartRefreshRate',
+      'showExchangesBar',
       'settings',
       'debug'
     ]),

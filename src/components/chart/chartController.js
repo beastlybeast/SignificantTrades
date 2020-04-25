@@ -70,8 +70,8 @@ export default class ChartController {
 
     const options = Object.assign({}, defaultChartOptions, chartDimensions)
 
-    if (store.state.settings.price && store.state.settings.price.scaleMargins) {
-      options.priceScale.scaleMargins = store.state.settings.price.scaleMargins
+    if (store.state.settings.series.price && store.state.settings.series.price.scaleMargins) {
+      options.priceScale.scaleMargins = store.state.settings.series.price.scaleMargins
     }
 
     this.chartInstance = TV.createChart(containerElement, options)

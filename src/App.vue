@@ -17,7 +17,10 @@
     <div class="app__wrapper">
       <Header :price="price" @toggleSettings="showSettings = !showSettings" />
       <div class="app__layout">
-        <Chart v-if="showChart" />
+        <div class="app__left">
+          <Chart v-if="showChart" />
+          <Exchanges v-if="showChart && showExchangesBar" />
+        </div>
         <div class="app__right">
           <Counters v-if="showCounters" />
           <Stats v-if="showStats" />
@@ -43,6 +46,7 @@ import TradeList from './components/TradeList.vue'
 import Chart from './components/chart/Chart.vue'
 import Counters from './components/Counters.vue'
 import Stats from './components/Stats.vue'
+import Exchanges from './components/Exchanges.vue'
 import upFavicon from '../static/up.png'
 import downFavicon from '../static/down.png'
 
@@ -60,7 +64,8 @@ export default {
     Chart,
     Counters,
     Notice,
-    Stats
+    Stats,
+    Exchanges
   },
   name: 'app',
   data() {
@@ -78,7 +83,7 @@ export default {
   },
   computed: {
     ...mapState('app', ['isLoading', 'actives', 'notices']),
-    ...mapState('settings', ['pair', 'showChart', 'showCounters', 'showStats', 'decimalPrecision', 'preferQuoteCurrencySize'])
+    ...mapState('settings', ['pair', 'showChart', 'showCounters', 'showStats', 'decimalPrecision', 'preferQuoteCurrencySize', 'showExchangesBar'])
   },
   created() {
     this.$root.formatPrice = formatPrice
