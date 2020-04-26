@@ -111,6 +111,7 @@ export default {
       'chartHeight',
       'sidebarWidth',
       'chartRefreshRate',
+      'showExchangesBar',
       'series',
     ]),
     availableSeries: function() {
@@ -466,6 +467,8 @@ export default {
       const dimensions = this.getChartDimensions()
 
       chart.chartInstance.resize(width || dimensions.width, height || dimensions.height)
+
+      this.$el.parentElement.style.width = (width || dimensions.width) + 'px'
     },
 
     /**
@@ -479,7 +482,7 @@ export default {
         width: window.innerWidth < 768 ? this.$el.clientWidth : this.sidebarWidth > 0 ? window.innerWidth - this.sidebarWidth : w - 320,
         height:
           window.innerWidth >= 768
-            ? this.$el.clientHeight
+            ? this.$el.parentElement.clientHeight - (this.showExchangesBar ? 24 : 0)
             : this.chartHeight > 0
             ? this.chartHeight
             : +Math.min(w / 2, Math.max(300, h / 3)).toFixed()

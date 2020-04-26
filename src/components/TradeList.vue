@@ -233,7 +233,7 @@ export default {
           li.className += ' -gif'
         }
 
-        li.className += ' level-' + i
+        li.className += ' -level-' + i
       }
 
       amount = formatAmount(trade.price * trade.size)
@@ -497,9 +497,8 @@ export default {
   &.-logos {
     .trade__exchange {
       text-indent: -9999px;
-      flex-basis: 14%;
-      flex-grow: 0;
-      min-width: 1em;
+      flex-basis: 0;
+      flex-grow: 0.4;
     }
 
     @each $exchange in $exchanges {
@@ -632,13 +631,18 @@ export default {
 
   .trade__side {
     flex-grow: 0;
-    flex-basis: 1em;
+    flex-basis: 1rem;
     font-size: 1em;
-    line-height: 1.06;
 
     + .trade__message {
       margin-left: 0.5em;
     }
+  }
+
+  .icon-currency,
+  .icon-quote,
+  .icon-base {
+    line-height: 0;
   }
 
   .trade__exchange {
@@ -651,7 +655,7 @@ export default {
     }
 
     &:first-child {
-      margin-left: 1em;
+      margin-left: 1rem;
     }
   }
 
@@ -676,7 +680,7 @@ export default {
   }
 
   .trade__amount {
-    flex-grow: .66;
+    flex-grow: 1;
     position: relative;
 
     > span {
@@ -711,7 +715,7 @@ export default {
 
   .trade__date {
     text-align: right;
-    flex-basis: 2.5em;
+    flex-basis: 2em;
     flex-grow: 0;
   }
 
