@@ -1,4 +1,4 @@
-import { parseQueryString } from '../../utils/helpers'
+import { parseQueryString, MASTER_DOMAIN } from '../../utils/helpers'
 import DEFAULTS from './defaults.json'
 
 /**
@@ -25,17 +25,19 @@ try {
 /**
  *  EXTRA
  *
- *  1.SUBDOMAIN
+ *  1.SUBDOMAIN (only for MASTER_DOMAIN)
  *  automaticaly map subdomain as a *pair* and replace it in options
  *  eg: ethusd.aggr.trade will set the *pair* options to ethusd.
  */
 const EXTRA = {}
 
-const subdomain = window.location.hostname.match(/^([\d\w\-\_]+)\..*\./i)
-const except = ['beta', 'www']
+if (MASTER_DOMAIN) {
+  const subdomain = window.location.hostname.match(/^([\d\w\-\_]+)\..*\./i)
+  const except = ['beta', 'www']
 
-if (subdomain && subdomain.length >= 2 && except.indexOf(subdomain) === -1) {
-  EXTRA.pair = subdomain[1].replace(/\_/g, '+').toUpperCase()
+  if (subdomain && subdomain.length >= 2 && except.indexOf(subdomain) === -1) {
+    EXTRA.pair = subdomain[1].replace(/\_/g, '+').toUpperCase()
+  }
 }
 
 // 14/04/20 (2.5)
