@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.2] - 2020-04-27
+
+### Changed
+- Fixed counters edition
+- Chart height when exchangesBar is visible
 
 ## [2.5.1] - 2020-04-22
 
