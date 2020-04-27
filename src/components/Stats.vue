@@ -107,7 +107,6 @@ export default {
     })
   },
   mounted() {
-    window.ka = this.keepAlive.bind(this);
     if (this.statsChart) {
       this.createChart()
     }
@@ -178,7 +177,6 @@ export default {
             const index = countersSeries.indexOf(series[j][0]);
 
             if (index === -1 || !data[index]) {
-              debugger;
               continue;
             }
 

@@ -635,7 +635,7 @@ export default {
         return
       }
 
-      this.$store.commit('replaceCounterSteps', counters)
+      this.$store.commit('settings/REPLACE_COUNTERS', counters)
 
       this.stringifyCounters()
     },
