@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.3] - 2020-04-28
+
+### Changed
+- Fixed update of stats period
+- Pause stats keepAlive when mouse over stats chart
+
 ## [2.5.2] - 2020-04-27
 
 ### Changed

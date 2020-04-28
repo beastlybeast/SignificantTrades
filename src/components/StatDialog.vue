@@ -44,26 +44,12 @@
           })"></verte>
         </div>
         <div class="form-group mb8">
-          <label>Period</label>
-          <input type="text" class="form-control" :value="model.period" @change="$store.dispatch('settings/updateStat', {
+          <label>Period (m)</label>
+          <input type="text" class="form-control" :value="getHms(model.period)" :placeholder="getHms($store.state.settings.statsPeriod)" @change="$store.dispatch('settings/updateStat', {
             index: id,
             prop: 'period',
             value: $event.target.value
           })">
-        </div>
-        <div class="form-group mb8">
-          <label>Smoothing</label>
-          <input
-            type="text"
-            class="form-control"
-            placeholder="no smoothing"
-            :value="model.smoothing"
-            @change="$store.dispatch('settings/updateStat', {
-            index: id,
-            prop: 'smoothing',
-            value: $event.target.value
-          })"
-          />
         </div>
         <div class="form-group mb8">
           <label>Precision</label>
@@ -80,7 +66,7 @@
           />
         </div>
         <div class="form-group">
-          <label for>Value</label>
+          <label for>Value <span class="icon-info-circle" title="Javascript syntax, use build in variable such as vbuy/vsell (volume) cbuy/csell (trade count) lbuy/lsell (liquidation volume)" v-tippy></span></label>
           <textarea
             class="form-control"
             rows="5"
@@ -91,6 +77,7 @@
             value: $event.target.value
           })"
           ></textarea>
+          <p class="help-text mt-8">Sum <code>{{ model.output }}</code> over {{ getHms(model.period || $store.state.settings.statsPeriod) }} period</p>
         </div>
       </div>
     </div>
@@ -111,12 +98,9 @@ export default {
       name: null,
       output: null,
       precision: null,
-      smoothing: null,
+      period: null
     },
   }),
-  computed: {
-    statsPeriod: () => store.state.settings.statsPeriod,
-  },
   created() {
     this.model = store.state.settings.statsCounters[this.id] || {};
   },
@@ -126,6 +110,9 @@ export default {
         this.$close(false);
       }
     },
+    getHms(value) {
+      return getHms(value)
+    }
   }
 }
 </script>

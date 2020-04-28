@@ -602,7 +602,7 @@ export default {
     },
     stringifyStatsPeriod() {
       this.statsPeriodStringified = ago(
-        +new Date() - this.statsPeriod
+        +new Date() - (this.statsPeriod || 0)
       )
     },
     stringifyCounters() {

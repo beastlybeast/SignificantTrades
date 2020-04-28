@@ -89,19 +89,32 @@ export default {
 
     Vue.set(state.statsCounters, index, stat)
   },
-  SET_STAT_SMOOTHING(state, { index, value }) {
-    const stat = state.statsCounters[index]
-
-    stat.smoothing = !isNaN(value) ? +value : false
-
-    Vue.set(state.statsCounters, index, stat)
-  },
   SET_STAT_PRECISION(state, { index, value }) {
     const stat = state.statsCounters[index]
 
     value = parseInt(value);
 
     stat.precision = !isNaN(value) ? value : null
+
+    Vue.set(state.statsCounters, index, stat)
+  },
+  SET_STAT_PERIOD(state, { index, value }) {
+    const stat = state.statsCounters[index]
+    let milliseconds = parseInt(value);
+
+    if (isNaN(milliseconds)) {
+      stat.period = null
+    } else {
+      if (/[\d.]+s/.test(value)) {
+        milliseconds *= 1000
+      } else if (/[\d.]+h/.test(value)) {
+        milliseconds *= 1000 * 60 * 60
+      } else {
+        milliseconds *= 1000 * 60
+      }
+
+      stat.period = milliseconds
+    }
 
     Vue.set(state.statsCounters, index, stat)
   },
@@ -116,7 +129,7 @@ export default {
     state.statsCounters.splice(index, 1);
   },
   SET_STATS_PERIOD(state, value) {
-    let milliseconds = parseInt(value);
+    let milliseconds = parseInt(value) || 0;
 
     if (/[\d.]+s/.test(value)) {
       milliseconds *= 1000

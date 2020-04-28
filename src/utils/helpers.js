@@ -106,6 +106,10 @@ export function ago(timestamp) {
 }
 
 export function getHms(timestamp, round) {
+  if (isNaN(timestamp) || timestamp === null) {
+    return null
+  }
+
   const isNegPrefix = timestamp < 0 ? '-' : '';
   timestamp = Math.abs(timestamp);
 

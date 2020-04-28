@@ -1,5 +1,5 @@
 <template>
-  <div id="stats" class="stats">
+  <div id="stats" class="stats" @mouseenter="stopKeepAlive" @mouseleave="statsChart && keepAlive()">
     <div v-if="statsChart" class="stats__chart" ref="chart"></div>
     <ul class="stats__counters">
       <li v-for="(value, name) in data" :key="name" class="stat-counter" @click="editByName(name)">
@@ -64,6 +64,7 @@ export default {
     },
   },
   created() {
+    window.getStats = () => counters;
     this.onStoreMutation = this.$store.subscribe((mutation, state) => {
       switch (mutation.type) {
         case 'settings/TOGGLE_STAT':
@@ -75,7 +76,6 @@ export default {
           break
         case 'settings/SET_STAT_PERIOD':
         case 'settings/SET_STAT_OUTPUT':
-        case 'settings/SET_STAT_SMOOTHING':
         case 'settings/SET_STAT_PRECISION':
           this.refreshCounter(this.statsCounters[mutation.payload.index].name)
           break
@@ -149,10 +149,7 @@ export default {
         return
       }
 
-      if (this._keepAliveTimeout) {
-        clearTimeout(this._keepAliveTimeout)
-        delete this._keepAliveTimeout;
-      }
+      this.stopKeepAlive()
 
       for (let i = 0; i < counters.length; i++) {
         if (counters[i].serie) {
@@ -163,49 +160,66 @@ export default {
 
       chart.remove()
     },
-    keepAlive() {
+    stopKeepAlive() {
       if (this._keepAliveTimeout) {
-        const countersSeries = counters.filter(a => a.serie).map(a => a.serie._series)
-        const data = counters.map(a => [])
+        clearTimeout(this._keepAliveTimeout)
+        delete this._keepAliveTimeout;
 
-        const points = Array.from(chart.Me.oe);
-
-        for (let i = Math.max(0, points.length - 200); i < points.length; i++) {
-          const series = Array.from(points[i][1].mapping);
-
-          for (let j = 0; j < series.length; j++) {
-            const index = countersSeries.indexOf(series[j][0]);
-
-            if (index === -1 || !data[index]) {
-              continue;
-            }
-
-            data[index].push(series[j][1])
-          }
-        }
-
-        const scrollPosition = chart.timeScale().scrollPosition();
-        const visibleRange = chart.timeScale().getVisibleRange();
-
-        this.removeChart();
-        this.createChart();
-        
-        setTimeout(() => {
-          for (let k = 0; k < counters.length; k++) {
-            if (counters[k].serie) {
-              console.log(`[stats.keepalive] set data to serie #${k} (${data[k].length} points)`);
-              counters[k].serie.setData(data[k])
-            }
-          }
-
-          if (visibleRange) {
-            chart.timeScale().scrollToPosition(scrollPosition);
-            chart.timeScale().setVisibleRange(visibleRange)
-          }
-        })
+        console.log(`[stats] clear keep alive for chart`)
+      }
+    },
+    keepAlive(timerId) {
+      if (!timerId && this._keepAliveTimeout) {
+        return
       }
 
-      this._keepAliveTimeout = setTimeout(this.keepAlive.bind(this), 1000 * 60);
+      if (this._keepAliveTimeout) {
+        const visibleRange = chart.timeScale().getVisibleRange();
+
+        if (visibleRange) {
+          const scrollPosition = chart.timeScale().scrollPosition();
+
+          const countersSeries = counters.filter(a => a.serie).map(a => a.serie._series)
+          const data = counters.map(a => [])
+
+          const points = Array.from(chart.Me.oe);
+
+          for (let i = Math.max(0, points.length - 200); i < points.length; i++) {
+            const series = Array.from(points[i][1].mapping);
+
+            for (let j = 0; j < series.length; j++) {
+              const index = countersSeries.indexOf(series[j][0]);
+
+              if (index === -1 || !data[index]) {
+                continue;
+              }
+
+              data[index].push(series[j][1])
+            }
+          }
+
+          this.removeChart();
+          this.createChart();
+
+          setTimeout(() => {
+            for (let k = 0; k < counters.length; k++) {
+              if (counters[k].serie) {
+                console.log(`[stats.keepalive] set data to serie #${k} (${data[k].length} points)`);
+                counters[k].serie.setData(data[k])
+              }
+            }
+
+            if (visibleRange) {
+              chart.timeScale().scrollToPosition(scrollPosition);
+              chart.timeScale().setVisibleRange(visibleRange)
+            }
+          })
+        }
+      } else {
+        console.log(`[stats] setup keep alive for chart`)
+      }
+
+      this._keepAliveTimeout = setTimeout(this.keepAlive.bind(this, [this._keepAliveTimeout]), 1000 * 60);
     },
     refreshChartDimensions(w) {
       if (!this.statsChart) {
@@ -233,6 +247,8 @@ export default {
       const now = +new Date();
       
       for (let i = 0; i < counters.length; i++) {
+        counters[i].onStats(now, sums)
+
         if (counters[i].stacks.length) {
           let value = counters[i].getValue()
           if (value.length) {
@@ -258,8 +274,6 @@ export default {
             this.$set(this.data, counters[i].name, value)
           }
         }
-
-        counters[i].onStats(now, sums)
       }
     },
     clearCounters() {

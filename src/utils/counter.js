@@ -1,17 +1,15 @@
 import store from '../store'
 import * as TV from 'lightweight-charts'
 
-const GRANULARITY = store.state.settings.statsGranularity
-const PERIOD = store.state.settings.statsPeriod
+import {formatTime, getHms} from '../utils/helpers'
 
 export default class Counter {
   constructor(outputFunction, { options, model } = {}) {
     this.outputFunction = outputFunction;
-    this.period = !isNaN(options.period) ? +options.period : PERIOD;
-    this.smoothing = !isNaN(options.smoothing) ? +options.smoothing : false;
+    this.period = (!isNaN(options.period) ? +options.period : store.state.settings.statsPeriod) || 0;
     this.precision = options.precision;
     this.color = options.color;
-    this.granularity = Math.max(GRANULARITY, this.period / 50)
+    this.granularity = Math.max(store.state.settings.statsGranularity, this.period / 50)
 
     /**
      * @type {TV.ISeriesApi<Line>}
@@ -42,8 +40,6 @@ export default class Counter {
   clear() {
     this.live = this.getModel();
     this.stacks = []
-    this.lasts = []
-    this.sum = 0
 
     for (let i = 0; i < this.timeouts.length; i++) {
       clearTimeout(this.timeouts[i]);
@@ -59,7 +55,10 @@ export default class Counter {
   onStats(timestamp, stats) {
     const data = this.outputFunction(stats)
 
-    this.appendStack(timestamp)
+    if (!this.stacks.length || timestamp > this.timestamp + this.granularity) {
+      this.appendStack(timestamp)
+    }
+
 
     this.addData(data)
   }
@@ -70,14 +69,6 @@ export default class Counter {
     }
 
     this.stacks.push(this.getModel())
-
-    if (this.smoothing) {
-      this.lasts.push(0);
-  
-      if (this.lasts.length > this.smoothing) {
-        this.sum -= this.lasts.shift()
-      }
-    }
 
     this.timestamp = Math.floor(timestamp / 1000) * 1000;
 
@@ -103,13 +94,6 @@ export default class Counter {
   addData(data) {
     this.stacks[this.stacks.length - 1] += data
     this.live += data
-
-    if (this.smoothing) {
-      this.sum -= this.lasts[this.lasts.length - 1]
-      this.sum += this.live
-    
-      this.lasts[this.lasts.length - 1] = this.live;
-    }
   }
 
   substractData(data) {
@@ -117,10 +101,6 @@ export default class Counter {
   }
 
   getValue() {
-    if (this.smoothing) {
-      return this.sum / this.lasts.length;
-    }
-
     return this.live
   }
 }
