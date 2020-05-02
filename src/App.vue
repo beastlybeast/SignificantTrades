@@ -113,6 +113,7 @@ export default {
     socket.initialize()
 
     this.updatePrice()
+    this.updatePairCurrency(this.pair)
   },
   mounted() {},
   beforeDestroy() {

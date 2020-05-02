@@ -472,6 +472,7 @@ export default {
       margin-bottom: -5px;
       white-space: normal;
       word-break: break-word;
+      line-height: 0.9;
     }
 
     &.-liquidation .trade__exchange {
@@ -572,6 +573,7 @@ export default {
     flex-grow: 0;
     flex-basis: 1em;
     font-size: 1em;
+    position: absolute;
 
     + .trade__message {
       margin-left: 0.5em;
@@ -588,13 +590,10 @@ export default {
     background-repeat: no-repeat;
     background-position: center center;
     flex-grow: 0.75;
+    margin-left: 5%;
 
     small {
       opacity: 0.8;
-    }
-
-    &:first-child {
-      margin-left: 1em;
     }
   }
 
