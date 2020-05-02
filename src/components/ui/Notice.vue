@@ -30,7 +30,7 @@ export default {
     },
     hide() {
       this.$store.dispatch('app/hideNotice', this.notice.id)
-    },
-  },
+    }
+  }
 }
 </script>

@@ -32,61 +32,61 @@ body {
   overflow: hidden;
   font-size: 12px;
   z-index: 1;
+}
 
+.stack__scroller {
+  overflow: auto;
+  position: relative;
+}
+
+.stack__toggler {
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 18px;
+  opacity: 0.2;
+  padding: .5em;
+  z-index: 1;
+  color: white;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.stack__wrapper {
+  padding: .5em;
+  position: relative;
+
+  p {
+    margin: 0 0 2px;
+
+    &:last-child {
+      margin: 0;
+    }
+  }
+
+  code {
+    background-color: rgba(black, 0.1);
+    font-weight: 400;
+    padding: 3px 4px;
+    line-height: 1;
+    display: inline-block;
+    position: relative;
+    letter-spacing: -0.5px;
+  }
+}
+
+.stack__backdrop {
   @media screen and (min-width: 500px) {
-    .stack__backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-
-      display: block;
-      background-color: rgba(black, 0.2);
-    }
-  }
-
-  .stack__scroller {
-    overflow: auto;
-    position: relative;
-  }
-
-  .stack__toggler {
-    position: absolute;
-    right: 0;
+    position: fixed;
     top: 0;
-    font-size: 18px;
-    opacity: 0.2;
-    padding: .5em;
-    z-index: 1;
-    color: white;
+    left: 0;
+    right: 0;
+    bottom: 0;
 
-    &:hover {
-      opacity: 1;
-    }
-  }
-
-  .stack__wrapper {
-    padding: .5em;
-    position: relative;
-
-    p {
-      margin: 0 0 2px;
-
-      &:last-child {
-        margin: 0;
-      }
-    }
-
-    code {
-      background-color: rgba(black, 0.1);
-      font-weight: 400;
-      padding: 3px 4px;
-      line-height: 1;
-      display: inline-block;
-      position: relative;
-      letter-spacing: -0.5px;
-    }
+    display: block;
+    background-color: rgba(black, 0.2);
   }
 }
 
@@ -117,12 +117,6 @@ body {
   .app__right {
     display: flex;
     flex-direction: column;
-  }
-
-  @media screen and (min-width: 480px) and (max-width: 767px) {
-    .app__right {
-      font-size: 1.1em;
-    }
   }
 
   @media screen and (min-width: 768px) {
@@ -159,12 +153,10 @@ body {
 
     .app__right {
       flex-grow: 1;
-      font-size: 1.05em;
 
       #trades {
         flex-grow: 1;
         overflow: auto;
-        font-size: 0.8em;
       }
     }
   }
@@ -172,22 +164,6 @@ body {
   @media screen and (max-width: 379px) {
     #trades {
       font-size: 0.8em;
-    }
-  }
-
-  @media screen and (min-width: 1200px) {
-    .app__right {
-      font-size: 1.1em;
-
-      #trades {
-        font-size: 0.9em;
-      }
-    }
-  }
-
-  @media screen and (min-width: 1600px) {
-    .app__right {
-      font-size: 1.2em;
     }
   }
 }

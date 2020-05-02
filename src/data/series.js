@@ -1,6 +1,3 @@
-import { defaultPlotsOptions } from '../components/chart/chartOptions'
-
-
 export default {
   price: {
     type: 'candlestick',
@@ -17,7 +14,6 @@ export default {
       priceLineStyle: 2,
       lastValueVisible: true,
       priceLineVisible: true,
-      borderVisible: false,
       borderVisible: false,
       scaleMargins: {
         top: 0,
@@ -98,9 +94,9 @@ export default {
   },
   price_sma: {
     type: 'line',
-      input: `sma(bar.series.price.point.close, options.length)`,
+    input: `sma(bar.series.price.point.close, options.length)`,
     options: {
-      color: "rgba(52,100,69,0.38)",
+      color: 'rgba(52,100,69,0.38)',
       length: 29,
       lineWidth: 2
     }
@@ -113,5 +109,5 @@ export default {
       color: '#8c61f5',
       lineWidth: 2
     }
-  },
+  }
 }

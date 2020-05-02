@@ -7,7 +7,7 @@
     :data-symbol="symbol"
     :data-pair="pair"
     :class="{
-      loading: isLoading,
+      loading: isLoading
     }"
   >
     <div class="notices">
@@ -34,10 +34,9 @@
 
 <script>
 import { mapState } from 'vuex'
-import { MASTER_DOMAIN, formatPrice, formatAmount, movingAverage, countDecimals } from './utils/helpers'
+import { formatPrice, formatAmount, movingAverage, countDecimals } from './utils/helpers'
 
 import socket from './services/socket'
-import touchevent from './utils/touchevent'
 
 import Notice from './components/ui/Notice.vue'
 import Header from './components/ui/Header.vue'
@@ -47,8 +46,8 @@ import Chart from './components/chart/Chart.vue'
 import Counters from './components/Counters.vue'
 import Stats from './components/Stats.vue'
 import Exchanges from './components/Exchanges.vue'
-import upFavicon from '../static/up.png'
-import downFavicon from '../static/down.png'
+import upFavicon from '../src/assets/up.png'
+import downFavicon from '../src/assets/down.png'
 
 const faviconDirection = {
   direction: null,
@@ -74,7 +73,6 @@ export default {
       baseCurrency: 'bitcoin',
       quoteCurrency: 'dollar',
       symbol: '$',
-      
 
       showSettings: false,
       showStatistics: false,
@@ -89,13 +87,10 @@ export default {
     this.$root.formatPrice = formatPrice
     this.$root.formatAmount = formatAmount
 
-    socket.$on('pairing', value => {
-      this.updatePairCurrency(this.pair)
-    })
-
-    this.onStoreMutation = this.$store.subscribe((mutation, state) => {
+    this.onStoreMutation = this.$store.subscribe(mutation => {
       switch (mutation.type) {
         case 'settings/SET_PAIR':
+          this.updatePairCurrency(mutation.payload)
           socket.connectExchanges(mutation.payload)
           this.calculateOptimalPrice = true
           break
@@ -127,7 +122,7 @@ export default {
   },
   methods: {
     updatePairCurrency(pair) {
-      const name = pair.replace(/\-[\w\d]*$/, '')
+      const name = pair.replace(/-[\w\d]*$/, '')
 
       const symbols = {
         BTC: ['bitcoin', '฿'],
@@ -169,19 +164,19 @@ export default {
     updatePrice() {
       let price = 0
       let total = 0
-      let decimals = null;
+      let decimals = null
 
-      const activesExchangesLength = this.actives.length;
+      const activesExchangesLength = this.actives.length
 
       if (this.calculateOptimalPrice) {
-        decimals = [];
+        decimals = []
       }
 
       for (let exchange of socket.exchanges) {
         if (exchange.price === null) {
           continue
         }
-        
+
         if (this.calculateOptimalPrice) {
           decimals.push(countDecimals(exchange.price))
         }
@@ -198,10 +193,10 @@ export default {
         price = price / total
 
         if (this.calculateOptimalPrice && total >= activesExchangesLength / 2) {
-          const optimalDecimal = Math.round(decimals.reduce((a, b) => a + b, 0) / decimals.length);
+          const optimalDecimal = Math.round(decimals.reduce((a, b) => a + b, 0) / decimals.length)
           this.$store.commit('app/SET_OPTIMAL_DECIMAL', optimalDecimal)
 
-          delete this.calculateOptimalPrice;
+          delete this.calculateOptimalPrice
         }
       }
 
@@ -217,11 +212,11 @@ export default {
     },
     updateFavicon(price) {
       if (faviconDirection.index) {
-        faviconDirection.avg = movingAverage(faviconDirection.avg, price, 1/(faviconDirection.index+1))
+        faviconDirection.avg = movingAverage(faviconDirection.avg, price, 1 / (faviconDirection.index + 1))
       } else {
         faviconDirection.avg = price
       }
-      faviconDirection.index++;
+      faviconDirection.index++
 
       const direction = price > faviconDirection.avg ? 'up' : 'down'
 
@@ -244,18 +239,3 @@ export default {
   }
 }
 </script>
-
-<style lang="scss">
-@import './assets/sass/variables';
-@import './assets/sass/helper';
-@import './assets/sass/layout';
-@import './assets/sass/form';
-@import './assets/sass/icons';
-@import './assets/sass/currency';
-@import './assets/sass/tooltip';
-@import './assets/sass/dropdown';
-@import './assets/sass/button';
-@import './assets/sass/dialog';
-@import './assets/sass/verte';
-@import './assets/sass/notice';
-</style>

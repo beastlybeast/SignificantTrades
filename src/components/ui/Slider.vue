@@ -11,18 +11,11 @@ export default {
   mounted() {
     this._onMouseDownHandler = this.onMouseDown.bind(this)
 
-    this.$el.addEventListener(
-      TOUCH_SUPPORTED ? 'touchstart' : 'mousedown',
-      this._onMouseDownHandler,
-      false
-    )
+    this.$el.addEventListener(TOUCH_SUPPORTED ? 'touchstart' : 'mousedown', this._onMouseDownHandler, false)
   },
 
   beforeDestroy() {
-    this.$el.removeEventListener(
-      TOUCH_SUPPORTED ? 'touchstart' : 'mousedown',
-      this._onMouseDownHandler
-    )
+    this.$el.removeEventListener(TOUCH_SUPPORTED ? 'touchstart' : 'mousedown', this._onMouseDownHandler)
   },
 
   methods: {
@@ -36,42 +29,28 @@ export default {
       }
 
       this._onMouseMoveHandler = this.onMouseMove.bind(this)
-      document.addEventListener(
-        TOUCH_SUPPORTED ? 'touchmove' : 'mousemove',
-        this._onMouseMoveHandler,
-        false
-      )
+      document.addEventListener(TOUCH_SUPPORTED ? 'touchmove' : 'mousemove', this._onMouseMoveHandler, false)
 
       this._onMouseUpHandler = this.onMouseUp.bind(this)
-      document.addEventListener(
-        TOUCH_SUPPORTED ? 'touchend' : 'mouseup',
-        this._onMouseUpHandler,
-        false
-      )
+      document.addEventListener(TOUCH_SUPPORTED ? 'touchend' : 'mouseup', this._onMouseUpHandler, false)
 
       // next click might be double click, for the next 300ms
       this.pendingDblClick = true
       this._dblClickTimeout = window.setTimeout(() => {
-        this.pendingDblClick = false;
-      }, 300);
+        this.pendingDblClick = false
+      }, 300)
 
       setTimeout(() => {
-        this.$emit('output', this.$el.value);
-      });
+        this.$emit('output', this.$el.value)
+      })
     },
     onMouseMove() {
       this.$emit('output', this.$el.value)
     },
     onMouseUp() {
-      document.removeEventListener(
-        TOUCH_SUPPORTED ? 'touchmove' : 'mousemove',
-        this._onMouseMoveHandler
-      )
-      document.removeEventListener(
-        TOUCH_SUPPORTED ? 'touchend' : 'mouseup',
-        this._onMouseUpHandler
-      )
-    },
-  },
+      document.removeEventListener(TOUCH_SUPPORTED ? 'touchmove' : 'mousemove', this._onMouseMoveHandler)
+      document.removeEventListener(TOUCH_SUPPORTED ? 'touchend' : 'mouseup', this._onMouseUpHandler)
+    }
+  }
 }
 </script>

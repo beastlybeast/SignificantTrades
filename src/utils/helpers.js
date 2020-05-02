@@ -8,7 +8,7 @@ export const TOUCH_SUPPORTED = (function() {
     return window.matchMedia(query).matches
   }
 
-  if ('ontouchstart' in window || (window.DocumentTouch && document instanceof DocumentTouch)) {
+  if ('ontouchstart' in window || (window.DocumentTouch && document instanceof window.DocumentTouch)) {
     return true
   }
 
@@ -37,7 +37,9 @@ export function parseQueryString() {
   for (let name in QUERY_STRING) {
     try {
       QUERY_STRING[name] = JSON.parse(QUERY_STRING[name])
-    } catch (error) {}
+    } catch (error) {
+      // empty
+    }
   }
 
   return QUERY_STRING
@@ -70,11 +72,11 @@ export function formatAmount(amount, decimals) {
 }
 
 export function countDecimals(value) {
-  if (Math.floor(value) === value) return 0;
-  return value.toString().split('.')[1].length || 0; 
+  if (Math.floor(value) === value) return 0
+  return value.toString().split('.')[1].length || 0
 }
 
-export function formatPrice(price, decimals, sats = true) {
+export function formatPrice(price) {
   price = +price || 0
 
   if (store.state.settings.decimalPrecision) {
@@ -110,8 +112,8 @@ export function getHms(timestamp, round) {
     return null
   }
 
-  const isNegPrefix = timestamp < 0 ? '-' : '';
-  timestamp = Math.abs(timestamp);
+  const isNegPrefix = timestamp < 0 ? '-' : ''
+  timestamp = Math.abs(timestamp)
 
   const h = Math.floor(timestamp / 1000 / 3600)
   const m = Math.floor(((timestamp / 1000) % 3600) / 60)
@@ -141,7 +143,7 @@ export function uniqueName(name, names) {
 }
 
 export function movingAverage(accumulator, newValue, alpha) {
-  return (alpha * newValue) + (1.0 - alpha) * accumulator;
+  return alpha * newValue + (1.0 - alpha) * accumulator
 }
 
 export function formatTime(time) {
@@ -151,59 +153,40 @@ export function formatTime(time) {
 }
 
 export function camelToSentence(str) {
-  str = str.replace( /([A-Z])/g, " $1" );
-  return str.charAt(0).toUpperCase() + str.slice(1);
+  str = str.replace(/([A-Z])/g, ' $1')
+  return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
 export function snakeToSentence(str) {
-  str = str.replace( /_/g, " ");
-  return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-export function flattenObject(ob) {
-  var toReturn = {};
-
-  for (var i in ob) {
-      if (!ob.hasOwnProperty(i)) continue;
-
-      if ((typeof ob[i]) == 'object' && ob[i] !== null) {
-          var flatObject = flattenObject(ob[i]);
-          for (var x in flatObject) {
-              if (!flatObject.hasOwnProperty(x)) continue;
-
-              toReturn[i + '.' + x] = flatObject[x];
-          }
-      } else {
-          toReturn[i] = ob[i];
-      }
-  }
-  return toReturn;
+  str = str.replace(/_/g, ' ')
+  return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
 export const setValueByDotNotation = (object, path, value) => {
-  if (path.length === 1) object[path[0]] = value;
-      else if (path.length === 0) throw error;
+  if (path.length === 1) object[path[0]] = value
+  else if (path.length === 0) throw 'error'
   else {
-    if (object[path[0]])
-      return setValueByDotNotation(object[path[0]], path.slice(1), value);
+    if (object[path[0]]) return setValueByDotNotation(object[path[0]], path.slice(1), value)
     else {
-      object[path[0]] = {};
-      return setValueByDotNotation(object[path[0]], path.slice(1), value);
+      object[path[0]] = {}
+      return setValueByDotNotation(object[path[0]], path.slice(1), value)
     }
   }
-};
+}
 
-export const slugify = (string) => {
+export const slugify = string => {
   const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'
   const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'
   const p = new RegExp(a.split('').join('|'), 'g')
 
-  return string.toString().toLowerCase()
+  return string
+    .toString()
+    .toLowerCase()
     .replace(/\s+/g, '-') // Replace spaces with -
     .replace(p, c => b.charAt(a.indexOf(c))) // Replace special characters
     .replace(/&/g, '-and-') // Replace & with 'and'
-    .replace(/[^\w\-]+/g, '') // Remove all non-word characters
-    .replace(/\-\-+/g, '-') // Replace multiple - with single -
+    .replace(/[^\w-]+/g, '') // Remove all non-word characters
+    .replace(/--+/g, '-') // Replace multiple - with single -
     .replace(/^-+/, '') // Trim - from start of text
     .replace(/-+$/, '') // Trim - from end of text
 }

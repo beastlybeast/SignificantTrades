@@ -2,11 +2,22 @@ import Vue from 'vue'
 import App from './App.vue'
 import VueTippy from 'vue-tippy'
 import * as ModalDialogs from 'vue-modal-dialogs'
-import Verte from 'verte';
-import 'verte/dist/verte.css';
-
+import Verte from 'verte'
+import 'verte/dist/verte.css'
+import './assets/sass/app.scss'
 import store from './store'
 
+const vueEnv = process.env
+
+for (let key in vueEnv) {
+  const match = key.match(/^VUE_APP_(.*)/)
+  console.log(key, match)
+  if (match && match[1]) {
+    store.commit(`app/SET_${match[1]}`, vueEnv[key])
+  }
+}
+
+console.log(vueEnv, store.state.app)
 Vue.use(ModalDialogs)
 
 Vue.use(VueTippy, {
@@ -20,7 +31,7 @@ Vue.use(VueTippy, {
   theme: 'blue'
 })
 
-Vue.component('verte', Verte);
+Vue.component('verte', Verte)
 
 import Editable from './components/ui/Editable'
 import Dropdown from './components/ui/Dropdown'

@@ -8,35 +8,24 @@
       '-error': exchange.error,
       '-unmatched': !exchange.valid,
       '-invisible': settings.hidden,
-      '-expanded': expanded,
+      '-expanded': expanded
     }"
   >
     <div class="settings-exchange__header" @click="toggleExchange">
-      <span
-        v-if="!isNaN(settings.threshold) && settings.threshold !== 1"
-        class="settings-exchange__threshold"
-      >×{{ settings.threshold }}</span>
+      <span v-if="!isNaN(settings.threshold) && settings.threshold !== 1" class="settings-exchange__threshold">×{{ settings.threshold }}</span>
       <div class="settings-exchange__identity">
         <div class="settings-exchange__name">{{ exchange.id.replace('_', ' ') }}</div>
         <small class="settings-exchange__error" v-if="exchange.error">
-          {{
-          exchange.error
-          }}
+          {{ exchange.error }}
         </small>
-        <small
-          class="settings-exchange__price"
-          v-if="exchange.price"
-          v-html="$root.formatPrice(exchange.price)"
-        ></small>
+        <small class="settings-exchange__price" v-if="exchange.price" v-html="$root.formatPrice(exchange.price)"></small>
       </div>
       <div class="settings-exchange__controls">
         <button
           class="settings-exchange__visibility"
           v-tippy
           :title="exchange.hidden ? 'Show' : 'Hide (from everything)'"
-          @click.stop.prevent="
-            $store.commit('settings/TOGGLE_EXCHANGE_VISIBILITY', exchange.id)
-          "
+          @click.stop.prevent="$store.commit('settings/TOGGLE_EXCHANGE_VISIBILITY', exchange.id)"
         >
           <i class="icon-eye"></i>
         </button>
@@ -49,9 +38,7 @@
       <div class="form-group">
         <label>
           Threshold
-          <span
-            v-if="exchanges[exchange.id].threshold !== 1"
-          >x{{ exchanges[exchange.id].threshold }}</span>
+          <span v-if="exchanges[exchange.id].threshold !== 1">x{{ exchanges[exchange.id].threshold }}</span>
         </label>
         <slider
           :step="0.01"
@@ -61,23 +48,21 @@
           @reset="
             $store.commit('settings/SET_EXCHANGE_THRESHOLD', {
               exchange: exchange.id,
-              threshold: 1,
+              threshold: 1
             })
           "
           @output="
             $store.commit('settings/SET_EXCHANGE_THRESHOLD', {
               exchange: exchange.id,
-              threshold: $event,
+              threshold: $event
             })
           "
         />
       </div>
       <div v-if="exchange.indexedProducts.length" class="form-group mt8">
-        <button
-          v-if="canRefreshProducts"
-          class="btn -red -small"
-          @click="refreshProducts"
-        >Refresh products ({{ exchange.indexedProducts.length }})</button>
+        <button v-if="canRefreshProducts" class="btn -red -small" @click="refreshProducts">
+          Refresh products ({{ exchange.indexedProducts.length }})
+        </button>
       </div>
     </div>
   </div>
@@ -85,8 +70,6 @@
 
 <script>
 import { mapState } from 'vuex'
-
-import socket from '../services/socket'
 
 export default {
   data() {
@@ -114,7 +97,7 @@ export default {
         this.$store.commit('settings/ENABLE_EXCHANGE', this.exchange.id)
       }
     },
-    refreshProducts(exchange) {
+    refreshProducts() {
       this.canRefreshProducts = false
 
       setTimeout(() => {
@@ -125,7 +108,7 @@ export default {
         this.$store.dispatch('app/showNotice', {
           type: 'success',
           title: `${this.exchange.id}'s products refreshed`
-        });
+        })
       })
     }
   }
@@ -133,8 +116,6 @@ export default {
 </script>
 
 <style lang="scss">
-@import '../assets/sass/variables';
-
 .settings-exchange {
   background-color: rgba(white, 0.15);
   color: white;

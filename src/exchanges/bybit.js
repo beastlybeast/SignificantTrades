@@ -23,15 +23,14 @@ class Bybit extends Exchange {
   }
 
   connect() {
-    if (!super.connect()) return Promise.reject();
+    if (!super.connect()) return Promise.reject()
 
     return new Promise((resolve, reject) => {
-
       this.api = new WebSocket(this.getUrl())
 
       this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
 
-      this.api.onopen = (e) => {
+      this.api.onopen = () => {
         this.skip = true
 
         this.api.send(
@@ -49,7 +48,7 @@ class Bybit extends Exchange {
 
         this.emitOpen(event)
 
-        resolve();
+        resolve()
       }
 
       this.api.onclose = event => {
@@ -59,9 +58,9 @@ class Bybit extends Exchange {
       this.api.onerror = () => {
         this.emitError({ message: `${this.id} disconnected` })
 
-        reject();
+        reject()
       }
-    });
+    })
   }
 
   disconnect() {

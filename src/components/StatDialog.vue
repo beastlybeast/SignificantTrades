@@ -8,15 +8,9 @@
             class="checkbox-control -on-off"
             v-tippy="{ placement: 'bottom' }"
             :title="!enabled ? 'Enable ' + id : 'Disable ' + id"
-            @change="
-              $store.dispatch('settings/updateStat', { index: id, prop: 'enabled', value: $event.target.checked })
-            "
+            @change="$store.dispatch('settings/updateStat', { index: id, prop: 'enabled', value: $event.target.checked })"
           >
-            <input
-              type="checkbox"
-              class="form-control"
-              :checked="enabled"
-            />
+            <input type="checkbox" class="form-control" :checked="enabled" />
             <div></div>
           </label>
         </div>
@@ -28,28 +22,46 @@
             type="text"
             class="form-control"
             :value="model.name"
-            @change="$store.dispatch('settings/updateStat', {
-            index: id,
-            prop: 'name',
-            value: $event.target.value
-          })"
+            @change="
+              $store.dispatch('settings/updateStat', {
+                index: id,
+                prop: 'name',
+                value: $event.target.value
+              })
+            "
           />
         </div>
         <div class="form-group -tight" ref="colorContainer">
           <label>Color</label>
-          <verte picker="square" menuPosition="left" model="rgb" :value="model.color" @input="$store.dispatch('settings/updateStat', {
-            index: id,
-            prop: 'color',
-            value: $event,
-          })"></verte>
+          <verte
+            picker="square"
+            menuPosition="left"
+            model="rgb"
+            :value="model.color"
+            @input="
+              $store.dispatch('settings/updateStat', {
+                index: id,
+                prop: 'color',
+                value: $event
+              })
+            "
+          ></verte>
         </div>
         <div class="form-group mb8">
           <label>Period (m)</label>
-          <input type="text" class="form-control" :value="getHms(model.period)" :placeholder="getHms($store.state.settings.statsPeriod)" @change="$store.dispatch('settings/updateStat', {
-            index: id,
-            prop: 'period',
-            value: $event.target.value
-          })">
+          <input
+            type="text"
+            class="form-control"
+            :value="getHms(model.period)"
+            :placeholder="getHms($store.state.settings.statsPeriod)"
+            @change="
+              $store.dispatch('settings/updateStat', {
+                index: id,
+                prop: 'period',
+                value: $event.target.value
+              })
+            "
+          />
         </div>
         <div class="form-group mb8">
           <label>Precision</label>
@@ -58,26 +70,39 @@
             class="form-control"
             placeholder="auto"
             :value="model.precision"
-            @change="$store.dispatch('settings/updateStat', {
-            index: id,
-            prop: 'precision',
-            value: $event.target.value
-          })"
+            @change="
+              $store.dispatch('settings/updateStat', {
+                index: id,
+                prop: 'precision',
+                value: $event.target.value
+              })
+            "
           />
         </div>
         <div class="form-group">
-          <label for>Value <span class="icon-info-circle" title="Javascript syntax, use build in variable such as vbuy/vsell (volume) cbuy/csell (trade count) lbuy/lsell (liquidation volume)" v-tippy></span></label>
+          <label for
+            >Value
+            <span
+              class="icon-info-circle"
+              title="Javascript syntax, use build in variable such as vbuy/vsell (volume) cbuy/csell (trade count) lbuy/lsell (liquidation volume)"
+              v-tippy
+            ></span
+          ></label>
           <textarea
             class="form-control"
             rows="5"
             :value="model.output"
-            @change="$store.dispatch('settings/updateStat', {
-            index: id,
-            prop: 'output',
-            value: $event.target.value
-          })"
+            @change="
+              $store.dispatch('settings/updateStat', {
+                index: id,
+                prop: 'output',
+                value: $event.target.value
+              })
+            "
           ></textarea>
-          <p class="help-text mt-8">Sum <code>{{ model.output }}</code> over {{ getHms(model.period || $store.state.settings.statsPeriod) }} period</p>
+          <p class="help-text mt-8">
+            Sum <code>{{ model.output }}</code> over {{ getHms(model.period || $store.state.settings.statsPeriod) }} period
+          </p>
         </div>
       </div>
     </div>
@@ -99,15 +124,15 @@ export default {
       output: null,
       precision: null,
       period: null
-    },
+    }
   }),
   created() {
-    this.model = store.state.settings.statsCounters[this.id] || {};
+    this.model = store.state.settings.statsCounters[this.id] || {}
   },
   methods: {
     cancelIfOutside(event) {
       if (event.target.classList.contains('dialog-mask')) {
-        this.$close(false);
+        this.$close(false)
       }
     },
     getHms(value) {

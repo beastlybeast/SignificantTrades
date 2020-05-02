@@ -1,10 +1,5 @@
 <template>
-  <div
-    id="exchanges"
-    class="exchanges condensed"
-    @mouseenter="hovering = true"
-    @mouseleave="hovering = false"
-  >
+  <div id="exchanges" class="exchanges condensed" @mouseenter="hovering = true" @mouseleave="hovering = false">
     <div
       v-for="(id, index) in list"
       :key="index"
@@ -21,43 +16,37 @@
 <script>
 import { mapState } from 'vuex'
 import socket from '../services/socket'
-import { formatPrice, formatAmount } from '../utils/helpers'
-const storedPrices = {}
+
 export default {
   data() {
     return {
       hovering: false,
       list: [],
-      status: {},
+      status: {}
     }
   },
   computed: {
     ...mapState('app', ['actives']),
-    ...mapState('settings', ['exchanges']),
+    ...mapState('settings', ['exchanges'])
   },
   created() {
     this.list = this.actives.slice(0, this.actives.length)
     this.status = socket.exchanges.reduce((obj, exchange) => {
       obj[exchange.id] = {
         status: 'pending',
-        price: null,
+        price: null
       }
       return obj
     }, {})
-    this.onStoreMutation = this.$store.subscribe((mutation, state) => {
-      switch (mutation.type) {
-        case 'app/EXCHANGE_UPDATED':
-          if (!mutation.payload) {
-            break
-          }
-          const active = this.actives.indexOf(mutation.payload) !== -1
-          const listed = this.list.indexOf(mutation.payload) !== -1
-          if (active && !listed) {
-            this.list.push(mutation.payload)
-          } else if (!active && listed) {
-            this.list.splice(this.list.indexOf(mutation.payload), 1)
-          }
-          break
+    this.onStoreMutation = this.$store.subscribe(mutation => {
+      if (mutation.type === 'app/EXCHANGE_UPDATED' && mutation.payload) {
+        const active = this.actives.indexOf(mutation.payload) !== -1
+        const listed = this.list.indexOf(mutation.payload) !== -1
+        if (active && !listed) {
+          this.list.push(mutation.payload)
+        } else if (!active && listed) {
+          this.list.splice(this.list.indexOf(mutation.payload), 1)
+        }
       }
     })
     this.updateExchangesPrices()
@@ -72,10 +61,7 @@ export default {
       const now = +new Date()
       for (let i = 0; i < socket.exchanges.length; i++) {
         const id = socket.exchanges[i].id
-        if (
-          this.actives.indexOf(socket.exchanges[i].id) === -1 ||
-          this.status[id].price === socket.exchanges[i].price
-        ) {
+        if (this.actives.indexOf(socket.exchanges[i].id) === -1 || this.status[id].price === socket.exchanges[i].price) {
           continue
         }
         if (!socket.exchanges[i].price) {
@@ -96,16 +82,13 @@ export default {
       if (this.hovering) {
         return
       }
-      this.list = this.list.sort(
-        (a, b) => this.status[a].price - this.status[a].price
-      )
-    },
-  },
+      this.list = this.list.sort((a, b) => this.status[a].price - this.status[b].price)
+    }
+  }
 }
 </script>
 
 <style lang="scss">
-@import '../assets/sass/variables';
 #exchanges {
   display: flex;
   flex-direction: row;

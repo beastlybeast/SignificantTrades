@@ -14,7 +14,7 @@ class Huobi extends Exchange {
     }
 
     this.endpoints = {
-      PRODUCTS: ['http://api.huobi.pro/v1/common/symbols', 'https://api.hbdm.com/api/v1/contract_contract_info']
+      PRODUCTS: ['https://api.huobi.pro/v1/common/symbols', 'https://api.hbdm.com/api/v1/contract_contract_info']
     }
 
     // 2019-12-13
@@ -62,17 +62,16 @@ class Huobi extends Exchange {
   }
 
   connect() {
-    if (!super.connect()) return Promise.reject();
+    if (!super.connect()) return Promise.reject()
 
     return new Promise((resolve, reject) => {
-
       this.api = new WebSocket(this.getUrl(this.pair))
 
       this.api.binaryType = 'arraybuffer'
 
       this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(event.data))
 
-      this.api.onopen = (e) => {
+      this.api.onopen = e => {
         for (let pair of this.pairs) {
           this.api.send(
             JSON.stringify({
@@ -84,16 +83,16 @@ class Huobi extends Exchange {
 
         this.emitOpen(e)
 
-        resolve();
+        resolve()
       }
 
       this.api.onclose = this.emitClose.bind(this)
       this.api.onerror = () => {
         this.emitError({ message: `${this.id} disconnected` })
 
-        reject();
+        reject()
       }
-    });
+    })
   }
 
   disconnect() {

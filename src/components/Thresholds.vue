@@ -1,7 +1,16 @@
 <template>
   <div class="thresholds" :class="{ '-dragging': dragging, '-rendering': rendering }">
-    <verte 
-      v-if="picking !== null" :style="{opacity: 0, position:'absolute'}" display="widget" :draggable="true" ref="picker" picker="square" model="rgb" :value="thresholds[picking.index][picking.side]" @input="updateColor"></verte>
+    <verte
+      v-if="picking !== null"
+      :style="{ opacity: 0, position: 'absolute' }"
+      display="widget"
+      :draggable="true"
+      ref="picker"
+      picker="square"
+      model="rgb"
+      :value="thresholds[picking.index][picking.side]"
+      @input="updateColor"
+    ></verte>
     <table class="thresholds-table" v-if="showThresholdsAsTable">
       <tr v-for="(threshold, index) in thresholds" :key="`threshold-${index}`">
         <td class="thresholds-table__input">
@@ -12,7 +21,7 @@
             @change="
               $store.commit('settings/SET_THRESHOLD_AMOUNT', {
                 index: index,
-                value: $event.target.value,
+                value: $event.target.value
               })
             "
           />
@@ -26,7 +35,7 @@
             @change="
               $store.commit('settings/SET_THRESHOLD_GIF', {
                 index: index,
-                value: $event.target.value,
+                value: $event.target.value
               })
             "
           />
@@ -41,11 +50,7 @@
           :style="{ backgroundColor: thresholds[index].sellColor }"
           @click="openPicker('sellColor', index, $event)"
         ></td>
-        <td
-          class="thresholds-table__delete"
-          :class="{'-disabled': index <= 1}"
-          @click="deleteThreshold(index)"
-        >
+        <td class="thresholds-table__delete" @click="deleteThreshold(index)">
           <i class="icon-cross"></i>
         </td>
       </tr>
@@ -73,21 +78,16 @@
         ref="thresholdPanel"
         :class="{ '-minimum': selectedIndex === 0 }"
         :style="{
-          transform: 'translateX(' + this.panelOffsetPosition + 'px)',
+          transform: 'translateX(' + this.panelOffsetPosition + 'px)'
         }"
       >
-      
         <div
           class="threshold-panel__caret"
           :style="{
-            transform: 'translateX(' + this.panelCaretPosition + 'px)',
+            transform: 'translateX(' + this.panelCaretPosition + 'px)'
           }"
         ></div>
-        <a
-          href="#"
-          class="threshold-panel__close icon-cross"
-          @click=";(selectedIndex = null), (editing = false), (picking = null)"
-        ></a>
+        <a href="#" class="threshold-panel__close icon-cross" @click=";(selectedIndex = null), (editing = false), (picking = null)"></a>
         <h3>
           if amount >
           <editable
@@ -95,7 +95,7 @@
             @output="
               $store.commit('settings/SET_THRESHOLD_AMOUNT', {
                 index: selectedIndex,
-                value: $event,
+                value: $event
               })
             "
           ></editable>
@@ -114,7 +114,7 @@
             @change="
               $store.commit('settings/SET_THRESHOLD_GIF', {
                 index: selectedIndex,
-                value: $event.target.value,
+                value: $event.target.value
               })
             "
           />
@@ -133,7 +133,7 @@
                   $store.commit('settings/SET_THRESHOLD_COLOR', {
                     index: selectedIndex,
                     side: 'buyColor',
-                    value: $event.target.value,
+                    value: $event.target.value
                   })
                 "
                 @click="openPicker('buyColor', selectedIndex, $event)"
@@ -145,13 +145,13 @@
                 class="form-control"
                 :value="thresholds[selectedIndex].sellColor"
                 :style="{
-                  backgroundColor: thresholds[selectedIndex].sellColor,
+                  backgroundColor: thresholds[selectedIndex].sellColor
                 }"
                 @change="
                   $store.commit('settings/SET_THRESHOLD_COLOR', {
                     index: selectedIndex,
                     side: 'sellColor',
-                    value: $event.target.value,
+                    value: $event.target.value
                   })
                 "
                 @click="openPicker('sellColor', selectedIndex, $event)"
@@ -167,7 +167,7 @@
 <script>
 import { mapState } from 'vuex'
 
-import { TOUCH_SUPPORTED, formatPrice, formatAmount } from '../utils/helpers'
+import { TOUCH_SUPPORTED, formatPrice } from '../utils/helpers'
 
 export default {
   data() {
@@ -188,7 +188,7 @@ export default {
   },
 
   created() {
-    this.onStoreMutation = this.$store.subscribe((mutation, state) => {
+    this.onStoreMutation = this.$store.subscribe(mutation => {
       switch (mutation.type) {
         case 'settings/TOGGLE_SETTINGS_PANEL':
         case 'settings/TOGGLE_THRESHOLDS_TABLE':
@@ -433,7 +433,7 @@ export default {
     },
 
     deleteThreshold(index) {
-      if (index <= 1) {
+      if (this.thresholds.length <= 2) {
         return
       }
 
@@ -473,7 +473,7 @@ export default {
           )
         )
         let top = targetBounds.top - containerBounds.top + event.target.clientHeight * 1.3
-        
+
         this.$refs.picker.$el.style.top = top + 'px'
         this.$refs.picker.$el.style.left = left + 'px'
         this.$refs.picker.$el.style.position = 'absolute'
@@ -484,13 +484,22 @@ export default {
       }, 100)
 
       event.stopPropagation()
+
+      if (!this._clickOutsideHandler) {
+        this._clickOutsideHandler = (event => {
+          if (!this.$refs.picker.$el.contains(event.target)) {
+            this.closePicker()
+          }
+        }).bind(this)
+
+        document.addEventListener('mousedown', this._clickOutsideHandler)
+      }
     },
 
-    closePicker(event) {
-      if (this.$refs.picker && this.$refs.picker.$el.contains(event.target)) {
-        event.preventDefault()
-
-        return
+    closePicker() {
+      if (this._clickOutsideHandler) {
+        document.removeEventListener('mousedown', this._clickOutsideHandler)
+        delete this._clickOutsideHandler
       }
 
       this.picking.target.classList.remove('-active')
@@ -502,7 +511,7 @@ export default {
       if (!this.picking || this.thresholds[this.picking.index][`${this.picking.side}Color`] === color) {
         return
       }
-  console.log(this.thresholds[this.picking.index][`${this.picking.side}Color`]);
+      console.log(this.thresholds[this.picking.index][`${this.picking.side}Color`])
       this.$store.commit('settings/SET_THRESHOLD_COLOR', {
         index: this.picking.index,
         side: this.picking.side,
@@ -514,8 +523,6 @@ export default {
 </script>
 
 <style lang="scss">
-@import '../assets/sass/variables';
-
 .thresholds {
   position: relative;
   z-index: 1;

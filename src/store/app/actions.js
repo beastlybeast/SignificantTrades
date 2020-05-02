@@ -8,7 +8,7 @@ export default {
 
     commit('EXCHANGE_UPDATED', {
       exchange,
-      active,
+      active
     })
   },
   showNotice({ commit, dispatch }, notice) {
@@ -28,5 +28,5 @@ export default {
         commit('REMOVE_NOTICE', this.state.app.notices[i])
       }
     }
-  },
+  }
 }

@@ -1,11 +1,9 @@
-import Vue from 'vue'
-
 import '../../data/typedef'
 import store from '../../store'
 import seriesData from '../../data/series'
 import { cache, saveChunk, clearCache, cacheRange } from './chartCache'
-import { formatTime, getHms, setValueByDotNotation, slugify  } from '../../utils/helpers'
-import { defaultChartOptions, defaultPlotsOptions, } from './chartOptions'
+import { formatTime, getHms, setValueByDotNotation, slugify } from '../../utils/helpers'
+import { defaultChartOptions, defaultPlotsOptions } from './chartOptions'
 import * as serieFunctions from './serieFunctions'
 
 import * as TV from 'lightweight-charts'
@@ -15,28 +13,20 @@ const availableSerieFunctions = Object.keys(serieFunctions).reduce((obj, name) =
     needsMemory: ['cma', 'sma', 'ema'].indexOf(name) !== -1
   }
 
-  return obj;
+  return obj
 }, {})
 
-const noRedrawOptions = [
-  /color/i,
-  /width/i,
-  'priceLineStyle',
-  'lastValueVisible',
-  'priceLineVisible',
-  'borderVisible',
-];
+const noRedrawOptions = [/color/i, /width/i, 'priceLineStyle', 'lastValueVisible', 'priceLineVisible', 'borderVisible']
 
 export default class ChartController {
   constructor() {
-
     /** @type {TV.IChartApi} */
     this.chartInstance = null
 
     /**
      * @type {Element}
      */
-    this.chartElement = null;
+    this.chartElement = null
 
     /**
      * @type ActiveSerie[]
@@ -62,7 +52,6 @@ export default class ChartController {
      * @type Trade[]
      */
     this.queuedTrades = []
-
   }
 
   createChart(containerElement, chartDimensions) {
@@ -75,7 +64,7 @@ export default class ChartController {
     }
 
     this.chartInstance = TV.createChart(containerElement, options)
-    this.chartElement = containerElement;
+    this.chartElement = containerElement
 
     this.addEnabledSeries()
   }
@@ -125,12 +114,12 @@ export default class ChartController {
       return
     }
 
-    let firstKey = key;
+    let firstKey = key
 
     if (key.indexOf('.') !== -1) {
-      const path = key.split('.');
-      setValueByDotNotation(serie.options, path, value);
-      firstKey = path[0];
+      const path = key.split('.')
+      setValueByDotNotation(serie.options, path, value)
+      firstKey = path[0]
     } else {
       serie.options[key] = value
     }
@@ -140,17 +129,17 @@ export default class ChartController {
     })
 
     for (let i = 0; i < noRedrawOptions.length; i++) {
-      if (noRedrawOptions[i] === firstKey || noRedrawOptions[i] instanceof RegExp && noRedrawOptions[i].test(firstKey)) {
-        return;
+      if (noRedrawOptions[i] === firstKey || (noRedrawOptions[i] instanceof RegExp && noRedrawOptions[i].test(firstKey))) {
+        return
       }
     }
-    
+
     this.redrawSerie(id)
   }
 
   /**
    * Update chart main scale (priceScale) margins
-   * @param {{top: number, bottom: number}} margins 
+   * @param {{top: number, bottom: number}} margins
    */
   setPriceMargins(margins) {
     this.chartInstance.applyOptions({
@@ -162,7 +151,7 @@ export default class ChartController {
 
   /**
    * Redraw one specific serie (and the series it depends on)
-   * @param {string} id 
+   * @param {string} id
    */
   redrawSerie(id) {
     let bars = []
@@ -173,9 +162,9 @@ export default class ChartController {
       }
     }
 
-    const series = this.getSerieDependencies(this.getSerie(id));
+    const series = this.getSerieDependencies(this.getSerie(id))
 
-    series.push(id);
+    series.push(id)
 
     this.renderBars(bars, series)
   }
@@ -193,21 +182,21 @@ export default class ChartController {
    * @returns {string[]} names of available functions
    */
   getAvailableSerieFunctions() {
-    return Object.keys(availableSerieFunctions);
+    return Object.keys(availableSerieFunctions)
   }
 
   /**
-   * 
-   * @param {ActiveSerie} serie 
+   *
+   * @param {ActiveSerie} serie
    */
   prepareSerie(serie) {
-    let input = serie.input.toString().replace(/\n/g, '');
-    const reg = new RegExp(`(${this.getAvailableSerieFunctions().join('|')})\\(([a-zA-Z0-9\._,\\s]+)\\)`, 'g');
+    let input = serie.input.toString().replace(/\n/g, '')
+    const reg = new RegExp(`(${this.getAvailableSerieFunctions().join('|')})\\(([a-zA-Z0-9._,\\s]+)\\)`, 'g')
 
     const memory = []
-    const helpers = [];
+    const helpers = []
 
-    let match;
+    let match
 
     do {
       if ((match = reg.exec(input))) {
@@ -215,26 +204,26 @@ export default class ChartController {
           helpers.push(match[1])
         }
 
-        const args = match[2].split(',').map(a => a.trim());
+        const args = match[2].split(',').map(a => a.trim())
 
-        const id = slugify(match[2]);
+        const id = slugify(match[2])
 
         if (availableSerieFunctions[match[1]].needsMemory) {
           memory.push({
             id,
             args,
             name: match[1],
-            input: match[2],
+            input: match[2]
           })
 
-          args.unshift(`bar.series.${serie.id}.memory[${memory.length - 1}]`);
+          args.unshift(`bar.series.${serie.id}.memory[${memory.length - 1}]`)
         }
 
-        input = input.replace(match[0], `this.${match[1]}(${args.join(',')})`);
+        input = input.replace(match[0], `this.${match[1]}(${args.join(',')})`)
       }
-    } while (match);
+    } while (match)
 
-    serie.memory = memory;
+    serie.memory = memory
 
     try {
       serie.adapter = this.buildSerieFunction(serie, input)
@@ -242,20 +231,19 @@ export default class ChartController {
       this.$store.dispatch('app/showNotice', {
         type: 'error',
         title: 'BUILD FAILED ' + error.message
-      });
-      console.error(error);
+      })
+      console.error(error)
 
-      return false;
+      return false
     }
 
-    return serie;
+    return serie
   }
 
   buildSerieFunction(serie, input) {
-    const timestamp = Math.floor(+new Date() / 1000 / store.state.settings.timeframe) * store.state.settings.timeframe;
+    const timestamp = Math.floor(+new Date() / 1000 / store.state.settings.timeframe) * store.state.settings.timeframe
     const bar = {
       timestamp: timestamp,
-      series: {},
       exchanges: {},
       open: null,
       high: null,
@@ -272,10 +260,10 @@ export default class ChartController {
           value: 0
         }
       }
-    };
+    }
 
-    const dependencies = this.getSerieDependencies(serie);
-          dependencies.push(serie.id);
+    const dependencies = this.getSerieDependencies(serie)
+    dependencies.push(serie.id)
 
     for (let i = 0; i < dependencies.length; i++) {
       bar.series[dependencies[i]] = {
@@ -283,31 +271,34 @@ export default class ChartController {
       }
 
       if (dependencies[i] === serie.id && serie.memory.length) {
-        bar.series[serie.id].memory = serie.memory;
+        bar.series[serie.id].memory = serie.memory
       }
     }
 
     if (serie.memory) {
       bar.series[serie.id]
     }
-    
-    // test run
-    const value = (new Function('bar', 'options', 'return ' + input.replace(/bar\.series\.[a-zA-Z0-9_]+\.point\.[a-z]+/g, 1))).apply({
-      cma: () => 1,
-      ema: () => 1,
-      sma: () => 1,
-      ohlc: () => ({ open: 1, high: 1, low: 1, close: 1 }),
-    }, [bar, serie.options]);
 
-    console.log(serie.id, 'test run value:', value);
+    // test run
+    const value = new Function('bar', 'options', 'return ' + input.replace(/bar\.series\.[a-zA-Z0-9_]+\.point\.[a-z]+/g, 1)).apply(
+      {
+        cma: () => 1,
+        ema: () => 1,
+        sma: () => 1,
+        ohlc: () => ({ open: 1, high: 1, low: 1, close: 1 })
+      },
+      [bar, serie.options]
+    )
+
+    console.log(serie.id, 'test run value:', value)
 
     if (value !== null && typeof value !== 'object') {
       input = `{ value: ${input} }`
     }
 
-    console.log(serie.id, 'final input', input);
+    console.log(serie.id, 'final input', input)
 
-    return (new Function('bar', 'options', 'return ' + input)).bind(serieFunctions);
+    return new Function('bar', 'options', 'return ' + input).bind(serieFunctions)
   }
 
   bindSerie(serie, renderer) {
@@ -320,11 +311,11 @@ export default class ChartController {
     }
 
     if (serie.memory.length) {
-      renderer.series[serie.id].memory = [];
+      renderer.series[serie.id].memory = []
     }
 
     for (let i = 0; i < serie.memory.length; i++) {
-      const fn = serie.memory[i];
+      const fn = serie.memory[i]
 
       renderer.series[serie.id].memory.push({
         output: null,
@@ -338,8 +329,8 @@ export default class ChartController {
 
   /**
    * Detach serie from renderer
-   * @param {ActiveSerie} serie 
-   * @param {Renderer} renderer 
+   * @param {ActiveSerie} serie
+   * @param {Renderer} renderer
    */
   unbindSerie(serie, renderer) {
     if (!renderer || typeof renderer.series[serie.id] === 'undefined') {
@@ -364,14 +355,14 @@ export default class ChartController {
 
   /**
    * get series that depends on this serie
-   * @param {ActiveSerie} serie 
+   * @param {ActiveSerie} serie
    * @returns {string[]} id of series
    */
   getSeriesDependendingOn(serie) {
     const series = []
 
     for (let i = 0; i < this.activeSeries.length; i++) {
-      const serieCompare = this.activeSeries[i];
+      const serieCompare = this.activeSeries[i]
 
       if (serieCompare.id === serie.id) {
         continue
@@ -387,30 +378,30 @@ export default class ChartController {
 
   /**
    * get dependencies of serie
-   * @param {ActiveSerie} serie 
+   * @param {ActiveSerie} serie
    * @returns {string[]} id of series
    */
   getSerieDependencies(serie) {
     const functionString = serie.input.toString()
-    const reg = new RegExp(`bar\\.series\\.([a-z0-9_]+)\\.`, 'g');
+    const reg = new RegExp(`bar\\.series\\.([a-z0-9_]+)\\.`, 'g')
 
-    const depencencies = [];
+    const depencencies = []
 
-    let match;
+    let match
 
     do {
       if ((match = reg.exec(functionString)) && match[1] !== serie.id) {
         depencencies.push(match[1])
       }
-    } while (match);
-    
+    } while (match)
+
     return depencencies
   }
 
   /**
    * is serieA referenced in serieB
-   * @param {ActiveSerie} serieA 
-   * @param {ActiveSerie} serieB 
+   * @param {ActiveSerie} serieA
+   * @param {ActiveSerie} serieB
    * @returns {boolean}
    */
   isSerieReferencedIn(serieA, serieB) {
@@ -426,7 +417,12 @@ export default class ChartController {
    */
   addSerie(id) {
     const serieData = seriesData[id]
-    const serieOptions = Object.assign({}, defaultPlotsOptions[serieData.type] || {}, seriesData[id].options || {}, store.state.settings.series[id] || {})
+    const serieOptions = Object.assign(
+      {},
+      defaultPlotsOptions[serieData.type] || {},
+      seriesData[id].options || {},
+      store.state.settings.series[id] || {}
+    )
 
     const apiMethodName = 'add' + (serieData.type.charAt(0).toUpperCase() + serieData.type.slice(1)) + 'Series'
 
@@ -438,28 +434,28 @@ export default class ChartController {
     })
 
     if (!serie) {
-      return false;
+      return false
     }
 
-    serie.api = this.chartInstance[apiMethodName](serieOptions);
+    serie.api = this.chartInstance[apiMethodName](serieOptions)
 
     this.activeSeries.push(serie)
 
-    store.state.app.activeSeries.push(id);
+    store.state.app.activeSeries.push(id)
 
     this.bindSerie(serie, this.activeRenderer)
 
-    return true;
+    return true
   }
-  
+
   /**
    * Derender serie
    * if there is series depending on this serie, they will be also removed
-   * @param {ActiveSerie} serie 
+   * @param {ActiveSerie} serie
    */
   removeSerie(serie) {
     if (!serie) {
-      return;
+      return
     }
 
     // remove from chart instance (derender)
@@ -470,7 +466,7 @@ export default class ChartController {
 
     // update store (runtime prop)
     store.state.app.activeSeries.splice(store.state.app.activeSeries.indexOf(serie.id), 1)
-    store.state.app.activeSeries = store.state.app.activeSeries.slice(0, store.state.app.activeSeries.length);
+    store.state.app.activeSeries = store.state.app.activeSeries.slice(0, store.state.app.activeSeries.length)
 
     // recursive remove of dependent series
     for (let dependentId of this.getSeriesDependendingOn(serie)) {
@@ -508,7 +504,9 @@ export default class ChartController {
     if (visibleRange) {
       const scrollPosition = this.chartInstance.timeScale().scrollPosition()
       if (scrollPosition > 0) {
-        visibleRange.to = Math.floor((visibleRange.to + scrollPosition * store.state.settings.timeframe) / store.state.settings.timeframe) * store.state.settings.timeframe
+        visibleRange.to =
+          Math.floor((visibleRange.to + scrollPosition * store.state.settings.timeframe) / store.state.settings.timeframe) *
+          store.state.settings.timeframe
       }
 
       return { from: visibleRange.from, to: visibleRange.to, median: visibleRange.from + (visibleRange.to - visibleRange.from) / 2 }
@@ -534,7 +532,10 @@ export default class ChartController {
    * @return {number} range
    */
   getOptimalRangeLength() {
-    return Math.floor(((this.chartElement.offsetWidth / 3) * store.state.settings.timeframe) / store.state.settings.timeframe) * store.state.settings.timeframe
+    return (
+      Math.floor(((this.chartElement.offsetWidth / 3) * store.state.settings.timeframe) / store.state.settings.timeframe) *
+      store.state.settings.timeframe
+    )
   }
 
   /**
@@ -575,7 +576,7 @@ export default class ChartController {
    */
   clear() {
     console.log(`[chart/controller] clear all (cache+activedata+chart)`)
-    
+
     clearCache()
     this.clearData()
     this.clearChart()
@@ -586,7 +587,7 @@ export default class ChartController {
    */
   destroy() {
     console.log(`[chart/controller] destroy`)
-    
+
     clearCache()
     this.clearData()
     this.clearChart()
@@ -662,7 +663,7 @@ export default class ChartController {
 
   /**
    * push a set of trades to queue in order to render them later
-   * @param {Trades[]} trades 
+   * @param {Trades[]} trades
    */
   queueTrades(trades) {
     Array.prototype.push.apply(this.queuedTrades, trades)
@@ -695,7 +696,6 @@ export default class ChartController {
             const visibleRange = this.getVisibleRange()
 
             canRender = this.activeRenderer.timestamp >= visibleRange.from && this.activeRenderer.timestamp <= visibleRange.to
-
 
             this.activeChunk = saveChunk({
               from: this.activeRenderer.timestamp,
@@ -876,8 +876,6 @@ export default class ChartController {
     const to = Math.floor(bars[bars.length - 1].timestamp / store.state.settings.timeframe) * store.state.settings.timeframe
     const median = from + (to - from) / 2
 
-    const chunk = { from, to, median, bars }
-
     const lastTimestamp = trades[trades.length - 1][1] / 1000
 
     return { from, to, median, bars, lastTimestamp }
@@ -908,11 +906,11 @@ export default class ChartController {
 
   /**
    * Render a set of bars
-   * 
+   *
    * @param {Bar[]} bars bars to render
    * @param {string[]} [series] render only theses series
    */
-  renderBars(bars, series, silent=false) {
+  renderBars(bars, series, silent = false) {
     console.log(`[chart/controller] render bars`, '(', series ? 'specific serie(s): ' + series.join(',') : 'all series', ')', bars.length, 'bar(s)')
 
     if (!bars.length) {
@@ -994,7 +992,7 @@ export default class ChartController {
     this.replaceData(computedSeries)
 
     if (!series) {
-      const setSP = length * - 1 || 16;
+      const setSP = length * -1 || 16
 
       this.chartInstance.timeScale().scrollToPosition(setSP)
     }
@@ -1105,7 +1103,7 @@ export default class ChartController {
         // console.warn(`[chart/controller] pan already released (before timeout fired)`)
       } else {
         // console.info(`[chart/controller] pan released (by timeout)`)
-  
+
         this.panPrevented = false
       }
     }, delay)
@@ -1203,25 +1201,25 @@ export default class ChartController {
   nextBar(timestamp, renderer) {
     if (renderer.hasData) {
       for (let i = 0; i < this.activeSeries.length; i++) {
-        const barSerieData = renderer.series[this.activeSeries[i].id];
+        const barSerieData = renderer.series[this.activeSeries[i].id]
 
         if (!barSerieData) {
-          continue;
+          continue
         }
 
-        barSerieData.value = barSerieData.point.value || barSerieData.point.close;
+        barSerieData.value = barSerieData.point.value || barSerieData.point.close
 
         if (barSerieData.memory) {
           for (let i = 0; i < barSerieData.memory.length; i++) {
-            const fn = barSerieData.memory[i];
-    
+            const fn = barSerieData.memory[i]
+
             fn.points.push(fn.output)
-            fn.sum += fn.output;
-            fn.count++;
-    
+            fn.sum += fn.output
+            fn.count++
+
             if (fn.count > fn.length) {
-              fn.sum -= fn.points.shift();
-              fn.count--;
+              fn.sum -= fn.points.shift()
+              fn.count--
             }
           }
         }
@@ -1240,7 +1238,6 @@ export default class ChartController {
     bar.open = bar.close
     bar.high = bar.close
     bar.low = bar.close
-    bar.close = bar.close
     bar.vbuy = 0
     bar.vsell = 0
     bar.cbuy = 0

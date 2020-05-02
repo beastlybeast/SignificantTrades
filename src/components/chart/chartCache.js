@@ -17,11 +17,7 @@ export const cacheRange = { from: null, to: null }
  * @param{Chunk} chunk Chunk to add
  */
 export function saveChunk(chunk) {
-  console.log(
-    `[cache/saveChunk]`,
-    formatTime(chunk.from),
-    formatTime(chunk.to)
-  )
+  console.log(`[cache/saveChunk]`, formatTime(chunk.from), formatTime(chunk.to))
 
   let index
 

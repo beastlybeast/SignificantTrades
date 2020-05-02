@@ -3,7 +3,9 @@
     <div class="header__wrapper">
       <div class="header__title">
         <span class="pair" v-if="pair">{{ pair }}</span>
+        &nbsp;
         <span class="icon-quote"></span>
+        &nbsp;
         <span v-html="price || 'SignificantTrades'"></span>
       </div>
       <dropdown
@@ -13,20 +15,10 @@
         placeholder="tf."
         @output="$store.commit('settings/SET_TIMEFRAME', +$event)"
       ></dropdown>
-      <button
-        type="button"
-        v-if="!isPopupMode"
-        @click="togglePopup"
-        title="Open as popup"
-        v-tippy="{ placement: 'bottom' }"
-      >
+      <button type="button" v-if="!isPopupMode" @click="togglePopup" title="Open as popup" v-tippy="{ placement: 'bottom' }">
         <span class="icon-external-link"></span>
       </button>
-      <button
-        type="button"
-        :class="{ active: useAudio }"
-        @click="$store.commit('settings/TOGGLE_AUDIO', !useAudio)"
-      >
+      <button type="button" :class="{ active: useAudio }" @click="$store.commit('settings/TOGGLE_AUDIO', !useAudio)">
         <span class="icon-volume-muted"></span>
       </button>
       <button type="button" @click="$emit('toggleSettings')">
@@ -39,8 +31,6 @@
 <script>
 import { mapState } from 'vuex'
 import { ago } from '../../utils/helpers'
-
-import socket from '../../services/socket'
 
 export default {
   props: ['price'],
@@ -84,14 +74,12 @@ export default {
       setTimeout(() => {
         window.close()
       }, 500)
-    },
+    }
   }
 }
 </script>
 
 <style lang="scss">
-@import '../../assets/sass/variables';
-
 header#header {
   background-color: lighten($dark, 10%);
   color: white;

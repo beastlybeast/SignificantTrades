@@ -1,39 +1,39 @@
 /**
  * @typedef {{
-*  exchange: string,
-*  timestamp: number,
-*  price: number,
-*  size: number,
-*  side: 'buy' | 'sell',
-*  liquidation?: boolean,
-*  slippage?: number,
-* }} Trade
-*/
- 
-/**
-* @typedef {{
-*  from: number,
-*  to: number
-* }} Range
-*/
+ *  exchange: string,
+ *  timestamp: number,
+ *  price: number,
+ *  size: number,
+ *  side: 'buy' | 'sell',
+ *  liquidation?: boolean,
+ *  slippage?: number,
+ * }} Trade
+ */
 
 /**
-* @typedef {{
-*  id: string,
-*  fn: function,
-*  type: string,
-*  options: Object,
-*  api: import('lightweight-charts').ISeriesApi
-* }} ActiveSerie
-*/
+ * @typedef {{
+ *  from: number,
+ *  to: number
+ * }} Range
+ */
 
 /**
-* @typedef {{
-*  from: number,
-*  to: number,
-*  bars: Bar[],
-* }} Chunk
-*/
+ * @typedef {{
+ *  id: string,
+ *  fn: function,
+ *  type: string,
+ *  options: Object,
+ *  api: import('lightweight-charts').ISeriesApi
+ * }} ActiveSerie
+ */
+
+/**
+ * @typedef {{
+ *  from: number,
+ *  to: number,
+ *  bars: Bar[],
+ * }} Chunk
+ */
 
 /**
  * @typedef {{
@@ -66,18 +66,18 @@
  */
 
 /**
-* @typedef {{
-*  exchange: number,
-*  timestamp: number,
-*  vbuy: number,
-*  vsell: number,
-*  cbuy: number,
-*  csell: number,
-*  lbuy: number,
-*  lsell: number,
-*  open: number,
-*  high: number,
-*  low: number,
-*  close: number,
-* }} Bar
-*/
+ * @typedef {{
+ *  exchange: number,
+ *  timestamp: number,
+ *  vbuy: number,
+ *  vsell: number,
+ *  cbuy: number,
+ *  csell: number,
+ *  lbuy: number,
+ *  lsell: number,
+ *  open: number,
+ *  high: number,
+ *  low: number,
+ *  close: number,
+ * }} Bar
+ */

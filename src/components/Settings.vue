@@ -1,9 +1,5 @@
 <template>
-  <div
-    id="settings"
-    class="settings__container stack__container"
-    @mousedown="$event.target === $el && $emit('close')"
-  >
+  <div id="settings" class="settings__container stack__container" @mousedown="$event.target === $el && $emit('close')">
     <div ref="tippin" v-if="tippin" class="tippin-me">
       <iframe src="https://tippin.me/buttons/send-lite.php?u=Tucsky" frameborder="0" scrolling="no"></iframe>
     </div>
@@ -25,12 +21,11 @@
           />
           <small class="help-text mt8" v-if="showPairSubdomainHelp">
             <i class="icon-info-circle"></i> Consider using
-            <a
-              :href="'https://' + pair.replace(/\+/g, '_').toLowerCase() + '.aggr.trade'"
-            >https://{{ pair.replace(/\+/g, '_').toLowerCase() }}.aggr.trade</a>
+            <a :href="'https://' + pair.replace(/\+/g, '_').toLowerCase() + '.aggr.trade'"
+              >https://{{ pair.replace(/\+/g, '_').toLowerCase() }}.aggr.trade</a
+            >
             to hook your settings to
-            <strong>{{ pair }}</strong> indefinitely
-            !
+            <strong>{{ pair }}</strong> indefinitely !
           </small>
         </div>
         <div class="mb8">
@@ -40,14 +35,12 @@
                 type="checkbox"
                 class="form-control"
                 :checked="preferQuoteCurrencySize"
-                @change="
-                  $store.commit('settings/SET_QUOTE_AS_PREFERED_CURRENCY', $event.target.checked)
-                "
+                @change="$store.commit('settings/SET_QUOTE_AS_PREFERED_CURRENCY', $event.target.checked)"
               />
               <div on="quote" off="base"></div>
               <span>
                 Prefer
-                <strong>{{ preferQuoteCurrencySize ? 'quote' : 'base'}}</strong> (
+                <strong>{{ preferQuoteCurrencySize ? 'quote' : 'base' }}</strong> (
                 <i :class="preferQuoteCurrencySize ? 'icon-quote' : 'icon-base'"></i>&nbsp;) currency
               </span>
             </label>
@@ -66,11 +59,7 @@
             <div class="form-group -fill">
               <label>
                 Max rows
-                <span
-                  class="icon-info-circle"
-                  title="Numbers of trades to keep visible"
-                  v-tippy
-                ></span>
+                <span class="icon-info-circle" title="Numbers of trades to keep visible" v-tippy></span>
               </label>
               <input
                 type="number"
@@ -83,11 +72,7 @@
               />
             </div>
 
-            <div
-              class="form-group -tight"
-              title="Show exchange's logo when available"
-              v-tippy
-            >
+            <div class="form-group -tight" title="Show exchange's logo when available" v-tippy>
               <label>Logo</label>
               <label class="checkbox-control checkbox-control-input flex-right">
                 <input
@@ -124,14 +109,13 @@
 
             <div
               class="form-group -tight"
-              :title="showSlippage === 'price' ? 'Show slippage in $' : showSlippage === 'bps' ? 'Show slippage in basis point (bps)' : 'Slippage disabled'"
+              :title="
+                showSlippage === 'price' ? 'Show slippage in $' : showSlippage === 'bps' ? 'Show slippage in basis point (bps)' : 'Slippage disabled'
+              "
               v-tippy
             >
               <label>Slipp.</label>
-              <label
-                class="checkbox-control -slippage checkbox-control-input flex-right"
-                @click.stop="$store.commit('settings/TOGGLE_SLIPPAGE')"
-              >
+              <label class="checkbox-control -slippage checkbox-control-input flex-right" @click.stop="$store.commit('settings/TOGGLE_SLIPPAGE')">
                 <input type="checkbox" class="form-control" :checked="showSlippage" />
                 <div></div>
                 <span v-if="showSlippage === 'price'">
@@ -159,19 +143,16 @@
               class="settings-thresholds__display-toggle"
               v-tippy
               title="Switch thresholds display"
-              @click="
-                $store.commit('settings/TOGGLE_THRESHOLDS_TABLE', !showThresholdsAsTable)
-              "
-            >{{ showThresholdsAsTable ? 'slider' : 'table' }}</a>
+              @click="$store.commit('settings/TOGGLE_THRESHOLDS_TABLE', !showThresholdsAsTable)"
+              >{{ showThresholdsAsTable ? 'slider' : 'table' }}</a
+            >
             |
             <a
               href="javascript:void(0);"
               class="settings-section__add"
               v-tippy
               title="Add threshold"
-              @click="
-                $store.commit('settings/ADD_THRESHOLD')
-              "
+              @click="$store.commit('settings/ADD_THRESHOLD')"
             >
               Add
               <i class="icon-add"></i>
@@ -189,11 +170,7 @@
         </div>
         <div class="settings-audio mb8 -activable column" :class="{ active: useAudio }">
           <div class="form-group -tight">
-            <label
-              class="checkbox-control -on-off checkbox-control-input flex-right"
-              v-tippy="{ placement: 'bottom' }"
-              title="Enable audio"
-            >
+            <label class="checkbox-control -on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable audio">
               <input
                 type="checkbox"
                 class="form-control"
@@ -204,21 +181,12 @@
             </label>
           </div>
           <div class="form-group -tight">
-            <label
-              class="checkbox-control checkbox-control-input flex-right"
-              v-tippy
-              title="Include orders down to 10% of significant orders"
-            >
+            <label class="checkbox-control checkbox-control-input flex-right" v-tippy title="Include orders down to 10% of significant orders">
               <input
                 type="checkbox"
                 class="form-control"
                 :checked="audioIncludeInsignificants"
-                @change="
-                  $store.commit(
-                    'settings/TOGGLE_AUDIO_TEN_PERCENT',
-                    $event.target.checked
-                  )
-                "
+                @change="$store.commit('settings/TOGGLE_AUDIO_TEN_PERCENT', $event.target.checked)"
               />
               <div class="icon-expand"></div>
             </label>
@@ -241,30 +209,21 @@
         >
           Stats <i class="icon-up"></i>
         </div>
-        <div
-          class="settings-stats settings-section mb8 -activable column mb8"
-          :class="{ active: showStats }"
-        >
+        <div class="settings-stats settings-section mb8 -activable column mb8" :class="{ active: showStats }">
           <div class="settings-section__controls">
             <a
               href="javascript:void(0);"
               class="settings-controls__add"
               v-tippy
               title="Add a stat"
-              @click="
-                $store.commit('settings/CREATE_STAT'), openStat(statsCounters.length - 1)
-              "
+              @click="$store.commit('settings/CREATE_STAT'), openStat(statsCounters.length - 1)"
             >
               Add
               <i class="icon-add"></i>
             </a>
           </div>
           <div class="form-group -tight">
-            <label
-              class="checkbox-control -on-off checkbox-control-input flex-right"
-              v-tippy="{ placement: 'bottom' }"
-              title="Enable stats"
-            >
+            <label class="checkbox-control -on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable stats">
               <input
                 type="checkbox"
                 class="form-control"
@@ -277,14 +236,16 @@
           <div class="form-group -fill">
             <div class="column">
               <div class="form-group -fill">
-                <input type="text" class="form-control" :value="statsPeriodStringified" placeholder="Period (minutes)" @change="$store.commit('settings/SET_STATS_PERIOD', $event.target.value)">
+                <input
+                  type="text"
+                  class="form-control"
+                  :value="statsPeriodStringified"
+                  placeholder="Period (minutes)"
+                  @change="$store.commit('settings/SET_STATS_PERIOD', $event.target.value)"
+                />
               </div>
               <div class="form-group -tight">
-                <label
-                  class="checkbox-control checkbox-control-input flex-right"
-                  v-tippy="{ placement: 'bottom' }"
-                  title="Enable graph"
-                >
+                <label class="checkbox-control checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable graph">
                   <input
                     type="checkbox"
                     class="form-control"
@@ -297,11 +258,7 @@
             </div>
             <div v-for="(counter, index) in statsCounters" :key="index" class="column mt8">
               <div class="form-group -tight">
-                <label
-                  class="checkbox-control -on-off checkbox-control-input flex-right"
-                  v-tippy="{ placement: 'bottom' }"
-                  title="Enable counter"
-                >
+                <label class="checkbox-control -on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable counter">
                   <input
                     type="checkbox"
                     class="form-control"
@@ -327,16 +284,9 @@
         >
           Counter <i class="icon-up"></i>
         </div>
-        <div
-          class="settings-counters mb8 -activable column"
-          :class="{ active: showCounters }"
-        >
+        <div class="settings-counters mb8 -activable column" :class="{ active: showCounters }">
           <div class="form-group -tight">
-            <label
-              class="checkbox-control -on-off checkbox-control-input flex-right"
-              v-tippy="{ placement: 'bottom' }"
-              title="Enable counters"
-            >
+            <label class="checkbox-control -on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable counters">
               <input
                 type="checkbox"
                 class="form-control"
@@ -383,11 +333,7 @@
         </div>
         <div class="settings-chart mb8 -activable column" :class="{ active: showChart }">
           <div class="form-group -tight">
-            <label
-              class="checkbox-control -on-off checkbox-control-input flex-right"
-              v-tippy="{ placement: 'bottom' }"
-              title="Enable chart"
-            >
+            <label class="checkbox-control -on-off checkbox-control-input flex-right" v-tippy="{ placement: 'bottom' }" title="Enable chart">
               <input
                 type="checkbox"
                 class="form-control"
@@ -401,10 +347,7 @@
             <div class="form-group mb8">
               <span>
                 Refresh chart every
-                <editable
-                  :content="chartRefreshRate"
-                  @output="$store.commit('settings/SET_CHART_REFRESH_RATE', $event)"
-                ></editable>&nbsp;ms
+                <editable :content="chartRefreshRate" @output="$store.commit('settings/SET_CHART_REFRESH_RATE', $event)"></editable>&nbsp;ms
               </span>
             </div>
           </div>
@@ -443,11 +386,8 @@
               <div></div>
               <span @click.stop.prevent="$event.currentTarget.children[0].focus()">
                 Round up to
-                <editable
-                  placeholder="auto"
-                  :content="decimalPrecision"
-                  @output="$store.commit('settings/SET_DECIMAL_PRECISION', $event)"
-                ></editable>&nbsp;decimal(s)
+                <editable placeholder="auto" :content="decimalPrecision" @output="$store.commit('settings/SET_DECIMAL_PRECISION', $event)"></editable
+                >&nbsp;decimal(s)
               </span>
             </label>
           </div>
@@ -486,11 +426,7 @@
               <i class="divider">|</i>
               <a href="javascript:void(0);" @click="reset()">reset</a>
               <i class="divider">|</i>
-              <a
-                target="_blank"
-                href="https://github.com/Tucsky/SignificantTrades"
-                title="Run your own instance !"
-              >github</a>
+              <a target="_blank" href="https://github.com/Tucsky/SignificantTrades" title="Run your own instance !">github</a>
               <i class="divider">|</i>
               <a
                 target="_blank"
@@ -498,11 +434,12 @@
                 @click="openTippin"
                 title="Bitcoin for more <3"
                 v-tippy="{
-                    animateFill: false,
-                    interactive: true,
-                    theme: 'blue',
-                  }"
-              >donate</a>
+                  animateFill: false,
+                  interactive: true,
+                  theme: 'blue'
+                }"
+                >donate</a
+              >
             </div>
           </div>
         </div>
@@ -540,9 +477,7 @@ export default {
     }
   },
   computed: {
-    ...mapState('app', [
-      'actives',
-    ]),
+    ...mapState('app', ['actives']),
     ...mapState('settings', [
       'pair',
       'maxRows',
@@ -588,11 +523,11 @@ export default {
     this.stringifyCounters()
     this.stringifyStatsPeriod()
 
-    document.body.classList.add('-translate');
+    document.body.classList.add('-translate')
   },
   beforeDestroy() {
     document.removeEventListener('click', this._closeTippinHandler)
-    document.body.classList.remove('-translate');
+    document.body.classList.remove('-translate')
   },
   methods: {
     reset() {
@@ -601,9 +536,7 @@ export default {
       window.location.reload(true)
     },
     stringifyStatsPeriod() {
-      this.statsPeriodStringified = ago(
-        +new Date() - (this.statsPeriod || 0)
-      )
+      this.statsPeriodStringified = ago(+new Date() - (this.statsPeriod || 0))
     },
     stringifyCounters() {
       const now = +new Date()
@@ -631,7 +564,7 @@ export default {
         this.$store.dispatch('app/showNotice', {
           type: 'error',
           title: `Counters (${value}) contains invalid steps.`
-        });
+        })
         return
       }
 
@@ -672,16 +605,14 @@ export default {
 </script>
 
 <style lang="scss">
-@import '../assets/sass/variables';
-
-
 @media screen and (min-width: 500px) {
   body {
     overflow: hidden;
   }
 
   body.-translate {
-    .stack__container, #app {
+    .stack__container,
+    #app {
       overflow: visible;
     }
 
@@ -737,7 +668,7 @@ export default {
 }
 
 .settings__container {
-  background-color: rgba($dark, .5);
+  background-color: rgba($dark, 0.5);
   z-index: 10;
   color: white;
 

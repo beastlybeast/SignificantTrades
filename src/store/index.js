@@ -14,10 +14,10 @@ const store = new Vuex.Store({
 })
 
 if (store.state.settings.pair && store.state.settings.pair.length) {
-  store.state.app.pairs = store.state.settings.pair.split('+');
+  store.state.app.pairs = store.state.settings.pair.split('+')
 }
 
-let saveTimeout;
+let saveTimeout
 
 store.subscribe((mutation, state) => {
   if (/^settings/.test(mutation.type)) {
@@ -30,6 +30,8 @@ store.subscribe((mutation, state) => {
     }, 200)
   }
 
+  let exchangeName
+
   switch (mutation.type) {
     case 'settings/SHOW_EXCHANGE':
     case 'settings/HIDE_EXCHANGE':
@@ -37,14 +39,13 @@ store.subscribe((mutation, state) => {
     case 'settings/ENABLE_EXCHANGE':
     case 'settings/DISABLE_EXCHANGE':
     case 'settings/TOGGLE_EXCHANGE_CHART':
-      let name
       if (typeof mutation.payload.exchange === 'string') {
-        name = mutation.payload.exchange
+        exchangeName = mutation.payload.exchange
       } else {
-        name = mutation.payload
+        exchangeName = mutation.payload
       }
-      console.log('dispatch refreshExchange because', mutation.type)
-      store.dispatch('app/refreshExchange', name)
+
+      store.dispatch('app/refreshExchange', exchangeName)
       break
   }
 })

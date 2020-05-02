@@ -42,7 +42,7 @@ class Okex extends Exchange {
       if (id) {
         if (/\d+$/.test(id)) {
           this.types[id] = 'futures'
-        } else if (/\-SWAP$/.test(id)) {
+        } else if (/-SWAP$/.test(id)) {
           this.types[id] = 'swap'
         } else {
           this.types[id] = 'spot'
@@ -61,17 +61,16 @@ class Okex extends Exchange {
   }
 
   connect() {
-    if (!super.connect()) return Promise.reject();
+    if (!super.connect()) return Promise.reject()
 
     return new Promise((resolve, reject) => {
-
       this.api = new WebSocket(this.getUrl())
 
       this.api.binaryType = 'arraybuffer'
 
       this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(event.data))
 
-      this.api.onopen = (e) => {
+      this.api.onopen = e => {
         this.api.send(
           JSON.stringify({
             op: 'subscribe',
@@ -85,9 +84,8 @@ class Okex extends Exchange {
 
         this.emitOpen(e)
 
-        resolve();
+        resolve()
       }
-
 
       this.api.onclose = event => {
         this.emitClose(event)
@@ -98,9 +96,9 @@ class Okex extends Exchange {
       this.api.onerror = () => {
         this.emitError({ message: `${this.id} disconnected` })
 
-        reject();
+        reject()
       }
-    });
+    })
   }
 
   disconnect() {

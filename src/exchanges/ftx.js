@@ -46,15 +46,14 @@ class Ftx extends Exchange {
   }
 
   connect() {
-    if (!super.connect()) return Promise.reject();
+    if (!super.connect()) return Promise.reject()
 
     return new Promise((resolve, reject) => {
-
       this.api = new WebSocket(this.getUrl())
 
       this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
 
-      this.api.onopen = (e) => {
+      this.api.onopen = e => {
         this.skip = true
 
         for (let pair of this.pairs) {
@@ -71,7 +70,7 @@ class Ftx extends Exchange {
 
         this.emitOpen(e)
 
-        resolve();
+        resolve()
       }
 
       this.api.onclose = event => {
@@ -82,9 +81,9 @@ class Ftx extends Exchange {
       this.api.onerror = () => {
         this.emitError({ message: `${this.id} disconnected` })
 
-        reject();
+        reject()
       }
-    });
+    })
   }
 
   disconnect() {
@@ -121,7 +120,7 @@ class Ftx extends Exchange {
     return data.result.reduce((obj, product) => {
       let standardName = product.name
         .replace('/', 'SPOT')
-        .replace(/\-PERP$/g, '-USD')
+        .replace(/-PERP$/g, '-USD')
         .replace(/[/-]/g, '')
 
       obj[standardName] = product.name

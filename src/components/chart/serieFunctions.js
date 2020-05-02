@@ -18,7 +18,7 @@ export function ohlc(bar) {
   bar.low = 0
   bar.close = 0
 
-  const activeExchanges = store.state.app.actives;
+  const activeExchanges = store.state.app.actives
 
   for (let exchange in bar.exchanges) {
     if (activeExchanges.indexOf(exchange) === -1) {
@@ -56,7 +56,7 @@ export function ema(memory, value, length) {
   const k = 2 / (length + 1)
 
   if (memory.count) {
-    const last = memory.points[memory.points.length - 1];
+    const last = memory.points[memory.points.length - 1]
     memory.output = (value - last) * k + last
   } else {
     memory.output = value
@@ -73,7 +73,7 @@ export function ema(memory, value, length) {
 export function sma(memory, value) {
   const average = (memory.sum + value) / (memory.count + 1)
   memory.output = value
-  return average;
+  return average
 }
 
 /**

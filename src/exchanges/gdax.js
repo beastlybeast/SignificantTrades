@@ -30,15 +30,14 @@ class Gdax extends Exchange {
   }
 
   connect() {
-    if (!super.connect()) return Promise.reject();
+    if (!super.connect()) return Promise.reject()
 
     return new Promise((resolve, reject) => {
-
       this.api = new WebSocket(this.getUrl())
 
       this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
 
-      this.api.onopen = (e) => {
+      this.api.onopen = e => {
         this.api.send(
           JSON.stringify({
             type: 'subscribe',
@@ -48,16 +47,16 @@ class Gdax extends Exchange {
 
         this.emitOpen(e)
 
-        resolve();
+        resolve()
       }
 
       this.api.onclose = this.emitClose.bind(this)
       this.api.onerror = () => {
         this.emitError({ message: `${this.id} disconnected` })
 
-        reject();
+        reject()
       }
-    });
+    })
   }
 
   disconnect() {

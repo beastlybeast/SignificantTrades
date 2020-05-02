@@ -7,7 +7,7 @@ class Poloniex extends Exchange {
     this.id = 'poloniex'
 
     this.endpoints = {
-      PRODUCTS: 'https://poloniex.com/public?command=returnTicker',
+      PRODUCTS: 'https://www.poloniex.com/public?command=returnTicker',
       TRADES: () => () =>
         `https://poloniex.com/public?command=returnTradeHistory&currencyPair=${this.pair}&start=${+new Date() / 1000 - 60 * 15}&end=${+new Date() /
           1000}`
@@ -22,15 +22,14 @@ class Poloniex extends Exchange {
   }
 
   connect() {
-    if (!super.connect()) return Promise.reject();
+    if (!super.connect()) return Promise.reject()
 
     return new Promise((resolve, reject) => {
-
       this.api = new WebSocket(this.getUrl())
 
       this.api.onmessage = event => this.queueTrades(this.formatLiveTrades(JSON.parse(event.data)))
 
-      this.api.onopen = (e) => {
+      this.api.onopen = e => {
         this.api.send(
           JSON.stringify({
             command: 'subscribe',
@@ -39,17 +38,17 @@ class Poloniex extends Exchange {
         )
 
         this.emitOpen(e)
-        
-        resolve();
+
+        resolve()
       }
 
       this.api.onclose = this.emitClose.bind(this)
       this.api.onerror = () => {
         this.emitError({ message: `${this.id} disconnected` })
 
-        reject();
+        reject()
       }
-    });
+    })
   }
 
   disconnect() {

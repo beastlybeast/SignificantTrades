@@ -1,34 +1,31 @@
 import store from '../store'
-import * as TV from 'lightweight-charts'
-
-import {formatTime, getHms} from '../utils/helpers'
 
 export default class Counter {
   constructor(outputFunction, { options, model } = {}) {
-    this.outputFunction = outputFunction;
-    this.period = (!isNaN(options.period) ? +options.period : store.state.settings.statsPeriod) || 0;
-    this.precision = options.precision;
-    this.color = options.color;
+    this.outputFunction = outputFunction
+    this.period = (!isNaN(options.period) ? +options.period : store.state.settings.statsPeriod) || 0
+    this.precision = options.precision
+    this.color = options.color
     this.granularity = Math.max(store.state.settings.statsGranularity, this.period / 50)
 
     /**
      * @type {TV.ISeriesApi<Line>}
      */
-    this.serie = null;
+    this.serie = null
 
-    this.timeouts = [];
+    this.timeouts = []
 
     if (typeof model !== 'undefined') {
-      this.model = model;
+      this.model = model
     }
 
     console.log('[counter.js] create', {
       outputFunction: this.outputFunction,
       period: this.period,
-      granularity: this.granularity,
+      granularity: this.granularity
     })
 
-    this.clear();
+    this.clear()
 
     if (module.hot) {
       module.hot.dispose(() => {
@@ -38,17 +35,17 @@ export default class Counter {
   }
 
   clear() {
-    this.live = this.getModel();
+    this.live = this.getModel()
     this.stacks = []
 
     for (let i = 0; i < this.timeouts.length; i++) {
-      clearTimeout(this.timeouts[i]);
+      clearTimeout(this.timeouts[i])
     }
   }
 
   unbind() {
     console.log('[counter.js] unbind')
-    
+
     this.clear()
   }
 
@@ -58,7 +55,6 @@ export default class Counter {
     if (!this.stacks.length || timestamp > this.timestamp + this.granularity) {
       this.appendStack(timestamp)
     }
-
 
     this.addData(data)
   }
@@ -70,7 +66,7 @@ export default class Counter {
 
     this.stacks.push(this.getModel())
 
-    this.timestamp = Math.floor(timestamp / 1000) * 1000;
+    this.timestamp = Math.floor(timestamp / 1000) * 1000
 
     this.timeouts.push(setTimeout(this.shiftStack.bind(this), this.period))
   }
@@ -79,10 +75,10 @@ export default class Counter {
     const stack = this.stacks.splice(index, 1)[0]
 
     if (!stack) {
-      return;
+      return
     }
 
-    this.substractData(stack);
+    this.substractData(stack)
 
     this.timeouts.shift()
   }

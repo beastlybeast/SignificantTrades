@@ -4,5 +4,8 @@ export default {
   actives: [],
   activeSeries: [],
   notices: [],
-  isLoading: false
+  isLoading: false,
+  supportedPairs: [],
+  proxyUrl: null,
+  apiUrl: null
 }

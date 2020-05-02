@@ -36,15 +36,10 @@
           {{item.i}}
       </grid-item>
     </grid-layout>-->
-    
+
     <div class="chart__series">
-      <SerieControl 
-        v-for="(serie, index) in activeSeries"
-        :key="index"
-        :id="serie"
-        :legend="legend[serie]"
-      />
-      
+      <SerieControl v-for="(serie, index) in activeSeries" :key="index" :id="serie" :legend="legend[serie]" />
+
       <dropdown
         class="available-series -left"
         v-if="availableSeries.length"
@@ -61,34 +56,26 @@ import '../../data/typedef'
 import { mapState } from 'vuex'
 // import VueGridLayout from 'vue-grid-layout';
 import ChartController from './chartController'
-import { cache, cacheRange, saveChunk } from './chartCache'
+import { cacheRange, saveChunk } from './chartCache'
 import seriesData from '../../data/series'
 import socket from '../../services/socket'
 
-import { 
-  APPLICATION_START_TIME,
-  formatPrice,
-  formatAmount,
-  formatTime,
-  getHms
-} from '../../utils/helpers'
+import { formatPrice, formatAmount, formatTime, getHms } from '../../utils/helpers'
 
 import SerieControl from './SerieControl.vue'
 
 /**
  * @type {ChartController}
  */
-let chart = null;
-
-let isCrosshairActive = false
+let chart = null
 
 export default {
   components: {
-    SerieControl,
+    SerieControl
     /* GridLayout: VueGridLayout.GridLayout,
     GridItem: VueGridLayout.GridItem */
   },
-  
+
   data() {
     return {
       resizing: {},
@@ -99,10 +86,7 @@ export default {
   },
 
   computed: {
-    ...mapState('app', [
-      'actives',
-      'activeSeries'
-    ]),
+    ...mapState('app', ['actives', 'activeSeries']),
     ...mapState('settings', [
       'debug',
       'pair',
@@ -112,7 +96,7 @@ export default {
       'sidebarWidth',
       'chartRefreshRate',
       'showExchangesBar',
-      'series',
+      'series'
     ]),
     availableSeries: function() {
       return Object.keys(seriesData).filter(id => this.activeSeries.indexOf(id) === -1)
@@ -124,7 +108,7 @@ export default {
 
     socket.$on('trades', this.onTrades)
 
-    this.onStoreMutation = this.$store.subscribe((mutation, state) => {
+    this.onStoreMutation = this.$store.subscribe(mutation => {
       switch (mutation.type) {
         case 'app/EXCHANGE_UPDATED':
           chart.renderVisibleChunks()
@@ -134,7 +118,7 @@ export default {
           break
         case 'settings/SET_TIMEFRAME':
           chart.clear()
-          this.fetch();
+          this.fetch()
           break
         case 'settings/SET_CHART_REFRESH_RATE':
           chart.clearQueue()
@@ -142,23 +126,23 @@ export default {
           break
         case 'settings/SET_SERIE_OPTION':
           chart.setSerieOption(mutation.payload)
-        break;
+          break
         case 'settings/TOGGLE_SERIE':
           chart.toggleSerie(mutation.payload)
-        break;
+          break
         case 'settings/SET_CHART_PRICE_MARGINS':
           chart.setPriceMargins(mutation.payload)
-        break;
+          break
         case 'settings/TOGGLE_EXCHANGES_BAR':
-          setTimeout(this.refreshChartDimensions.bind(this));
-        break;
+          setTimeout(this.refreshChartDimensions.bind(this))
+          break
         case 'app/SET_OPTIMAL_DECIMAL':
           chart.setSerieOption({
             id: 'price',
             key: 'priceFormat.precision',
             value: mutation.payload
           })
-        break;
+          break
       }
     })
   },
@@ -170,31 +154,30 @@ export default {
     chart.setupQueue()
     this.keepAlive()
 
-    this.refreshSeriesLayout();
-    
-    this.bindChartEvents();
-    this.bindBrowserResize();
+    this.refreshSeriesLayout()
 
-    this.fetch();
+    this.bindChartEvents()
+    this.bindBrowserResize()
+
+    this.fetch()
   },
 
   beforeDestroy() {
-    this.unbindChartEvents();
-    this.unbindBrowserResize();
+    this.unbindChartEvents()
+    this.unbindBrowserResize()
 
     this.onStoreMutation()
 
-    chart.destroy();
+    chart.destroy()
 
-    clearTimeout(this._keepAliveTimeout);
+    clearTimeout(this._keepAliveTimeout)
 
     socket.$off('trades', this.onTrades)
   },
 
   methods: {
-
     refreshSeriesLayout() {
-      const layout = [];
+      const layout = []
 
       for (let serie of chart.activeSeries) {
         layout.push({
@@ -206,9 +189,8 @@ export default {
         })
       }
 
-      this.seriesLayout = layout;
+      this.seriesLayout = layout
     },
-
 
     /**
      * fetch whatever is missing based on visiblerange
@@ -220,7 +202,7 @@ export default {
       }
 
       const visibleRange = chart.getVisibleRange()
-      const isChartEmpty = chart.isEmpty();
+      const isChartEmpty = chart.isEmpty()
       let rangeToFetch
 
       if (isChartEmpty) {
@@ -234,14 +216,16 @@ export default {
           from: visibleRange.from - chart.getOptimalRangeLength(),
           to: visibleRange.from
         }
-      } else if (false && visibleRange.to === cacheRange.to) {
+      }
+
+      /* else if (false && visibleRange.to === cacheRange.to) {
         console.log(`[chart] fetch (chunk on the right)`)
 
         rangeToFetch = {
           from: visibleRange.to,
           to: visibleRange.to + chart.getOptimalRangeLength()
         }
-      }
+      }*/
 
       if (!rangeToFetch) {
         return Promise.reject('Nothing to fetch')
@@ -322,21 +306,22 @@ export default {
         param.point.y < 0 ||
         param.point.y > this.$refs.chartContainer.clientHeight
       ) {
-        isCrosshairActive = false
-        this.legend = {};
+        this.legend = {}
       } else {
-        isCrosshairActive = true
-
         for (let serie of chart.activeSeries) {
           const data = param.seriesPrices.get(serie.api)
 
           if (!data) {
             this.$set(this.legend, serie.id, 'n/a')
-            continue;
+            continue
           }
 
           if (serie.type === 'candlestick') {
-            this.$set(this.legend, serie.id, `O: ${formatPrice(data.open)} H: ${formatPrice(data.high)} L: ${formatPrice(data.low)} C: ${formatPrice(data.close)}`)
+            this.$set(
+              this.legend,
+              serie.id,
+              `O: ${formatPrice(data.open)} H: ${formatPrice(data.high)} L: ${formatPrice(data.low)} C: ${formatPrice(data.close)}`
+            )
           } else {
             this.$set(this.legend, serie.id, formatAmount(data))
           }
@@ -349,7 +334,7 @@ export default {
      */
     onTrades(trades) {
       if (chart.preventRender || this.chartRefreshRate) {
-        chart.queueTrades(trades);
+        chart.queueTrades(trades)
         return
       }
 
@@ -384,7 +369,7 @@ export default {
       }
 
       console.info(`[chart] lock pan until further notice`)
-      chart.panPrevented = true;
+      chart.panPrevented = true
     },
 
     /**
@@ -411,7 +396,7 @@ export default {
      * on end of drag height handler
      * @param {MouseEvent} event mouseup event
      */
-    stopManualResize(event) {
+    stopManualResize() {
       if (this.resizing.width) {
         this.$store.commit('settings/SET_SIDEBAR_WIDTH', window.innerWidth - this.$refs.chartContainer.clientWidth)
 
@@ -433,14 +418,14 @@ export default {
       }
 
       console.info(`[chart] unlock pan`)
-      chart.panPrevented = false;
+      chart.panPrevented = false
     },
 
     /**
      * on dblclick on height handler
      * @param {MouseEvent} event dbl click event
      */
-    resetHeight(event) {
+    resetHeight() {
       delete this.resizing.height
 
       this.$store.commit('settings/SET_CHART_HEIGHT', null)
@@ -452,7 +437,7 @@ export default {
      * on dblclick on width handler
      * @param {MouseEvent} event dbl click event
      */
-    resetWidth(event) {
+    resetWidth() {
       delete this.resizing.width
 
       this.$store.commit('settings/SET_SIDEBAR_WIDTH', null)
@@ -493,7 +478,7 @@ export default {
      * on browser resize
      * @param {Event} event resize event
      */
-    doWindowResize(event) {
+    doWindowResize() {
       clearTimeout(this._resizeTimeout)
 
       this._resizeTimeout = setTimeout(() => {
@@ -509,8 +494,6 @@ export default {
         return
       }
 
-      const visibleRange = chart.getVisibleRange()
-
       if (this._onPanTimeout) {
         clearTimeout(this._onPanTimeout)
         this._onPanTimeout = null
@@ -522,8 +505,16 @@ export default {
         }
 
         const visibleRange = chart.getVisibleRange()
-        
-        console.log('[pan] current scrollPosition', getHms(chart.chartInstance.timeScale().scrollPosition() * 1000), '(from:', formatTime(visibleRange.from), ' to:', formatTime(visibleRange.to), ')')
+
+        console.log(
+          '[pan] current scrollPosition',
+          getHms(chart.chartInstance.timeScale().scrollPosition() * 1000),
+          '(from:',
+          formatTime(visibleRange.from),
+          ' to:',
+          formatTime(visibleRange.to),
+          ')'
+        )
 
         if (visibleRange.from <= cacheRange.from) {
           this.panPrevented = true
@@ -572,8 +563,6 @@ export default {
 </script>
 
 <style lang="scss">
-@import '../../assets/sass/variables';
-
 #chart {
   position: relative;
 
@@ -604,8 +593,8 @@ export default {
   left: 1em;
   font-family: Roboto Condensed;
   z-index: 2;
-  opacity: .1;
-  transition: opacity .2s $easeOutExpo;
+  opacity: 0.1;
+  transition: opacity 0.2s $easeOutExpo;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -652,6 +641,6 @@ export default {
 }
 
 .available-series {
-  margin-top: .5em;
+  margin-top: 0.5em;
 }
 </style>

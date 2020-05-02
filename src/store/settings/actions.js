@@ -1,7 +1,7 @@
 export default {
   updateStat({ commit, state }, { index, prop, value }) {
     if (state.statsCounters[index][prop] === value) {
-      return;
+      return
     }
 
     let mutation = ''
@@ -17,15 +17,17 @@ export default {
       value
     })
   },
-  setSeriePreference({commit, state}, {id, key, value}) {
+  setSeriePreference({ commit, state }, { id, key, value }) {
     try {
-      value = JSON.parse(value);
-    } catch (error) {}
+      value = JSON.parse(value)
+    } catch (error) {
+      // empty
+    }
 
     if (state.series[id] && state.series[id][key] === value) {
       return
     }
 
-    commit('SET_SERIE_OPTION', {id, key, value})
+    commit('SET_SERIE_OPTION', { id, key, value })
   }
 }

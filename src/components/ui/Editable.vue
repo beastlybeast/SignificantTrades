@@ -1,12 +1,5 @@
 <template>
-  <div
-    contenteditable="true"
-    @keydown="onKeyDown"
-    @input="changed = true"
-    @focus="onFocus"
-    @blur="onBlur"
-    @click="onClick"
-  ></div>
+  <div contenteditable="true" @keydown="onKeyDown" @input="changed = true" @focus="onFocus" @blur="onBlur" @click="onClick"></div>
 </template>
 
 <script>
@@ -14,7 +7,7 @@ export default {
   props: ['content'],
   data() {
     return {
-      changed: false,
+      changed: false
     }
   },
   mounted: function() {
@@ -25,7 +18,7 @@ export default {
       if (this.$el.innerText !== this.content) {
         this.$el.innerText = this.content
       }
-    },
+    }
   },
   methods: {
     selectAll() {
@@ -90,7 +83,7 @@ export default {
       }
 
       this.clickAt = now
-    },
-  },
+    }
+  }
 }
 </script>

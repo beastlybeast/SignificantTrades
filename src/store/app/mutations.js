@@ -35,6 +35,24 @@ export default {
     state.showSearch = typeof value !== 'undefined' ? !!value : !state.showSearch
   },
   SET_OPTIMAL_DECIMAL(state, value) {
-    state.optimalDecimal = value;
+    state.optimalDecimal = value
+  },
+  SET_API_URL(state, value) {
+    state.apiUrl = value
+  },
+  SET_PROXY_URL(state, value) {
+    state.proxyUrl = value
+  },
+  SET_API_SUPPORTED_PAIRS(state, value) {
+    if (!value) {
+      state.apiSupportedPairs = []
+    } else if (typeof value === 'string') {
+      state.apiSupportedPairs = value.split(',')
+    } else {
+      state.apiSupportedPairs = value
+    }
+  },
+  SET_VERSION(state, value) {
+    state.version = value
   }
 }

@@ -1,5 +1,4 @@
 import Tuna from 'tunajs'
-
 import store from '../store'
 
 class Sfx {
@@ -61,7 +60,7 @@ class Sfx {
 
       if (side === 'buy') {
         if (factor >= 10) {
-          ;[659.26, 830.6, 987.76, 1318.52].forEach((f, i, a) =>
+          ;[659.26, 830.6, 987.76, 1318.52].forEach((f, i) =>
             setTimeout(() => this.play(f, 0.05 + Math.sqrt(factor) / 25, 0.1 + factor * 0.1), i * 80)
           )
         } else if (factor >= 1) {
@@ -71,7 +70,7 @@ class Sfx {
         }
       } else {
         if (factor >= 10) {
-          ;[493.88, 369.99, 293.66, 246.94].forEach((f, i, a) =>
+          ;[493.88, 369.99, 293.66, 246.94].forEach((f, i) =>
             setTimeout(() => this.play(f, 0.05 + Math.sqrt(factor) / 10, i > 2 ? 0.1 + factor * 0.1 : 0.2), i > 2 ? 80 * 3 : i * 80)
           )
         } else if (factor >= 1) {
@@ -123,7 +122,7 @@ class Sfx {
 
     setTimeout(() => {
       this.queued--
-      ;[329.63, 329.63].forEach((f, i, a) => {
+      ;[329.63, 329.63].forEach((f, i) => {
         size = Math.sqrt(size) / 4
 
         setTimeout(() => this.play(f, size, 0.25, 'sine'), i * 80)

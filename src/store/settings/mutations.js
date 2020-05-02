@@ -7,7 +7,7 @@ export default {
     console.log('SET_PAIR', value.toString().toUpperCase())
     state.pair = value.toString().toUpperCase()
 
-    this.state.app.pairs = state.pair.split('+');
+    this.state.app.pairs = state.pair.split('+')
   },
   SET_QUOTE_AS_PREFERED_CURRENCY(state, value) {
     state.preferQuoteCurrencySize = value ? true : false
@@ -40,35 +40,14 @@ export default {
   TOGGLE_STAT(state, { index, value }) {
     const stat = state.statsCounters[index]
 
-    stat.enabled = value ? true : false;
-
-    Vue.set(state.statsCounters, index, stat)
-  },
-  SET_STAT_PERIOD(state, { index, value }) {
-    let milliseconds = parseInt(value);
-
-    if (isNaN(milliseconds)) {
-      return false
-    }
-
-    if (/[\d.]+s/.test(value)) {
-      milliseconds *= 1000
-    } else if (/[\d.]+h/.test(value)) {
-      milliseconds *= 1000 * 60 * 60
-    } else {
-      milliseconds *= 1000 * 60
-    }
-
-    const stat = state.statsCounters[index]
-
-    stat.period = milliseconds;
+    stat.enabled = value ? true : false
 
     Vue.set(state.statsCounters, index, stat)
   },
   SET_STAT_OUTPUT(state, { index, value }) {
     const stat = state.statsCounters[index]
 
-    stat.output = value;
+    stat.output = value
 
     Vue.set(state.statsCounters, index, stat)
   },
@@ -78,21 +57,21 @@ export default {
 
     names.splice(index, 1)
 
-    stat.name = uniqueName(value, names);
+    stat.name = uniqueName(value, names)
 
     Vue.set(state.statsCounters, index, stat)
   },
   SET_STAT_COLOR(state, { index, value }) {
     const stat = state.statsCounters[index]
 
-    stat.color = value;
+    stat.color = value
 
     Vue.set(state.statsCounters, index, stat)
   },
   SET_STAT_PRECISION(state, { index, value }) {
     const stat = state.statsCounters[index]
 
-    value = parseInt(value);
+    value = parseInt(value)
 
     stat.precision = !isNaN(value) ? value : null
 
@@ -100,7 +79,7 @@ export default {
   },
   SET_STAT_PERIOD(state, { index, value }) {
     const stat = state.statsCounters[index]
-    let milliseconds = parseInt(value);
+    let milliseconds = parseInt(value)
 
     if (isNaN(milliseconds)) {
       stat.period = null
@@ -120,16 +99,19 @@ export default {
   },
   CREATE_STAT(state) {
     state.statsCounters.push({
-      name: uniqueName('COUNTER', state.statsCounters.map(a => a.name)),
+      name: uniqueName(
+        'COUNTER',
+        state.statsCounters.map(a => a.name)
+      ),
       output: 'vbuy + vsell',
       enabled: false
     })
   },
   REMOVE_STAT(state, index) {
-    state.statsCounters.splice(index, 1);
+    state.statsCounters.splice(index, 1)
   },
   SET_STATS_PERIOD(state, value) {
-    let milliseconds = parseInt(value) || 0;
+    let milliseconds = parseInt(value) || 0
 
     if (/[\d.]+s/.test(value)) {
       milliseconds *= 1000
@@ -142,13 +124,13 @@ export default {
     state.statsPeriod = milliseconds
   },
   TOGGLE_STATS_CHART(state, value) {
-    state.statsChart = value ? true : false;
+    state.statsChart = value ? true : false
   },
   TOGGLE_STATS_TIMEFRAME(state, value) {
-    state.statsGraphsTimeframe = isNaN(+value) ? 1000 : value;
+    state.statsGraphsTimeframe = isNaN(+value) ? 1000 : value
   },
   TOGGLE_STATS_LENGTH(state, value) {
-    state.statsGraphsLength = isNaN(+value) ? 50 : value;
+    state.statsGraphsLength = isNaN(+value) ? 50 : value
   },
   REPLACE_COUNTERS(state, counters) {
     state.countersSteps = counters.sort((a, b) => a - b)
@@ -164,7 +146,7 @@ export default {
 
     if (threshold) {
       if (typeof payload.value === 'string' && /m|k$/i.test(payload.value)) {
-        if (/m$/i.test(value)) {
+        if (/m$/i.test(payload.value)) {
           threshold.amount = parseFloat(payload.value) * 1000000
         } else {
           threshold.amount = parseFloat(payload.value) * 1000
@@ -210,7 +192,7 @@ export default {
   SET_DECIMAL_PRECISION(state, value) {
     state.decimalPrecision = value
   },
-  DELETE_THRESHOLD(state, index) {
+  DELETE_THREDELETE_THRESHOLD(state, index) {
     state.thresholds.splice(index, 1)
   },
   ENABLE_EXCHANGE(state, exchange) {
@@ -226,11 +208,7 @@ export default {
     Vue.set(state.exchanges[exchange], 'hidden', true)
   },
   TOGGLE_EXCHANGE_VISIBILITY(state, exchange) {
-    Vue.set(
-      state.exchanges[exchange],
-      'hidden',
-      state.exchanges[exchange].hidden === true ? false : true
-    )
+    Vue.set(state.exchanges[exchange], 'hidden', state.exchanges[exchange].hidden === true ? false : true)
   },
   TOGGLE_SETTINGS_PANEL(state, value) {
     const index = state.settings.indexOf(value)
@@ -254,11 +232,7 @@ export default {
     state.timeframe = value
   },
   SET_EXCHANGE_THRESHOLD(state, payload) {
-    Vue.set(
-      state.exchanges[payload.exchange],
-      'threshold',
-      +payload.threshold
-    )
+    Vue.set(state.exchanges[payload.exchange], 'threshold', +payload.threshold)
   },
   SET_EXCHANGE_MATCH(state, payload) {
     Vue.set(state.exchanges[payload.exchange], 'match', payload.match)
@@ -277,21 +251,21 @@ export default {
   },
   TOGGLE_SERIE(state, { id, value }) {
     if (!state.series[id]) {
-      state.series[id] = {};
+      state.series[id] = {}
     }
 
     Vue.set(state.series[id], 'enabled', value ? true : false)
   },
   SET_SERIE_OPTION(state, { id, key, value }) {
     if (!state.series[id]) {
-      state.series[id] = {};
+      state.series[id] = {}
     }
 
     Vue.set(state.series[id], key, value)
   },
   SET_CHART_PRICE_MARGINS(state, value) {
     if (!state.series.price) {
-      state.series.price = {};
+      state.series.price = {}
     }
 
     state.series.price = {
@@ -299,7 +273,6 @@ export default {
     }
   },
   TOGGLE_EXCHANGES_BAR(state, value) {
-    state.showExchangesBar = value ? true : false;
+    state.showExchangesBar = value ? true : false
   }
-
 }

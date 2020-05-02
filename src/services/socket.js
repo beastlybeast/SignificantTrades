@@ -17,9 +17,8 @@ import Bybit from '../exchanges/bybit'
 import Ftx from '../exchanges/ftx'
 
 import store from '../store'
-import { MASTER_DOMAIN } from '../utils/helpers'
 
-const QUEUE = {};
+const QUEUE = {}
 const REFS = {}
 const SUMS = {
   vbuy: 0,
@@ -29,18 +28,14 @@ const SUMS = {
   cbuy: 0,
   csell: 0
 }
+const AGGR = []
 
-let sumsInterval = null;
-let queueInterval = null;
-let activeExchanges = [];
+let sumsInterval = null
+let activeExchanges = []
 
 const emitter = new Vue({
   data() {
     return {
-      API_URL: null,
-      API_SUPPORTED_PAIRS: null,
-      PROXY_URL: null,
-
       exchanges: [
         new Bitmex(),
         new Bitfinex(),
@@ -56,9 +51,7 @@ const emitter = new Vue({
         new Hitbtc(),
         new Bybit(),
         new Ftx()
-      ],
-
-      _pair: null,
+      ]
     }
   },
   computed: {
@@ -83,6 +76,15 @@ const emitter = new Vue({
     aggregateTrades() {
       return store.state.settings.aggregateTrades
     },
+    apiUrl() {
+      return store.state.app.apiUrl
+    },
+    proxyUrl() {
+      return store.state.app.proxyUrl
+    },
+    apiSupportedPairs() {
+      return store.state.app.apiSupportedPairs
+    },
     actives() {
       return store.state.app.actives
     },
@@ -100,78 +102,76 @@ const emitter = new Vue({
     }
   },
   created() {
-    store.subscribe((mutation) => {
+    window.testapi = () => {
+      this.testapi()
+    }
+
+    store.subscribe(mutation => {
       switch (mutation.type) {
         case 'app/EXCHANGE_UPDATED':
           activeExchanges = this.actives.slice(0, this.actives.length)
-        break;
-        case 'settings/TOGGLE_AGGREGATION':
-          if (!this.toggleAggregation && queueInterval) {
-            this.clearQueueInterval();
-          } else if (this.toggleAggregation && !queueInterval) {
-            this.setupQueueInterval();
-          }
-        break;
+          break
         case 'settings/TOGGLE_STATS':
         case 'settings/TOGGLE_COUNTERS':
           if (!this.showStats && !this.showCounters && sumsInterval) {
-            this.clearSumsInterval();
-          } else if (this.showStats ||this.showCounters && !sumsInterval) {
-            this.setupSumsInterval();
+            this.clearSumsInterval()
+          } else if (this.showStats || (this.showCounters && !sumsInterval)) {
+            this.setupSumsInterval()
           }
-        break;
+          break
       }
-    });
+    })
 
     this.exchanges.forEach(exchange => {
       exchange.on('trades', trades => {
         if (!trades || !trades.length) {
           return
         }
-        
-        const length = trades.length;
 
-        const doAggr = this.aggregateTrades;
-        const doSlip = this.showSlippage;
-        
+        const length = trades.length
+
+        const doAggr = this.aggregateTrades
+        const doSlip = this.showSlippage
+
         if (!doAggr) {
           for (let i = 0; i < length; i++) {
-            const trade = trades[i];
+            const trade = trades[i]
 
             if (sumsInterval !== null && activeExchanges.indexOf(trade.exchange) !== -1) {
-              const size = (this.preferQuoteCurrencySize ? trade.price : 1) * trade.size;
+              const size = (this.preferQuoteCurrencySize ? trade.price : 1) * trade.size
 
               if (!SUMS.timestamp) {
-                SUMS.timestamp = trade.timestamp;
+                SUMS.timestamp = trade.timestamp
               }
-              
+
               if (trade.liquidation) {
                 SUMS['l' + trade.side] += size
-                continue;
+                continue
               }
-  
+
               SUMS['c' + trade.side]++
               SUMS['v' + trade.side] += size
             }
 
             doSlip && this.calculateSlippage(trades[i])
+
+            AGGR.push(trades[i])
           }
 
           this.$emit('trades', trades)
-          this.$emit('trades.aggr', trades)
         } else {
-          const aggrTrades = []
+          const now = +new Date()
 
           for (let i = 0; i < length; i++) {
-            const trade = trades[i];
+            const trade = trades[i]
 
             if (sumsInterval !== null && activeExchanges.indexOf(trade.exchange) !== -1) {
-              const size = (this.preferQuoteCurrencySize ? trade.price : 1) * trade.size;
+              const size = (this.preferQuoteCurrencySize ? trade.price : 1) * trade.size
 
               if (!SUMS.timestamp) {
-                SUMS.timestamp = trade.timestamp;
+                SUMS.timestamp = trade.timestamp
               }
-              
+
               if (trade.liquidation) {
                 SUMS['l' + trade.side] += size
               } else {
@@ -180,9 +180,9 @@ const emitter = new Vue({
               }
             }
 
-            trade.ref = REFS[exchange.id] || trade.price;
+            trade.ref = REFS[exchange.id] || trade.price
 
-            REFS[exchange.id] = trade.price;
+            REFS[exchange.id] = trade.price
 
             if (QUEUE[exchange.id]) {
               const queuedTrade = QUEUE[exchange.id]
@@ -192,36 +192,32 @@ const emitter = new Vue({
                 queuedTrade.price += trade.price * trade.size
                 queuedTrade.high = Math.max(queuedTrade.high || queuedTrade.price / queuedTrade.size, trade.price)
                 queuedTrade.low = Math.min(queuedTrade.low || queuedTrade.price / queuedTrade.size, trade.price)
-                continue;
+                continue
               } else {
                 queuedTrade.price /= queuedTrade.size
-                doSlip && this.calculateSlippage(queuedTrade)
-                aggrTrades.unshift(queuedTrade)
+                doSlip && this.calculateSlippage(QUEUE[exchange.id])
+                AGGR.push(queuedTrade)
               }
             }
-            
-            QUEUE[exchange.id] = Object.assign({}, trade);
+
+            QUEUE[exchange.id] = Object.assign({}, trade)
+            QUEUE[exchange.id].timeout = now + 50
             QUEUE[exchange.id].high = Math.max(trade.ref, trade.price)
             QUEUE[exchange.id].low = Math.min(trade.ref, trade.price)
             QUEUE[exchange.id].price *= QUEUE[exchange.id].size
-          
           }
-          
-          this.$emit('trades', trades)
 
-          if (aggrTrades.length) {
-            this.$emit('trades.aggr', aggrTrades)
-          }
+          this.$emit('trades', trades)
         }
       })
 
-      exchange.on('open', event => {
+      exchange.on('open', () => {
         console.log(`[socket.exchange.on.open] ${exchange.id} opened`)
 
         this.$emit('connected', exchange.id)
       })
 
-      exchange.on('close', event => {
+      exchange.on('close', () => {
         console.log(`[socket.exchange.on.close] ${exchange.id} closed`)
 
         this.$emit('disconnected', exchange.id)
@@ -239,7 +235,7 @@ const emitter = new Vue({
         })
       })
 
-      exchange.on('error', event => {
+      exchange.on('error', () => {
         console.log(`[socket.exchange.on.error] ${exchange.id} reported an error`)
       })
 
@@ -247,38 +243,17 @@ const emitter = new Vue({
     })
   },
   methods: {
-    getBarTrades(ts) {
-      return TRADES && TRADES[ts];
-    },
     initialize() {
       console.log(`[sockets] initializing ${this.exchanges.length} exchange(s)`)
 
-      if (process.env.API_URL) {
-        this.API_URL = process.env.API_URL
-        !MASTER_DOMAIN && console.info(`[sockets] API_URL = ${this.API_URL}`)
-
-        if (process.env.API_SUPPORTED_PAIRS) {
-          this.API_SUPPORTED_PAIRS = process.env.API_SUPPORTED_PAIRS.map(a => a.toUpperCase())
-          !MASTER_DOMAIN && console.info(`[sockets] API_SUPPORTED_PAIRS = ${this.API_SUPPORTED_PAIRS}`)
-        }
-      }
-
-      if (process.env.PROXY_URL) {
-        this.PROXY_URL = process.env.PROXY_URL
-        !MASTER_DOMAIN && console.info(`[sockets] PROXY_URL = ${this.PROXY_URL}`)
-      }
-
       setTimeout(this.connectExchanges.bind(this))
 
-      this.clearQueueInterval();
-      if (store.state.settings.aggregateTrades) {
-        this.setupQueueInterval();
+      this.clearSumsInterval()
+      if (store.state.settings.showCounters || store.state.settings.showStats) {
+        this.setupSumsInterval()
       }
 
-      this.clearSumsInterval();
-      if (store.state.settings.showCounters || store.state.settings.showStats) {
-        this.setupSumsInterval();
-      }
+      setInterval(this.emitAggr.bind(this), 100)
     },
     connectExchanges(pair = null) {
       this.disconnectExchanges()
@@ -287,7 +262,7 @@ const emitter = new Vue({
         store.dispatch('app/showNotice', {
           type: 'error',
           title: `No pair.`
-        });
+        })
       }
 
       if (pair) {
@@ -299,7 +274,7 @@ const emitter = new Vue({
       store.dispatch('app/showNotice', {
         type: 'info',
         title: 'Fetching the latest products, please wait.'
-      });
+      })
 
       Promise.all(this.exchanges.map(exchange => exchange.validatePair(this.pair))).then(() => {
         let validExchanges = this.exchanges.filter(exchange => exchange.valid)
@@ -309,18 +284,12 @@ const emitter = new Vue({
             type: 'error',
             delay: false,
             title: `Cannot find ${this.pair}, sorry`
-          });
+          })
 
           return
         }
 
-        if (this._pair !== this.pair) {
-          this.$emit('pairing', this.pair, this.canFetch())
-
-          this._pair = this.pair
-        }
-
-        const successfullMatches = validExchanges.length;
+        const successfullMatches = validExchanges.length
 
         console.log(`[socket.connect] ${successfullMatches} successfully matched with ${this.pair}`)
 
@@ -329,15 +298,17 @@ const emitter = new Vue({
         store.dispatch('app/showNotice', {
           type: 'info',
           title: `Connecting to ${validExchanges.length} exchange${validExchanges.length > 1 ? 's' : ''}`
-        });
+        })
 
         console.log(`[socket.connect] batch connect to ${validExchanges.map(a => a.id).join(' / ')}`)
 
         Promise.all(validExchanges.map(exchange => exchange.connect())).then(() => {
           store.dispatch('app/showNotice', {
             type: 'success',
-            title: `Subscribed to ${this.pair} on ${validExchanges.length} exchange${validExchanges.length > 1 ? 's' : ''}` + (validExchanges.length < successfullMatches ? ` (${successfullMatches - validExchanges.length} hidden)` : '')
-          });
+            title:
+              `Subscribed to ${this.pair} on ${validExchanges.length} exchange${validExchanges.length > 1 ? 's' : ''}` +
+              (validExchanges.length < successfullMatches ? ` (${successfullMatches - validExchanges.length} hidden)` : '')
+          })
         })
       })
     },
@@ -358,19 +329,19 @@ const emitter = new Vue({
     setupSumsInterval() {
       console.log(`[socket] setup sums interval`)
 
-      sumsInterval = setInterval(this.emitSums.bind(this), 1000);
+      sumsInterval = setInterval(this.emitSums.bind(this), 1000)
     },
     clearSumsInterval() {
       if (sumsInterval) {
         console.log(`[socket] clear sums interval`)
 
         clearInterval(sumsInterval)
-        sumsInterval = null;
+        sumsInterval = null
       }
     },
     emitSums() {
       if (SUMS.timestamp) {
-        this.$emit('sums', SUMS);
+        this.$emit('sums', SUMS)
 
         SUMS.timestamp = null
         SUMS.vbuy = 0
@@ -381,56 +352,42 @@ const emitter = new Vue({
         SUMS.lsell = 0
       }
     },
-    setupQueueInterval() {
-      console.log(`[socket] setup queue interval`)
-
-      queueInterval = setInterval(this.emitQueue.bind(this), 50);
-    },
-    clearQueueInterval() {
-      if (queueInterval) {
-        console.log(`[socket] clear queue interval`)
-
-        clearInterval(queueInterval)
-        queueInterval = null;
-      }
-    },
-    emitQueue() {
-      const now = +new Date();
-      const inQueue = Object.keys(QUEUE);
-
-      const output = [];
+    emitAggr() {
+      const now = +new Date()
+      const inQueue = Object.keys(QUEUE)
 
       for (let i = 0; i < inQueue.length; i++) {
-        const trade = QUEUE[inQueue[i]];
-        if (now - trade.timestamp > 50) {
+        const trade = QUEUE[inQueue[i]]
+        if (now > trade.timeout) {
           trade.price /= trade.size
           this.calculateSlippage(trade)
-          output.push(trade)
+          AGGR.push(trade)
 
           delete QUEUE[inQueue[i]]
         }
       }
 
-      if (output.length) {
-        this.$emit('trades.aggr', output);
+      if (AGGR.length) {
+        this.$emit('trades.aggr', AGGR)
+        AGGR.splice(0, AGGR.length)
       }
     },
     calculateSlippage(trade) {
-      const type = this.showSlippage;
-      
+      const type = this.showSlippage
+
       if (type === 'price') {
-        trade.slippage = (trade.ref - trade.price) * -1;
+        trade.slippage = (trade.ref - trade.price) * -1
       } else if (type === 'bps') {
-        trade.slippage = Math.floor((trade.high - trade.low) / trade.low * 10000)
+        trade.slippage = Math.floor(((trade.high - trade.low) / trade.low) * 10000)
       }
 
       return trade.slippage
     },
     canFetch() {
-      return this.API_URL && (!this.API_SUPPORTED_PAIRS || this.API_SUPPORTED_PAIRS.indexOf(this.pair) !== -1)
+      return this.apiUrl && (!this.apiSupportedPairs || this.apiSupportedPairs.indexOf(this.pair) !== -1)
     },
     getApiUrl(from, to) {
-      let url = this.API_URL
+      let url = this.apiUrl
 
       url = url.replace(/\{from\}/, from)
       url = url.replace(/\{to\}/, to)
@@ -498,10 +455,12 @@ const emitter = new Vue({
           })
           .catch(err => {
             err &&
-            store.dispatch('app/showNotice', {
-              type: 'error',
-              message: `API error (${err.response && err.response.data && err.response.data.error ? err.response.data.error : err.message || 'unknown error'})`
-            });
+              store.dispatch('app/showNotice', {
+                type: 'error',
+                message: `API error (${
+                  err.response && err.response.data && err.response.data.error ? err.response.data.error : err.message || 'unknown error'
+                })`
+              })
 
             reject()
           })
@@ -575,7 +534,7 @@ const emitter = new Vue({
         from: data[0].timestamp,
         to: data[data.length - 1].timestamp
       }
-    },
+    }
   }
 })
 

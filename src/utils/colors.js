@@ -498,15 +498,94 @@ const PALETTE = [
   '#dcf7f3',
   '#fffcdd',
   '#ffd8d8',
-  '#f5a2a2',
+  '#f5a2a2'
 ]
 
 export function getColor(except = []) {
-  let color;
+  let color
 
   while (!color || except.indexOf(color) !== -1) {
     color = PALETTE[Math.floor(Math.random() * PALETTE.length)]
   }
 
   return color
+}
+
+export function getColorByWeight(a, b, weight) {
+  var p = weight
+  var w = p * 2 - 1
+  var w1 = (w / 1 + 1) / 2
+  var w2 = 1 - w1
+  var rgb = [Math.round(b[0] * w1 + a[0] * w2), Math.round(b[1] * w1 + a[1] * w2), Math.round(b[2] * w1 + a[2] * w2)]
+  return rgb
+}
+
+window.getColorByWeight = getColorByWeight
+
+export function rgbaToRgb(color, backgroundColor) {
+  const alpha = 1 - color[3]
+
+  color[0] = Math.round((color[3] * (color[0] / 255) + alpha * (backgroundColor[0] / 255)) * 255)
+  color[1] = Math.round((color[3] * (color[1] / 255) + alpha * (backgroundColor[1] / 255)) * 255)
+  color[2] = Math.round((color[3] * (color[2] / 255) + alpha * (backgroundColor[2] / 255)) * 255)
+  color.splice(3, 1)
+
+  return color
+}
+
+export function hexToRgb(hex) {
+  var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i
+  hex = hex.replace(shorthandRegex, function(m, r, g, b) {
+    return r + r + g + g + b + b
+  })
+
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex)
+  return result ? [parseInt(result[1], 16), parseInt(result[2], 16), parseInt(result[3], 16)] : null
+}
+
+export function getColorLuminance(color, backgroundColor) {
+  if (typeof color[3] !== 'undefined' && backgroundColor) {
+    color = rgbaToRgb(color, backgroundColor)
+  }
+
+  return Math.sqrt(color[0] * color[0] * 0.241 + color[1] * color[1] * 0.691 + color[2] * color[2] * 0.068)
+}
+
+export function splitRgba(string, backgroundColor) {
+  const match = string.match(/rgba?\((\d+)[\s,]*(\d+)[\s,]*(\d+)(?:[\s,]*([\d.]+))?\)/)
+
+  let color = [+match[1], +match[2], +match[3]]
+
+  if (typeof match[4] !== 'undefined') {
+    color.push(+match[4])
+
+    if (backgroundColor) {
+      color = rgbaToRgb(color, backgroundColor)
+    }
+  }
+
+  return color
+}
+
+export function getAppBackgroundColor() {
+  let color = getComputedStyle(document.getElementById('app')).backgroundColor
+
+  if (color.indexOf('#') !== -1) {
+    color = hexToRgb(color)
+  } else {
+    color = splitRgba(color)
+  }
+
+  return color
+}
+
+export function getLogShade(color, percent) {
+  const r = Math.round
+  const [a, b, c, d] = color
+  let P = percent < 0
+  P = P ? 1 + percent : 1 - percent
+  const t = P ? 0 : percent * 255 ** 2
+  return (
+    'rgb' + (d ? 'a(' : '(') + r((P * a ** 2 + t) ** 0.5) + ',' + r((P * b ** 2 + t) ** 0.5) + ',' + r((P * c ** 2 + t) ** 0.5) + (d ? ',' + d : ')')
+  )
 }

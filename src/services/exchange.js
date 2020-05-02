@@ -1,5 +1,7 @@
 import EventEmitter from 'eventemitter3'
 
+import store from '../store'
+
 class Exchange extends EventEmitter {
   constructor(options) {
     super()
@@ -27,7 +29,7 @@ class Exchange extends EventEmitter {
       const storage = JSON.parse(localStorage.getItem(this.id))
 
       if (storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7 && (this.id !== 'okex' || storage.timestamp > 1560235687982)) {
-        if (storage.data && typeof storage.data === 'object' && storage.data.hasOwnProperty('products')) {
+        if (storage.data && typeof storage.data === 'object' && Object.prototype.hasOwnProperty.call(storage.data, 'products')) {
           for (let key in storage.data) {
             this[key] = storage.data[key]
           }
@@ -141,113 +143,7 @@ class Exchange extends EventEmitter {
     this.price = trades[trades.length - 1].price
 
     this.emit('trades', trades)
-/*
-    if (!store.state.showSlippage) {
-      this.price = trades[trades.length - 1].price
-    }
-
-    if (!store.state.aggregateTrades || this.preventAggregation) {
-      if (store.state.showSlippage) {
-        for (let i = 0; i < trades.length; i++) {
-          trades[i].slippage = trades[i].price - this.price
-
-          this.price = trades[i].price
-        }
-      }
-
-      this.emit('trades', trades)
-      this.emit('trades.aggr', trades)
-
-      return
-    } else {
-      this.emit('trades', trades)
-    }
-
-    const output = []
-
-    for (let i = 0; i < trades.length; i++) {
-      const trade = trades[i]
-
-      if (store.state.showSlippage) {
-        trade.slippage = trade.price - this.price
-
-        this.price = trade.price
-      }
-
-      if (trade.liquidation) {
-        if (this.queuedTrade) {
-          output.push(this.getQueuedTrade())
-          delete this.queuedTrade
-          clearTimeout(this.queuedTradeTimeout)
-          delete this.queuedTradeTimeout
-        }
-        output.push(trade)
-        continue
-      }
-
-      if (this.queuedTrade) {
-        if (trade.timestamp > this.queuedTrade.timestamp || trade.side !== this.queuedTrade.side) {
-          output.push(this.getQueuedTrade())
-          this.queuedTrade = Object.assign({}, trade);
-          this.queuedTrade.price *= this.queuedTrade.size
-          clearTimeout(this.queuedTradeTimeout)
-          delete this.queuedTradeTimeout
-        } else if (trade.timestamp <= this.queuedTrade.timestamp && trade.side === this.queuedTrade.side) {
-          if (!this.queuedTrade.prices) {
-            this.queuedTrade.prices = [this.queuedTrade.price / this.queuedTrade.size]
-          }
-
-          this.queuedTrade.prices.push(trade.price);
-          this.queuedTrade.high = Math.max(this.queuedTrade.high || this.queuedTrade.price / this.queuedTrade.size, trade.price)
-          this.queuedTrade.low = Math.min(this.queuedTrade.low || this.queuedTrade.price / this.queuedTrade.size, trade.price)
-
-          this.queuedTrade.size += +trade.size
-          this.queuedTrade.price += trade.price * trade.size
-        }
-      } else {
-        this.queuedTrade = Object.assign({}, trade);
-        this.queuedTrade.price *= this.queuedTrade.size
-      }
-    }
-
-    if (this.queuedTrade && !this.queuedTradeTimeout) {
-      this.queuedTradeTimeout = window.setTimeout(() => {
-        this.emit('trades.aggr', [this.getQueuedTrade()])
-        delete this.queuedTrade
-        delete this.queuedTradeTimeout
-      }, 50)
-    }
-
-    if (output.length) {
-      this.emit('trades', output)
-    }*/
   }
-
-  /*getQueuedTrade() {
-    this.queuedTrade.price /= this.queuedTrade.size
-
-    if (store.state.showSlippage === 'price') {
-      this.queuedTrade.slippage = this.queuedTrade.high - this.queuedTrade.low
-      if (this.queuedTrade.side === 'sell' && this.queuedTrade.slippage > 0) {
-        this.queuedTrade.slippage *= -1
-      } else if (this.queuedTrade.side === 'buy' && this.queuedTrade.slippage < 0) {
-        this.queuedTrade.slippage *= -1
-      }
-
-      if (this.queuedTrade.prices) {
-        const min = Math.min.apply(null, this.queuedTrade.prices)
-        const max = Math.max.apply(null, this.queuedTrade.prices)
-        const calcSlip = min - max;
-        if (Math.abs(calcSlip) !== Math.abs(this.queuedTrade.slippage)) {
-          debugger;
-        }
-      }
-    } else if (store.state.showSlippage === 'bps') {
-      this.queuedTrade.slippage = (this.queuedTrade.high - this.queuedTrade.low) / this.queuedTrade.low * 1000
-    }
-
-    return this.queuedTrade
-  }*/
 
   toFixed(number, precision) {
     var factor = Math.pow(10, precision)
@@ -286,7 +182,7 @@ class Exchange extends EventEmitter {
     this.valid = false
 
     if (typeof this.products === 'undefined') {
-      return this.fetchProducts().then(data => this.validatePair(pair))
+      return this.fetchProducts().then(() => this.validatePair(pair))
     }
 
     if (!pair || (pair && (!(this.pair = pair) || !this.pairs.length))) {
@@ -305,49 +201,6 @@ class Exchange extends EventEmitter {
 
     return Promise.resolve()
   }
-
-  /* fetchRecentsTrades() {
-    if (!this.endpoints || !this.endpoints.TRADES) {
-      this.products = [];
-
-      return Promise.resolve();
-    }
-
-    let urls = typeof this.endpoints.TRADES === 'function' ? this.endpoints.TRADES(this.pair) : this.endpoints.TRADES
-
-    if (!Array.isArray(urls)) {
-      urls = [urls];
-    }
-
-    console.log(`[${this.id}] fetching recent trades...`, urls)
-
-    return new Promise((resolve, reject) => {
-      return Promise.all(urls.map(action => {
-        action = action.split('|');
-
-        let method = action.length > 1 ? action.shift() : 'GET';
-        let url = action[0];
-
-        return fetch(`${process.env.PROXY_URL ? process.env.PROXY_URL : ''}${url}`, {method: method})
-        .then(response => response.json())
-        .catch(response => [])
-      })).then(data => {
-        console.log(`[${this.id}] received API recents trades => format trades`);
-
-        if (data.length === 1) {
-          data = data[0];
-        }
-
-        const trades = this.formatRecentsTrades(data);
-
-        if (!trades || !trades.length) {
-          return resolve();
-        }
-
-        return resolve(trades);
-      });
-    });
-  } */
 
   refreshProducts() {
     localStorage.removeItem(this.id)
@@ -385,18 +238,18 @@ class Exchange extends EventEmitter {
 
     console.log(`[${this.id}] fetching products...`, urls)
 
-    return new Promise((resolve, reject) => {
+    return new Promise(resolve => {
       return Promise.all(
-        urls.map((action, index) => {
+        urls.map(action => {
           action = action.split('|')
 
           let method = action.length > 1 ? action.shift() : 'GET'
           let url = action[0]
 
-          return new Promise((resolve, reject) => {
+          return new Promise(resolve => {
             setTimeout(() => {
               resolve(
-                fetch(`${process.env.PROXY_URL ? process.env.PROXY_URL : ''}${url}`, {
+                fetch(`${store.state.app.proxyUrl ? store.state.app.proxyUrl : ''}${url}`, {
                   method: method
                 })
                   .then(response => response.json())
@@ -421,7 +274,7 @@ class Exchange extends EventEmitter {
         if (data) {
           const formatedProducts = this.formatProducts(data) || []
 
-          if (typeof formatedProducts === 'object' && formatedProducts.hasOwnProperty('products')) {
+          if (typeof formatedProducts === 'object' && Object.prototype.hasOwnProperty.call(formatedProducts, 'products')) {
             for (let key in formatedProducts) {
               this[key] = formatedProducts[key]
             }

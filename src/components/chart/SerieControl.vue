@@ -6,8 +6,8 @@
 </template>
 
 <script>
-  import SerieDialog from './SerieDialog'
-  import { create } from 'vue-modal-dialogs'
+import SerieDialog from './SerieDialog'
+import { create } from 'vue-modal-dialogs'
 
 export default {
   props: ['id', 'legend'],
@@ -21,8 +21,6 @@ export default {
 </script>
 
 <style lang="scss">
-@import '../../assets/sass/variables';
-
 .serie {
   display: flex;
   align-items: center;
@@ -44,7 +42,7 @@ export default {
 
   &__legend {
     color: lighten($green, 20%);
-    margin-left: .4em;
+    margin-left: 0.4em;
     font-family: monospace;
     text-shadow: 1px 1px black;
   }
@@ -54,11 +52,11 @@ export default {
 
     a {
       display: block;
-      margin: 0 .2em;
+      margin: 0 0.2em;
       color: white;
 
       i {
-        font-size: .75em;
+        font-size: 0.75em;
       }
     }
   }
