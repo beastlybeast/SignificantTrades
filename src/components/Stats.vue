@@ -356,6 +356,8 @@ export default {
         return
       }
       console.log('[recolorCounter]', counter.name, color)
+
+      counter.color = color
       counter.serie.applyOptions({
         color: color
       })
