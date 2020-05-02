@@ -138,6 +138,16 @@ export default class ChartController {
   }
 
   /**
+   * Rebuild the whole serie
+   * @param {string} id serie id
+   */
+  rebuildSerie(id) {
+    this.removeSerie(this.getSerie(id))
+    this.addSerie(id)
+    this.redrawSerie(id)
+  }
+
+  /**
    * Update chart main scale (priceScale) margins
    * @param {{top: number, bottom: number}} margins
    */
@@ -423,12 +433,13 @@ export default class ChartController {
       seriesData[id].options || {},
       store.state.settings.series[id] || {}
     )
+    const serieType = serieOptions.type || seriesData[id].type
 
-    const apiMethodName = 'add' + (serieData.type.charAt(0).toUpperCase() + serieData.type.slice(1)) + 'Series'
+    const apiMethodName = 'add' + (serieType.charAt(0).toUpperCase() + serieType.slice(1)) + 'Series'
 
     const serie = this.prepareSerie({
       id,
-      type: serieData.type,
+      type: serieType,
       input: serieData.input,
       options: serieOptions
     })

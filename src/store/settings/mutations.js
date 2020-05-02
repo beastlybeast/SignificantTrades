@@ -263,6 +263,13 @@ export default {
 
     Vue.set(state.series[id], key, value)
   },
+  SET_SERIE_TYPE(state, { id, value }) {
+    if (!state.series[id]) {
+      state.series[id] = {}
+    }
+
+    Vue.set(state.series[id], 'type', value)
+  },
   SET_CHART_PRICE_MARGINS(state, value) {
     if (!state.series.price) {
       state.series.price = {}

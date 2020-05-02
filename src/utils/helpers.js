@@ -190,3 +190,16 @@ export const slugify = string => {
     .replace(/^-+/, '') // Trim - from start of text
     .replace(/-+$/, '') // Trim - from end of text
 }
+
+export const getVisibleRange = (chartInstance, timeframe) => {
+  const visibleRange = chartInstance.timeScale().getVisibleRange()
+
+  if (visibleRange) {
+    const scrollPosition = chartInstance.timeScale().scrollPosition()
+    if (scrollPosition > 0) {
+      visibleRange.to = Math.floor((visibleRange.to + scrollPosition * timeframe) / timeframe) * timeframe
+    }
+
+    return { from: visibleRange.from, to: visibleRange.to, median: visibleRange.from + (visibleRange.to - visibleRange.from) / 2 }
+  }
+}

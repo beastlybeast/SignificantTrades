@@ -7,6 +7,7 @@ export default class Counter {
     this.precision = options.precision
     this.color = options.color
     this.granularity = Math.max(store.state.settings.statsGranularity, this.period / 50)
+    this.type = options.type || 'line'
 
     /**
      * @type {TV.ISeriesApi<Line>}

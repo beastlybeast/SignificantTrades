@@ -1,5 +1,6 @@
 <template>
   <div class="dropdown">
+    <div v-if="label" class="dropdown__label" @click="toggle" v-html="label"></div>
     <div class="dropdown__selected" @click="toggle" v-html="options[selected] || placeholder || 'Selection'"></div>
     <div class="dropdown__options" v-show="isOpen">
       <div
@@ -16,7 +17,7 @@
 
 <script>
 export default {
-  props: ['options', 'selected', 'placeholder'],
+  props: ['options', 'label', 'selected', 'placeholder'],
 
   data() {
     return {

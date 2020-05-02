@@ -127,6 +127,9 @@ export default {
         case 'settings/SET_SERIE_OPTION':
           chart.setSerieOption(mutation.payload)
           break
+        case 'settings/SET_SERIE_TYPE':
+          chart.rebuildSerie(mutation.payload.id)
+          break
         case 'settings/TOGGLE_SERIE':
           chart.toggleSerie(mutation.payload)
           break
@@ -316,7 +319,7 @@ export default {
             continue
           }
 
-          if (serie.type === 'candlestick') {
+          if (data.close) {
             this.$set(
               this.legend,
               serie.id,

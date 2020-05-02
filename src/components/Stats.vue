@@ -36,7 +36,7 @@ lineOptions.scaleMargins = {
 import StatDialog from './StatDialog'
 import { create } from 'vue-modal-dialogs'
 
-import { formatAmount } from '../utils/helpers'
+import { formatAmount, formatTime, getVisibleRange, getHms } from '../utils/helpers'
 /** @type {Counter[]} */
 const counters = []
 /** @type {TV.IChartApi} */
@@ -59,6 +59,7 @@ export default {
     }
   },
   created() {
+    window.ka = this.keepAlive.bind(this)
     this.onStoreMutation = this.$store.subscribe(mutation => {
       switch (mutation.type) {
         case 'settings/TOGGLE_STAT':
@@ -128,7 +129,15 @@ export default {
       if (counter.serie) {
         return
       }
-      counter.serie = chart.addLineSeries(
+
+      let methodName = 'addLineSeries'
+
+      if (counter.type === 'histogram') {
+        counter.type = 'histogram'
+        methodName = 'addHistogramSeries'
+      }
+
+      counter.serie = chart[methodName](
         Object.assign({}, lineOptions, {
           color: counter.color
         })
@@ -164,7 +173,7 @@ export default {
         this._chartUpdateInterval = setInterval(this.chartUpdate.bind(this), 1000)
       }
 
-      const now = +new Date() / 1000
+      const now = Math.floor(+new Date() / 1000)
 
       for (let i = 0; i < counters.length; i++) {
         if (counters[i].stacks.length) {
@@ -172,11 +181,19 @@ export default {
             continue
           }
 
+          console.log('chartUpdate', formatTime(now))
           let value = counters[i].getValue()
-          counters[i].serie.update({
+
+          const point = {
             time: now,
             value: value.length ? value.reduce((sum, a) => sum + a, 0) : value
-          })
+          }
+
+          if (counters[i].type === 'histogram' && !point.value) {
+            return
+          }
+
+          counters[i].serie.update(point)
         }
       }
     },
@@ -194,15 +211,20 @@ export default {
       }
 
       if (this._keepAliveTimeout) {
-        const visibleRange = chart.timeScale().getVisibleRange()
+        const visibleRange = getVisibleRange(chart, 1)
+        const innerVisibleRange = chart.timeScale().getVisibleRange()
+
+        console.log(`vr: ${formatTime(visibleRange.from)} -> ${formatTime(visibleRange.to)}`)
+        console.log(`inner: ${formatTime(innerVisibleRange.from)} -> ${formatTime(innerVisibleRange.to)}`)
 
         if (visibleRange) {
           const scrollPosition = chart.timeScale().scrollPosition()
+          console.log(`sp: ${getHms(scrollPosition * 1000)}`)
 
           const countersSeries = counters.filter(a => a.serie).map(a => a.serie._series)
           const data = counters.map(() => [])
 
-          const points = Array.from(chart.Me.oe)
+          const points = Array.from(chart.we.oe)
 
           for (let i = Math.max(0, points.length - 200); i < points.length; i++) {
             const series = Array.from(points[i][1].mapping)
@@ -239,7 +261,7 @@ export default {
         console.log(`[stats] setup keep alive for chart`)
       }
 
-      this._keepAliveTimeout = setTimeout(this.keepAlive.bind(this, [this._keepAliveTimeout]), 1000 * 60)
+      this._keepAliveTimeout = setTimeout(this.keepAlive.bind(this, [this._keepAliveTimeout]), 1000 * 60 * 2)
     },
     refreshChartDimensions(w) {
       if (!this.statsChart) {
@@ -253,7 +275,7 @@ export default {
           w = this.$el.clientWidth
         }
 
-        chart && chart.resize(w, 180)
+        chart && chart.resize(w, this.$el.clientHeight)
       }, 500)
     },
     prepareCounters() {
@@ -274,13 +296,6 @@ export default {
           if (value.length) {
             this.$set(this.data, counters[i].name, value.map(a => formatAmount(a)).join('/'))
           } else {
-            if (counters[i].serie) {
-              counters[i].serie.update({
-                time: counters[i].timestamp / 1000,
-                value
-              })
-            }
-
             if (typeof counters[i].precision === 'number') {
               value = value.toFixed(counters[i].precision)
             } else {
@@ -363,10 +378,12 @@ export default {
           counter = new Counter(outputFunction, {
             options: counterOptions
           })
-          if (chart) {
-            this.createCounterSerie(counter)
-          }
         }
+
+        if (chart) {
+          this.createCounterSerie(counter)
+        }
+
         counter.name = counterOptions.name
         counters.push(counter)
         this.$set(this.data, counter.name, 0)
@@ -456,19 +473,38 @@ export default {
 .stats {
   position: relative;
   background-color: rgba(white, 0.05);
+
   &__chart {
     width: 100%;
-    height: 180px;
+    position: relative;
+
+    &:before {
+      content: '';
+      padding-top: 150px;
+      display: block;
+    }
+
+    > * {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+
     + .stats__counters {
       position: absolute;
       margin: 0.25em;
+
       .stat-counter {
         flex-direction: row;
         padding: 0.25em;
+
         &__value {
           text-align: left;
           flex-grow: 0;
         }
+
         &__name {
           font-size: 12px;
           margin-left: 1em;
@@ -477,6 +513,7 @@ export default {
           transform: translateX(8px);
           transition: transform 0.2s $easeOutExpo, opacity 0.2s $easeOutExpo;
         }
+
         &:hover {
           .stat-counter__name {
             opacity: 1;
@@ -486,6 +523,7 @@ export default {
       }
     }
   }
+
   &__counters {
     padding: 0;
     margin: 0;
@@ -493,19 +531,23 @@ export default {
     top: 0;
     z-index: 11;
   }
+
   .stat-counter {
     display: flex;
     align-items: center;
     padding: 0.75em;
     cursor: pointer;
+
     + .stat-counter {
       padding-top: 0;
     }
+
     &__name {
       color: rgba(white, 0.5);
       letter-spacing: 0.4px;
       transition: opacity 0.2s $easeOutExpo;
     }
+
     &__value {
       text-align: right;
       white-space: nowrap;
@@ -513,6 +555,7 @@ export default {
       z-index: 1;
       flex-grow: 1;
     }
+
     &:hover {
       .custom-stat__name {
         color: white;

@@ -3,16 +3,26 @@
     <div class="dialog-content">
       <header>
         <div class="title">{{ title }}</div>
-        <div class="form-group">
-          <label
-            class="checkbox-control -on-off"
-            v-tippy="{ placement: 'bottom' }"
-            :title="!enabled ? 'Enable ' + id : 'Disable ' + id"
-            @change="$store.commit('settings/TOGGLE_SERIE', { id, value: $event.target.checked })"
-          >
-            <input type="checkbox" class="form-control" :checked="enabled" />
-            <div></div>
-          </label>
+        <div class="column -center">
+          <dropdown
+            class="available-types -left -center"
+            :selected="type"
+            label="Type"
+            :options="availableTypes"
+            placeholder="type"
+            @output="$store.commit('settings/SET_SERIE_TYPE', { id, value: $event })"
+          ></dropdown>
+          <div class="form-group">
+            <label
+              class="checkbox-control -on-off"
+              v-tippy="{ placement: 'bottom' }"
+              :title="!enabled ? 'Enable ' + id : 'Disable ' + id"
+              @change="$store.commit('settings/TOGGLE_SERIE', { id, value: $event.target.checked })"
+            >
+              <input type="checkbox" class="form-control" :checked="enabled" />
+              <div></div>
+            </label>
+          </div>
         </div>
       </header>
       <div class="dialog-body grid">
@@ -20,7 +30,11 @@
           v-for="(option, index) in model"
           :key="index"
           class="form-group"
-          :class="{ 'w-100': option.type === 'string' || option.type === 'position', '-tight': option.type === 'color' || option.type === 'boolean' }"
+          :class="{
+            'w-100': option.type === 'string' || option.type === 'position',
+            '-tight': option.type === 'boolean' || option.type === 'color',
+            '-inline': option.type === 'color' || option.type === 'boolean'
+          }"
         >
           <label v-if="option.label !== false">{{ option.label }}</label>
 
@@ -86,8 +100,10 @@ export default {
   data: () => ({
     title: 'Serie',
     enabled: true,
+    type: 'line',
     model: [],
-    options: []
+    options: [],
+    availableTypes: { line: 'Line', histogram: 'Histogram', candlestick: 'Candlestick', bar: 'Bar' }
   }),
   computed: {
     userPreferences: function() {
@@ -99,7 +115,16 @@ export default {
   created() {
     this.title = snakeToSentence(this.id)
     this.enabled = typeof this.userPreferences.enabled === 'undefined' ? true : this.userPreferences.enabled
+    this.type = typeof this.userPreferences.type === 'undefined' ? seriesData[this.id].type : this.userPreferences.type
+
     this.refreshModel()
+
+    if (module.hot) {
+      module.hot.dispose(() => {
+        debugger
+        this.$close(false)
+      })
+    }
   },
   methods: {
     getType(value, key) {
@@ -163,11 +188,15 @@ export default {
     validate(option, value) {
       store.dispatch('settings/setSeriePreference', {
         id: this.id,
-        key: option.key,
+        key: typeof option === 'string' ? option : option.key,
         value: value
       })
 
-      this.$set(this.model[this.model.indexOf(option)], 'value', value)
+      const modelIndex = this.model.indexOf(option)
+
+      if (modelIndex !== -1) {
+        this.$set(this.model[modelIndex], 'value', value)
+      }
     },
     setScale(side, value) {
       const option = this.getOptionByKey('scaleMargins')
@@ -195,6 +224,9 @@ export default {
           return this.model[i]
         }
       }
+    },
+    setType(type) {
+      this.validate('type', type)
     },
     getValue(key) {
       const preferedValue = (store.state.settings.series[this.id] || {})[key]

@@ -74,6 +74,6 @@
     { "name": "TRADES", "output": "cbuy + csell", "enabled": true, "color": "rgba(255, 255, 255, .25)", "precision": 0 },
     { "name": "VOLUME Δ", "output": "vbuy - vsell", "enabled": true, "color": "#40d745" },
     { "name": "TRADES Δ", "output": "cbuy - csell", "enabled": true, "color": "#2196f3", "precision": 0 },
-    { "name": "1H LIQUIDATIONS", "period": 3600000, "output": "lbuy + lsell", "enabled": false, "color": "#e91e63" }
+    { "name": "1H LIQUIDATIONS", "period": 3600000, "output": "[lbuy,lsell]", "enabled": false, "color": "#e91e63", "type": "histogram" }
   ]
 }

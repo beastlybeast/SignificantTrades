@@ -118,12 +118,14 @@ export default {
           elements[i].innerText = ''
           elements[i].className = 'trade__date'
           i++
-        } else {
-          elements[i].innerText = txt
-          ref = elements[i]
-
-          ref = txt
+          continue
         }
+
+        if (txt !== elements[i].innerText) {
+          elements[i].innerText = txt
+        }
+
+        ref = txt
       }
     }, 1000)
   },
