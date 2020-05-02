@@ -167,7 +167,8 @@
 <script>
 import { mapState } from 'vuex'
 
-import { TOUCH_SUPPORTED, formatPrice } from '../utils/helpers'
+import { TOUCH_SUPPORTED } from '../utils/constants'
+import { formatPrice } from '../utils/helpers'
 
 export default {
   data() {

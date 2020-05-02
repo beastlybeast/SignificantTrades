@@ -7,5 +7,7 @@ export default {
   isLoading: false,
   supportedPairs: [],
   proxyUrl: null,
-  apiUrl: null
+  apiUrl: null,
+  version: 'DEV',
+  buildDate: 'now'
 }

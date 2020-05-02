@@ -451,7 +451,8 @@
 <script>
 import { mapState } from 'vuex'
 
-import { MASTER_DOMAIN, ago } from '../utils/helpers'
+import { ago } from '../utils/helpers'
+import { MASTER_DOMAIN } from '../utils/constants'
 
 import socket from '../services/socket'
 

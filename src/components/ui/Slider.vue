@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import { TOUCH_SUPPORTED } from '../../utils/helpers'
+import { TOUCH_SUPPORTED } from '../../utils/constants'
 
 export default {
   props: ['min', 'max', 'step', 'value'],

@@ -1,5 +1,8 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
+import * as helpers from '../utils/helpers'
+
+console.log(helpers)
 
 import settings from './settings'
 import app from './app'

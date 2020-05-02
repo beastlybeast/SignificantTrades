@@ -1,4 +1,5 @@
-import { parseQueryString, MASTER_DOMAIN } from '../../utils/helpers'
+import { parseQueryString } from '../../utils/helpers'
+import { MASTER_DOMAIN } from '../../utils/constants'
 import DEFAULTS from './defaults.json'
 
 /**

@@ -11,13 +11,11 @@ const vueEnv = process.env
 
 for (let key in vueEnv) {
   const match = key.match(/^VUE_APP_(.*)/)
-  console.log(key, match)
   if (match && match[1]) {
     store.commit(`app/SET_${match[1]}`, vueEnv[key])
   }
 }
 
-console.log(vueEnv, store.state.app)
 Vue.use(ModalDialogs)
 
 Vue.use(VueTippy, {
