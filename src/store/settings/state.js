@@ -36,7 +36,7 @@ if (MASTER_DOMAIN) {
   const subdomain = window.location.hostname.match(/^([\d\w\-_]+)\..*\./i)
   const except = ['beta', 'www']
 
-  if (subdomain && subdomain.length >= 2 && except.indexOf(subdomain) === -1) {
+  if (subdomain && subdomain.length >= 2 && except.indexOf(subdomain[1]) === -1) {
     EXTRA.pair = subdomain[1].replace(/_/g, '+').toUpperCase()
   }
 }
