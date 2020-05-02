@@ -47,12 +47,15 @@ export default {
     if (!value) {
       state.apiSupportedPairs = []
     } else if (typeof value === 'string') {
-      state.apiSupportedPairs = value.split(',')
+      state.apiSupportedPairs = value.split(',').map(a => a.trim())
     } else {
       state.apiSupportedPairs = value
     }
   },
   SET_VERSION(state, value) {
     state.version = value
+  },
+  SET_BUILD_DATE(state, value) {
+    state.buildDate = value
   }
 }

@@ -418,10 +418,10 @@
         </div>
         <div class="mt15 settings__footer flex-middle">
           <div class="form-group">
-            <div v-if="version.number">
+            <div v-if="version">
               <span>
-                v{{ version.number }}
-                <sup class="version-date">{{ version.date }}</sup>
+                v{{ version }}
+                <sup class="version-date">{{ buildDate }}</sup>
               </span>
               <i class="divider">|</i>
               <a href="javascript:void(0);" @click="reset()">reset</a>
@@ -469,15 +469,11 @@ export default {
   data() {
     return {
       tippin: false,
-      expanded: [],
-      version: {
-        number: process.env.VERSION || 'DEV',
-        date: process.env.BUILD_DATE || 'now'
-      }
+      expanded: []
     }
   },
   computed: {
-    ...mapState('app', ['actives']),
+    ...mapState('app', ['actives', 'version', 'buildDate']),
     ...mapState('settings', [
       'pair',
       'maxRows',

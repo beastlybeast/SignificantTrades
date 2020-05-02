@@ -1,7 +1,7 @@
 # SignificantTrades [![Build Status](https://travis-ci.org/Tucsky/SignificantTrades.svg?branch=master)](https://travis-ci.org/Tucsky/SignificantTrades)
 
 Live cryptocurrency trades visualizer.<br>
-Currently supporting BitMEX, Bitfinex, Binance & Binance Futures, Gdax, Bitstamp, Deribit, Huobi, Okex, Hitbtc, Poloniex, Bybit and FTX ([see server/src/exchanges/](server/src/exchanges) for detail)
+Currently supporting BitMEX, Bitfinex, Binance & Binance Futures, Gdax, Bitstamp, Deribit, Huobi, Okex, Hitbtc, Poloniex, Bybit and FTX ([see src/exchanges/](src/exchanges) for detail)
 
 ![screenshot](https://i.imgur.com/nHJxsdL.gif)
 
@@ -10,17 +10,18 @@ Currently supporting BitMEX, Bitfinex, Binance & Binance Futures, Gdax, Bitstamp
 This tool shows **markets orders filling limit orders** LIVE on the crypto markets.
 
 - Show LIVE trades from exchanges on a specific pair (default BTCUSD)
-- Filter noise by aggregating trades with the same timestamp
-- Chart averaged price, buy & sell volume, price sma, volume ema
+- Filter noise by aggregating trades with the same timestamp (timeout based aggregation)
+- Chart averaged price, buy & sell volume, price sma, volume ema ([lightweight-chart](https://github.com/tradingview/lightweight-charts) was used)
 - Play audio when trade show up based on volume
-- Visualize historical data (when available)
+- Scroll through historical data (when available)
+
+Checkout [CHANGELOG.md](CHANGELOG.md) for details about the recent updates.
 
 ## How it works
 
-The app is written in vue.js, use the javascript WebSocket interface to connect to the exchanges API directly and listen to the trades events. From there it dispatch the trades to difference components within the app :
-
-- The trade list that shows the N previous significant orders
-- The chart that shows the averaged price action over the different exchanges
+The app is written in Vue.js, use the javascript WebSocket interface to connect to the exchanges API and listen to the trades events.
+The raw trades are then dispatched to the chart component, while it aggregate trades for the list component.
+Periodically a summary of market activity (volume, counts and liquidations) is sent to the stats & counters components.
 
 ## How to install & run locally
 
@@ -41,7 +42,7 @@ npm install
 Dev mode is
 
 ```bash
-npm run dev
+npm run serve
 ```
 
 This will automatically open a browser window at localhost:8080
@@ -52,32 +53,35 @@ Otherwise can build the application
 npm run build
 ```
 
-and access the index.html directly in the browser later without having to run a command
+and access the dist/index.html directly in the browser later without having to run a command
 
 ...
 
 5. Profit !
 
+## Installation Issues
+
+If you have installation issue related to lightweight-chart package please see [#84](/../../issues/84) and follow indications.
+
+## Configuration
+
+SignificantTrades is now using Vue Cli which allows you to configure the client using .env file.
+Create a _.env.local_ or _.env.development_ or _.env.production_ file inside <code>/</code> folder.
+
+| key                 | description                                                                          | example value                                                      |
+| ------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------ |
+| PROXY_URL           | what proxy url to use when fetching data from exchange's REST APIs                   | http://localhost:8080/                                             |
+| API_URL             | define main historical endpoint                                                      | http://192.168.0.50:3000/{pair}/historical/{from}/{to}/{timeframe} |
+| API_SUPPORTED_PAIRS | define when app should be trying to fetch historical data depending on selected pair | BTCUSD, ETHUSD                                                     |
+
 ## Implement historical data
 
 You can use this project without historical data just by opening the app in your browser, as getting trades from exchanges is made directly in the browser using websocket api.
 
-However, in order to show historical data you will need a server part.
+However, in order to show historical data you will need to setup your own server that will collect and distribute data on demand.
 
-I use my servers (api.aggr.trade) to store and serve historical trades on demand.
 The current code for the server part is located in the [feature/server](https://github.com/Tucsky/SignificantTrades/tree/feature/server) branch.
-Let's say you have a server instance running on port 3000, start the client with an environment variable `API_URL=http://localhost:3000/historical/{from}/{to}/{timeframe} npm run dev`.
-
-## Adblocker issue (and solution)
-
-Some adblocker restrict access to exchanges websocket feeds.
-I know uBlock origin block many thing including huobi websocket API.
-**Just disable Adblock on the app and you should be alright.**
-
-## Cross-Domain (CORS) policy issue (and solution)
-
-In order to fetch the products the app need to make calls to the exchanges API. Most of thoses API tell the browser they only allow access from the exchange domain (see https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS). The only way to bypass this is to use a server that will make the call for us. The cors proxy settings let u set the url of this server, which is set to mine by default.
-**Running `PROXY_URL=http://my-personnal-cors-proxy.me/ npm run dev` will start the app with another cors proxy which I encourage you to do.**
+Let's say you have a server instance running on port 3000, start the client with an environment variable `API_URL=http://localhost:3000/{pair}/historical/{from}/{to}/{timeframe} npm run serve`.
 
 ## Donate
 

@@ -1,4 +1,10 @@
+var date = new Date()
+
 process.env.VUE_APP_VERSION = require('./package.json').version
+process.env.VUE_APP_BUILD_DATE = date.getDate() + ' ' + date.toLocaleString('en-US', { month: 'short' }).toLowerCase()
+process.env.VUE_APP_PROXY_URL = process.env.PROXY_URL
+process.env.VUE_APP_API_URL = process.env.API_URL
+process.env.VUE_APP_API_SUPPORTED_PAIR = process.env.API_SUPPORTED_PAIR
 
 module.exports = {
   devServer: {
@@ -48,5 +54,10 @@ module.exports = {
         prependData: `@import "@/assets/sass/variables.scss";`
       }
     }
+  },
+  pwa: {
+    name: 'SignificantTrades',
+    themeColor: '#43a047',
+    msTileColor: '#43a047'
   }
 }
