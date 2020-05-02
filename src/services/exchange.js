@@ -6,8 +6,6 @@ class Exchange extends EventEmitter {
   constructor(options) {
     super()
 
-    this.id = this.constructor.name.replace(/([a-z])([A-Z][a-z])/g, '$1_$2').toLowerCase()
-
     this.indexedProducts = []
     this.connected = false
     this.valid = false
@@ -24,34 +22,6 @@ class Exchange extends EventEmitter {
       },
       options || {}
     )
-
-    try {
-      const storage = JSON.parse(localStorage.getItem(this.id))
-
-      if (storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7 && (this.id !== 'okex' || storage.timestamp > 1560235687982)) {
-        if (storage.data && typeof storage.data === 'object' && Object.prototype.hasOwnProperty.call(storage.data, 'products')) {
-          for (let key in storage.data) {
-            this[key] = storage.data[key]
-          }
-        } else {
-          this.products = storage.data
-        }
-
-        if (
-          !this.products ||
-          (Array.isArray(this.products) && !this.products.length) ||
-          (typeof this.products === 'object' && !Object.keys(this.products).length)
-        ) {
-          this.products = null
-        }
-      } else {
-        console.info(`[${this.id}] products data expired`)
-      }
-    } catch (error) {
-      console.error(`[${this.id}] unable to retrieve stored products`, error)
-    }
-
-    this.indexProducts()
   }
 
   set pair(name) {
@@ -82,6 +52,36 @@ class Exchange extends EventEmitter {
 
   get pairs() {
     return this._pair
+  }
+
+  initialize() {
+    try {
+      const storage = JSON.parse(localStorage.getItem(this.id))
+
+      if (storage && +new Date() - storage.timestamp < 1000 * 60 * 60 * 24 * 7 && (this.id !== 'okex' || storage.timestamp > 1560235687982)) {
+        if (storage.data && typeof storage.data === 'object' && Object.prototype.hasOwnProperty.call(storage.data, 'products')) {
+          for (let key in storage.data) {
+            this[key] = storage.data[key]
+          }
+        } else {
+          this.products = storage.data
+        }
+
+        if (
+          !this.products ||
+          (Array.isArray(this.products) && !this.products.length) ||
+          (typeof this.products === 'object' && !Object.keys(this.products).length)
+        ) {
+          this.products = null
+        }
+      } else {
+        console.info(`[${this.id}] products data expired`)
+      }
+    } catch (error) {
+      console.error(`[${this.id}] unable to retrieve stored products`, error)
+    }
+
+    this.indexProducts()
   }
 
   connect(reconnection = false) {

@@ -5,6 +5,8 @@ class Noop extends Exchange {
     super(options)
 
     this.id = 'noop'
+
+    this.initialize()
   }
 
   connect() {

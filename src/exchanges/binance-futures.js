@@ -32,6 +32,8 @@ class BinanceFutures extends Exchange {
       },
       this.options
     )
+
+    this.initialize()
   }
 
   connect() {

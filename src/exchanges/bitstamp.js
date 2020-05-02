@@ -27,6 +27,8 @@ class Bitstamp extends Exchange {
       },
       this.options
     )
+
+    this.initialize()
   }
 
   connect() {

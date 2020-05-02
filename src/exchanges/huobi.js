@@ -59,6 +59,8 @@ class Huobi extends Exchange {
       },
       this.options
     )
+
+    this.initialize()
   }
 
   connect() {

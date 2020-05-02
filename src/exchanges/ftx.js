@@ -43,6 +43,8 @@ class Ftx extends Exchange {
       },
       this.options
     )
+
+    this.initialize()
   }
 
   connect() {

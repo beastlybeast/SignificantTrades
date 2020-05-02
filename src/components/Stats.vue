@@ -181,7 +181,6 @@ export default {
             continue
           }
 
-          console.log('chartUpdate', formatTime(now))
           let value = counters[i].getValue()
 
           const point = {
@@ -310,14 +309,12 @@ export default {
     clearCounters() {
       for (let i = counters.length - 1; i >= 0; i--) {
         if (!counters[i]) {
-          console.log('clearCoutner: warning counter', i, 'doesnt exists')
           continue
         }
         this.removeCounter(i)
       }
     },
     removeCounter(index) {
-      console.log('remove counter at index', index)
       const counter = this.getCounter(index)
       if (!counter) {
         console.log(`[removeCounter] couldnt find counter ${index}`)
@@ -363,20 +360,16 @@ export default {
       })
     },
     createCounter(counterOptions) {
-      console.log('create counter with options', counterOptions)
       if (counterOptions.enabled && typeof this.data[counterOptions.name] === 'undefined') {
-        console.log(`create counter ${counterOptions.name}`, counterOptions)
         const outputFunction = this.getCounterFunction(counterOptions.output)
         const outputType = this.getOutputType(outputFunction)
         let counter
         if (typeof outputType === 'number') {
-          console.log('instanciate counter with model', new Array(outputType).fill(0), counterOptions.output)
           counter = new MultiCounter(outputFunction, {
             options: counterOptions,
             model: new Array(outputType).fill(0)
           })
         } else {
-          console.log('instanciate single counter', counterOptions.output)
           counter = new Counter(outputFunction, {
             options: counterOptions
           })
@@ -389,17 +382,11 @@ export default {
         counter.name = counterOptions.name
         counters.push(counter)
         this.$set(this.data, counter.name, 0)
-      } else {
-        console.log(
-          `counter ${counterOptions.name} was skipped`,
-          counterOptions.enabled ? 'ENABLED' : 'DISABLED',
-          typeof this.data[counterOptions.name] !== 'undefined' ? 'ALREADY IN DATA' : 'NOT IN DATA'
-        )
       }
     },
     renameCounter(name) {
       const names = this.statsCounters.map(a => a.name)
-      console.log('rename counter', names, name)
+
       let counter
       for (let i = 0; i < counters.length; i++) {
         if (names.indexOf(counters[i].name) === -1) {
@@ -407,11 +394,11 @@ export default {
           break
         }
       }
+
       if (!counter) {
-        console.log('no matching counter found')
         return
       }
-      console.log('rename', counter)
+
       this.data[name] = this.data[counter.name]
       delete this.data[counter.name]
       counter.name = name

@@ -19,6 +19,8 @@ class Kraken extends Exchange {
       },
       this.options
     )
+
+    this.initialize()
   }
 
   connect() {
