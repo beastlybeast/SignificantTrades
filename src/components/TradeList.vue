@@ -257,6 +257,7 @@ export default {
       const exchange = document.createElement('div')
       exchange.className = 'trade__exchange'
       exchange.innerText = trade.exchange.replace('_', ' ')
+      exchange.setAttribute('title', trade.exchange)
       li.appendChild(exchange)
 
       if (message) {

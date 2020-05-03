@@ -59,10 +59,6 @@ and access the dist/index.html directly in the browser later without having to r
 
 5. Profit !
 
-## Installation Issues
-
-If you have installation issue related to lightweight-chart package please see [#84](/../../issues/84) and follow indications.
-
 ## Configuration
 
 SignificantTrades is now using Vue Cli which allows you to configure the client using .env file.

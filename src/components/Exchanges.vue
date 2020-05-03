@@ -4,6 +4,7 @@
       v-for="(id, index) in list"
       :key="index"
       :class="'-' + id + ' -' + status[id].status"
+      :title="id"
       @click="$store.commit('settings/TOGGLE_EXCHANGE_VISIBILITY', id)"
     >
       <div class="exchange__price" :class="{ '-hidden': exchanges[id].hidden }">
