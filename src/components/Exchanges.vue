@@ -132,7 +132,7 @@ export default {
     }
     @each $exchange in $exchanges {
       &.-#{$exchange} {
-        background-image: url('/static/exchanges/#{$exchange}.svg');
+        background-image: url('../assets/exchanges/#{$exchange}.svg');
       }
     }
   }
