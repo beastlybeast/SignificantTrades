@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.5] - 2020-05-06
+
+### Added
+
+- Products autocomplete (search)
+
 ## [2.5.4] - 2020-05-02
 
 ### Added
