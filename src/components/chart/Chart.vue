@@ -467,7 +467,7 @@ export default {
       const h = document.documentElement.clientHeight
 
       return {
-        width: window.innerWidth < 768 ? this.$el.clientWidth : this.sidebarWidth > 0 ? window.innerWidth - this.sidebarWidth : w - 320,
+        width: window.innerWidth < 768 ? window.innerWidth : this.sidebarWidth > 0 ? window.innerWidth - this.sidebarWidth : w - 320,
         height:
           window.innerWidth >= 768
             ? this.$el.parentElement.clientHeight - (this.showExchangesBar ? 24 : 0)
