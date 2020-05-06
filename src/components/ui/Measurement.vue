@@ -29,7 +29,7 @@ export default {
     }
   },
   mounted() {
-    this.refresh();
+    this.refresh()
   },
   methods: {
     refresh() {
@@ -40,14 +40,17 @@ export default {
       this.min = Math.min.apply(null, this.points)
       this.max = Math.max.apply(null, this.points)
 
-      this.$refs.polygon.setAttribute('points', `0,${-this.min} ${this.points.map((p, i) => i + ',' + p * -1).join(' ')} ${this.points.length - 1},${-this.min}`)
+      this.$refs.polygon.setAttribute(
+        'points',
+        `0,${-this.min} ${this.points.map((p, i) => i + ',' + p * -1).join(' ')} ${this.points.length - 1},${-this.min}`
+      )
 
       this.$el.setAttribute('viewBox', `0 ${-this.max} ${this.points.length - 1} ${this.max - this.min}`)
     },
     append(point) {
-      const now = Math.floor(+new Date() / this.timeframe) * this.timeframe;
+      const now = Math.floor(+new Date() / this.timeframe) * this.timeframe
 
-      if (!this.points.length || now > this.timestamp || (point < this.min || point > this.max)) {
+      if (!this.points.length || now > this.timestamp || point < this.min || point > this.max) {
         if (now > this.timestamp) {
           // add new point
           const length = this.points.push(point)
@@ -56,27 +59,30 @@ export default {
             this.points.shift()
           }
 
-          this.timestamp = now;
+          this.timestamp = now
         } else {
           // update last point
-          this.points[this.points.length - 1] = point;
+          this.points[this.points.length - 1] = point
         }
 
         // full render
         this.refresh()
       } else {
-        const points = this.$refs.polygon.getAttribute('points');
+        const points = this.$refs.polygon.getAttribute('points')
 
         // update last point 'fast'
-        this.points[this.points.length - 1] = point;
-        this.$refs.polygon.setAttribute('points', points.replace(/\d+,[\d\-\.]+\ \d+,[\d\-\.]+$/, `${this.points.length - 1},${-point} ${this.points.length - 1},${-this.min}`));
+        this.points[this.points.length - 1] = point
+        this.$refs.polygon.setAttribute(
+          'points',
+          points.replace(/\d+,[\d\-\.]+\ \d+,[\d\-\.]+$/, `${this.points.length - 1},${-point} ${this.points.length - 1},${-this.min}`)
+        )
       }
     },
     clear() {
-      this.points = [];
-      this.min = 0;
-      this.max = 0;
-      this.$refs.polygon.setAttribute('points', '');
+      this.points = []
+      this.min = 0
+      this.max = 0
+      this.$refs.polygon.setAttribute('points', '')
     }
   }
 }

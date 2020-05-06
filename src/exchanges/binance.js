@@ -34,7 +34,9 @@ class Binance extends Exchange {
   }
 
   connect() {
-    if (!super.connect()) return Promise.reject()
+    const validation = super.connect()
+    if (!validation) return Promise.reject()
+    else if (validation instanceof Promise) return validation
 
     return new Promise((resolve, reject) => {
       this.api = new WebSocket(this.getUrl())

@@ -1,5 +1,5 @@
 <template>
-  <div id="trades" :class="{ '-logos': this.showLogos }">
+  <div id="trades" :class="{ '-logos': this.showLogos, '-slippage': this.showSlippage }">
     <ul ref="tradesContainer"></ul>
     <div v-if="!tradesCount" class="trade -empty">Nothing to show, yet.</div>
   </div>
@@ -115,14 +115,14 @@ export default {
         const txt = ago(elements[i].getAttribute('timestamp'))
 
         if (typeof ref !== 'undefined' && ref === txt) {
-          elements[i].innerText = ''
+          elements[i].textContent = ''
           elements[i].className = 'trade__date'
           i++
           continue
         }
 
-        if (txt !== elements[i].innerText) {
-          elements[i].innerText = txt
+        if (txt !== elements[i].textContent) {
+          elements[i].textContent = txt
         }
 
         ref = txt
@@ -444,6 +444,12 @@ export default {
     flex-flow: column-reverse nowrap;
   }
 
+  &.-slippage {
+    .trade__price {
+      flex-grow: 1.5;
+    }
+  }
+
   &.-logos {
     .trade__exchange {
       text-indent: -9999px;
@@ -540,20 +546,6 @@ export default {
 
   &.-level-2 {
     padding: 0.5em 0.6em;
-
-    > div {
-      position: relative;
-    }
-
-    &:before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      right: 0;
-      background-color: rgba(black, 0.2);
-    }
   }
 
   &.-level-3 {
@@ -618,10 +610,6 @@ export default {
     opacity: 0.75;
   }
 
-  .trade__price {
-    flex-grow: 1.5;
-  }
-
   .trade__amount {
     flex-grow: 1;
     position: relative;
@@ -667,6 +655,13 @@ export default {
     text-align: center;
     font-size: 90%;
     line-height: 1.5;
+
+    + .trade__date {
+      overflow: visible;
+      flex-basis: auto;
+      font-size: 0.8em;
+      margin-left: -0.2em;
+    }
   }
 }
 

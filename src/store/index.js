@@ -30,26 +30,26 @@ store.subscribe((mutation, state) => {
       console.log(mutation, 'save..')
       const copy = JSON.parse(JSON.stringify(state.settings))
       localStorage.setItem('settings', JSON.stringify(copy))
-    }, 200)
-  }
 
-  let exchangeName
+      let exchangeName
 
-  switch (mutation.type) {
-    case 'settings/SHOW_EXCHANGE':
-    case 'settings/HIDE_EXCHANGE':
-    case 'settings/TOGGLE_EXCHANGE_VISIBILITY':
-    case 'settings/ENABLE_EXCHANGE':
-    case 'settings/DISABLE_EXCHANGE':
-    case 'settings/TOGGLE_EXCHANGE_CHART':
-      if (typeof mutation.payload.exchange === 'string') {
-        exchangeName = mutation.payload.exchange
-      } else {
-        exchangeName = mutation.payload
+      switch (mutation.type) {
+        case 'settings/SHOW_EXCHANGE':
+        case 'settings/HIDE_EXCHANGE':
+        case 'settings/TOGGLE_EXCHANGE_VISIBILITY':
+        case 'settings/ENABLE_EXCHANGE':
+        case 'settings/DISABLE_EXCHANGE':
+        case 'settings/SET_EXCHANGE_MATCH':
+          if (typeof mutation.payload.exchange === 'string') {
+            exchangeName = mutation.payload.exchange
+          } else {
+            exchangeName = mutation.payload
+          }
+
+          store.dispatch('app/refreshExchange', exchangeName)
+          break
       }
-
-      store.dispatch('app/refreshExchange', exchangeName)
-      break
+    }, 200)
   }
 })
 

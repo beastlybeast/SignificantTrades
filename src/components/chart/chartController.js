@@ -1025,6 +1025,10 @@ export default class ChartController {
    * Renders chunks that collides with visible range
    */
   renderVisibleChunks(silent) {
+    if (!cache.length) {
+      return
+    }
+
     const visibleRange = this.getVisibleRange()
 
     let bars = []
@@ -1035,7 +1039,7 @@ export default class ChartController {
       if (
         (chunk.from >= visibleRange.from && chunk.from <= visibleRange.to) ||
         (chunk.to >= visibleRange.from && chunk.to <= visibleRange.to) ||
-        (chunk.from <= visibleRange.from && chunk.to <= visibleRange.to)
+        (chunk.from <= visibleRange.from && chunk.to >= visibleRange.to)
       ) {
         let reasons = []
 
@@ -1045,7 +1049,7 @@ export default class ChartController {
         if (chunk.to >= visibleRange.from && chunk.to <= visibleRange.to) {
           reasons.push('end of chunk visible')
         }
-        if (chunk.from <= visibleRange.from && chunk.to <= visibleRange.to) {
+        if (chunk.from <= visibleRange.from && chunk.to >= visibleRange.to) {
           reasons.push('larger than (or equal to) view')
         }
         console.log(

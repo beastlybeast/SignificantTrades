@@ -1,0 +1,112 @@
+.autocomplete {
+  position: relative;
+
+  &__wrapper {
+    width: 100%;
+    display: flex;
+    background-color: lighten($dark, 18%);
+    border-radius: 2px;
+    overflow: hidden;
+    align-items: stretch;
+    z-index: 1;
+    position: relative;
+  }
+
+  &__items {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-grow: 1;
+    margin-top: 0.5em;
+    margin-left: 0.5em;
+  }
+
+  &__item {
+    margin: 0.25em;
+    flex-basis: auto;
+    border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(black, 0.35);
+    background-color: rgba(black, 0.2);
+    transition: background-color 0.2s $easeOutExpo, box-shadow 0.2s $easeOutExpo;
+
+    &:hover {
+      cursor: pointer;
+      box-shadow: 0 0 0 1px rgba($blue, 0.75);
+      background-color: rgba($blue, 0.5);
+    }
+  }
+
+  &__input,
+  &__item {
+    -webkit-appearance: none;
+    appearance: none;
+    padding: 0.45em 0.5em 0.3em;
+    margin: 0 0.5em 0.5em 0;
+    line-height: 1;
+  }
+
+  &__input {
+    flex-grow: 1;
+    text-transform: uppercase;
+    line-height: 1.2;
+    color: white;
+    margin-bottom: 0.85em;
+  }
+
+  &__dropdown {
+    width: 100%;
+    overflow: auto;
+    border-radius: 2px;
+    max-height: 50vh;
+    background-color: lighten($dark, 10%);
+
+    animation: 0.4s $easeElastic autocomplete-dropdown-in;
+  }
+
+  &__option {
+    padding: 0.3em 0.6em;
+    transition: padding 0.2s $easeOutExpo, color 0.2s $easeOutExpo;
+    cursor: pointer;
+    color: rgba(white, 0.5);
+
+    &:hover,
+    &.active {
+      color: rgba(white, 1);
+    }
+
+    &:hover {
+      padding-left: 0.75em;
+    }
+
+    &:nth-child(odd) {
+      background-color: rgba(black, 0.1);
+    }
+  }
+
+  &__submit {
+    justify-content: center;
+    flex-shrink: 0;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    overflow: hidden;
+    width: 0;
+    padding: 0;
+    transition: width 0.2s $easeElastic;
+
+    &.active {
+      width: 3em;
+    }
+  }
+}
+
+@keyframes autocomplete-dropdown-in {
+  0% {
+    transform: translateY(-32px) scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

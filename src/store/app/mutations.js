@@ -1,6 +1,9 @@
 import Vue from 'vue'
 
 export default {
+  SET_EXCHANGE_MATCH(state, payload) {
+    Vue.set(state.exchanges[payload.exchange], 'match', payload.match)
+  },
   EXCHANGE_UPDATED(state, { exchange, active }) {
     if (!this.state.settings.exchanges[exchange]) {
       Vue.set(this.state.settings.exchanges, exchange, {})
@@ -32,7 +35,7 @@ export default {
     }
   },
   TOGGLE_SEARCH(state, value) {
-    state.showSearch = typeof value !== 'undefined' ? !!value : !state.showSearch
+    state.showSearch = value ? true : false
   },
   SET_OPTIMAL_DECIMAL(state, value) {
     state.optimalDecimal = value
@@ -57,5 +60,22 @@ export default {
   },
   SET_BUILD_DATE(state, value) {
     state.buildDate = value
+  },
+  INDEX_PRODUCTS(state, { pairs, exchange }) {
+    for (let pair of pairs) {
+      if (state.indexedProducts[pair]) {
+        state.indexedProducts[pair].count++
+
+        if (state.indexedProducts[pair].exchanges.indexOf(exchange) === -1) {
+          state.indexedProducts[pair].exchanges.push(exchange)
+        }
+      } else {
+        state.indexedProducts[pair] = {
+          value: pair,
+          count: 1,
+          exchanges: [exchange]
+        }
+      }
+    }
   }
 }

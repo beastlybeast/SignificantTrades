@@ -8,6 +8,9 @@
         &nbsp;
         <span v-html="price || 'SignificantTrades'"></span>
       </div>
+      <button type="button" @click="$store.commit('app/TOGGLE_SEARCH', !showSearch)" title="Search" v-tippy="{ placement: 'bottom' }">
+        <span class="icon-search"></span>
+      </button>
       <dropdown
         v-if="showChart"
         :options="timeframes"
@@ -44,7 +47,8 @@ export default {
     }
   },
   computed: {
-    ...mapState('settings', ['pair', 'useAudio', 'showChart', 'timeframe'])
+    ...mapState('settings', ['pair', 'useAudio', 'showChart', 'timeframe']),
+    ...mapState('app', ['showSearch'])
   },
   created() {
     this._fetchLabel = this.fetchLabel.substr()

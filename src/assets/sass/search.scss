@@ -1,0 +1,33 @@
+.app__search {
+  position: fixed;
+  transform: translateX(-50%);
+  left: 50%;
+  top: 1em;
+  z-index: 3;
+  min-width: 320px;
+  max-width: 80%;
+
+  .autocomplete {
+    &__wrapper {
+      border-radius: 4px;
+      z-index: 2;
+    }
+
+    &__dropdown {
+      padding-top: 1em;
+      margin-top: -1em;
+
+      &:before {
+        content: '';
+        position: fixed;
+        left: 0;
+        right: 0;
+        height: 1em;
+        box-shadow: 0 0.2em 1em rgba(darken($dark, 5%), 0.5);
+        z-index: 1;
+        margin-top: -1em;
+        border-radius: 4px;
+      }
+    }
+  }
+}

@@ -212,13 +212,13 @@ const emitter = new Vue({
       })
 
       exchange.on('open', () => {
-        console.log(`[socket.exchange.on.open] ${exchange.id} opened`)
+        //console.log(`[socket.exchange.on.open] ${exchange.id} opened`)
 
         this.$emit('connected', exchange.id)
       })
 
       exchange.on('close', () => {
-        console.log(`[socket.exchange.on.close] ${exchange.id} closed`)
+        //console.log(`[socket.exchange.on.close] ${exchange.id} closed`)
 
         this.$emit('disconnected', exchange.id)
 
@@ -228,7 +228,7 @@ const emitter = new Vue({
       })
 
       exchange.on('match', pair => {
-        console.log(`[socket.exchange.on.match] ${exchange.id} matched ${pair}`)
+        //console.log(`[socket.exchange.on.match] ${exchange.id} matched ${pair}`)
         store.commit('settings/SET_EXCHANGE_MATCH', {
           exchange: exchange.id,
           match: pair
@@ -236,7 +236,7 @@ const emitter = new Vue({
       })
 
       exchange.on('error', () => {
-        console.log(`[socket.exchange.on.error] ${exchange.id} reported an error`)
+        //console.log(`[socket.exchange.on.error] ${exchange.id} reported an error`)
       })
 
       store.dispatch('app/refreshExchange', exchange.id)

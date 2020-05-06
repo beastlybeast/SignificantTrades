@@ -6,6 +6,7 @@ export default {
   notices: [],
   isLoading: false,
   supportedPairs: [],
+  indexedProducts: {},
   proxyUrl: null,
   apiUrl: null,
   version: 'DEV',

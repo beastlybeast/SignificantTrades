@@ -90,9 +90,21 @@ class Exchange extends EventEmitter {
     }
 
     if (this.valid) {
-      console.log(`[${this.id}] ${reconnection ? 're' : ''}connecting... (${this.pairs.join(', ')})`)
+      if (this.api) {
+        console.warn('previous connection not fully closed')
+        return new Promise((resolve, reject) => {
+          this.connectUponCloseResolver = { resolve, reject }
+        }).then(this.connect.bind(this))
+      }
+
+      if (this.connectUponCloseResolver) {
+        this.connectUponCloseResolver.reject()
+        delete this.connectUponCloseResolver
+      }
 
       this.shouldBeConnected = true
+
+      console.log(`[${this.id}] ${reconnection ? 're' : ''}connecting... (${this.pairs.join(', ')})`)
 
       return true
     }
@@ -159,6 +171,15 @@ class Exchange extends EventEmitter {
   emitClose(event) {
     this.connected = false
 
+    if (this.api) {
+      delete this.api
+    }
+
+    if (this.connectUponCloseResolver) {
+      this.connectUponCloseResolver.resolve()
+      delete this.connectUponCloseResolver
+    }
+
     this.emit('close', event)
   }
 
@@ -221,6 +242,11 @@ class Exchange extends EventEmitter {
     } else if (typeof this.products === 'object') {
       this.indexedProducts = Object.keys(this.products)
     }
+
+    store.commit('app/INDEX_PRODUCTS', {
+      pairs: this.indexedProducts,
+      exchange: this.id
+    })
   }
 
   fetchProducts() {

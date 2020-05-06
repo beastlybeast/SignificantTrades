@@ -309,3 +309,8 @@ $iconpath: '../fonts';
     content: unicode($icon-countdown);
   }
 }
+.icon-search {
+  &:before {
+    content: unicode($icon-search);
+  }
+}

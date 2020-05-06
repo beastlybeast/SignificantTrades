@@ -15,6 +15,24 @@
     </div>
     <Settings v-if="showSettings" @close="showSettings = false" />
     <div class="app__wrapper">
+      <div
+        v-if="showSearch"
+        ref="searchWrapper"
+        class="app__search"
+        @click="$event.target === $refs.searchWrapper && $store.commit('app/TOGGLE_SEARCH', false)"
+      >
+        <Autocomplete
+          :load="search"
+          :selected="pairs"
+          @submit="$store.commit('settings/SET_PAIR', $event.join('+')), $store.commit('app/TOGGLE_SEARCH', false)"
+          v-slot="{ item }"
+        >
+          <span
+            >{{ item.value }}
+            <div class="badge">{{ item.exchanges.join(', ') }}</div></span
+          >
+        </Autocomplete>
+      </div>
       <Header :price="price" @toggleSettings="showSettings = !showSettings" />
       <div class="app__layout">
         <div class="app__left">
@@ -40,6 +58,7 @@ import socket from './services/socket'
 
 import Notice from './components/ui/Notice.vue'
 import Header from './components/ui/Header.vue'
+import Autocomplete from './components/ui/Autocomplete.vue'
 import Settings from './components/Settings.vue'
 import TradeList from './components/TradeList.vue'
 import Chart from './components/chart/Chart.vue'
@@ -55,6 +74,8 @@ const faviconDirection = {
   avg: 0
 }
 
+let searchLetter
+
 export default {
   components: {
     Header,
@@ -64,7 +85,8 @@ export default {
     Counters,
     Notice,
     Stats,
-    Exchanges
+    Exchanges,
+    Autocomplete
   },
   name: 'app',
   data() {
@@ -80,7 +102,7 @@ export default {
     }
   },
   computed: {
-    ...mapState('app', ['isLoading', 'actives', 'notices']),
+    ...mapState('app', ['isLoading', 'actives', 'notices', 'showSearch', 'pairs']),
     ...mapState('settings', ['pair', 'showChart', 'showCounters', 'showStats', 'decimalPrecision', 'preferQuoteCurrencySize', 'showExchangesBar'])
   },
   created() {
@@ -93,6 +115,22 @@ export default {
           this.updatePairCurrency(mutation.payload)
           socket.connectExchanges(mutation.payload)
           this.calculateOptimalPrice = true
+          break
+        case 'app/TOGGLE_SEARCH':
+          if (mutation.payload) {
+            setTimeout(() => {
+              const input = this.$refs.searchWrapper.querySelector('.autocomplete__input')
+
+              if (searchLetter) {
+                input.innerText = searchLetter
+                searchLetter = null
+              }
+            })
+
+            this.bindSearchClickOutside()
+          } else {
+            this.unbindSearchClickOutside()
+          }
           break
       }
     })
@@ -115,13 +153,48 @@ export default {
     this.updatePrice()
     this.updatePairCurrency(this.pair)
   },
-  mounted() {},
+  mounted() {
+    this.bindSearchOpenByKey()
+  },
   beforeDestroy() {
+    this.unbindSearchOpenByKey()
     clearTimeout(this._updatePriceTimeout)
 
     this.onStoreMutation()
   },
   methods: {
+    search(query) {
+      return Object.values(this.$store.state.app.indexedProducts).filter(a => new RegExp(query, 'i').test(a.value))
+    },
+    bindSearchOpenByKey() {
+      this._autocompleteHandler = (event => {
+        if (
+          this.showSearch ||
+          document.activeElement.tagName === 'INPUT' ||
+          document.activeElement.tagName === 'SELECT' ||
+          document.activeElement.isContentEditable
+        ) {
+          return
+        }
+
+        event = event || window.event
+        const charCode = event.which || event.keyCode
+        const charStr = String.fromCharCode(charCode)
+
+        if (/[a-z0-9]/i.test(charStr)) {
+          searchLetter = charStr
+          this.$store.commit('app/TOGGLE_SEARCH', true)
+        }
+      }).bind(this)
+
+      document.addEventListener('keypress', this._autocompleteHandler)
+    },
+    unbindSearchOpenByKey() {
+      if (this._autocompleteHandler) {
+        document.removeEventListener('keypress', this._autocompleteHandler)
+        delete this._autocompleteHandler
+      }
+    },
     updatePairCurrency(pair) {
       const name = pair.replace(/-[\w\d]*$/, '')
 
@@ -236,6 +309,29 @@ export default {
           faviconDirection.element.href = downFavicon
         }
       }
+    },
+    bindSearchClickOutside() {
+      if (this._clickSearchOutsideHandler) {
+        return
+      }
+
+      this._clickSearchOutsideHandler = (event => {
+        const element = this.$refs.searchWrapper.children[0]
+
+        if (element !== event.target && !element.contains(event.target)) {
+          this.$store.commit('app/TOGGLE_SEARCH', false)
+        }
+      }).bind(this)
+
+      document.addEventListener('mousedown', this._clickSearchOutsideHandler)
+    },
+    unbindSearchClickOutside() {
+      if (!this._clickSearchOutsideHandler) {
+        return
+      }
+
+      document.removeEventListener('mousedown', this._clickSearchOutsideHandler)
+      delete this._clickSearchOutsideHandler
     }
   }
 }
