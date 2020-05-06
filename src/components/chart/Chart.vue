@@ -48,6 +48,9 @@
         @output="$store.commit('settings/TOGGLE_SERIE', { id: availableSeries[$event], value: true })"
       ></dropdown>
     </div>
+    <div class="chart__controls">
+      <button class="btn -small" @click="refreshChart">Refresh</button>
+    </div>
   </div>
 </template>
 
@@ -560,6 +563,10 @@ export default {
       }
 
       this._keepAliveTimeout = setTimeout(this.keepAlive.bind(this), 1000 * 60 * 10)
+    },
+
+    refreshChart() {
+      chart.renderVisibleChunks()
     }
   }
 }
@@ -569,7 +576,8 @@ export default {
 #chart {
   position: relative;
 
-  &:hover .chart__series {
+  &:hover .chart__series,
+  &:hover .chart__controls {
     opacity: 1;
   }
 }
@@ -640,6 +648,23 @@ export default {
     @media screen and (min-width: 768px) {
       display: none;
     }
+  }
+}
+
+.chart__controls {
+  position: absolute;
+  top: 1em;
+  right: 5em;
+  font-family: Roboto Condensed;
+  z-index: 2;
+  opacity: 0.1;
+  transition: opacity 0.2s $easeOutExpo;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+
+  @media screen and (max-width: 767px) {
+    display: none;
   }
 }
 

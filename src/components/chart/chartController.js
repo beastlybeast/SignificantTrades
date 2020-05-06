@@ -1031,8 +1031,8 @@ export default class ChartController {
 
     const visibleRange = this.getVisibleRange()
 
-    visibleRange.from -= store.state.settings.timeframe
-    visibleRange.to += store.state.settings.timeframe
+    visibleRange.from -= +store.state.settings.timeframe
+    visibleRange.to += +store.state.settings.timeframe
 
     let bars = []
 
