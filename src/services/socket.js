@@ -180,6 +180,11 @@ const emitter = new Vue({
               }
             }
 
+            if (trade.liquidation) {
+              this.$emit('trades.aggr', [trade])
+              continue
+            }
+
             trade.ref = REFS[exchange.id] || trade.price
 
             REFS[exchange.id] = trade.price
