@@ -166,9 +166,9 @@ export default {
 
             this.appendRow(trade, amount, ajustedAmount, '-liquidation', liquidationMessage)
           }
-          return
+          continue
         } else if (this.liquidationsOnly) {
-          return
+          continue
         }
 
         if (

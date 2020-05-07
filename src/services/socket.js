@@ -146,11 +146,10 @@ const emitter = new Vue({
 
               if (trade.liquidation) {
                 SUMS['l' + trade.side] += size
-                continue
+              } else {
+                SUMS['c' + trade.side]++
+                SUMS['v' + trade.side] += size
               }
-
-              SUMS['c' + trade.side]++
-              SUMS['v' + trade.side] += size
             }
 
             doSlip && this.calculateSlippage(trades[i])
@@ -181,7 +180,7 @@ const emitter = new Vue({
             }
 
             if (trade.liquidation) {
-              this.$emit('trades.aggr', [trade])
+              AGGR.push(trade)
               continue
             }
 
