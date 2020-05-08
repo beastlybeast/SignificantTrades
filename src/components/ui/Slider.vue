@@ -1,5 +1,5 @@
 <template>
-  <input type="range" :min="min" :max="max" :step="step" :value="value" />
+  <input type="range" :min="min" :max="max" :step="step" :value="value" @change="$emit('output', $event.target.value)" />
 </template>
 
 <script>

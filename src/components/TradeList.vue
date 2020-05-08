@@ -16,7 +16,7 @@ import Sfx from '../services/sfx'
 
 let LAST_TRADE_TIMESTAMP // to control whether we show timestamp on trade or not
 let LAST_SIDE // to control wheter we show "up" or "down" icon in front of trade
-// let MINIMUM_AMOUNT // alias threshold[0].amount
+let MINIMUM_AMOUNT // alias threshold[0].amount
 let SIGNIFICANT_AMOUNT // alias threshold[1].amount
 let COLORS // prepared array of buy / sell colors ranges
 let GIFS // gifs from storages, by threshold gif keyword
@@ -140,8 +140,6 @@ export default {
   },
   methods: {
     onTrades(trades) {
-      const useAudio = !!this.useAudio
-
       for (let i = 0; i < trades.length; i++) {
         if (activeExchanges.indexOf(trades[i].exchange) === -1) {
           continue
@@ -149,41 +147,37 @@ export default {
 
         const trade = trades[i]
         const amount = trade.size * (this.preferQuoteCurrencySize ? trade.price : 1)
-        const ajustedAmount =
-          amount * (typeof this.exchanges[trade.exchange].threshold !== 'undefined' ? +this.exchanges[trade.exchange].threshold : 1)
+        const multiplier = typeof this.exchanges[trade.exchange].threshold !== 'undefined' ? +this.exchanges[trade.exchange].threshold : 1
 
         if (trade.liquidation) {
-          if (useAudio && ajustedAmount > this.thresholds[1].amount * 0.1) {
-            this.sfx.liquidation(ajustedAmount / this.thresholds[1].amount)
+          if (this.useAudio && amount > SIGNIFICANT_AMOUNT * multiplier * 0.1) {
+            this.sfx.liquidation((amount / SIGNIFICANT_AMOUNT) * multiplier)
           }
 
-          if (ajustedAmount >= this.thresholds[0].amount) {
+          if (amount >= MINIMUM_AMOUNT * multiplier) {
             let liquidationMessage = `<i class="icon-currency"></i> <strong>${formatAmount(amount, 1)}</strong>`
 
             liquidationMessage += `&nbsp;liq<span class="min-280">uidate</span>d <strong>${
               trade.side === 'buy' ? 'SHORT' : 'LONG'
             }</strong> @ <i class="icon-quote"></i> ${formatPrice(trade.price)}`
 
-            this.appendRow(trade, amount, ajustedAmount, '-liquidation', liquidationMessage)
+            this.appendRow(trade, amount, multiplier, '-liquidation', liquidationMessage)
           }
           continue
         } else if (this.liquidationsOnly) {
           continue
         }
 
-        if (
-          useAudio &&
-          ((this.audioIncludeInsignificants && ajustedAmount > this.thresholds[1].amount * 0.1) || ajustedAmount > this.thresholds[1].amount)
-        ) {
-          this.sfx.tradeToSong(ajustedAmount / this.thresholds[1].amount, trade.side)
-        }
-
-        if (ajustedAmount >= this.thresholds[0].amount) {
-          this.appendRow(trade, amount, ajustedAmount, null, null)
+        if (amount >= MINIMUM_AMOUNT * multiplier) {
+          this.appendRow(trade, amount, multiplier)
+        } else {
+          if (this.useAudio && this.audioIncludeInsignificants && amount >= SIGNIFICANT_AMOUNT * 0.1) {
+            this.sfx.tradeToSong(amount / (SIGNIFICANT_AMOUNT * multiplier), trade.side, 0)
+          }
         }
       }
     },
-    appendRow(trade, amount, ajustedAmount, classname = '', message = null) {
+    appendRow(trade, amount, multiplier = 1, classname = '', message = null) {
       if (!this.tradesCount) {
         this.$forceUpdate()
       }
@@ -200,17 +194,17 @@ export default {
         li.className += ' -sm'
       }
 
-      if (ajustedAmount >= this.thresholds[1].amount) {
+      if (amount >= SIGNIFICANT_AMOUNT * multiplier) {
         li.className += ' -significant'
       }
 
       for (let i = 0; i < this.thresholds.length; i++) {
         li.className += ' -level-' + i
 
-        const threshold = this.thresholds[i]
-
-        if (!this.thresholds[i + 1] || ajustedAmount < this.thresholds[i + 1].amount) {
+        if (!this.thresholds[i + 1] || amount < this.thresholds[i + 1].amount * multiplier) {
           // THIS IS OUR THRESHOLD
+          const color = COLORS[Math.min(this.thresholds.length - 2, i)]
+          const threshold = this.thresholds[i]
 
           if (threshold.gif && GIFS[threshold.gif]) {
             // get random gif for this threshold
@@ -218,13 +212,13 @@ export default {
           }
 
           // percentage to next threshold
-          const percentToNextThreshold = (ajustedAmount - COLORS[i].threshold) / COLORS[i].range
+          const percentToNextThreshold = (Math.max(amount, color.threshold) - color.threshold) / color.range
 
           // 0-255 luminance of nearest color
-          const luminance = COLORS[i][trade.side][(percentToNextThreshold < 0.5 ? 'from' : 'to') + 'Luminance']
+          const luminance = color[trade.side][(percentToNextThreshold < 0.5 ? 'from' : 'to') + 'Luminance']
 
-          // background color simple color to color based on percentage of ajustedAmount to next threshold
-          const backgroundColor = getColorByWeight(COLORS[i][trade.side].from, COLORS[i][trade.side].to, percentToNextThreshold)
+          // background color simple color to color based on percentage of amount to next threshold
+          const backgroundColor = getColorByWeight(color[trade.side].from, color[trade.side].to, percentToNextThreshold)
           li.style.backgroundColor = 'rgb(' + backgroundColor[0] + ', ' + backgroundColor[1] + ', ' + backgroundColor[2] + ')'
 
           if (i >= 1) {
@@ -232,12 +226,13 @@ export default {
             // only pure black or pure white foreground
             li.style.color = luminance < 175 ? 'white' : 'black'
           } else {
-            // take background color and apply logarithmic shade based on ajustedAmount to SIGNIFICANT_AMOUNT percentage
+            // take background color and apply logarithmic shade based on amount to SIGNIFICANT_AMOUNT percentage
             // darken if luminance of background is high, lighten otherwise
-            li.style.color = getLogShade(
-              backgroundColor,
-              Math.max(0.25, Math.min(1, ajustedAmount / SIGNIFICANT_AMOUNT)) * (luminance < 175 ? 1 : -1)
-            )
+            li.style.color = getLogShade(backgroundColor, Math.max(0.25, Math.min(1, amount / SIGNIFICANT_AMOUNT)) * (luminance < 175 ? 1 : -1))
+          }
+
+          if (this.useAudio && amount >= (this.audioIncludeInsignificants ? SIGNIFICANT_AMOUNT * 0.1 : MINIMUM_AMOUNT * 1) * multiplier) {
+            this.sfx.tradeToSong(amount / (SIGNIFICANT_AMOUNT * multiplier), trade.side, i)
           }
 
           break
@@ -386,7 +381,7 @@ export default {
       const appBackgroundColor = getAppBackgroundColor()
 
       COLORS = []
-      // MINIMUM_AMOUNT = this.thresholds[0].amount
+      MINIMUM_AMOUNT = this.thresholds[0].amount
       SIGNIFICANT_AMOUNT = this.thresholds[1].amount
 
       for (let i = 0; i < this.thresholds.length - 1; i++) {

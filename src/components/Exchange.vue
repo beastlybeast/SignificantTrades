@@ -12,7 +12,9 @@
     }"
   >
     <div class="settings-exchange__header" @click="toggleExchange">
-      <span v-if="!isNaN(settings.threshold) && settings.threshold !== 1" class="settings-exchange__threshold">×{{ settings.threshold }}</span>
+      <span v-if="!isNaN(exchangeMultiplier) && exchangeMultiplier !== 1" class="settings-exchange__threshold">{{
+        $root.formatAmount(minimumThreshold * exchangeMultiplier)
+      }}</span>
       <div class="settings-exchange__identity">
         <div class="settings-exchange__name">{{ exchange.id.replace('_', ' ') }}</div>
         <small class="settings-exchange__error" v-if="exchange.error">
@@ -36,12 +38,12 @@
     </div>
     <div class="settings-exchange__detail" v-if="expanded">
       <div class="form-group">
-        <label>
-          Threshold
-          <span v-if="exchanges[exchange.id].threshold !== 1">x{{ exchanges[exchange.id].threshold }}</span>
+        <label class="column" style="justify-content:space-between">
+          <span class="condensed">Adj. threshold:</span>
+          <span v-if="exchanges[exchange.id].threshold !== 1">{{ $root.formatAmount(minimumThreshold * exchangeMultiplier) }}</span>
         </label>
         <slider
-          :step="0.01"
+          :step="0.0001"
           :min="0"
           :max="2"
           :value="exchanges[exchange.id].threshold"
@@ -83,6 +85,14 @@ export default {
     ...mapState('settings', ['pair', 'exchanges']),
     settings() {
       return this.$store.state.settings.exchanges[this.exchange.id]
+    },
+    minimumThreshold() {
+      return this.$store.state.settings.thresholds[0].amount
+    },
+    exchangeMultiplier() {
+      return typeof this.$store.state.settings.exchanges[this.exchange.id].threshold === 'undefined'
+        ? 1
+        : this.$store.state.settings.exchanges[this.exchange.id].threshold
     }
   },
   methods: {

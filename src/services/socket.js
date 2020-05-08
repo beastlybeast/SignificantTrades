@@ -17,6 +17,7 @@ import Bybit from '../exchanges/bybit'
 import Ftx from '../exchanges/ftx'
 
 import store from '../store'
+import { formatAmount } from '../utils/helpers'
 
 const QUEUE = {}
 const REFS = {}
@@ -105,7 +106,30 @@ const emitter = new Vue({
     window.testapi = () => {
       this.testapi()
     }
+    window.emitTrade = (exchange, price, amount = 1, side = 1, type = null) => {
+      exchange = exchange || 'bitmex'
 
+      if (price === null) {
+        price = this.getExchangeById(exchange).price
+      }
+
+      let trade = {
+        exchange: exchange,
+        timestamp: +new Date(),
+        price: price,
+        size: amount,
+        side: side ? 'buy' : 'sell'
+      }
+
+      if (type === 1) {
+        trade.liquidation = true
+      }
+
+      console.log(price * amount, formatAmount(price * amount))
+
+      this.$emit('trades', [trade])
+      this.$emit('trades.aggr', [trade])
+    }
     store.subscribe(mutation => {
       switch (mutation.type) {
         case 'app/EXCHANGE_UPDATED':

@@ -510,6 +510,13 @@ export default {
           return
         }
 
+        if (this._keepAliveTimeout) {
+          clearTimeout(this._keepAliveTimeout)
+          delete this._keepAliveTimeout
+        }
+
+        this.keepAlive()
+
         const visibleRange = chart.getVisibleRange()
 
         console.log(
@@ -560,13 +567,15 @@ export default {
     keepAlive() {
       if (this._keepAliveTimeout) {
         chart.redraw(true)
+      } else {
+        console.log(`[chart] setup keepalive`)
       }
 
-      this._keepAliveTimeout = setTimeout(this.keepAlive.bind(this), 1000 * 60 * 10)
+      this._keepAliveTimeout = setTimeout(this.keepAlive.bind(this), 1000 * 60 * 5)
     },
 
     refreshChart() {
-      chart.renderVisibleChunks()
+      chart.redraw()
     }
   }
 }

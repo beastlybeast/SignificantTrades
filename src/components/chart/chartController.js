@@ -702,7 +702,7 @@ export default class ChartController {
 
       if (!this.activeRenderer || this.activeRenderer.timestamp < timestamp) {
         if (this.activeRenderer) {
-          if (!this.activeChunk || (this.activeChunk.to < this.activeRenderer.timestamp && this.activeChunk.bars.length > 1000)) {
+          if (!this.activeChunk || (this.activeChunk.to < this.activeRenderer.timestamp && this.activeChunk.bars.length > 500)) {
             // first time storing bar from realtime trades
             const visibleRange = this.getVisibleRange()
 
@@ -921,7 +921,7 @@ export default class ChartController {
    * @param {Bar[]} bars bars to render
    * @param {string[]} [series] render only theses series
    */
-  renderBars(bars, series, silent = false) {
+  renderBars(bars, series) {
     console.log(`[chart/controller] render bars`, '(', series ? 'specific serie(s): ' + series.join(',') : 'all series', ')', bars.length, 'bar(s)')
 
     if (!bars.length) {
@@ -1008,14 +1008,13 @@ export default class ChartController {
       this.chartInstance.timeScale().scrollToPosition(setSP)
     }
 
-    if (!silent) {
-      if (!this.activeChunk || this.activeChunk.rendered) {
-        if (!series || !this.activeRenderer) {
-          this.activeRenderer = temporaryRenderer
-        } else if (series) {
-          for (let id of series) {
-            this.activeRenderer.series[id] = temporaryRenderer.series[id]
-          }
+    if (!this.activeChunk || (this.activeChunk.rendered && this.activeChunk.to === temporaryRenderer.timestamp)) {
+      console.log('in')
+      if (!series || !this.activeRenderer) {
+        this.activeRenderer = temporaryRenderer
+      } else if (series) {
+        for (let id of series) {
+          this.activeRenderer.series[id] = temporaryRenderer.series[id]
         }
       }
     }
@@ -1038,7 +1037,9 @@ export default class ChartController {
 
     console.log('[renderVisibleChunks]', `from: ${formatTime(visibleRange.from)} -> to: ${formatTime(visibleRange.to)}`)
 
-    for (let chunk of cache) {
+    for (let i = cache.length - 1; i >= 0; i--) {
+      const chunk = cache[i]
+
       if (
         (chunk.from >= visibleRange.from && chunk.from <= visibleRange.to) ||
         (chunk.to >= visibleRange.from && chunk.to <= visibleRange.to) ||
@@ -1060,7 +1061,7 @@ export default class ChartController {
             chunk.from
           )} -> to: ${formatTime(chunk.to)}\n\t->${reasons}`
         )
-        bars = bars.concat(chunk.bars)
+        bars = chunk.bars.concat(bars)
         chunk.rendered = true
       } else {
         chunk.rendered = false

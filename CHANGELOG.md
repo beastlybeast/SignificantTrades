@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.6] - 2020-05-08
+
+### Changed
+
+- Fix chart's broken cumulative data after keepalive redraw
+- Fix exchange threshold (threshold x multiplier) formula
+- Lowered exchange threshold slider steps (ux)
+- Fix 1000k issue
+- Sound varitions now match thresholds (1 bip at minimum threshold, 2 at the 2nd threshold, 4 at the third)
+- Doubled sell song power
+- Fixed ohlc "high" spkike at liquidation (server)
+
 ## [2.5.5] - 2020-05-06
 
 ### Added
