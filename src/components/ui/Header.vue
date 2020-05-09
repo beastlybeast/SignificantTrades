@@ -88,11 +88,9 @@ header#header {
   background-color: lighten($dark, 10%);
   color: white;
   position: relative;
-  z-index: 2;
 
   div.header__wrapper {
     position: relative;
-    z-index: 1;
     display: flex;
     align-items: center;
 

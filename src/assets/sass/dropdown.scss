@@ -53,6 +53,7 @@
     margin: 0;
     color: white;
     padding: 0;
+    z-index: 1000;
 
     animation: 0.33s $easeOutExpo appear-from-above;
     white-space: nowrap;

@@ -666,8 +666,11 @@ export default {
 
 .settings__container {
   background-color: rgba($dark, 0.5);
-  z-index: 10;
   color: white;
+
+  &.-stack__container {
+    z-index: 10;
+  }
 
   .stack__scroller {
     background-color: $dark;
