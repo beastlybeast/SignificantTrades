@@ -350,6 +350,20 @@
                 <editable :content="chartRefreshRate" @output="$store.commit('settings/SET_CHART_REFRESH_RATE', $event)"></editable>&nbsp;ms
               </span>
             </div>
+            <div class="form-group mb8">
+              <span>
+                <label class="checkbox-control flex-left">
+                  <input
+                    type="checkbox"
+                    class="form-control"
+                    :checked="!!timezoneOffset"
+                    @change="$store.commit('settings/SET_TIMEZONE_OFFSET', !timezoneOffset ? new Date().getTimezoneOffset() * 60000 * -1 : 0)"
+                  />
+                  <div></div>
+                  <span>Show local time</span>
+                </label>
+              </span>
+            </div>
           </div>
         </div>
         <div
@@ -499,6 +513,7 @@ export default {
       'timeframe',
       'showChart',
       'chartRefreshRate',
+      'timezoneOffset',
       'showExchangesBar',
       'settings',
       'debug'

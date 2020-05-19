@@ -99,6 +99,7 @@ export default {
       'sidebarWidth',
       'chartRefreshRate',
       'showExchangesBar',
+      'timezoneOffset',
       'series'
     ]),
     availableSeries: function() {
@@ -113,6 +114,10 @@ export default {
 
     this.onStoreMutation = this.$store.subscribe(mutation => {
       switch (mutation.type) {
+        case 'settings/SET_TIMEZONE_OFFSET':
+          chart.clearChart()
+          chart.renderVisibleChunks()
+          break
         case 'app/EXCHANGE_UPDATED':
           chart.renderVisibleChunks()
           break

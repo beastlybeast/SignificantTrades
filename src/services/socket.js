@@ -513,23 +513,27 @@ const emitter = new Vue({
 
       for (let i = data.length - 1; i >= 0; i--) {
         refs[data[i].exchange] = data[i].open
-        data[i].vbuy = data[i].vol_buy
-        data[i].vsell = data[i].vol_sell
-        data[i].cbuy = data[i].count_buy
-        data[i].csell = data[i].count_sell
-        data[i].lbuy = data[i].liquidation_buy
-        data[i].lsell = data[i].liquidation_sell
+        if (typeof data[i].vol_buy !== 'undefined') {
+          data[i].vbuy = data[i].vol_buy
+          data[i].vsell = data[i].vol_sell
+          data[i].cbuy = data[i].count_buy
+          data[i].csell = data[i].count_sell
+          data[i].lbuy = data[i].liquidation_buy
+          data[i].lsell = data[i].liquidation_sell
+        }
         data[i].timestamp = +new Date(data[i].time) / 1000
 
         delete data[i].time
         delete data[i].count
         delete data[i].vol
-        delete data[i].vol_buy
-        delete data[i].vol_sell
-        delete data[i].count_buy
-        delete data[i].count_sell
-        delete data[i].liquidation_buy
-        delete data[i].liquidation_sell
+        if (typeof data[i].vol_buy !== 'undefined') {
+          delete data[i].vol_buy
+          delete data[i].vol_sell
+          delete data[i].count_buy
+          delete data[i].count_sell
+          delete data[i].liquidation_buy
+          delete data[i].liquidation_sell
+        }
 
         if (data[i].time === initialTs) {
           delete refs[data[i].exchange]

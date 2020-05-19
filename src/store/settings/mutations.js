@@ -249,6 +249,9 @@ export default {
   SET_CHART_REFRESH_RATE(state, value) {
     state.chartRefreshRate = +value || 0
   },
+  SET_TIMEZONE_OFFSET(state, value) {
+    state.timezoneOffset = +value || 0
+  },
   TOGGLE_SERIE(state, { id, value }) {
     if (!state.series[id]) {
       state.series[id] = {}

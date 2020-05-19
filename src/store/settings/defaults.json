@@ -52,6 +52,7 @@
   "showLogos": true,
   "showChart": true,
   "chartRefreshRate": 500,
+  "timezoneOffset": 0,
   "showExchangesBar": false,
   "timeframe": 10,
   "debug": false,

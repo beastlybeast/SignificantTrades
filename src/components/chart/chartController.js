@@ -510,7 +510,7 @@ export default class ChartController {
    * @return {Range} range
    */
   getVisibleRange() {
-    const visibleRange = this.chartInstance.timeScale().getVisibleRange()
+    const visibleRange = this.getUTCVisibleRange()
 
     if (visibleRange) {
       const scrollPosition = this.chartInstance.timeScale().scrollPosition()
@@ -524,6 +524,19 @@ export default class ChartController {
     } else {
       return this.getRealtimeRange()
     }
+  }
+
+  getUTCVisibleRange() {
+    const visibleRange = this.chartInstance.timeScale().getVisibleRange()
+    console.log('get visible range utc', store.state.settings.timezoneOffset)
+    const offset = store.state.settings.timezoneOffset / 1000
+
+    return visibleRange
+      ? {
+          from: visibleRange.from - offset,
+          to: visibleRange.to - offset
+        }
+      : null
   }
 
   /**
@@ -707,6 +720,10 @@ export default class ChartController {
             const visibleRange = this.getVisibleRange()
 
             canRender = this.activeRenderer.timestamp >= visibleRange.from && this.activeRenderer.timestamp <= visibleRange.to
+
+            if (this.activeChunk) {
+              this.activeChunk.active = false
+            }
 
             this.activeChunk = saveChunk({
               from: this.activeRenderer.timestamp,
@@ -1011,6 +1028,14 @@ export default class ChartController {
     if (!this.activeChunk || (this.activeChunk.rendered && this.activeChunk.to === temporaryRenderer.timestamp)) {
       console.log('in')
       if (!series || !this.activeRenderer) {
+        if (this.activeRenderer) {
+          temporaryRenderer.vbuy = this.activeRenderer.vbuy
+          temporaryRenderer.vsell = this.activeRenderer.vsell
+          for (let exchange in this.activeRenderer.exchanges) {
+            temporaryRenderer.exchanges[exchange] = this.activeRenderer.exchanges[exchange]
+          }
+          temporaryRenderer.timestamp = this.activeRenderer.timestamp
+        }
         this.activeRenderer = temporaryRenderer
       } else if (series) {
         for (let id of series) {
@@ -1172,7 +1197,7 @@ export default class ChartController {
       serieData.point = serie.adapter(bar, serie.options)
 
       if (serieData.point.value || serieData.point.open) {
-        points[serie.id] = { time: bar.timestamp, ...serieData.point }
+        points[serie.id] = { time: bar.timestamp + store.state.settings.timezoneOffset / 1000, ...serieData.point }
       }
     }
 
