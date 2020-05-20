@@ -300,13 +300,9 @@ export default class ChartController {
       [bar, serie.options]
     )
 
-    console.log(serie.id, 'test run value:', value)
-
     if (value !== null && typeof value !== 'object') {
       input = `{ value: ${input} }`
     }
-
-    console.log(serie.id, 'final input', input)
 
     return new Function('bar', 'options', 'return ' + input).bind(serieFunctions)
   }
@@ -528,7 +524,6 @@ export default class ChartController {
 
   getUTCVisibleRange() {
     const visibleRange = this.chartInstance.timeScale().getVisibleRange()
-    console.log('get visible range utc', store.state.settings.timezoneOffset)
     const offset = store.state.settings.timezoneOffset / 1000
 
     return visibleRange
@@ -1026,7 +1021,6 @@ export default class ChartController {
     }
 
     if (!this.activeChunk || (this.activeChunk.rendered && this.activeChunk.to === temporaryRenderer.timestamp)) {
-      console.log('in')
       if (!series || !this.activeRenderer) {
         if (this.activeRenderer) {
           temporaryRenderer.vbuy = this.activeRenderer.vbuy

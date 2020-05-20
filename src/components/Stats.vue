@@ -36,7 +36,7 @@ lineOptions.scaleMargins = {
 import StatDialog from './StatDialog'
 import { create } from 'vue-modal-dialogs'
 
-import { formatAmount, formatTime, getVisibleRange, getHms } from '../utils/helpers'
+import { formatAmount, getVisibleRange } from '../utils/helpers'
 /** @type {Counter[]} */
 const counters = []
 /** @type {TV.IChartApi} */
@@ -211,14 +211,9 @@ export default {
 
       if (this._keepAliveTimeout) {
         const visibleRange = getVisibleRange(chart, 1)
-        const innerVisibleRange = chart.timeScale().getVisibleRange()
-
-        console.log(`vr: ${formatTime(visibleRange.from)} -> ${formatTime(visibleRange.to)}`)
-        console.log(`inner: ${formatTime(innerVisibleRange.from)} -> ${formatTime(innerVisibleRange.to)}`)
 
         if (visibleRange) {
           const scrollPosition = chart.timeScale().scrollPosition()
-          console.log(`sp: ${getHms(scrollPosition * 1000)}`)
 
           const countersSeries = counters.filter(a => a.serie).map(a => a.serie._series)
           const data = counters.map(() => [])

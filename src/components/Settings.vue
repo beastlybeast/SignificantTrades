@@ -1,8 +1,5 @@
 <template>
   <div id="settings" class="settings__container stack__container" @mousedown="$event.target === $el && $emit('close')">
-    <div ref="tippin" v-if="tippin" class="tippin-me">
-      <iframe src="https://tippin.me/buttons/send-lite.php?u=Tucsky" frameborder="0" scrolling="no"></iframe>
-    </div>
     <div class="stack__scroller">
       <!-- <a href="https://github.com/Tucsky/SignificantTrades/issues" target="_blank" class="settings__report"><i class="icon-warning"></i> Found a bug or feedback ? Let me know on Github !</a> -->
       <div class="stack__wrapper">
@@ -483,7 +480,6 @@ export default {
   },
   data() {
     return {
-      tippin: false,
       expanded: []
     }
   },
@@ -591,25 +587,29 @@ export default {
     openTippin(e) {
       e.preventDefault()
 
-      this.tippin = true
+      const container = document.createElement('div')
+      container.className = 'tippin-me'
+      container.innerHTML = '<iframe src="https://tippin.me/buttons/send-lite.php?u=Tucsky" frameborder="0" scrolling="no"></iframe>'
+
+      document.body.appendChild(container)
 
       this._closeTippinHandlerTimeout = setTimeout(() => {
-        this._closeTippinHandler = this.closeTippin.bind(this)
+        this._closeTippinHandler = this.closeTippin.bind(this, container)
 
         document.addEventListener('click', this._closeTippinHandler)
       })
     },
-    closeTippin(e) {
-      e.preventDefault()
+    closeTippin(container, event) {
+      event.preventDefault()
 
       clearTimeout(this._closeTippinHandlerTimeout)
 
-      if (!document.querySelector('.tippin-me').contains(e.target)) {
-        this.tippin = false
-
+      if (!container.contains(event.target)) {
         document.removeEventListener('click', this._closeTippinHandler)
 
-        e.stopPropagation()
+        container.remove()
+
+        event.stopPropagation()
       }
     }
   }
