@@ -1025,6 +1025,11 @@ export default class ChartController {
         if (this.activeRenderer) {
           temporaryRenderer.vbuy = this.activeRenderer.vbuy
           temporaryRenderer.vsell = this.activeRenderer.vsell
+          temporaryRenderer.lbuy = this.activeRenderer.lbuy
+          temporaryRenderer.lsell = this.activeRenderer.lsell
+          temporaryRenderer.cbuy = this.activeRenderer.cbuy
+          temporaryRenderer.csell = this.activeRenderer.csell
+          temporaryRenderer.open = this.activeRenderer.open
           for (let exchange in this.activeRenderer.exchanges) {
             temporaryRenderer.exchanges[exchange] = this.activeRenderer.exchanges[exchange]
           }

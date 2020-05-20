@@ -576,7 +576,7 @@ export default {
         console.log(`[chart] setup keepalive`)
       }
 
-      this._keepAliveTimeout = setTimeout(this.keepAlive.bind(this), 1000 * 60 * 5)
+      this._keepAliveTimeout = setTimeout(this.keepAlive.bind(this), 1000 * 60 * 15)
     },
 
     refreshChart() {
