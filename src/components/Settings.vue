@@ -619,7 +619,7 @@ export default {
 <style lang="scss">
 @media screen and (min-width: 500px) {
   body {
-    overflow: hidden;
+    overflow-x: hidden;
   }
 
   body.-translate {
