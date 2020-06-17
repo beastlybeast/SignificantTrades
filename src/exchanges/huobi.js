@@ -10,11 +10,16 @@ class Huobi extends Exchange {
     this.contractTypesAliases = {
       this_week: 'CW',
       next_week: 'NW',
-      quarter: 'CQ'
+      quarter: 'CQ',
+      next_quarter: 'NQ'
     }
 
     this.endpoints = {
-      PRODUCTS: ['https://api.huobi.pro/v1/common/symbols', 'https://api.hbdm.com/api/v1/contract_contract_info']
+      PRODUCTS: [
+        'https://api.huobi.pro/v1/common/symbols',
+        'https://api.hbdm.com/api/v1/contract_contract_info',
+        'https://api.hbdm.com/swap-api/v1/swap_contract_info'
+      ]
     }
 
     // 2019-12-13
@@ -52,6 +57,8 @@ class Huobi extends Exchange {
         url: pair => {
           if (this.types[pair] === 'futures') {
             return 'wss://www.hbdm.com/ws'
+          } else if (this.types[pair] === 'swap') {
+            return 'wss://api.hbdm.com/swap-ws'
           } else {
             return 'wss://api.huobi.pro/ws'
           }
@@ -142,7 +149,7 @@ class Huobi extends Exchange {
     const products = {}
     const specs = {}
 
-    const types = ['spot', 'futures']
+    const types = ['spot', 'futures', 'swap']
 
     response.forEach((_data, index) => {
       _data.data.forEach(product => {
@@ -158,6 +165,11 @@ class Huobi extends Exchange {
             products[product.symbol + 'USD' + '-' + product.contract_type.toUpperCase()] = pair
             products[product.contract_code] = pair
             specs[pair] = +product.contract_size
+            break
+          case 'swap':
+            products[product.symbol + 'USD' + '-PERPETUAL'] = product.contract_code
+            types[product.contract_code] = 'swap'
+            specs[product.contract_code] = +product.contract_size
             break
         }
       })
