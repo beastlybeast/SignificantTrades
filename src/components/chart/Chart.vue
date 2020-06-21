@@ -148,10 +148,16 @@ export default {
           setTimeout(this.refreshChartDimensions.bind(this))
           break
         case 'app/SET_OPTIMAL_DECIMAL':
+        case 'settings/SET_DECIMAL_PRECISION':
           chart.setSerieOption({
             id: 'price',
             key: 'priceFormat.precision',
             value: mutation.payload
+          })
+          chart.setSerieOption({
+            id: 'price',
+            key: 'priceFormat.minMove',
+            value: 1 / Math.pow(10, mutation.payload)
           })
           break
       }

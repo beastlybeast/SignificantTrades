@@ -16,7 +16,7 @@ const availableSerieFunctions = Object.keys(serieFunctions).reduce((obj, name) =
   return obj
 }, {})
 
-const noRedrawOptions = [/color/i, /width/i, 'priceLineStyle', 'lastValueVisible', 'priceLineVisible', 'borderVisible']
+const noRedrawOptions = [/priceFormat/i, /color/i, /width/i, 'priceLineStyle', 'lastValueVisible', 'priceLineVisible', 'borderVisible']
 
 export default class ChartController {
   constructor() {

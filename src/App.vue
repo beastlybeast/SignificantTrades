@@ -97,8 +97,7 @@ export default {
       symbol: '$',
 
       showSettings: false,
-      showStatistics: false,
-      calculateOptimalPrice: true
+      showStatistics: false
     }
   },
   computed: {
@@ -108,6 +107,10 @@ export default {
   created() {
     this.$root.formatPrice = formatPrice
     this.$root.formatAmount = formatAmount
+
+    if (this.decimalPrecision === null) {
+      this.calculateOptimalPrice = true
+    }
 
     this.onStoreMutation = this.$store.subscribe(mutation => {
       switch (mutation.type) {
