@@ -149,16 +149,27 @@ export default {
           break
         case 'app/SET_OPTIMAL_DECIMAL':
         case 'settings/SET_DECIMAL_PRECISION':
+          // eslint-disable-next-line no-case-declarations
+          const priceFormat = { precision: mutation.payload, minMove: 1 / Math.pow(10, mutation.payload) }
+
           chart.setSerieOption({
             id: 'price',
             key: 'priceFormat.precision',
-            value: mutation.payload
+            value: priceFormat.precision
           })
+
           chart.setSerieOption({
             id: 'price',
             key: 'priceFormat.minMove',
-            value: 1 / Math.pow(10, mutation.payload)
+            value: priceFormat.minMove
           })
+
+          if (!this.$store.state.settings.series['price']) {
+            this.$store.state.settings.series['price'] = {}
+          }
+
+          this.$store.state.settings.series['price'].priceFormat = priceFormat
+
           break
       }
     })
