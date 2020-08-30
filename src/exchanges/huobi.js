@@ -42,7 +42,9 @@ class Huobi extends Exchange {
       }
 
       if (id) {
-        if (id.indexOf('_') !== -1) {
+        if (id.indexOf('-') !== -1) {
+          this.types[id] = 'swap'
+        } else if (id.indexOf('_') !== -1) {
           this.types[id] = 'futures'
         } else {
           this.types[id] = 'spot'
