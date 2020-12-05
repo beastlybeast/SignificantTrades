@@ -228,6 +228,9 @@ export default {
   SET_AUDIO_VOLUME(state, value) {
     state.audioVolume = value
   },
+  SET_AUDIO_PITCH(state, value) {
+    state.audioPitch = value
+  },
   SET_TIMEFRAME(state, value) {
     state.timeframe = value
   },

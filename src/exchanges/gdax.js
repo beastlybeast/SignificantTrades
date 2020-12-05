@@ -12,10 +12,13 @@ class Gdax extends Exchange {
     }
 
     this.matchPairName = pair => {
-      pair = pair.substr(0, 3) + '-' + pair.substr(3, pair.length)
-
-      if (this.products.indexOf(pair) !== -1) {
-        return pair
+      if (Array.isArray(this.products)) {
+        // todo: remove starting dec 12th
+        if (this.products.indexOf(pair) !== -1) {
+          return pair.substr(0, 3) + '-' + pair.substr(3, pair.length)
+        }
+      } else if (this.products && typeof this.products === 'object' && this.products[pair]) {
+        return this.products[pair]
       }
 
       return false
@@ -86,7 +89,10 @@ class Gdax extends Exchange {
   }
 
   formatProducts(data) {
-    return data.map(a => a.id)
+    return data.reduce((products, product) => {
+      products[product.base_currency + product.quote_currency] = product.id
+      return products
+    }, {})
   }
 
   /* formatRecentsTrades(response) {

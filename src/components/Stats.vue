@@ -59,7 +59,6 @@ export default {
     }
   },
   created() {
-    window.ka = this.keepAlive.bind(this)
     this.onStoreMutation = this.$store.subscribe(mutation => {
       switch (mutation.type) {
         case 'settings/TOGGLE_STAT':

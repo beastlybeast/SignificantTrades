@@ -21,28 +21,9 @@
         "bottom": 0.2
       }
     },
-    "cvd": {
-      "enabled": true,
-      "scaleMargins": {
-        "top": 0.1,
-        "bottom": 0.2
-      }
-    },
-    "price_cma": {
-      "enabled": true,
-      "color": "rgba(44,247,121,0.38)",
-      "length": 7
-    },
-    "price_sma": {
-      "length": 25,
-      "enabled": false
-    },
-    "volume_buy_ema": {
-      "enabled": false
-    },
-    "volume_sell_ema": {
-      "enabled": false
-    }
+    "liquidations": {},
+    "volume_delta": {},
+    "volume": {}
   },
   "maxRows": 100,
   "aggregateTrades": true,
@@ -59,6 +40,7 @@
   "useAudio": false,
   "audioIncludeInsignificants": true,
   "audioVolume": 1.5,
+  "audioPitch": 1,
   "settings": ["other", "chart", "stats", "counters", "audio"],
   "chartHeight": null,
   "sidebarWidth": null,

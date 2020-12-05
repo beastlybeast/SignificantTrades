@@ -351,7 +351,7 @@ export default class ChartController {
    */
   addEnabledSeries() {
     for (let id in seriesData) {
-      if (store.state.settings.series[id] && store.state.settings.series[id].enabled === false) {
+      if (!store.state.settings.series[id] || store.state.settings.series[id].enabled === false) {
         continue
       }
 

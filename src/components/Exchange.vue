@@ -115,6 +115,8 @@ export default {
       }, 3000)
 
       this.exchange.refreshProducts().then(() => {
+        this.exchange.pair = this.pair
+        this.exchange.connect()
         this.$store.dispatch('app/showNotice', {
           type: 'success',
           title: `${this.exchange.id}'s products refreshed`

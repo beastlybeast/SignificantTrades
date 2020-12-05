@@ -194,8 +194,22 @@
               min="0"
               max="10"
               step=".1"
+              :title="'ajust gain (' + audioVolume + ')'"
+              v-tippy="{ placement: 'top' }"
               :value="audioVolume"
               @change="$store.commit('settings/SET_AUDIO_VOLUME', $event.target.value)"
+            />
+          </div>
+          <div class="form-group -fill">
+            <input
+              type="range"
+              min=".25"
+              max="2.5"
+              step=".05"
+              :value="audioPitch"
+              :title="'ajust pitch (' + audioPitch + ')'"
+              v-tippy="{ placement: 'top' }"
+              @change="$store.commit('settings/SET_AUDIO_PITCH', $event.target.value)"
             />
           </div>
         </div>
@@ -441,9 +455,7 @@
               <i class="divider">|</i>
               <a
                 target="_blank"
-                href="https://tippin.me/@Tucsky"
-                @click="openTippin"
-                title="Bitcoin for more <3"
+                href="bitcoin:3PK1bBK8sG3zAjPBPD7g3PL14Ndux3zWEz"
                 v-tippy="{
                   animateFill: false,
                   interactive: true,
@@ -506,6 +518,7 @@ export default {
       'useAudio',
       'audioIncludeInsignificants',
       'audioVolume',
+      'audioPitch',
       'timeframe',
       'showChart',
       'chartRefreshRate',
@@ -534,7 +547,6 @@ export default {
     document.body.classList.add('-translate')
   },
   beforeDestroy() {
-    document.removeEventListener('click', this._closeTippinHandler)
     document.body.classList.remove('-translate')
   },
   methods: {
@@ -583,34 +595,6 @@ export default {
     openStat(id) {
       const dialog = create(StatDialog, 'id')
       dialog(id)
-    },
-    openTippin(e) {
-      e.preventDefault()
-
-      const container = document.createElement('div')
-      container.className = 'tippin-me'
-      container.innerHTML = '<iframe src="https://tippin.me/buttons/send-lite.php?u=Tucsky" frameborder="0" scrolling="no"></iframe>'
-
-      document.body.appendChild(container)
-
-      this._closeTippinHandlerTimeout = setTimeout(() => {
-        this._closeTippinHandler = this.closeTippin.bind(this, container)
-
-        document.addEventListener('click', this._closeTippinHandler)
-      })
-    },
-    closeTippin(container, event) {
-      event.preventDefault()
-
-      clearTimeout(this._closeTippinHandlerTimeout)
-
-      if (!container.contains(event.target)) {
-        document.removeEventListener('click', this._closeTippinHandler)
-
-        container.remove()
-
-        event.stopPropagation()
-      }
     }
   }
 }
@@ -1002,39 +986,6 @@ export default {
         vertical-align: middle;
       }
     }
-  }
-}
-
-.tippin-me {
-  position: fixed;
-  z-index: 10000;
-  width: 280px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: white;
-  border-radius: 4px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.1);
-  border: 2em solid white;
-  height: 470px;
-  animation: 0.33s $easeElastic tippin-in;
-
-  @keyframes tippin-in {
-    from {
-      transform: translate(-50%, -50%) scale(0.5);
-      opacity: 0.1;
-    }
-    to {
-      transform: translate(-50%, -50%) scale(1);
-      opacity: 1;
-    }
-  }
-
-  iframe {
-    width: 100%;
-    height: 100%;
-    padding: 0;
-    margin: 0;
   }
 }
 </style>

@@ -52,6 +52,7 @@ class Sfx {
 
   tradeToSong(factor, side, variant) {
     const now = +new Date()
+    const pitch = store.state.settings.audioPitch
 
     this.queued++
 
@@ -60,23 +61,27 @@ class Sfx {
 
       if (side === 'buy') {
         if (variant === 0) {
-          this.play(659.26, Math.sqrt(factor) / 10, 0.1 + Math.sqrt(factor) / 10)
+          this.play(659.26 * pitch, Math.sqrt(factor) / 10, 0.1 + Math.sqrt(factor) / 10)
         } else if (variant === 1) {
-          ;[659.26, 830.6].forEach((f, i) => setTimeout(() => this.play(f, 0.05 + Math.sqrt(factor) / 10, 0.1 + factor * 0.1), i * 80))
-        } else if (variant >= 2) {
-          ;[659.26, 830.6, 987.76, 1318.52].forEach((f, i) =>
-            setTimeout(() => this.play(f, 0.05 + Math.sqrt(factor) / 25, 0.1 + factor * 0.1), i * 80)
-          )
+          this.play(659.26 * pitch, 0.05 + Math.sqrt(factor) / 10, 0.1 + factor * 0.1)
+          setTimeout(() => this.play(659.26 * pitch, 0.05 + Math.sqrt(factor) / 10, 0.1 + factor * 0.1), 80)
+        } else {
+          this.play(659.26 * pitch, 0.05 + Math.sqrt(factor) / 25, 0.1 + factor * 0.1)
+          setTimeout(() => this.play(830.6 * pitch, 0.05 + Math.sqrt(factor) / 25, 0.1 + factor * 0.1), 80)
+          setTimeout(() => this.play(987.76 * pitch, 0.05 + Math.sqrt(factor) / 25, 0.1 + factor * 0.1), 160)
+          setTimeout(() => this.play(1318.52 * pitch, 0.05 + Math.sqrt(factor) / 10, 0.1 + factor * 0.1), 240)
         }
       } else {
         if (variant === 0) {
-          this.play(493.88, Math.sqrt(factor * 1.5) / 10, 0.1 + Math.sqrt(factor) / 10)
+          this.play(493.88 * pitch, Math.sqrt(factor * 1.5) / 10, 0.1 + Math.sqrt(factor) / 10)
         } else if (variant === 1) {
-          ;[493.88, 392].forEach((f, i) => setTimeout(() => this.play(f, 0.05 + Math.sqrt(factor * 1.5) / 10, 0.1 + factor * 0.1), i * 80))
-        } else if (variant >= 2) {
-          ;[493.88, 369.99, 293.66, 246.94].forEach((f, i) =>
-            setTimeout(() => this.play(f, 0.05 + Math.sqrt(factor * 1.5) / 10, i > 2 ? 0.1 + factor * 0.1 : 0.2), i > 2 ? 80 * 3 : i * 80)
-          )
+          this.play(493.88 * pitch, 0.05 + Math.sqrt(factor * 1.5) / 10, 0.1 + factor * 0.1)
+          setTimeout(() => this.play(392 * pitch, 0.05 + Math.sqrt(factor * 1.5) / 10, 0.1 + factor * 0.1), 80)
+        } else {
+          this.play(493.88 * pitch, 0.05 + Math.sqrt(factor) / 25, 0.1 + factor * 0.1)
+          setTimeout(() => this.play(369.99 * pitch, 0.05 + Math.sqrt(factor * 1.5) / 10, 0.2), 80)
+          setTimeout(() => this.play(293.66 * pitch, 0.05 + Math.sqrt(factor * 1.5) / 10, 0.2), 160)
+          setTimeout(() => this.play(246.94 * pitch, 0.05 + Math.sqrt(factor * 1.5) / 10, 0.1 + factor * 0.1), 240)
         }
       }
     }, this.timestamp - now)

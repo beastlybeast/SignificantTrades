@@ -14,34 +14,11 @@
       @dblclick.stop.prevent="resetHeight"
     ></div>
 
-    <!--<grid-layout v-if="seriesLayout"
-      class="chart__layout"
-      :layout.sync="seriesLayout"
-      :col-num="1"
-      :row-height="16"
-      :margin="[0, 0]"
-      :auto-size="true"
-      :vertical-compact="true"
-      :is-draggable="true"
-      :is-resizable="true"
-    >
-      <grid-item v-for="item in seriesLayout"
-        :x="item.x"
-        :y="item.y"
-        :w="item.w"
-        :h="item.h"
-        :i="item.i"
-        :style="{height: 'auto'}"
-        :key="item.i">
-          {{item.i}}
-      </grid-item>
-    </grid-layout>-->
-
     <div class="chart__series">
       <SerieControl v-for="(serie, index) in activeSeries" :key="index" :id="serie" :legend="legend[serie]" />
 
       <dropdown
-        class="available-series -left"
+        class="available-series mt15 -left"
         v-if="availableSeries.length"
         :options="availableSeries"
         placeholder="+ serie"
@@ -351,7 +328,7 @@ export default {
               `O: ${formatPrice(data.open)} H: ${formatPrice(data.high)} L: ${formatPrice(data.low)} C: ${formatPrice(data.close)}`
             )
           } else {
-            this.$set(this.legend, serie.id, formatAmount(data))
+            this.$set(this.legend, serie.id, serie.options.formatVolume ? formatAmount(data) : formatPrice(data))
           }
         }
       }
@@ -562,7 +539,7 @@ export default {
         ) {
           chart.renderVisibleChunks()
         }
-      }, 1000)
+      }, 200)
     },
 
     bindChartEvents() {
@@ -635,7 +612,7 @@ export default {
   left: 1em;
   font-family: Roboto Condensed;
   z-index: 2;
-  opacity: 0.1;
+  opacity: 0;
   transition: opacity 0.2s $easeOutExpo;
   display: flex;
   flex-direction: column;
@@ -688,7 +665,7 @@ export default {
   right: 5em;
   font-family: Roboto Condensed;
   z-index: 2;
-  opacity: 0.1;
+  opacity: 0;
   transition: opacity 0.2s $easeOutExpo;
   display: flex;
   flex-direction: row;
@@ -697,9 +674,5 @@ export default {
   @media screen and (max-width: 767px) {
     display: none;
   }
-}
-
-.available-series {
-  margin-top: 0.5em;
 }
 </style>
