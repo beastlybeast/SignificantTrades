@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.7] - 2020-12-05
+
+### Added
+
+- Pitch ajust
+
 ## [2.5.6] - 2020-05-08
 
 ### Changed
