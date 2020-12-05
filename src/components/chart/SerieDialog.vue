@@ -42,7 +42,14 @@
             <editable class="form-control" :content="option.value" @output="validate(option, $event)"></editable>
           </template>
           <template v-if="option.type === 'color'">
-            <verte picker="square" menuPosition="left" model="rgb" :value="option.value" @input="validate(option, $event)"></verte>
+            <verte
+              picker="square"
+              menuPosition="left"
+              model="rgb"
+              :value="option.value"
+              @input="validate(option, $event)"
+              :colorHistory="colors"
+            ></verte>
           </template>
           <template v-if="option.type === 'boolean'">
             <label class="checkbox-control">
@@ -103,7 +110,79 @@ export default {
     type: 'line',
     model: [],
     options: [],
-    availableTypes: { line: 'Line', histogram: 'Histogram', candlestick: 'Candlestick', bar: 'Bar' }
+    availableTypes: { line: 'Line', histogram: 'Histogram', candlestick: 'Candlestick', bar: 'Bar' },
+    colors: [
+      '#F44336',
+      '#FF9800',
+      '#ffeb3b',
+      '#4caf50',
+      '#009688',
+      '#00bcd4',
+      '#2196F3',
+      '#673ab7',
+      '#9c27b0',
+      '#e91e63',
+      '#FFCDD2',
+      '#FFE0B2',
+      '#FFF9C4',
+      '#C8E6C9',
+      '#B2DFDB',
+      '#B2EBF2',
+      '#BBDEFB',
+      '#D1C4E9',
+      '#E1BEE7',
+      '#F8BBD0',
+      '#ef9a9a',
+      '#FFCC80',
+      '#FFF59D',
+      '#A5D6A7',
+      '#80cbc4',
+      '#80DEEA',
+      '#90CAF9',
+      '#B39DDB',
+      '#CE93D8',
+      '#f48fb1',
+      '#E57373',
+      '#ffb74d',
+      '#FFF176',
+      '#81c784',
+      '#4db6ac',
+      '#4dd0e1',
+      '#64B5F6',
+      '#9575cd',
+      '#ba68c8',
+      '#f06292',
+      '#EF5350',
+      '#FFA726',
+      '#ffee58',
+      '#66BB6A',
+      '#26a69a',
+      '#26c6da',
+      '#42A5F5',
+      '#7e57c2',
+      '#ab47bc',
+      '#ec407a',
+      '#D32F2F',
+      '#F57C00',
+      '#fbc02d',
+      '#388e3c',
+      '#00796b',
+      '#0097A7',
+      '#1976D2',
+      '#512da8',
+      '#7b1fa2',
+      '#C2185B',
+      '#B71C1C',
+      '#e65100',
+      '#F57F17',
+      '#1B5E20',
+      '#004D40',
+      '#006064',
+      '#0d47a1',
+      '#311B92',
+      '#4A148C',
+      '#880e4f'
+    ]
   }),
   computed: {
     userPreferences: function() {

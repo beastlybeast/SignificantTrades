@@ -9,6 +9,14 @@
     background-color: lighten($dark, 10%);
     color: white;
   }
+
+  .verte__recent-color {
+    margin: 1px;
+    width: 19px;
+    height: 12px;
+    background-color: transparent;
+    border-radius: 2px;
+  }
   
   .verte__model,
   .verte__submit {

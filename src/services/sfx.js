@@ -64,7 +64,7 @@ class Sfx {
           this.play(659.26 * pitch, Math.sqrt(factor) / 10, 0.1 + Math.sqrt(factor) / 10)
         } else if (variant === 1) {
           this.play(659.26 * pitch, 0.05 + Math.sqrt(factor) / 10, 0.1 + factor * 0.1)
-          setTimeout(() => this.play(659.26 * pitch, 0.05 + Math.sqrt(factor) / 10, 0.1 + factor * 0.1), 80)
+          setTimeout(() => this.play(830.6 * pitch, 0.05 + Math.sqrt(factor) / 10, 0.1 + factor * 0.1), 80)
         } else {
           this.play(659.26 * pitch, 0.05 + Math.sqrt(factor) / 25, 0.1 + factor * 0.1)
           setTimeout(() => this.play(830.6 * pitch, 0.05 + Math.sqrt(factor) / 25, 0.1 + factor * 0.1), 80)
