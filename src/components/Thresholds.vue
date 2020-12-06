@@ -8,6 +8,7 @@
       ref="picker"
       picker="square"
       model="rgb"
+      :colorHistory="colors"
       :value="thresholds[picking.index][picking.side]"
       @input="updateColor"
     ></verte>
@@ -169,6 +170,7 @@ import { mapState } from 'vuex'
 
 import { TOUCH_SUPPORTED } from '../utils/constants'
 import { formatPrice } from '../utils/helpers'
+import { PALETTE } from '../utils/colors'
 
 export default {
   data() {
@@ -185,7 +187,8 @@ export default {
   },
 
   computed: {
-    ...mapState('settings', ['thresholds', 'showThresholdsAsTable', 'preferQuoteCurrencySize'])
+    ...mapState('settings', ['thresholds', 'showThresholdsAsTable', 'preferQuoteCurrencySize']),
+    colors: () => PALETTE
   },
 
   created() {
