@@ -1,3 +1,7 @@
+The project moved to https://github.com/Tucsky/aggr
+Demo : http://tucsky.github.io/aggr
+
+
 # SignificantTrades [![Build Status](https://travis-ci.org/Tucsky/SignificantTrades.svg?branch=master)](https://travis-ci.org/Tucsky/SignificantTrades)
 
 Live cryptocurrency trades visualizer.<br>
