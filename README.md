@@ -1,4 +1,4 @@
-The project moved to https://github.com/Tucsky/aggr !
+⚠️ The project moved to https://github.com/Tucsky/aggr !
 
 Demo app at http://tucsky.github.io/aggr 🚀
 
