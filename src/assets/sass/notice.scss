@@ -1,0 +1,96 @@
+.notices {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  display: flex;
+  margin: 20px;
+  flex-direction: column;
+  flex-wrap: wrap;
+  pointer-events: none;
+}
+
+.notice {
+  display: flex;
+  color: white;
+  cursor: pointer;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  border-radius: 2px;
+  box-shadow: $shadow;
+  width: auto;
+  flex-grow: 0;
+  flex-basis: auto;
+  margin-right: auto;
+  margin-bottom: 10px;
+  pointer-events: all;
+  font-family: Roboto Condensed;
+  animation: .33s $easeOutExpo appear-from-above;
+
+  &__message {
+    flex-basis: 100%;
+    font-size: 70%;
+    margin: 5px 0 0;
+    line-height: 1.4;
+  }
+
+  &__title {
+    flex-grow: 1;
+  }
+
+  &__icon {
+    flex-basis: auto;
+    margin: 1px .5em 0 0;
+    font-size: 16px;
+    
+  }
+
+  &.-error {
+    background-color: $red;
+
+    .notice__icon:before {
+      content: unicode($icon-cross);
+    }
+
+    &:hover {
+      background-color: lighten($red, 2%);
+    }
+  }
+
+  &.-warning {
+    background-color: $orange;
+
+    .notice__icon:before {
+      content: unicode($icon-warning);
+    }
+
+    &:hover {
+      background-color: lighten($orange, 2%);
+    }
+  }
+
+  &.-success {
+    background-color: $green;
+
+    .notice__icon:before {
+      content: unicode($icon-check);
+    }
+
+    &:hover {
+      background-color: lighten($green, 2%);
+    }
+  }
+
+  &.-info {
+    background-color: $blue;
+
+    .notice__icon:before {
+      content: unicode($icon-info);
+    }
+
+    &:hover {
+      background-color: lighten($blue, 2%);
+    }
+  }
+}

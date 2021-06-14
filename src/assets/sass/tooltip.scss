@@ -1,0 +1,22 @@
+.tippy-tooltip {
+  max-width: 180px;
+  &.blue-theme {
+    background-color: rgba(black, .8);
+  }
+
+  ul,
+  ol {
+    text-align: left;
+    font-size: 90%;
+    line-height: 1.2;
+    padding-left: 20px;
+
+    li {
+      margin-bottom: 5px;
+
+      &:last-child {
+        margin: 0;
+      }
+    }
+  }
+}

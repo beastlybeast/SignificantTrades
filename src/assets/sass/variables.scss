@@ -1,0 +1,79 @@
+$green: #43a047;
+$red: #f44336;
+$blue: #2196f3;
+$orange: #fbc02d;
+$dark: #171b29;
+$pink: #e91e63;
+$purple: #3e2161;
+
+$easeOutExpo: cubic-bezier(0.005, 1, 0.22, 1);
+$easeInExpo: cubic-bezier(0.7, 0, 0.84, 0);
+$easeInOutExpo: cubic-bezier(0.87, 0, 0.13, 1);
+$easeElastic: cubic-bezier(0, 1.4, 1, 1);
+
+$icon-bitcoin: \e900;
+$icon-btc: \e901;
+$icon-dollar: \e902;
+$icon-down: \e903;
+$icon-eth: \e904;
+$icon-euro: \e905;
+$icon-info: \e906;
+$icon-monero: \e907;
+$icon-pound: \e908;
+$icon-up: \e90a;
+$icon-warning: \e90b;
+$icon-yen: \e90c;
+$icon-cog: \e90d;
+$icon-check: \e90e;
+$icon-coin: \e90f;
+$icon-history: \e910;
+$icon-play: \e911;
+$icon-info-circle: \e912;
+$icon-bear: \e913;
+$icon-bull: \e914;
+$icon-external-link: \e915;
+$icon-night: \e916;
+$icon-day: \e917;
+$icon-cross: \e918;
+$icon-expand: \e909;
+$icon-balance: \e919;
+$icon-magic: \e91a;
+$icon-numbers: \e91b;
+$icon-skull: \e91e;
+$icon-edit: \e91f;
+$icon-add: \e920;
+$icon-rip: \e921;
+$icon-eye: \e922;
+$icon-eye-crossed: \e923;
+$icon-stopwatch: \e91c;
+$icon-power-on: \e91d;
+$icon-power-off: \e924;
+$icon-volume: \e925;
+$icon-volume-muted: \e926;
+$icon-axis: \e927;
+$icon-locked: \e928;
+$icon-unlocked: \e929;
+$icon-line-chart: \e92a;
+$icon-candlestick-chart: \e92b;
+$icon-xrp: \e92c;
+$icon-ada: \e92d;
+$icon-trx: \e92e;
+$icon-neo: \e92f;
+$icon-ltc: \e930;
+$icon-xmr: \e931;
+$icon-iota: \e932;
+$icon-eos: \e933;
+$icon-slippery: \e934;
+$icon-bps: \e935;
+$icon-ms: \e936;
+$icon-stack: \e937;
+$icon-countdown: \e938;
+$icon-search: \e939;
+
+$exchanges: bitmex binance binance_futures bitfinex okex huobi bitstamp gdax hitbtc poloniex liquid coinex kraken deribit bybit ftx;
+
+@function unicode($str) {
+  @return unquote('"') + $str + unquote('"');
+}
+
+$shadow: 0 2px 2px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.1);

@@ -1,0 +1,62 @@
+{
+  "pair": "BTCUSD",
+  "preferQuoteCurrencySize": true,
+  "thresholds": [
+    { "amount": 100000, "buyColor": "rgba(76,175,80,.33)", "sellColor": "rgba(229,115,115,.33)" },
+    { "amount": 100000, "buyColor": "rgb(91,130,48)", "sellColor": "rgb(224,91,82)" },
+    { "amount": 1000000, "gif": "cash", "buyColor": "rgb(156,204,101)", "sellColor": "rgb(244,67,54)" },
+    { "amount": 10000000, "gif": "explosion", "buyColor": "rgb(255,160,0)", "sellColor": "rgb(233,30,99)" }
+  ],
+  "exchanges": {
+    "ftx": { "disabled": true },
+    "liquid": { "disabled": true },
+    "bithumb": { "disabled": true },
+    "hitbtc": { "disabled": true },
+    "coinex": { "disabled": true }
+  },
+  "series": {
+    "price": {
+      "scaleMargins": {
+        "top": 0.1,
+        "bottom": 0.2
+      }
+    },
+    "liquidations": {},
+    "volume_delta": {},
+    "volume": {}
+  },
+  "maxRows": 100,
+  "aggregateTrades": true,
+  "decimalPrecision": null,
+  "showSlippage": false,
+  "liquidationsOnly": false,
+  "showLogos": true,
+  "showChart": true,
+  "chartRefreshRate": 500,
+  "timezoneOffset": 0,
+  "showExchangesBar": false,
+  "timeframe": 10,
+  "debug": false,
+  "useAudio": false,
+  "audioIncludeInsignificants": true,
+  "audioVolume": 1.5,
+  "audioPitch": 1,
+  "settings": ["other", "chart", "stats", "counters", "audio"],
+  "chartHeight": null,
+  "sidebarWidth": null,
+  "showThresholdsAsTable": true,
+  "showCounters": false,
+  "countersGranularity": 5000,
+  "countersSteps": [30000, 60000, 900000, 1800000],
+  "countersCount": false,
+  "showStats": false,
+  "statsGranularity": 5000,
+  "statsPeriod": 60000,
+  "statsChart": false,
+  "statsCounters": [
+    { "name": "TRADES", "output": "cbuy + csell", "enabled": true, "color": "rgba(255, 255, 255, .25)", "precision": 0 },
+    { "name": "VOLUME Δ", "output": "vbuy - vsell", "enabled": true, "color": "#40d745" },
+    { "name": "TRADES Δ", "output": "cbuy - csell", "enabled": true, "color": "#2196f3", "precision": 0 },
+    { "name": "1H LIQUIDATIONS", "period": 3600000, "output": "[lbuy,lsell]", "enabled": false, "color": "#e91e63", "type": "histogram" }
+  ]
+}

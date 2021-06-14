@@ -1,0 +1,43 @@
+.btn {
+  display: flex;
+  align-items: center;
+  font-size: .9rem;
+  text-transform: uppercase;
+  font-family: 'roboto condensed';
+	padding: .4em .6em;
+	border: 0;
+	border-radius: 2px;
+	color: white;
+	cursor: pointer;
+
+	background-color: $green;
+
+	&:hover {
+		background-color: lighten($green, 10%);
+	}
+
+	&.-small {
+		font-size: .75rem;
+	}
+
+	&.-condensed {
+    padding: .2rem .3rem;
+		font-size: .75rem;
+	}
+
+	&.-red {
+		background-color: $red;
+	
+		&:hover {
+			background-color: lighten($red, 10%);
+		}
+	}
+
+	&.-dark {
+		background-color: lighten($dark, 5%);
+	
+		&:hover {
+			background-color: $dark;
+		}
+	}
+}

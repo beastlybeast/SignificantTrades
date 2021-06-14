@@ -1,0 +1,280 @@
+body {
+  background-color: $dark;
+}
+
+#app {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  min-height: 100%;
+  background-color: $dark;
+  transition: transform 0.3s $easeOutExpo;
+  color: white;
+
+  @media screen and (min-width: 768px) {
+    height: 100vh;
+  }
+
+  &.loading {
+    .app__layout {
+      transition: opacity 5s $easeElastic;
+      opacity: 0.9;
+    }
+  }
+}
+
+.app__wrapper {
+  height: 100%;
+}
+
+.stack__container {
+  transform: none;
+  overflow: hidden;
+  font-size: 12px;
+  z-index: 2;
+}
+
+.stack__scroller {
+  overflow: auto;
+  position: relative;
+}
+
+.stack__toggler {
+  position: absolute;
+  right: 0;
+  top: 0;
+  font-size: 18px;
+  opacity: 0.2;
+  padding: 0.5em;
+  z-index: 1;
+  color: white;
+
+  &:hover {
+    opacity: 1;
+  }
+}
+
+.stack__wrapper {
+  padding: 0.5em;
+  position: relative;
+
+  p {
+    margin: 0 0 2px;
+
+    &:last-child {
+      margin: 0;
+    }
+  }
+
+  code {
+    background-color: rgba(black, 0.1);
+    font-weight: 400;
+    padding: 3px 4px;
+    line-height: 1;
+    display: inline-block;
+    position: relative;
+    letter-spacing: -0.5px;
+  }
+}
+
+.stack__backdrop {
+  @media screen and (min-width: 500px) {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+
+    display: block;
+    background-color: rgba(black, 0.2);
+  }
+}
+
+.app__wrapper {
+  display: flex;
+  flex-direction: column;
+
+  @media screen and (min-width: 768px) {
+    height: 100vh;
+
+    #header {
+      flex-grow: 0;
+      flex-basis: auto;
+      flex-shrink: 0;
+    }
+
+    .app__layout {
+      flex-grow: 1;
+      min-height: 0px;
+    }
+  }
+}
+
+.app__layout {
+  display: flex;
+  flex-direction: column;
+
+  .app__right {
+    display: flex;
+    flex-direction: column;
+  }
+
+  @media screen and (min-width: 768px) {
+    flex-direction: row;
+
+    #trades {
+      position: relative;
+
+      ul {
+        position: absolute;
+        left: 0;
+        right: 0;
+      }
+    }
+
+    .app__left {
+      flex-grow: 0;
+      max-height: 100%;
+      display: flex;
+      flex-direction: column;
+
+      #chart {
+        flex-grow: 1;
+
+        &:not(:last-child) {
+          max-height: calc(100% - 24px);
+        }
+      }
+
+      #exchanges {
+        flex-shrink: 0;
+      }
+    }
+
+    .app__right {
+      flex-grow: 1;
+
+      #trades {
+        flex-grow: 1;
+        overflow: auto;
+      }
+    }
+  }
+
+  @media screen and (max-width: 379px) {
+    #trades {
+      font-size: 0.8em;
+    }
+  }
+}
+
+.min-768 {
+  display: none;
+}
+
+@media screen and (min-width: 768px) {
+  .min-768 {
+    display: inline-block;
+  }
+
+  .max-767 {
+    display: none;
+  }
+}
+
+.min-280 {
+  display: none;
+}
+
+@media screen and (min-width: 280px) {
+  .min-280 {
+    display: inline-block;
+  }
+}
+
+.w-100 {
+  width: 100% !important;
+}
+
+.column {
+  display: flex;
+  flex-direction: row;
+
+  > .-tight {
+    flex-basis: auto;
+    flex-grow: 0;
+
+    label {
+      white-space: nowrap;
+    }
+  }
+
+  > .-fill {
+    flex-basis: 100%;
+    max-width: 100%;
+  }
+
+  > .-center {
+    align-self: center;
+  }
+
+  > div {
+    margin-right: 0.5em;
+    flex-grow: 1;
+
+    > .btn {
+      height: 100%;
+      white-space: nowrap;
+    }
+
+    &:last-child {
+      margin-right: 0;
+    }
+  }
+
+  &:last-child .form-group {
+    margin-bottom: 0;
+  }
+}
+
+.grid {
+  margin: -0.5em;
+
+  > div {
+    flex-grow: 1;
+    flex-basis: auto;
+    display: flex;
+    justify-content: center;
+    padding: 0.5em;
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    &.-tight {
+      flex-grow: 0;
+    }
+
+    &.-inline {
+      flex-direction: row-reverse;
+      align-items: center;
+      justify-content: flex-end;
+
+      > label:first-child {
+        margin: 0 0 0 0.5em;
+      }
+    }
+  }
+}
+
+.-activable {
+  > .form-group {
+    opacity: 0.2;
+  }
+
+  &.active {
+    .form-group {
+      opacity: 1;
+    }
+  }
+}
